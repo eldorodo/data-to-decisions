@@ -5621,6 +5621,127 @@ claims.</p>
 </tr>
 </table>
 
+<div class="rich-figure" style="margin:2em auto; max-width:680px;">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 520" style="width:100%; height:auto; display:block;">
+  <style>
+    .ps-title { font: bold 15px 'Segoe UI', Arial, sans-serif; fill: #0f172a; }
+    .ps-subtitle { font: 13px 'Segoe UI', Arial, sans-serif; fill: #64748b; }
+    .ps-label { font: bold 12px 'Segoe UI', Arial, sans-serif; }
+    .ps-axis { font: 11px 'Segoe UI', Arial, sans-serif; fill: #94a3b8; }
+    .ps-badge { font: bold 13px monospace; }
+  </style>
+
+  <!-- ══════════ TOP PANEL: LINEAR DATA ══════════ -->
+  <rect x="30" y="10" width="620" height="230" rx="12" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="340" y="36" text-anchor="middle" class="ps-title">Linear Data Correlation</text>
+
+  <!-- Axes -->
+  <line x1="100" y1="210" x2="600" y2="210" stroke="#cbd5e1" stroke-width="1"/>
+  <line x1="100" y1="210" x2="100" y2="50" stroke="#cbd5e1" stroke-width="1"/>
+
+  <!-- Linear scatter points (y ≈ x + noise, both r ≈ 0.97) -->
+  <g fill="#22c55e" opacity="0.6">
+    <circle cx="115" cy="198" r="4"/><circle cx="122" cy="195" r="4"/>
+    <circle cx="130" cy="190" r="4"/><circle cx="138" cy="192" r="4"/>
+    <circle cx="148" cy="185" r="4"/><circle cx="155" cy="188" r="4"/>
+    <circle cx="162" cy="180" r="4"/><circle cx="170" cy="178" r="4"/>
+    <circle cx="180" cy="175" r="4"/><circle cx="188" cy="170" r="4"/>
+    <circle cx="195" cy="172" r="4"/><circle cx="205" cy="165" r="4"/>
+    <circle cx="212" cy="168" r="4"/><circle cx="222" cy="160" r="4"/>
+    <circle cx="230" cy="155" r="4"/><circle cx="240" cy="158" r="4"/>
+    <circle cx="248" cy="150" r="4"/><circle cx="258" cy="148" r="4"/>
+    <circle cx="265" cy="142" r="4"/><circle cx="275" cy="145" r="4"/>
+    <circle cx="282" cy="138" r="4"/><circle cx="290" cy="135" r="4"/>
+    <circle cx="300" cy="130" r="4"/><circle cx="308" cy="132" r="4"/>
+    <circle cx="318" cy="125" r="4"/><circle cx="325" cy="120" r="4"/>
+    <circle cx="335" cy="122" r="4"/><circle cx="342" cy="115" r="4"/>
+    <circle cx="350" cy="110" r="4"/><circle cx="360" cy="112" r="4"/>
+    <circle cx="368" cy="105" r="4"/><circle cx="378" cy="100" r="4"/>
+    <circle cx="385" cy="98" r="4"/><circle cx="395" cy="95" r="4"/>
+    <circle cx="402" cy="90" r="4"/><circle cx="412" cy="92" r="4"/>
+    <circle cx="420" cy="85" r="4"/><circle cx="430" cy="88" r="4"/>
+    <circle cx="438" cy="80" r="4"/><circle cx="448" cy="78" r="4"/>
+    <circle cx="455" cy="75" r="4"/><circle cx="465" cy="72" r="4"/>
+    <circle cx="472" cy="70" r="4"/><circle cx="482" cy="68" r="4"/>
+    <circle cx="490" cy="65" r="4"/><circle cx="500" cy="62" r="4"/>
+    <circle cx="508" cy="60" r="4"/><circle cx="518" cy="58" r="4"/>
+    <circle cx="528" cy="55" r="4"/><circle cx="540" cy="56" r="4"/>
+    <circle cx="550" cy="52" r="4"/><circle cx="560" cy="55" r="4"/>
+    <circle cx="570" cy="58" r="4"/><circle cx="580" cy="52" r="4"/>
+  </g>
+
+  <!-- Best-fit line (linear) -->
+  <line x1="110" y1="200" x2="585" y2="50" stroke="#16a34a" stroke-width="2" stroke-dasharray="6,4" opacity="0.7"/>
+
+  <!-- Badges -->
+  <rect x="110" y="56" width="160" height="24" rx="4" fill="#1d4ed8"/>
+  <text x="120" y="73" class="ps-badge" fill="#fff">Pearson:  0.97</text>
+  <rect x="110" y="84" width="160" height="24" rx="4" fill="#dc2626"/>
+  <text x="120" y="101" class="ps-badge" fill="#fff">Spearman: 0.97</text>
+  <text x="280" y="73" class="ps-subtitle"> Both agree on linear data</text>
+
+
+  <!-- ══════════ BOTTOM PANEL: NON-LINEAR DATA ══════════ -->
+  <rect x="30" y="260" width="620" height="250" rx="12" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="340" y="286" text-anchor="middle" class="ps-title">Non-Linear (Monotonic) Data Correlation</text>
+
+  <!-- Axes -->
+  <line x1="100" y1="480" x2="600" y2="480" stroke="#cbd5e1" stroke-width="1"/>
+  <line x1="100" y1="480" x2="100" y2="300" stroke="#cbd5e1" stroke-width="1"/>
+
+  <!-- Exponential scatter points (y ≈ e^x, Pearson ≈ 0.82, Spearman ≈ 0.93) -->
+  <g fill="#3b82f6" opacity="0.6">
+    <!-- Low region: flat, tightly packed -->
+    <circle cx="115" cy="472" r="4"/><circle cx="125" cy="474" r="4"/>
+    <circle cx="132" cy="470" r="4"/><circle cx="140" cy="468" r="4"/>
+    <circle cx="150" cy="472" r="4"/><circle cx="158" cy="466" r="4"/>
+    <circle cx="168" cy="465" r="4"/><circle cx="175" cy="468" r="4"/>
+    <circle cx="185" cy="462" r="4"/><circle cx="192" cy="464" r="4"/>
+    <circle cx="200" cy="460" r="4"/><circle cx="210" cy="458" r="4"/>
+    <circle cx="218" cy="462" r="4"/><circle cx="228" cy="456" r="4"/>
+    <circle cx="235" cy="458" r="4"/><circle cx="245" cy="452" r="4"/>
+    <!-- Mid region: gentle rise -->
+    <circle cx="255" cy="450" r="4"/><circle cx="262" cy="448" r="4"/>
+    <circle cx="272" cy="445" r="4"/><circle cx="280" cy="442" r="4"/>
+    <circle cx="290" cy="440" r="4"/><circle cx="298" cy="436" r="4"/>
+    <circle cx="308" cy="438" r="4"/><circle cx="315" cy="432" r="4"/>
+    <circle cx="325" cy="428" r="4"/><circle cx="332" cy="430" r="4"/>
+    <circle cx="340" cy="424" r="4"/><circle cx="350" cy="418" r="4"/>
+    <circle cx="358" cy="420" r="4"/><circle cx="368" cy="412" r="4"/>
+    <!-- Upper region: steep rise with spread -->
+    <circle cx="378" cy="405" r="4"/><circle cx="385" cy="400" r="4"/>
+    <circle cx="395" cy="392" r="4"/><circle cx="402" cy="395" r="4"/>
+    <circle cx="410" cy="382" r="4"/><circle cx="420" cy="375" r="4"/>
+    <circle cx="428" cy="380" r="4"/><circle cx="435" cy="365" r="4"/>
+    <circle cx="442" cy="370" r="4"/><circle cx="450" cy="355" r="4"/>
+    <circle cx="458" cy="360" r="4"/><circle cx="465" cy="345" r="4"/>
+    <circle cx="472" cy="350" r="4"/><circle cx="480" cy="338" r="4"/>
+    <!-- Top region: steep with more scatter -->
+    <circle cx="490" cy="330" r="4"/><circle cx="498" cy="340" r="4"/>
+    <circle cx="505" cy="320" r="4"/><circle cx="515" cy="325" r="4"/>
+    <circle cx="522" cy="310" r="4"/><circle cx="530" cy="318" r="4"/>
+    <circle cx="540" cy="308" r="4"/><circle cx="548" cy="315" r="4"/>
+    <circle cx="558" cy="312" r="4"/><circle cx="568" cy="310" r="4"/>
+    <circle cx="578" cy="305" r="4"/><circle cx="585" cy="308" r="4"/>
+  </g>
+
+  <!-- Exponential curve fit -->
+  <path d="M110,474 Q200,468 300,440 Q400,400 480,340 Q540,310 590,305" fill="none" stroke="#2563eb" stroke-width="2" stroke-dasharray="6,4" opacity="0.6"/>
+
+  <!-- Linear fit line (poor fit for exponential data) -->
+  <line x1="110" y1="478" x2="590" y2="300" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.4"/>
+  <text x="555" y="295" class="ps-axis" font-style="italic">linear fit</text>
+
+  <!-- Badges -->
+  <rect x="110" y="306" width="160" height="24" rx="4" fill="#1d4ed8"/>
+  <text x="120" y="323" class="ps-badge" fill="#fff">Pearson:  0.82</text>
+  <rect x="110" y="334" width="160" height="24" rx="4" fill="#dc2626"/>
+  <text x="120" y="351" class="ps-badge" fill="#fff">Spearman: 0.93</text>
+  <text x="280" y="323" class="ps-subtitle"> Spearman captures monotonic trend</text>
+  <text x="280" y="351" class="ps-subtitle"> Pearson penalised by non-linearity</text>
+</svg>
+<figcaption><strong>Pearson vs Spearman:</strong> On linear data (top), both metrics agree. On non-linear but monotonic data (bottom), Spearman &rho; stays high because it measures rank-order consistency, while Pearson r drops because the relationship is not a straight line.</figcaption>
+</div>
 
 <h3 id="correlation-causation">1.11.2 Correlation ≠ Causation</h3>
 
