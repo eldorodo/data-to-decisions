@@ -1,0 +1,3405 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Hariram Subramanian Gopal" />
+  <title>Chapter 18: Interview Prep and Case Studies | Data to Decisions</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</head>
+<body>
+<div class="chapter-nav">
+  <a href="chapter-17.html">&larr; Chapter 17: Responsible AI and Ethics</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="conclusion.html">Conclusion: Your ML Journey From Here &rarr;</a>
+</div>
+<h1 id="chapter-18-interview-prep-and-case-studies">Chapter 18:
+
+Interview Prep and Case Studies</h1>
+
+<h2 id="chapter-scope-12">18.0 Chapter Scope</h2>
+
+<p>Data science and ML interviews test four things: <strong>ML
+
+concepts</strong>, <strong>coding and SQL</strong>, <strong>system
+
+design</strong>, and <strong>case studies</strong>. This chapter equips
+
+you with frameworks and worked examples for each type.</p>
+
+<p><strong>What you will learn:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Section</th>
+
+<th>Topic</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>18.1</td>
+
+<td>ML concept questions: definitions, trade-offs, formulas</td>
+
+</tr>
+
+<tr>
+
+<td>18.2</td>
+
+<td>Coding and SQL interview questions</td>
+
+</tr>
+
+<tr>
+
+<td>18.3</td>
+
+<td>ML system design: end-to-end framework</td>
+
+</tr>
+
+<tr>
+
+<td>18.4</td>
+
+<td>Statistics and A/B testing questions</td>
+
+</tr>
+
+<tr>
+
+<td>18.5</td>
+
+<td>Behavioral interview questions</td>
+
+</tr>
+
+<tr>
+
+<td>18.6</td>
+
+<td>ML case study framework (generic approach)</td>
+
+</tr>
+
+<tr>
+
+<td>18.7</td>
+
+<td>Case study: fraud detection pipeline</td>
+
+</tr>
+
+<tr>
+
+<td>18.8</td>
+
+<td>Case study: search ranking</td>
+
+</tr>
+
+<tr>
+
+<td>18.9</td>
+
+<td>Case study: demand forecasting</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>How to use this chapter:</strong> Read the frameworks in
+
+16.1–16.6, then practice by working through the case studies (16.7–16.9)
+
+out loud before checking the discussion.</p>
+
+<hr />
+
+<h2 id="ml-concept-questions">18.1 ML Concept Questions</h2>
+
+<h3 id="the-three-part-answer-formula">The Three-Part Answer
+
+Formula</h3>
+
+<p>Use this structure for almost every definition question:</p>
+
+<blockquote>
+
+<p><strong>Definition</strong> (what it is) → <strong>Trade-off</strong>
+
+(when it helps vs. hurts) → <strong>Example</strong> (concrete
+
+application)</p>
+
+</blockquote>
+
+<p>Interviewer: “What is L1 regularization?”</p>
+
+<p>Bad answer: “It adds the sum of absolute values of weights to the
+
+loss.”</p>
+
+<p>Good answer: “L1 regularization adds <span
+
+class="math inline">\(\lambda \sum |w_j|\)</span> to the loss. This
+
+penalizes large weights and drives some all the way to zero — creating
+
+sparse models, so it acts as implicit feature selection. It helps when
+
+you have many irrelevant features, but it can be unstable when features
+
+are correlated because it arbitrarily zeros one of them.”</p>
+
+<h3 id="high-frequency-ml-concepts">High-Frequency ML Concepts</h3>
+
+<p><strong>Bias–variance trade-off:</strong></p>
+
+<ul>
+<li><strong>Bias</strong> — error from a model that is too simple to capture the true pattern (underfitting). High bias → consistently wrong predictions, even on training data.</li>
+<li><strong>Variance</strong> — error from a model that is too sensitive to the training set (overfitting). High variance → predictions shift wildly when trained on different samples.</li>
+</ul>
+
+<p><span class="math display">\[
+
+\text{Error} = \text{Bias}^2 + \text{Variance} + \text{Irreducible
+
+Noise}
+
+\]</span></p>
+
+<p>You reduce bias by making the model more complex; you reduce variance by constraining it.
+The two pull in opposite directions — the “tradeoff.” The best model minimises their sum.</p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 25%" />
+
+<col style="width: 21%" />
+
+<col style="width: 35%" />
+
+<col style="width: 17%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Model</th>
+
+<th>Bias</th>
+
+<th>Variance</th>
+
+<th>Fix</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Too simple (underfit)</td>
+
+<td>High</td>
+
+<td>Low</td>
+
+<td>Add features, increase complexity</td>
+
+</tr>
+
+<tr>
+
+<td>Too complex (overfit)</td>
+
+<td>Low</td>
+
+<td>High</td>
+
+<td>Regularize, more data, simpler model</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Interview angle:</strong> Always ask what the data situation
+
+is. With small data, a simpler model with higher bias often generalizes
+
+better than a complex model with high variance.</p>
+
+</blockquote>
+
+<p><strong>Regularization:</strong></p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 26%" />
+
+<col style="width: 39%" />
+
+<col style="width: 34%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Type</th>
+
+<th>Penalty</th>
+
+<th>Effect</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>L1 (Lasso)</td>
+
+<td><span class="math inline">\(\lambda \sum |w_j|\)</span></td>
+
+<td>Sparsity — drives weights to zero, feature selection</td>
+
+</tr>
+
+<tr>
+
+<td>L2 (Ridge)</td>
+
+<td><span class="math inline">\(\lambda \sum w_j^2\)</span></td>
+
+<td>Shrinkage — keeps all weights small but nonzero</td>
+
+</tr>
+
+<tr>
+
+<td>Elastic Net</td>
+
+<td><span class="math inline">\(\alpha L1 + (1-\alpha) L2\)</span></td>
+
+<td>Combines both — useful when features are correlated</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Cross-validation:</strong></p>
+
+<div style="background:#f8fafc; border-radius:6px; padding:12px 16px; margin:12px 0;">
+<p style="font-size:0.85em; color:#64748b; margin:0 0 6px;"><strong>K-Fold CV:</strong></p>
+<table style="border-collapse:collapse; width:auto; font-size:0.88em;">
+<thead><tr><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">Fold 1</th><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">Fold 2</th><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">Fold 3</th><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">Fold 4</th><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">Fold 5</th><th style="padding:3px 10px; border-bottom:2px solid #6366f1;"></th></tr></thead>
+<tbody>
+<tr><td style="padding:3px 10px; background:#dbeafe; color:#1e40af; font-weight:600; text-align:center;">V</td><td style="padding:3px 10px; background:#dcfce7; text-align:center;">T</td><td style="padding:3px 10px; background:#dcfce7; text-align:center;">T</td><td style="padding:3px 10px; background:#dcfce7; text-align:center;">T</td><td style="padding:3px 10px; background:#dcfce7; text-align:center;">T</td><td style="padding:3px 10px; color:#64748b; font-size:0.9em;">validate on first block</td></tr>
+<tr><td style="padding:3px 10px; background:#dcfce7; text-align:center;">T</td><td style="padding:3px 10px; background:#dbeafe; color:#1e40af; font-weight:600; text-align:center;">V</td><td style="padding:3px 10px; background:#dcfce7; text-align:center;">T</td><td style="padding:3px 10px; background:#dcfce7; text-align:center;">T</td><td style="padding:3px 10px; background:#dcfce7; text-align:center;">T</td><td style="padding:3px 10px; color:#64748b; font-size:0.9em;">fold 2</td></tr>
+<tr><td style="padding:3px 10px; color:#64748b; text-align:center;" colspan="5">. . . &nbsp; K rounds → average metric</td><td></td></tr>
+</tbody></table>
+</div>
+
+<blockquote>
+
+<p><strong>Key:</strong> Never tune hyperparameters on the test set. Use
+
+K-fold on the training set to select model; evaluate once on held-out
+
+test set.</p>
+
+</blockquote>
+
+<p><strong>Gradient descent variants:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Variant</th>
+
+<th>Batch size</th>
+
+<th>Pros</th>
+
+<th>Cons</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Batch GD</td>
+
+<td>All data</td>
+
+<td>Stable convergence</td>
+
+<td>Slow per step</td>
+
+</tr>
+
+<tr>
+
+<td>SGD</td>
+
+<td>1 sample</td>
+
+<td>Fast updates</td>
+
+<td>Very noisy</td>
+
+</tr>
+
+<tr>
+
+<td>Mini-batch SGD</td>
+
+<td>32–512</td>
+
+<td>Balance of both</td>
+
+<td>Tuning required</td>
+
+</tr>
+
+<tr>
+
+<td>Adam</td>
+
+<td>Mini-batch</td>
+
+<td>Adaptive LR, fast convergence</td>
+
+<td>Memory overhead</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Activation functions:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Function</th>
+
+<th>Formula</th>
+
+<th>Use case</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>ReLU</td>
+
+<td><span class="math inline">\(\max(0, x)\)</span></td>
+
+<td>Hidden layers — default choice</td>
+
+</tr>
+
+<tr>
+
+<td>Sigmoid</td>
+
+<td><span class="math inline">\(1/(1+e^{-x})\)</span></td>
+
+<td>Binary output (not hidden layers)</td>
+
+</tr>
+
+<tr>
+
+<td>Softmax</td>
+
+<td><span class="math inline">\(e^{x_i}/\sum e^{x_j}\)</span></td>
+
+<td>Multi-class output</td>
+
+</tr>
+
+<tr>
+
+<td>Tanh</td>
+
+<td><span class="math inline">\((e^x -
+
+e^{-x})/(e^x+e^{-x})\)</span></td>
+
+<td>RNNs, zero-centered</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Common classification metrics:</strong></p>
+
+<table style="width:100%;">
+
+<colgroup>
+
+<col style="width: 29%" />
+
+<col style="width: 33%" />
+
+<col style="width: 37%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Metric</th>
+
+<th>Formula</th>
+
+<th>Use when</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Precision</td>
+
+<td><span class="math inline">\(TP/(TP+FP)\)</span></td>
+
+<td>Cost of false positive is high (spam filter)</td>
+
+</tr>
+
+<tr>
+
+<td>Recall</td>
+
+<td><span class="math inline">\(TP/(TP+FN)\)</span></td>
+
+<td>Cost of missing a positive is high (cancer screening)</td>
+
+</tr>
+
+<tr>
+
+<td>F1</td>
+
+<td><span class="math inline">\(2PR/(P+R)\)</span></td>
+
+<td>Imbalanced classes</td>
+
+</tr>
+
+<tr>
+
+<td>AUC-ROC</td>
+
+<td>Area under TPR vs FPR</td>
+
+<td>Ranking/threshold-agnostic evaluation</td>
+
+</tr>
+
+<tr>
+
+<td>PR-AUC</td>
+
+<td>Area under precision-recall curve</td>
+
+<td>Severe class imbalance</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> “Which metric should I optimize?” is always
+
+context-dependent. Ask about the cost asymmetry between false positives
+
+and false negatives.</p>
+
+</blockquote>
+
+<p><strong>CNN output size formula:</strong></p>
+
+<p><span class="math display">\[
+
+C = \frac{I - F + 2P}{S} + 1
+
+\]</span></p>
+
+<p><strong>Where:</strong> <span class="math inline">\(I\)</span> = input size, <span class="math inline">\(F\)</span> = filter (kernel) size, <span class="math inline">\(P\)</span> = padding, <span class="math inline">\(S\)</span> = stride.</p>
+
+<p>Example: input <span class="math inline">\(28 \times 28\)</span>,
+
+filter <span class="math inline">\(7 \times 7\)</span>, stride <span
+
+class="math inline">\(1\)</span>, padding <span
+
+class="math inline">\(0\)</span>:</p>
+
+<p><span class="math display">\[
+
+C = \frac{28 - 7 + 0}{1} + 1 = 22 \quad \Rightarrow \text{output: } 22
+
+\times 22
+
+\]</span></p>
+
+<p><strong>Confusion matrix:</strong></p>
+
+<table style="border-collapse:collapse; margin:12px auto; font-size:0.88em;">
+<thead><tr><td style="padding:3px 14px;"></td><td style="padding:3px 14px;"></td><td colspan="2" style="padding:3px 14px; text-align:center; font-weight:700; border-bottom:2px solid #6366f1;">Predicted</td></tr>
+<tr><td style="padding:3px 14px;"></td><td style="padding:3px 14px;"></td><td style="padding:3px 18px; text-align:center; font-weight:600; color:#1e40af;">Pos</td><td style="padding:3px 18px; text-align:center; font-weight:600; color:#1e40af;">Neg</td></tr></thead>
+<tbody>
+<tr><td rowspan="2" style="padding:3px 10px; font-weight:700; vertical-align:middle;">Actual</td><td style="padding:3px 10px; font-weight:600;">Pos</td><td style="padding:6px 18px; text-align:center; background:#dcfce7; color:#166534; font-weight:700; border:1px solid #e2e8f0;">TP</td><td style="padding:6px 18px; text-align:center; background:#fef2f2; color:#991b1b; font-weight:700; border:1px solid #e2e8f0;">FN</td></tr>
+<tr><td style="padding:3px 10px; font-weight:600;">Neg</td><td style="padding:6px 18px; text-align:center; background:#fef2f2; color:#991b1b; font-weight:700; border:1px solid #e2e8f0;">FP</td><td style="padding:6px 18px; text-align:center; background:#dcfce7; color:#166534; font-weight:700; border:1px solid #e2e8f0;">TN</td></tr>
+</tbody></table>
+
+<h3 id="common-ml-pitfalls-interviewers-love-to-ask-about">Common ML
+
+Pitfalls Interviewers Love to Ask About</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 23%" />
+
+<col style="width: 33%" />
+
+<col style="width: 43%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Pitfall</th>
+
+<th>What happens</th>
+
+<th>How to catch it</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Data leakage</td>
+
+<td>Test performance is suspiciously perfect</td>
+
+<td>Verify no future data in features; fit preprocessors on train
+
+only</td>
+
+</tr>
+
+<tr>
+
+<td>Target leakage</td>
+
+<td>Feature is unavailable at prediction time</td>
+
+<td>Timeline audit of every feature</td>
+
+</tr>
+
+<tr>
+
+<td>Class imbalance</td>
+
+<td>Accuracy looks great; recall is terrible</td>
+
+<td>Check confusion matrix; use PR-AUC</td>
+
+</tr>
+
+<tr>
+
+<td>Distribution shift</td>
+
+<td>Production accuracy degrades over time</td>
+
+<td>Monitor feature distributions</td>
+
+</tr>
+
+<tr>
+
+<td>Overfitting</td>
+
+<td>Train score &gt;&gt; val score</td>
+
+<td>Cross-validate; regularize</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<hr />
+
+<h2 id="coding-and-sql-interview-questions">18.2 Coding and SQL
+
+Interview Questions</h2>
+
+<h3 id="sql-the-core-topics">SQL: The Core Topics</h3>
+
+<p><strong>Pattern 1: NULL handling</strong></p>
+
+<p><code>NULL</code> means unknown — comparing with <code>= NULL</code>
+
+always returns NULL (falsy).</p>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb542-1"><a href="#cb542-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Wrong</span></span>
+<span id="cb542-2"><a href="#cb542-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="op">*</span> <span class="kw">FROM</span> Employees <span class="kw">WHERE</span> ManagedBy <span class="op">=</span> <span class="kw">NULL</span>;</span>
+<span id="cb542-3"><a href="#cb542-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb542-4"><a href="#cb542-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- Correct</span></span>
+<span id="cb542-5"><a href="#cb542-5" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="op">*</span> <span class="kw">FROM</span> Employees <span class="kw">WHERE</span> ManagedBy <span class="kw">IS</span> <span class="kw">NULL</span>;</span></code></pre></div>
+
+<p><strong>Pattern 2: Window functions</strong></p>
+
+<p>Interviewers love window functions because most candidates can write
+
+basic GROUP BY but struggle with window functions.</p>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb543-1"><a href="#cb543-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Running total of revenue per customer</span></span>
+<span id="cb543-2"><a href="#cb543-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb543-3"><a href="#cb543-3" aria-hidden="true" tabindex="-1"></a>    customer_id,</span>
+<span id="cb543-4"><a href="#cb543-4" aria-hidden="true" tabindex="-1"></a>    order_date,</span>
+<span id="cb543-5"><a href="#cb543-5" aria-hidden="true" tabindex="-1"></a>    revenue,</span>
+<span id="cb543-6"><a href="#cb543-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">SUM</span>(revenue) <span class="kw">OVER</span> (</span>
+<span id="cb543-7"><a href="#cb543-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">PARTITION</span> <span class="kw">BY</span> customer_id</span>
+<span id="cb543-8"><a href="#cb543-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">ORDER</span> <span class="kw">BY</span> order_date</span>
+<span id="cb543-9"><a href="#cb543-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">ROWS</span> <span class="kw">BETWEEN</span> <span class="kw">UNBOUNDED</span> <span class="kw">PRECEDING</span> <span class="kw">AND</span> <span class="kw">CURRENT</span> <span class="kw">ROW</span></span>
+<span id="cb543-10"><a href="#cb543-10" aria-hidden="true" tabindex="-1"></a>    ) <span class="kw">AS</span> running_total</span>
+<span id="cb543-11"><a href="#cb543-11" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> orders;</span>
+<span id="cb543-12"><a href="#cb543-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb543-13"><a href="#cb543-13" aria-hidden="true" tabindex="-1"></a><span class="co">-- Rank users by revenue within each region</span></span>
+<span id="cb543-14"><a href="#cb543-14" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb543-15"><a href="#cb543-15" aria-hidden="true" tabindex="-1"></a>    user_id,</span>
+<span id="cb543-16"><a href="#cb543-16" aria-hidden="true" tabindex="-1"></a>    region,</span>
+<span id="cb543-17"><a href="#cb543-17" aria-hidden="true" tabindex="-1"></a>    revenue,</span>
+<span id="cb543-18"><a href="#cb543-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">RANK</span>()   <span class="kw">OVER</span> (<span class="kw">PARTITION</span> <span class="kw">BY</span> region <span class="kw">ORDER</span> <span class="kw">BY</span> revenue <span class="kw">DESC</span>) <span class="kw">AS</span> rnk,</span>
+<span id="cb543-19"><a href="#cb543-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ROW_NUMBER</span>() <span class="kw">OVER</span> (<span class="kw">PARTITION</span> <span class="kw">BY</span> region <span class="kw">ORDER</span> <span class="kw">BY</span> revenue <span class="kw">DESC</span>) <span class="kw">AS</span> rn</span>
+<span id="cb543-20"><a href="#cb543-20" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> users;</span></code></pre></div>
+
+<p><strong>Pattern 3: Self-join (finding hierarchies)</strong></p>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb544-1"><a href="#cb544-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Employees and their managers&#39; names</span></span>
+<span id="cb544-2"><a href="#cb544-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb544-3"><a href="#cb544-3" aria-hidden="true" tabindex="-1"></a>    e.name <span class="kw">AS</span> employee,</span>
+<span id="cb544-4"><a href="#cb544-4" aria-hidden="true" tabindex="-1"></a>    m.name <span class="kw">AS</span> manager</span>
+<span id="cb544-5"><a href="#cb544-5" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> Employees e</span>
+<span id="cb544-6"><a href="#cb544-6" aria-hidden="true" tabindex="-1"></a><span class="kw">LEFT</span> <span class="kw">JOIN</span> Employees m <span class="kw">ON</span> e.manager_id <span class="op">=</span> m.<span class="kw">id</span>;</span></code></pre></div>
+
+<p><strong>Pattern 4: Top-N per group</strong></p>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb545-1"><a href="#cb545-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Top 3 products by revenue per category</span></span>
+<span id="cb545-2"><a href="#cb545-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="op">*</span> <span class="kw">FROM</span> (</span>
+<span id="cb545-3"><a href="#cb545-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SELECT</span></span>
+<span id="cb545-4"><a href="#cb545-4" aria-hidden="true" tabindex="-1"></a>        product_id,</span>
+<span id="cb545-5"><a href="#cb545-5" aria-hidden="true" tabindex="-1"></a>        <span class="kw">category</span>,</span>
+<span id="cb545-6"><a href="#cb545-6" aria-hidden="true" tabindex="-1"></a>        revenue,</span>
+<span id="cb545-7"><a href="#cb545-7" aria-hidden="true" tabindex="-1"></a>        <span class="fu">ROW_NUMBER</span>() <span class="kw">OVER</span> (<span class="kw">PARTITION</span> <span class="kw">BY</span> <span class="kw">category</span> <span class="kw">ORDER</span> <span class="kw">BY</span> revenue <span class="kw">DESC</span>) <span class="kw">AS</span> rn</span>
+<span id="cb545-8"><a href="#cb545-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">FROM</span> products</span>
+<span id="cb545-9"><a href="#cb545-9" aria-hidden="true" tabindex="-1"></a>) t</span>
+<span id="cb545-10"><a href="#cb545-10" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> rn <span class="op">&lt;=</span> <span class="dv">3</span>;</span></code></pre></div>
+
+<p><strong>Pattern 5: Cohort retention</strong></p>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb546-1"><a href="#cb546-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Weekly retention: % of users who were active in week N who return in week N+1</span></span>
+<span id="cb546-2"><a href="#cb546-2" aria-hidden="true" tabindex="-1"></a><span class="kw">WITH</span> cohort <span class="kw">AS</span> (</span>
+<span id="cb546-3"><a href="#cb546-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SELECT</span> user_id, <span class="fu">MIN</span>(DATE_TRUNC(<span class="st">&#39;week&#39;</span>, event_date)) <span class="kw">AS</span> cohort_week</span>
+<span id="cb546-4"><a href="#cb546-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">FROM</span> <span class="kw">events</span> <span class="kw">GROUP</span> <span class="kw">BY</span> user_id</span>
+<span id="cb546-5"><a href="#cb546-5" aria-hidden="true" tabindex="-1"></a>),</span>
+<span id="cb546-6"><a href="#cb546-6" aria-hidden="true" tabindex="-1"></a>weekly_activity <span class="kw">AS</span> (</span>
+<span id="cb546-7"><a href="#cb546-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SELECT</span> <span class="kw">DISTINCT</span></span>
+<span id="cb546-8"><a href="#cb546-8" aria-hidden="true" tabindex="-1"></a>        user_id,</span>
+<span id="cb546-9"><a href="#cb546-9" aria-hidden="true" tabindex="-1"></a>        DATE_TRUNC(<span class="st">&#39;week&#39;</span>, event_date) <span class="kw">AS</span> activity_week</span>
+<span id="cb546-10"><a href="#cb546-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">FROM</span> <span class="kw">events</span></span>
+<span id="cb546-11"><a href="#cb546-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb546-12"><a href="#cb546-12" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb546-13"><a href="#cb546-13" aria-hidden="true" tabindex="-1"></a>    c.cohort_week,</span>
+<span id="cb546-14"><a href="#cb546-14" aria-hidden="true" tabindex="-1"></a>    DATEDIFF(<span class="st">&#39;week&#39;</span>, c.cohort_week, w.activity_week) <span class="kw">AS</span> weeks_since_join,</span>
+<span id="cb546-15"><a href="#cb546-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">COUNT</span>(<span class="kw">DISTINCT</span> w.user_id) <span class="kw">AS</span> retained_users</span>
+<span id="cb546-16"><a href="#cb546-16" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> cohort c</span>
+<span id="cb546-17"><a href="#cb546-17" aria-hidden="true" tabindex="-1"></a><span class="kw">JOIN</span> weekly_activity w <span class="kw">USING</span> (user_id)</span>
+<span id="cb546-18"><a href="#cb546-18" aria-hidden="true" tabindex="-1"></a><span class="kw">GROUP</span> <span class="kw">BY</span> <span class="dv">1</span>, <span class="dv">2</span></span>
+<span id="cb546-19"><a href="#cb546-19" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> <span class="dv">1</span>, <span class="dv">2</span>;</span></code></pre></div>
+
+<h3 id="python-common-interview-questions">Python: Common Interview
+
+Questions</h3>
+
+<p><strong>Palindrome number (integer reversal, no string
+
+conversion):</strong></p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb547-1"><a href="#cb547-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> is_palindrome(n: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="bu">bool</span>:</span>
+<span id="cb547-2"><a href="#cb547-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> n <span class="op">&lt;</span> <span class="dv">0</span>:</span>
+<span id="cb547-3"><a href="#cb547-3" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">False</span></span>
+<span id="cb547-4"><a href="#cb547-4" aria-hidden="true" tabindex="-1"></a>    original <span class="op">=</span> n</span>
+<span id="cb547-5"><a href="#cb547-5" aria-hidden="true" tabindex="-1"></a>    rev <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb547-6"><a href="#cb547-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> n <span class="op">&gt;</span> <span class="dv">0</span>:</span>
+<span id="cb547-7"><a href="#cb547-7" aria-hidden="true" tabindex="-1"></a>        digit <span class="op">=</span> n <span class="op">%</span> <span class="dv">10</span></span>
+<span id="cb547-8"><a href="#cb547-8" aria-hidden="true" tabindex="-1"></a>        rev <span class="op">=</span> rev <span class="op">*</span> <span class="dv">10</span> <span class="op">+</span> digit</span>
+<span id="cb547-9"><a href="#cb547-9" aria-hidden="true" tabindex="-1"></a>        n <span class="op">//=</span> <span class="dv">10</span></span>
+<span id="cb547-10"><a href="#cb547-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> original <span class="op">==</span> rev</span>
+<span id="cb547-11"><a href="#cb547-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb547-12"><a href="#cb547-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Test</span></span>
+<span id="cb547-13"><a href="#cb547-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(is_palindrome(<span class="dv">121</span>))   <span class="co"># True</span></span>
+<span id="cb547-14"><a href="#cb547-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(is_palindrome(<span class="op">-</span><span class="dv">121</span>))  <span class="co"># False</span></span>
+<span id="cb547-15"><a href="#cb547-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(is_palindrome(<span class="dv">10</span>))    <span class="co"># False</span></span></code></pre></div>
+
+<p><strong>Pandas: common interview patterns</strong></p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb548-1"><a href="#cb548-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb548-2"><a href="#cb548-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb548-3"><a href="#cb548-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Group and aggregate</span></span>
+<span id="cb548-4"><a href="#cb548-4" aria-hidden="true" tabindex="-1"></a>df.groupby(<span class="st">&#39;category&#39;</span>).agg({<span class="st">&#39;revenue&#39;</span>: [<span class="st">&#39;sum&#39;</span>, <span class="st">&#39;mean&#39;</span>], <span class="st">&#39;orders&#39;</span>: <span class="st">&#39;count&#39;</span>})</span>
+<span id="cb548-5"><a href="#cb548-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb548-6"><a href="#cb548-6" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Percentage of total per group</span></span>
+<span id="cb548-7"><a href="#cb548-7" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&#39;pct&#39;</span>] <span class="op">=</span> df.groupby(<span class="st">&#39;category&#39;</span>)[<span class="st">&#39;revenue&#39;</span>].transform(</span>
+<span id="cb548-8"><a href="#cb548-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">lambda</span> x: x <span class="op">/</span> x.<span class="bu">sum</span>()</span>
+<span id="cb548-9"><a href="#cb548-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb548-10"><a href="#cb548-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb548-11"><a href="#cb548-11" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Rolling mean (time series)</span></span>
+<span id="cb548-12"><a href="#cb548-12" aria-hidden="true" tabindex="-1"></a>df.sort_values(<span class="st">&#39;date&#39;</span>, inplace<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb548-13"><a href="#cb548-13" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&#39;rolling_7d&#39;</span>] <span class="op">=</span> df.groupby(<span class="st">&#39;user_id&#39;</span>)[<span class="st">&#39;revenue&#39;</span>].transform(</span>
+<span id="cb548-14"><a href="#cb548-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">lambda</span> x: x.rolling(<span class="dv">7</span>, min_periods<span class="op">=</span><span class="dv">1</span>).mean()</span>
+<span id="cb548-15"><a href="#cb548-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb548-16"><a href="#cb548-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb548-17"><a href="#cb548-17" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Merge with type awareness</span></span>
+<span id="cb548-18"><a href="#cb548-18" aria-hidden="true" tabindex="-1"></a>merged <span class="op">=</span> df_left.merge(df_right, on<span class="op">=</span><span class="st">&#39;id&#39;</span>, how<span class="op">=</span><span class="st">&#39;left&#39;</span>)</span>
+<span id="cb548-19"><a href="#cb548-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb548-20"><a href="#cb548-20" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Fill missing values</span></span>
+<span id="cb548-21"><a href="#cb548-21" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&#39;feature&#39;</span>] <span class="op">=</span> df[<span class="st">&#39;feature&#39;</span>].fillna(df[<span class="st">&#39;feature&#39;</span>].median())</span></code></pre></div>
+
+<p><strong>Normal distribution quick reference:</strong></p>
+
+<p><span class="math display">\[
+
+z = \frac{x - \mu}{\sigma}
+
+\]</span></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>z-score</th>
+
+<th>Area from mean to z</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>±1σ</td>
+
+<td>68% of data (34% each side)</td>
+
+</tr>
+
+<tr>
+
+<td>±2σ</td>
+
+<td>95% of data (47.5% each side)</td>
+
+</tr>
+
+<tr>
+
+<td>±3σ</td>
+
+<td>99.7% of data</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p>Example: <span class="math inline">\(X \sim \mathcal{N}(70,  10^2)\)</span>, find <span class="math inline">\(P(70 &lt; X &lt;  90)\)</span>:</p>
+
+<ul>
+<li><span class="math inline">\(z = (90-70)/10 = 2\)</span></li>
+<li>Area from mean to <span class="math inline">\(z=2\)</span> is  47.5%</li>
+</ul>
+
+<hr />
+
+<h2 id="ml-system-design">18.3 ML System Design</h2>
+
+<h3 id="the-5-step-ml-system-design-framework">The 5-Step ML System
+
+Design Framework</h3>
+
+<p>Use this structure for any ML system design question:</p>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/18_interview_prep_and_case_studies/system_design_framework.svg" alt="Five-step ML system design framework: problem → data → features+model → evaluation → serving+monitoring">
+
+<figcaption>
+
+Five-step ML system design framework: problem → data → features+model → evaluation → serving+monitoring
+
+</figcaption>
+
+</figure>
+
+<h3 id="step-1-problem-framing">Step 1: Problem Framing</h3>
+
+<p>Before choosing a model, define:</p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 38%" />
+
+<col style="width: 61%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Question</th>
+
+<th>Why it matters</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>What is the ML task?</td>
+
+<td>Regression vs. classification vs. ranking vs. generation</td>
+
+</tr>
+
+<tr>
+
+<td>What is the prediction target?</td>
+
+<td>Must be available at training time but absent at serving time</td>
+
+</tr>
+
+<tr>
+
+<td>What are the latency constraints?</td>
+
+<td>Batch (hours acceptable) vs. real-time (&lt; 100ms)</td>
+
+</tr>
+
+<tr>
+
+<td>What is the success metric?</td>
+
+<td>Business KPI, not just model accuracy</td>
+
+</tr>
+
+<tr>
+
+<td>What is the baseline?</td>
+
+<td>Always define the naive baseline first</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="step-2-data">Step 2: Data</h3>
+
+<div style="border-left:4px solid #6366f1; background:#f8fafc; padding:12px 16px; border-radius:6px; margin:12px 0; font-family:system-ui, sans-serif; font-size:0.9em; line-height:1.8;">
+<strong style="color:#334155;">Data availability audit:</strong>
+<ul style="margin:4px 0 0; padding-left:20px; color:#475569;">
+<li><strong>Volume:</strong> how many labeled examples?</li>
+<li><strong>Quality:</strong> noise, missing values, label accuracy</li>
+<li><strong>Recency:</strong> how fresh? (drift risk)</li>
+<li><strong>Balance:</strong> class imbalance?</li>
+<li><strong>Coverage:</strong> which subgroups are underrepresented?</li>
+</ul>
+</div>
+
+<p><strong>Data pipeline for training vs serving:</strong></p>
+
+<div style="border-left:4px solid #6366f1; background:#f8fafc; padding:12px 16px; border-radius:6px; margin:12px 0; font-family:system-ui, sans-serif; font-size:0.9em; line-height:1.8;">
+<p style="margin:0 0 4px;"><strong style="color:#334155;">Offline training pipeline:</strong></p>
+<p style="margin:0 0 8px; color:#475569;">Raw events → ETL → feature computation → training dataset → model training</p>
+<p style="margin:0 0 4px;"><strong style="color:#334155;">Online serving pipeline:</strong></p>
+<p style="margin:0; color:#475569;">Request → real-time feature lookup (feature store) → model scoring → response</p>
+</div>
+
+<blockquote>
+
+<p><strong>Key:</strong> Training features and serving features must be
+
+computed identically. Divergence here is a leading cause of production
+
+model underperformance.</p>
+
+</blockquote>
+
+<h3 id="step-3-features-and-modeling">Step 3: Features and Modeling</h3>
+
+<p><strong>Feature engineering principles:</strong></p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 46%" />
+
+<col style="width: 53%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Feature type</th>
+
+<th>How to handle</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>High-cardinality categoricals</td>
+
+<td>Embedding layers or frequency encoding</td>
+
+</tr>
+
+<tr>
+
+<td>Numerical</td>
+
+<td>Standardize for neural nets; leave raw for trees</td>
+
+</tr>
+
+<tr>
+
+<td>Time features</td>
+
+<td>Cyclical encoding (sin/cos) for hour/day_of_week</td>
+
+</tr>
+
+<tr>
+
+<td>Text</td>
+
+<td>TF-IDF for baselines, embeddings for production</td>
+
+</tr>
+
+<tr>
+
+<td>Missing values</td>
+
+<td>Indicator flag + imputation</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Model selection guidance:</strong></p>
+
+<table style="border-collapse:collapse; width:auto; margin:12px 0; font-size:0.88em;">
+<thead><tr><th style="padding:4px 14px; border-bottom:2px solid #6366f1; text-align:left;">Data situation</th><th style="padding:4px 14px; border-bottom:2px solid #6366f1; text-align:left;">Best starting model</th></tr></thead>
+<tbody>
+<tr><td style="padding:3px 14px; border-bottom:1px solid #e2e8f0;">&lt; 10K labeled examples</td><td style="padding:3px 14px; border-bottom:1px solid #e2e8f0;">Logistic regression / linear models</td></tr>
+<tr><td style="padding:3px 14px; border-bottom:1px solid #e2e8f0;">Tabular, any size</td><td style="padding:3px 14px; border-bottom:1px solid #e2e8f0;">XGBoost / LightGBM</td></tr>
+<tr><td style="padding:3px 14px; border-bottom:1px solid #e2e8f0;">Images / audio</td><td style="padding:3px 14px; border-bottom:1px solid #e2e8f0;">CNN / pretrained ResNet</td></tr>
+<tr><td style="padding:3px 14px; border-bottom:1px solid #e2e8f0;">Text</td><td style="padding:3px 14px; border-bottom:1px solid #e2e8f0;">BERT / pretrained transformer</td></tr>
+<tr><td style="padding:3px 14px; border-bottom:1px solid #e2e8f0;">Sequence / time series</td><td style="padding:3px 14px; border-bottom:1px solid #e2e8f0;">LightGBM + lag features; LSTM/TFT for DL</td></tr>
+<tr><td style="padding:3px 14px;">Ranking</td><td style="padding:3px 14px;">LightGBM with LambdaRank</td></tr>
+</tbody></table>
+
+<h3 id="step-4-evaluation">Step 4: Evaluation</h3>
+
+<p>Always define two layers of evaluation:</p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 21%" />
+
+<col style="width: 50%" />
+
+<col style="width: 28%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Layer</th>
+
+<th>What to measure</th>
+
+<th>Example</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Offline (development)</td>
+
+<td>ML metric on held-out data</td>
+
+<td>AUC-PR @ threshold, NDCG@10</td>
+
+</tr>
+
+<tr>
+
+<td>Online (production)</td>
+
+<td>Business metric via A/B test</td>
+
+<td>CTR, conversion rate, revenue per user</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Don’t optimize the offline metric in isolation.
+
+Always connect it to the business goal.</p>
+
+</blockquote>
+
+<h3 id="step-5-serving-and-monitoring">Step 5: Serving and
+
+Monitoring</h3>
+
+<p><strong>Online vs. batch serving:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Mode</th>
+
+<th>Latency</th>
+
+<th>Use case</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Online (real-time)</td>
+
+<td>&lt; 100ms</td>
+
+<td>Fraud detection, recommendation</td>
+
+</tr>
+
+<tr>
+
+<td>Batch</td>
+
+<td>Hours</td>
+
+<td>Demand forecasting, report generation</td>
+
+</tr>
+
+<tr>
+
+<td>Near-real-time</td>
+
+<td>1–30s</td>
+
+<td>Content ranking, search</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>ML platform architecture:</strong></p>
+
+<svg viewBox="0 0 520 260" style="display:block; margin:20px auto; max-width:500px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ML Platform architecture: Data Layer (Feature Store), Model Layer (Training Pipeline), Serving Layer (Online/Batch Inference), with Experiment Tracking, Model Registry, Drift Monitoring, and Alerting underneath">
+<defs><marker id="mp-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+<rect x="10" y="10" width="500" height="240" rx="12" fill="none" stroke="#6366f1" stroke-width="2"/>
+<text x="260" y="32" text-anchor="middle" font-family="system-ui" font-size="14" font-weight="700" fill="#334155">ML Platform</text>
+<text x="95" y="55" text-anchor="middle" font-family="system-ui" font-size="10" fill="#64748b" font-weight="600">Data Layer</text>
+<text x="260" y="55" text-anchor="middle" font-family="system-ui" font-size="10" fill="#64748b" font-weight="600">Model Layer</text>
+<text x="425" y="55" text-anchor="middle" font-family="system-ui" font-size="10" fill="#64748b" font-weight="600">Serving Layer</text>
+<rect x="35" y="65" width="120" height="50" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="95" y="86" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#1e40af">Feature</text>
+<text x="95" y="100" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#1e40af">Store</text>
+<line x1="155" y1="90" x2="190" y2="90" stroke="#6366f1" stroke-width="1.5" marker-end="url(#mp-a)"/>
+<rect x="200" y="65" width="120" height="50" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="260" y="86" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#5b21b6">Training</text>
+<text x="260" y="100" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#5b21b6">Pipeline</text>
+<line x1="320" y1="90" x2="355" y2="90" stroke="#6366f1" stroke-width="1.5" marker-end="url(#mp-a)"/>
+<rect x="365" y="65" width="120" height="50" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="425" y="86" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#166534">Online / Batch</text>
+<text x="425" y="100" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#166534">Inference</text>
+<line x1="95" y1="115" x2="95" y2="140" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,3"/>
+<line x1="260" y1="115" x2="260" y2="140" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,3"/>
+<line x1="425" y1="115" x2="425" y2="140" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,3"/>
+<rect x="35" y="145" width="450" height="40" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="260" y="163" text-anchor="middle" font-family="system-ui" font-size="10" fill="#92400e">Experiment Tracking &nbsp; + &nbsp; Model Registry</text>
+<text x="260" y="178" text-anchor="middle" font-family="system-ui" font-size="10" fill="#92400e">Drift Monitoring &nbsp; + &nbsp; Alerting</text>
+</svg>
+
+<p><strong>Production monitoring checklist:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>What to monitor</th>
+
+<th>Why</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Input feature distributions</td>
+
+<td>Detect data drift early</td>
+
+</tr>
+
+<tr>
+
+<td>Prediction score distributions</td>
+
+<td>Detect model output drift</td>
+
+</tr>
+
+<tr>
+
+<td>Business metrics (CTR, conversion)</td>
+
+<td>Ground truth of model health</td>
+
+</tr>
+
+<tr>
+
+<td>Latency p50/p99</td>
+
+<td>SLA compliance</td>
+
+</tr>
+
+<tr>
+
+<td>Error rate and fallback rate</td>
+
+<td>System health</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Stateless serving principle:</strong></p>
+
+<div style="border-left:4px solid #6366f1; background:#f8fafc; padding:12px 16px; border-radius:6px; margin:12px 0; font-family:system-ui, sans-serif; font-size:0.9em; line-height:1.8;">
+<p style="margin:0 0 4px;"><strong style="color:#334155;">Stateless app tier:</strong></p>
+<p style="margin:0 0 6px; color:#475569;">User → Load Balancer → Any healthy server → Feature Store + Model → Response</p>
+<p style="margin:0; color:#64748b; font-size:0.9em;">(no session state on server)<br>Benefits: horizontal scaling, easy failover, no sticky session problems</p>
+</div>
+
+<h3 id="worked-design-example-recommendation-system">Worked Design
+
+Example: Recommendation System</h3>
+
+<p><strong>Prompt:</strong> “Design a recommendation system for a music
+
+streaming platform with 50M users and 30M tracks.”</p>
+
+<div style="border:1px solid #e2e8f0; border-radius:8px; padding:16px 20px; margin:16px 0; background:#f8fafc; font-family:system-ui, sans-serif; font-size:0.88em; line-height:1.7;">
+<p style="font-weight:700; margin:0 0 8px; color:#334155;">Step 1: Problem framing</p>
+<p style="margin:2px 0; color:#475569;"><strong>Task:</strong> rank items to maximize engagement (listens, saves, shares)</p>
+<p style="margin:2px 0; color:#475569;"><strong>Metric:</strong> listen-through rate, save rate (not just CTR)</p>
+<p style="margin:2px 0 10px; color:#475569;"><strong>Constraint:</strong> 50ms response time for homepage refresh</p>
+<p style="font-weight:700; margin:0 0 4px; color:#334155;">Step 2: Data</p>
+<ul style="margin:2px 0 10px; padding-left:20px; color:#64748b;">
+<li>Implicit feedback: plays (full/partial), skips, saves, shares</li>
+<li>Audio features: tempo, key, energy, danceability (from audio models)</li>
+<li>User history: last 100 plays, favorite genres, time-of-day patterns</li>
+</ul>
+<p style="font-weight:700; margin:0 0 4px; color:#334155;">Step 3: Features and model</p>
+<ul style="margin:2px 0 10px; padding-left:20px; color:#64748b;">
+<li><strong>Retrieval:</strong> two-tower model, ANN index (FAISS) → 1,000 candidates</li>
+<li><strong>Ranking:</strong> LightGBM with user × item features → top 50</li>
+<li><strong>Reranking:</strong> diversity (MMR) + freshness boost → 20 shown</li>
+</ul>
+<p style="font-weight:700; margin:0 0 4px; color:#334155;">Step 4: Evaluation</p>
+<ul style="margin:2px 0 10px; padding-left:20px; color:#64748b;">
+<li><strong>Offline:</strong> NDCG@20, catalog coverage, long-tail exposure</li>
+<li><strong>Online:</strong> listen-through rate, skip rate, A/B test with holdout</li>
+</ul>
+<p style="font-weight:700; margin:0 0 4px; color:#334155;">Step 5: Serving</p>
+<ul style="margin:2px 0 0; padding-left:20px; color:#64748b;">
+<li><strong>Feature store:</strong> precomputed user embeddings, item embeddings (daily refresh)</li>
+<li><strong>Real-time context:</strong> current session plays (Redis, sub-5ms lookup)</li>
+<li><strong>Monitoring:</strong> score distribution drift, genre concentration, cold-start rate</li>
+</ul>
+</div>
+
+<hr />
+
+<h2 id="statistics-and-ab-testing-questions">18.4 Statistics and A/B
+
+Testing Questions</h2>
+
+<h3 id="hypothesis-testing-in-interviews">Hypothesis Testing in
+
+Interviews</h3>
+
+<p>The standard framework:</p>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.92rem; line-height:1.9;">
+<strong style="color:#4f46e5;">1.</strong> State H₀ (null hypothesis) and H₁ (alternative hypothesis)<br>
+<strong style="color:#4f46e5;">2.</strong> Choose significance level α (usually 0.05)<br>
+<strong style="color:#4f46e5;">3.</strong> Choose test statistic (z-test, t-test, chi-square, etc.)<br>
+<strong style="color:#4f46e5;">4.</strong> Compute p-value<br>
+<strong style="color:#4f46e5;">5.</strong> Compare p-value to α; reject H₀ if <em>p</em> &lt; α<br>
+<strong style="color:#4f46e5;">6.</strong> Interpret in business terms
+</div>
+
+
+<p><strong>Common mistake:</strong> Confusing p-value with probability
+
+that H₀ is true. The p-value is P(data as extreme as observed | H₀ is
+
+true).</p>
+
+<h3 id="ab-testing-framework">A/B Testing Framework</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 35%" />
+
+<col style="width: 64%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Step</th>
+
+<th>What to do</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>1. Define the metric</td>
+
+<td>What is the primary metric? What are guardrail metrics?</td>
+
+</tr>
+
+<tr>
+
+<td>2. Power analysis</td>
+
+<td>How many users needed to detect effect of size X?</td>
+
+</tr>
+
+<tr>
+
+<td>3. Randomize</td>
+
+<td>Split at user level, not session level</td>
+
+</tr>
+
+<tr>
+
+<td>4. Run experiment</td>
+
+<td>Don’t peek early; run for full duration</td>
+
+</tr>
+
+<tr>
+
+<td>5. Analyze</td>
+
+<td>t-test for means, chi-square for proportions</td>
+
+</tr>
+
+<tr>
+
+<td>6. Decision</td>
+
+<td>Ship, rollback, or run longer</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Sample size formula:</strong></p>
+
+<p><span class="math display">\[
+
+n = \frac{2(z_{\alpha/2} + z_\beta)^2 \sigma^2}{\delta^2}
+
+\]</span></p>
+
+<p><strong>Where:</strong> <span class="math inline">\(z_{\alpha/2}\)</span> = critical value for significance level, <span class="math inline">\(z_\beta\)</span> = critical value for desired power, <span class="math inline">\(\sigma^2\)</span> = estimated metric variance, <span class="math inline">\(\delta\)</span> = minimum detectable effect.</p>
+
+<ul>
+
+<li><span class="math inline">\(z_{\alpha/2} = 1.96\)</span> for <span
+
+class="math inline">\(\alpha = 0.05\)</span></li>
+
+<li><span class="math inline">\(z_\beta = 0.84\)</span> for 80%
+
+power</li>
+
+<li><span class="math inline">\(\sigma^2\)</span>: variance of
+
+metric</li>
+
+<li><span class="math inline">\(\delta\)</span>: minimum detectable
+
+effect</li>
+
+</ul>
+
+<p><strong>Example interview question:</strong> “Your A/B test ran for 2
+
+weeks and CTR improved 3% with p=0.03. Should you ship?”</p>
+
+<p>Good answer: “Not necessarily — I’d check: 1. Did we run long enough
+
+to capture weekly seasonality? (2 weeks: yes) 2. Is the primary metric
+
+the right one? What happened to revenue, retention, and guardrail
+
+metrics? 3. Is this practically significant, not just statistically?
+
+What’s the business impact of 3% CTR improvement? 4. Are there segment
+
+effects — did it help one user group and hurt another?”</p>
+
+<h3 id="common-statistical-pitfalls">Common Statistical Pitfalls</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 48%" />
+
+<col style="width: 18%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Pitfall</th>
+
+<th>What happens</th>
+
+<th>Fix</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Multiple testing</td>
+
+<td>P(false positive) compounds with each test</td>
+
+<td>Bonferroni correction or FDR control</td>
+
+</tr>
+
+<tr>
+
+<td>Peeking early</td>
+
+<td>Inflated false positive rate</td>
+
+<td>Pre-register test duration; use sequential testing</td>
+
+</tr>
+
+<tr>
+
+<td>Non-independent units</td>
+
+<td>Users who interact affect each other (social, sharing)</td>
+
+<td>Network experiment design</td>
+
+</tr>
+
+<tr>
+
+<td>Novelty effect</td>
+
+<td>Users engage more with anything new</td>
+
+<td>Run test long enough for novelty to fade</td>
+
+</tr>
+
+<tr>
+
+<td>SRM (sample ratio mismatch)</td>
+
+<td>Treatment and control sizes differ from expected</td>
+
+<td>Investigate before interpreting results</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="distributions-to-know">Distributions to Know</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 31%" />
+
+<col style="width: 26%" />
+
+<col style="width: 41%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Distribution</th>
+
+<th>Parameters</th>
+
+<th>When it appears</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Normal</td>
+
+<td><span class="math inline">\(\mu\)</span>, <span
+
+class="math inline">\(\sigma\)</span></td>
+
+<td>CLT, errors, natural measurements</td>
+
+</tr>
+
+<tr>
+
+<td>Bernoulli</td>
+
+<td><span class="math inline">\(p\)</span></td>
+
+<td>Single binary event</td>
+
+</tr>
+
+<tr>
+
+<td>Binomial</td>
+
+<td><span class="math inline">\(n\)</span>, <span
+
+class="math inline">\(p\)</span></td>
+
+<td>Count of successes in <span class="math inline">\(n\)</span>
+
+trials</td>
+
+</tr>
+
+<tr>
+
+<td>Poisson</td>
+
+<td><span class="math inline">\(\lambda\)</span></td>
+
+<td>Count of events in a time window</td>
+
+</tr>
+
+<tr>
+
+<td>Exponential</td>
+
+<td><span class="math inline">\(\lambda\)</span></td>
+
+<td>Time between events</td>
+
+</tr>
+
+<tr>
+
+<td>Beta</td>
+
+<td><span class="math inline">\(\alpha\)</span>, <span
+
+class="math inline">\(\beta\)</span></td>
+
+<td>Prior for conversion rate; Thompson Sampling</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Central Limit Theorem (CLT):</strong> The sum of <span
+
+class="math inline">\(n\)</span> independent, identically distributed
+
+random variables approaches a normal distribution as <span
+
+class="math inline">\(n \to \infty\)</span>, regardless of the original
+
+distribution. This is why t-tests work on non-normal data when <span
+
+class="math inline">\(n\)</span> is large.</p>
+
+<hr />
+
+<h2 id="behavioral-interview-questions">18.5 Behavioral Interview
+
+Questions</h2>
+
+<h3 id="the-star-framework">The STAR Framework</h3>
+
+<p>Every behavioral question should be answered with:</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">S — Situation</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Context. What was the setup?</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">T — Task:</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">What was your responsibility?</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">A — Action:</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">What did YOU do? (not &quot;we&quot;)</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">R — Result:</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Quantifiable outcome.</td>
+</tr>
+</table>
+
+
+<h3 id="high-frequency-behavioral-themes">High-Frequency Behavioral
+
+Themes</h3>
+
+<p><strong>“Tell me about a time you disagreed with a
+
+stakeholder.”</strong></p>
+
+<p>Key elements: you listened first, understood their perspective,
+
+presented data, found a compromise or escalated appropriately. Show
+
+intellectual humility and ability to navigate ambiguity.</p>
+
+<p><em>Structure:</em> “The PM wanted to launch a model with 70% recall
+
+on fraud. I was concerned that our false positive rate was too high — 1
+
+in 4 blocked transactions would be legitimate. I presented the cost
+
+analysis: at our transaction volume, that meant $X in customer friction
+
+costs per month. We aligned on a recall of 80% with a stricter FPR
+
+threshold, and I automated a review queue for borderline cases.”</p>
+
+<p><strong>“Tell me about a time you had to deliver bad
+
+news.”</strong></p>
+
+<p>Show: proactive communication, clear framing, proposed solutions
+
+alongside the problem.</p>
+
+<p><strong>“Tell me about a project where you had to learn something
+
+quickly.”</strong></p>
+
+<p>Show: structured learning approach, ability to identify what matters,
+
+applying new knowledge in practice.</p>
+
+<p><strong>“Tell me about a time your model underperformed in
+
+production.”</strong></p>
+
+<p>This is a trap question — interviewers want to see that you’ve
+
+shipped something and that you debugged it well, not that you’ve had
+
+perfect success. Be specific about: how you detected it, how you
+
+diagnosed it (data drift? training skew? missing feature?), how you
+
+fixed it.</p>
+
+<h3 id="data-science-specific-behavioral-questions">Data
+
+Science-Specific Behavioral Questions</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 32%" />
+
+<col style="width: 67%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Question</th>
+
+<th>What they’re testing</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>“Walk me through your most impactful project”</td>
+
+<td>Technical depth, business sense, communication</td>
+
+</tr>
+
+<tr>
+
+<td>“How do you communicate results to non-technical stakeholders?”</td>
+
+<td>Translation skill, executive presence</td>
+
+</tr>
+
+<tr>
+
+<td>“How do you prioritize competing data requests?”</td>
+
+<td>Judgment, stakeholder management</td>
+
+</tr>
+
+<tr>
+
+<td>“Tell me about a time you caught a data quality issue”</td>
+
+<td>Rigor, attention to detail</td>
+
+</tr>
+
+<tr>
+
+<td>“What’s a model you built that didn’t work? What happened?”</td>
+
+<td>Intellectual honesty, debugging mindset</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="preparation-checklist">Preparation Checklist</h3>
+
+<p>Before your interview, have clear answers for:</p>
+
+<ul class="task-list">
+
+<li><label><input type="checkbox" />2 projects where your ML work drove
+
+measurable business impact</label></li>
+
+<li><label><input type="checkbox" />1 time you navigated a disagreement
+
+with a stakeholder</label></li>
+
+<li><label><input type="checkbox" />1 time something failed and how you
+
+handled it</label></li>
+
+<li><label><input type="checkbox" />1 example of cross-functional
+
+collaboration</label></li>
+
+<li><label><input type="checkbox" />Your approach to communicating
+
+uncertainty and model limitations to non-technical
+
+audiences</label></li>
+
+</ul>
+
+<hr />
+
+<h2 id="ml-case-study-framework">18.6 ML Case Study Framework</h2>
+
+<h3 id="generic-approach-for-any-ml-problem">Generic Approach for Any ML
+
+Problem</h3>
+
+<p>When given an open-ended ML problem in an interview, use this
+
+structure:</p>
+
+<div style="border-left:4px solid #6366f1; background:#f8fafc; padding:12px 16px; border-radius:6px; margin:12px 0; font-family:system-ui, sans-serif; font-size:0.9em; line-height:1.8;">
+<ol style="margin:0; padding-left:22px; color:#475569;">
+<li><strong>Clarify the problem</strong>
+<ul style="margin:2px 0 6px; padding-left:18px; color:#64748b;">
+<li>What is the prediction target?</li>
+<li>What is the success metric? (business + ML)</li>
+<li>What are the constraints? (latency, cost, scale, regulatory)</li>
+</ul></li>
+<li><strong>Define the data</strong>
+<ul style="margin:2px 0 6px; padding-left:18px; color:#64748b;">
+<li>What signals do we have?</li>
+<li>What's the label? How reliable is it?</li>
+<li>What's the volume and class balance?</li>
+</ul></li>
+<li><strong>Feature engineering</strong>
+<ul style="margin:2px 0 6px; padding-left:18px; color:#64748b;">
+<li>User features</li>
+<li>Item/content features</li>
+<li>Interaction features (user × item)</li>
+<li>Context features (time, device, location)</li>
+</ul></li>
+<li><strong>Model choice</strong>
+<ul style="margin:2px 0 6px; padding-left:18px; color:#64748b;">
+<li>Start with the simplest model that can work</li>
+<li>Identify what complexity is justified</li>
+<li>Choose interpretable where needed (regulatory, debugging)</li>
+</ul></li>
+<li><strong>Evaluation</strong>
+<ul style="margin:2px 0 6px; padding-left:18px; color:#64748b;">
+<li>Offline: ML metrics on held-out set</li>
+<li>Online: A/B test with clear success criteria and guardrails</li>
+</ul></li>
+<li><strong>Production concerns</strong>
+<ul style="margin:2px 0 0; padding-left:18px; color:#64748b;">
+<li>Latency (real-time vs batch)</li>
+<li>Retraining cadence</li>
+<li>Drift monitoring</li>
+<li>Rollback strategy</li>
+</ul></li>
+</ol>
+</div>
+
+<h3 id="interview-signal-map">Interview Signal Map</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 42%" />
+
+<col style="width: 57%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>What you do</th>
+
+<th>Signal you send</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Ask clarifying questions first</td>
+
+<td>Structured thinker, not hasty</td>
+
+</tr>
+
+<tr>
+
+<td>Define a baseline model</td>
+
+<td>Pragmatic, knows what “good” means</td>
+
+</tr>
+
+<tr>
+
+<td>Call out data challenges (imbalance, drift, cold start)</td>
+
+<td>Production mindset</td>
+
+</tr>
+
+<tr>
+
+<td>Connect ML metric to business metric</td>
+
+<td>Strategic thinker</td>
+
+</tr>
+
+<tr>
+
+<td>Propose monitoring plan</td>
+
+<td>MLOps maturity</td>
+
+</tr>
+
+<tr>
+
+<td>Acknowledge trade-offs</td>
+
+<td>Intellectual honesty</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Interviewers don’t expect a perfect answer.
+
+They want to see how you think through ambiguity and complexity. Talk
+
+through your reasoning aloud.</p>
+
+</blockquote>
+
+<hr />
+
+<h2 id="case-study-fraud-detection-pipeline">18.7 Case Study: Fraud
+
+Detection Pipeline</h2>
+
+<p><strong>Problem statement:</strong> Given a transaction (amount,
+
+merchant, location, time, device, user history), predict whether it is
+
+fraudulent in real-time — within 100ms.</p>
+
+<h3 id="problem-framing">Problem Framing</h3>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">Type:</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Binary classification (fraud = 1, legit = 0)</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">Constraint:</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Real-time inference &lt; 100ms</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">Label:</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Confirmed fraud (from chargebacks, investigations)</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">Base rate:</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">~0.1% of transactions are fraud</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">Key challenge</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Extreme class imbalance + evolving fraud patterns</td>
+</tr>
+</table>
+
+
+<p><strong>Baseline:</strong> Flag every transaction above $5,000.
+
+Precision and recall will both be low — establishes the bar.</p>
+
+<h3 id="feature-engineering">Feature Engineering</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 51%" />
+
+<col style="width: 27%" />
+
+<col style="width: 21%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Feature category</th>
+
+<th>Examples</th>
+
+<th>Notes</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Transaction</td>
+
+<td>amount, merchant_category, currency</td>
+
+<td>Normalize amount; encode category</td>
+
+</tr>
+
+<tr>
+
+<td>Velocity</td>
+
+<td>txn_count_last_1h, spend_last_24h</td>
+
+<td>Requires real-time feature store</td>
+
+</tr>
+
+<tr>
+
+<td>Device / location</td>
+
+<td>is_new_device, distance_from_home_km</td>
+
+<td>High signal for account takeover</td>
+
+</tr>
+
+<tr>
+
+<td>User history</td>
+
+<td>avg_txn_amount, usual_merchant_types</td>
+
+<td>Baseline “normal” behavior</td>
+
+</tr>
+
+<tr>
+
+<td>Time</td>
+
+<td>hour_of_day, day_of_week, is_holiday</td>
+
+<td>Fraud spikes at night, weekends</td>
+
+</tr>
+
+<tr>
+
+<td>Network</td>
+
+<td>ip_fraud_rate, device_shared_count</td>
+
+<td>Graph / network signals</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="handling-class-imbalance-1">Handling Class Imbalance</h3>
+
+<p>With 0.1% fraud rate, a model that always predicts “legit” gets 99.9%
+
+accuracy — and is useless.</p>
+
+<div style="border-left:4px solid #f59e0b; padding:12px 16px; background:#fffbeb; border-radius:6px; margin:16px 0; font-size:0.92rem; line-height:1.9;">
+<strong style="color:#92400e;">Options:</strong><br>
+<span style="color:#4f46e5; font-weight:600;">1.</span> SMOTE / oversample minority class in training<br>
+<span style="color:#4f46e5; font-weight:600;">2.</span> Undersample majority class<br>
+<span style="color:#4f46e5; font-weight:600;">3.</span> Class weights: set <code>class_weight={0:1, 1:100}</code> in sklearn<br>
+<span style="color:#4f46e5; font-weight:600;">4.</span> Tune decision threshold (default 0.5 is wrong here)<br>
+<span style="color:#4f46e5; font-weight:600;">5.</span> Use <strong>PR-AUC</strong> (precision-recall), not ROC-AUC, as primary metric
+</div>
+
+
+<blockquote>
+
+<p><strong>Key metric:</strong> Precision-Recall AUC, not ROC AUC. At
+
+extreme imbalance, ROC is misleading.</p>
+
+</blockquote>
+
+<h3 id="model-choice">Model Choice</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 25%" />
+
+<col style="width: 75%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Model</th>
+
+<th>Why useful for fraud</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>XGBoost / LightGBM</td>
+
+<td>Strong on tabular, handles class weights, fast inference</td>
+
+</tr>
+
+<tr>
+
+<td>Logistic Regression</td>
+
+<td>Interpretable, fast, well-calibrated probabilities</td>
+
+</tr>
+
+<tr>
+
+<td>Isolation Forest</td>
+
+<td>Unsupervised anomaly detection when labels are scarce</td>
+
+</tr>
+
+<tr>
+
+<td>Neural network</td>
+
+<td>When millions of examples and embedding layers needed</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>In practice:</strong> ensemble — LightGBM for main score +
+
+rule-based blocklist + velocity checks.</p>
+
+<h3 id="full-system-architecture">Full System Architecture</h3>
+
+<svg viewBox="0 0 320 380" style="display:block; margin:20px auto; max-width:300px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Fraud detection system: transaction event flows through real-time feature computation, ML scoring, decision routing (approve/review/block), reason codes, and feedback loop">
+<defs><marker id="fd-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+<rect x="70" y="5" width="180" height="28" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="160" y="23" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#1e40af">Transaction event</text>
+<line x1="160" y1="33" x2="160" y2="48" stroke="#6366f1" stroke-width="1.5" marker-end="url(#fd-a)"/>
+<rect x="40" y="55" width="240" height="38" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="160" y="72" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#5b21b6">Real-time feature computation</text>
+<text x="160" y="85" text-anchor="middle" font-family="system-ui" font-size="9" fill="#8b5cf6">(velocity features from Redis / Flink)</text>
+<line x1="160" y1="93" x2="160" y2="108" stroke="#6366f1" stroke-width="1.5" marker-end="url(#fd-a)"/>
+<rect x="50" y="115" width="220" height="38" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="160" y="132" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#92400e">ML Scoring Service</text>
+<text x="160" y="145" text-anchor="middle" font-family="system-ui" font-size="9" fill="#f59e0b">(LightGBM, &lt; 5ms)</text>
+<line x1="160" y1="153" x2="160" y2="168" stroke="#6366f1" stroke-width="1.5" marker-end="url(#fd-a)"/>
+<rect x="15" y="175" width="90" height="26" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1"/>
+<text x="60" y="192" text-anchor="middle" font-family="system-ui" font-size="9" fill="#166534">&lt; 0.3 APPROVE</text>
+<rect x="115" y="175" width="90" height="26" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
+<text x="160" y="192" text-anchor="middle" font-family="system-ui" font-size="9" fill="#92400e">0.3–0.7 REVIEW</text>
+<rect x="215" y="175" width="90" height="26" rx="6" fill="#fef2f2" stroke="#ef4444" stroke-width="1"/>
+<text x="260" y="192" text-anchor="middle" font-family="system-ui" font-size="9" fill="#991b1b">&gt; 0.7 BLOCK</text>
+<line x1="160" y1="201" x2="160" y2="220" stroke="#6366f1" stroke-width="1.5" marker-end="url(#fd-a)"/>
+<rect x="30" y="227" width="260" height="28" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="160" y="245" text-anchor="middle" font-family="system-ui" font-size="10" fill="#1e40af">Decision + reason codes → network + customer</text>
+<line x1="160" y1="255" x2="160" y2="270" stroke="#6366f1" stroke-width="1.5" marker-end="url(#fd-a)"/>
+<rect x="20" y="277" width="280" height="28" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="160" y="295" text-anchor="middle" font-family="system-ui" font-size="10" fill="#166534">Feedback loop: fraud/non-fraud → training data</text>
+</svg>
+
+<h3 id="evaluation-1">Evaluation</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 61%" />
+
+<col style="width: 38%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Metric</th>
+
+<th>Why</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Precision</td>
+
+<td>Of transactions blocked, how many were actually fraud?</td>
+
+</tr>
+
+<tr>
+
+<td>Recall</td>
+
+<td>Of all fraud, how much did we catch?</td>
+
+</tr>
+
+<tr>
+
+<td>F1 @ threshold</td>
+
+<td>Combined; tune threshold to match business cost ratio</td>
+
+</tr>
+
+<tr>
+
+<td>PR-AUC</td>
+
+<td>Threshold-independent, correct for imbalanced classes</td>
+
+</tr>
+
+<tr>
+
+<td>Latency p99</td>
+
+<td>Must stay under 100ms</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="interview-talking-points">Interview Talking Points</h3>
+
+<ol type="1">
+
+<li>“I’d frame this as imbalanced binary classification and use PR-AUC
+
+as the primary metric.”</li>
+
+<li>“The hardest part is velocity features — you need a real-time
+
+feature store like Redis.”</li>
+
+<li>“I’d use a tiered decision: ML model score + rule-based blocklist +
+
+human review queue.”</li>
+
+<li>“Fraud patterns drift — I’d monitor score distribution and retrain
+
+weekly or on drift alert.”</li>
+
+<li>“Feature importance matters here for explainability and regulatory
+
+compliance.”</li>
+
+</ol>
+
+<hr />
+
+<h2 id="case-study-search-ranking">18.8 Case Study: Search Ranking</h2>
+
+<p><strong>Problem statement:</strong> Given a user query and a corpus
+
+of documents/products/results, rank them so the most relevant items
+
+appear at the top.</p>
+
+<h3 id="problem-framing-1">Problem Framing</h3>
+
+<table style="border-collapse:collapse; width:auto; margin:12px 0; font-size:0.88em;">
+<thead><tr><th style="padding:4px 14px; border-bottom:2px solid #6366f1; text-align:left;">Property</th><th style="padding:4px 14px; border-bottom:2px solid #6366f1; text-align:left;">Value</th></tr></thead>
+<tbody>
+<tr><td style="padding:3px 14px; border-bottom:1px solid #e2e8f0; font-weight:600;">Type</td><td style="padding:3px 14px; border-bottom:1px solid #e2e8f0;">Learning to Rank (LTR) — not binary classification</td></tr>
+<tr><td style="padding:3px 14px; border-bottom:1px solid #e2e8f0; font-weight:600;">Input</td><td style="padding:3px 14px; border-bottom:1px solid #e2e8f0;">(query, candidate documents) pairs</td></tr>
+<tr><td style="padding:3px 14px; border-bottom:1px solid #e2e8f0; font-weight:600;">Output</td><td style="padding:3px 14px; border-bottom:1px solid #e2e8f0;">Relevance scores → ranked list</td></tr>
+<tr><td style="padding:3px 14px; border-bottom:1px solid #e2e8f0; font-weight:600;">Metric</td><td style="padding:3px 14px; border-bottom:1px solid #e2e8f0;">NDCG@10, MRR, Recall@K</td></tr>
+<tr><td style="padding:3px 14px; font-weight:600;">Key challenge</td><td style="padding:3px 14px;">Defining "relevant" + handling query-document interaction</td></tr>
+</tbody></table>
+
+<p><strong>Baseline:</strong> BM25 (keyword matching) — fast and
+
+surprisingly competitive on keyword queries.</p>
+
+<h3 id="the-two-stage-architecture">The Two-Stage Architecture</h3>
+
+<div style="display:flex; gap:24px; flex-wrap:wrap; margin:16px 0;">
+<div style="flex:1; min-width:220px;">
+<table style="border-collapse:collapse; width:100%; font-size:0.88em;">
+<thead><tr><th colspan="2" style="padding:4px 10px; border-bottom:2px solid #3b82f6; text-align:left; color:#1e40af;">Stage 1: RETRIEVAL (recall)</th></tr></thead>
+<tbody>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; font-weight:600;">Goal</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">find ~1,000 candidates</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; font-weight:600;">Speed</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">&lt; 10ms</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; font-weight:600;">Method</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">BM25, vector search (ANN), or sparse + dense hybrid</td></tr>
+<tr><td style="padding:2px 10px; font-weight:600;">Focus</td><td style="padding:2px 10px;">Recall matters most</td></tr>
+</tbody></table>
+</div>
+<div style="flex:1; min-width:220px;">
+<table style="border-collapse:collapse; width:100%; font-size:0.88em;">
+<thead><tr><th colspan="2" style="padding:4px 10px; border-bottom:2px solid #8b5cf6; text-align:left; color:#5b21b6;">Stage 2: RANKING (precision)</th></tr></thead>
+<tbody>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; font-weight:600;">Goal</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">rank those 1,000 well</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; font-weight:600;">Speed</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">&lt; 100ms acceptable</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; font-weight:600;">Method</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">LightGBM LambdaMART, two-tower re-ranker</td></tr>
+<tr><td style="padding:2px 10px; font-weight:600;">Focus</td><td style="padding:2px 10px;">Precision at top matters most</td></tr>
+</tbody></table>
+</div>
+</div>
+<p style="font-size:0.88em; color:#64748b; margin:4px 0;">Query → [BM25 + ANN retrieval] → 1,000 candidates → [LTR model] → top 10</p>
+
+<h3 id="features-for-ranking">Features for Ranking</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 59%" />
+
+<col style="width: 40%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Feature type</th>
+
+<th>Examples</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Query features</td>
+
+<td>Query length, query type (navigational/informational), query
+
+frequency</td>
+
+</tr>
+
+<tr>
+
+<td>Document features</td>
+
+<td>PageRank, CTR, freshness, popularity, content quality</td>
+
+</tr>
+
+<tr>
+
+<td>Query–document</td>
+
+<td>BM25 score, semantic similarity, exact match, title match</td>
+
+</tr>
+
+<tr>
+
+<td>User features</td>
+
+<td>Personalization signals, past clicks, location, language</td>
+
+</tr>
+
+<tr>
+
+<td>Contextual</td>
+
+<td>Time of day, device, session context</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="learning-to-rank-approaches">Learning to Rank Approaches</h3>
+
+<table style="border-collapse:collapse; margin:16px 0; font-size:0.88rem; width:100%;">
+<thead><tr>
+<th style="text-align:left; padding:6px 12px; border-bottom:2px solid #6366f1; color:#4f46e5;">Approach</th>
+<th style="text-align:left; padding:6px 12px; border-bottom:2px solid #6366f1; color:#4f46e5;">How it works</th>
+<th style="text-align:left; padding:6px 12px; border-bottom:2px solid #6366f1; color:#4f46e5;">Tradeoff</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0; font-weight:600;">Pointwise</td><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0;">Predict relevance score per doc independently. Binary classification or regression.</td><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0; color:#64748b;">Simple. Ignores relative ordering.</td></tr>
+<tr><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0; font-weight:600;">Pairwise</td><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0;">Predict which of two docs is more relevant. RankNet, LambdaRank.</td><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0; color:#64748b;">Better. Still ignores full list structure.</td></tr>
+<tr><td style="padding:6px 12px; font-weight:600; color:#166534;">Listwise</td><td style="padding:6px 12px;">Directly optimize ranking metric (NDCG) over full list. LambdaMART.</td><td style="padding:6px 12px; color:#166534;">Best quality. Used by most production systems.</td></tr>
+</tbody>
+</table>
+
+
+<h3 id="ndcg-the-key-metric">NDCG — The Key Metric</h3>
+
+<p><span class="math display">\[
+
+\text{NDCG@k} = \frac{\text{DCG@k}}{\text{IDCG@k}}, \quad \text{DCG@k} =
+
+\sum_{i=1}^{k} \frac{2^{r_i} - 1}{\log_2(i+1)}
+
+\]</span></p>
+
+<p><strong>Where:</strong> <span class="math inline">\(r_i\)</span> = relevance score at rank <span class="math inline">\(i\)</span> (binary or graded), <span class="math inline">\(k\)</span> = cutoff depth, IDCG = DCG of the ideal (perfect) ranking.</p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Position</th>
+
+<th>Discount factor</th>
+
+<th>Interpretation</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>1</td>
+
+<td>1.00</td>
+
+<td>Full credit</td>
+
+</tr>
+
+<tr>
+
+<td>2</td>
+
+<td>0.63</td>
+
+<td>63% credit</td>
+
+</tr>
+
+<tr>
+
+<td>5</td>
+
+<td>0.39</td>
+
+<td>39% credit</td>
+
+</tr>
+
+<tr>
+
+<td>10</td>
+
+<td>0.29</td>
+
+<td>29% credit</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>The higher a relevant result appears, the more NDCG credit
+
+you get.</strong></p>
+
+<h3 id="interview-talking-points-1">Interview Talking Points</h3>
+
+<ol type="1">
+
+<li>“I’d use a two-stage pipeline — fast BM25+ANN retrieval, then a
+
+LightGBM LambdaMART ranker.”</li>
+
+<li>“NDCG@10 is the right metric — it rewards relevant results near the
+
+top.”</li>
+
+<li>“The hardest part is labels. Human relevance judgments are
+
+expensive; click data is noisy.”</li>
+
+<li>“For personalization, I’d add user history as features or a separate
+
+user embedding tower.”</li>
+
+<li>“I’d monitor NDCG and CTR in production — they often diverge and
+
+both matter.”</li>
+
+</ol>
+
+<hr />
+
+<h2 id="case-study-demand-forecasting">18.9 Case Study: Demand
+
+Forecasting</h2>
+
+<p><strong>Problem statement:</strong> Predict the quantity of a product
+
+that will be sold in a future time period (next week, next month) across
+
+thousands of SKUs and locations.</p>
+
+<h3 id="problem-framing-2">Problem Framing</h3>
+
+<table style="border-collapse:collapse; margin:16px 0; font-size:0.92rem; width:100%; max-width:520px;">
+<tbody>
+<tr><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0; font-weight:600; color:#4f46e5;">Type</td><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0;">Time series regression (multi-step forecasting)</td></tr>
+<tr><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0; font-weight:600; color:#4f46e5;">Target</td><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0;">Units sold per SKU per store per day/week</td></tr>
+<tr><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0; font-weight:600; color:#4f46e5;">Horizon</td><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0;">1 week ahead (operational) to 12 weeks (planning)</td></tr>
+<tr><td style="padding:6px 12px; font-weight:600; color:#4f46e5;">Key challenge</td><td style="padding:6px 12px;">Thousands of series with different patterns, intermittent demand, promotions, seasonality</td></tr>
+</tbody>
+</table>
+
+
+<p><strong>Baseline:</strong> Seasonal naive — forecast = same week last
+
+year. Surprisingly hard to beat.</p>
+
+<h3 id="the-forecast-hierarchy">The Forecast Hierarchy</h3>
+
+<div style="border-left:4px solid #6366f1; background:#f8fafc; padding:12px 16px; border-radius:6px; margin:12px 0; font-family:system-ui, sans-serif; font-size:0.9em; line-height:1.8;">
+<strong style="color:#334155;">Company-level forecast</strong><br>
+<span style="color:#475569;">&nbsp;&nbsp;├── <strong>Category level</strong> <span style="color:#64748b;">(electronics, clothing, …)</span></span><br>
+<span style="color:#475569;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── <strong>Product level</strong> <span style="color:#64748b;">(iPhone 15, Galaxy S24, …)</span></span><br>
+<span style="color:#475569;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── <strong>SKU × Store level</strong> <span style="color:#f59e0b;">← most granular, hardest</span></span>
+</div>
+
+<p>Each level has different data density and noise levels. Top-down
+
+vs. bottom-up aggregation matters.</p>
+
+<h3 id="feature-engineering-1">Feature Engineering</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 44%" />
+
+<col style="width: 31%" />
+
+<col style="width: 24%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Feature type</th>
+
+<th>Examples</th>
+
+<th>Notes</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Lag features</td>
+
+<td>sales_lag_7, sales_lag_14, sales_lag_28</td>
+
+<td>Past values of the target</td>
+
+</tr>
+
+<tr>
+
+<td>Rolling stats</td>
+
+<td>rolling_mean_28, rolling_std_14</td>
+
+<td>Smooth out noise</td>
+
+</tr>
+
+<tr>
+
+<td>Calendar</td>
+
+<td>day_of_week, week_of_year, is_holiday, days_to_xmas</td>
+
+<td>Captures seasonality</td>
+
+</tr>
+
+<tr>
+
+<td>Price / promo</td>
+
+<td>current_price, discount_pct, is_promoted</td>
+
+<td>Demand drivers</td>
+
+</tr>
+
+<tr>
+
+<td>External</td>
+
+<td>weather, local events, competitor prices</td>
+
+<td>When available</td>
+
+</tr>
+
+<tr>
+
+<td>Product</td>
+
+<td>category, brand, lifecycle_stage</td>
+
+<td>Static attributes</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="model-progression">Model Progression</h3>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.88rem; line-height:1.8;">
+<strong style="color:#64748b;">Level 1 (baseline):</strong><br>
+&emsp;• Naive: forecast = last week’s value<br>
+&emsp;• Seasonal naive: forecast = same week last year<br>
+&emsp;• Moving average<br><br>
+<strong style="color:#1e40af;">Level 2 (classical):</strong><br>
+&emsp;• ARIMA / SARIMA per series<br>
+&emsp;• Exponential smoothing (ETS)<br>
+&emsp;• Prophet (good for business time series with holidays)<br><br>
+<strong style="color:#166534;">Level 3 (ML):</strong><br>
+&emsp;• LightGBM with lag/rolling/calendar features<br>
+&emsp;• Often beats classical methods on large datasets<br>
+&emsp;• One global model for all SKUs outperforms per-SKU models<br><br>
+<strong style="color:#7c3aed;">Level 4 (deep learning):</strong><br>
+&emsp;• LSTM / Temporal CNN / N-BEATS<br>
+&emsp;• TFT (Temporal Fusion Transformer) — state of art for complex cases<br>
+&emsp;• Useful when you have many related series
+</div>
+
+
+<h3 id="evaluation-time-aware">Evaluation — Time-Aware</h3>
+
+<div style="background:#f8fafc; border-radius:6px; padding:12px 16px; margin:12px 0; font-family:system-ui, sans-serif; font-size:0.9em;">
+<p style="margin:0 0 6px;"><strong style="color:#ef4444;">✗ WRONG: random train/test split</strong></p>
+<table style="border-collapse:collapse; width:auto; font-size:0.88em; margin:0 0 12px;">
+<tr><td style="padding:2px 8px; text-align:center;">Jan</td><td style="padding:2px 8px; text-align:center;">Feb</td><td style="padding:2px 8px; text-align:center;">Mar</td><td style="padding:2px 8px; text-align:center;">Apr</td><td style="padding:2px 8px; text-align:center;">May</td><td style="padding:2px 8px; text-align:center;">Jun</td><td style="padding:2px 8px; text-align:center;">Jul</td><td style="padding:2px 8px; text-align:center;">Aug</td></tr>
+<tr><td style="padding:2px 8px; text-align:center; background:#dcfce7;">T</td><td style="padding:2px 8px; text-align:center; background:#dbeafe; color:#1e40af; font-weight:600;">V</td><td style="padding:2px 8px; text-align:center; background:#dcfce7;">T</td><td style="padding:2px 8px; text-align:center; background:#dbeafe; color:#1e40af; font-weight:600;">V</td><td style="padding:2px 8px; text-align:center; background:#dcfce7;">T</td><td style="padding:2px 8px; text-align:center; background:#dcfce7;">T</td><td style="padding:2px 8px; text-align:center; background:#dbeafe; color:#1e40af; font-weight:600;">V</td><td style="padding:2px 8px; text-align:center; background:#dcfce7;">T</td></tr>
+</table>
+<p style="margin:0 0 2px; font-size:0.85em; color:#ef4444;">shuffled = leaks future into past</p>
+<p style="margin:12px 0 6px;"><strong style="color:#22c55e;">✓ RIGHT: rolling-window backtesting</strong></p>
+<table style="border-collapse:collapse; width:auto; font-size:0.88em;">
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;"><strong>Train:</strong> Jan–Jun</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;"><strong>Val:</strong> Jul</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;"><strong>Test:</strong> Aug</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;"><strong>Train:</strong> Jan–Jul</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;"><strong>Val:</strong> Aug</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;"><strong>Test:</strong> Sep</td></tr>
+<tr><td style="padding:2px 10px;"><strong>Train:</strong> Jan–Aug</td><td style="padding:2px 10px;"><strong>Val:</strong> Sep</td><td style="padding:2px 10px;"><strong>Test:</strong> Oct</td></tr>
+</table>
+<p style="margin:6px 0 0; font-size:0.85em; color:#64748b;">Report average RMSE / MAPE across all windows.</p>
+</div>
+
+<p><strong>Key metrics:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Metric</th>
+
+<th>Notes</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>MAPE</td>
+
+<td>Interpretable, but unstable near zero demand</td>
+
+</tr>
+
+<tr>
+
+<td>RMSE</td>
+
+<td>Penalizes large errors; good for cost-sensitive use</td>
+
+</tr>
+
+<tr>
+
+<td>Bias</td>
+
+<td>Is the model systematically over/under-forecasting?</td>
+
+</tr>
+
+<tr>
+
+<td>WAPE</td>
+
+<td>Weighted APE — handles zero-demand items better</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="common-challenges">Common Challenges</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 55%" />
+
+<col style="width: 45%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Challenge</th>
+
+<th>Approach</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Intermittent demand (lots of zeros)</td>
+
+<td>Croston’s method, Tweedie distribution, two-part model</td>
+
+</tr>
+
+<tr>
+
+<td>New products (cold start)</td>
+
+<td>Attribute-based similarity, group similar products</td>
+
+</tr>
+
+<tr>
+
+<td>Promotions</td>
+
+<td>Encode as features; build separate promo uplift model</td>
+
+</tr>
+
+<tr>
+
+<td>Hierarchical consistency</td>
+
+<td>Bottom-up aggregation or reconciliation (MinT)</td>
+
+</tr>
+
+<tr>
+
+<td>Thousands of series</td>
+
+<td>Global LightGBM model — one model for all SKUs with SKU
+
+features</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="interview-talking-points-2">Interview Talking Points</h3>
+
+<ol type="1">
+
+<li>“I’d start with seasonal naive as a baseline — it’s surprisingly
+
+hard to beat.”</li>
+
+<li>“For the ML approach, I’d use LightGBM with lag features and
+
+calendar features.”</li>
+
+<li>“Evaluation must be time-aware — rolling-window backtesting, never
+
+random splits.”</li>
+
+<li>“Bias matters as much as accuracy — systematic over-forecast wastes
+
+inventory.”</li>
+
+<li>“For thousands of SKUs, a single global LightGBM model often beats
+
+per-SKU models.”</li>
+
+</ol>
+
+<hr />
+
+<h2 id="common-mistakes-reference">Common Mistakes Reference</h2>
+
+<p>This section consolidates the most frequent mistakes across all
+
+topics — useful as a final sanity check before a technical interview or
+
+before deploying a model.</p>
+
+<h3 id="data-and-features">Data and Features</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 31%" />
+
+<col style="width: 51%" />
+
+<col style="width: 17%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Mistake</th>
+
+<th>Why it matters</th>
+
+<th>Fix</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Fitting scaler/encoder on full dataset</td>
+
+<td>Leaks test info into training</td>
+
+<td>Fit on train only; transform val/test</td>
+
+</tr>
+
+<tr>
+
+<td>Using future data as features</td>
+
+<td>Model can’t use this at prediction time</td>
+
+<td>Enforce temporal ordering</td>
+
+</tr>
+
+<tr>
+
+<td>Dropping rows with missing values reflexively</td>
+
+<td>Loses signal; biases if missingness is informative</td>
+
+<td>Investigate pattern; impute or add missing indicator</td>
+
+</tr>
+
+<tr>
+
+<td>Not checking for train/test distribution shift</td>
+
+<td>Model degrades silently in production</td>
+
+<td>Plot feature distributions; track drift</td>
+
+</tr>
+
+<tr>
+
+<td>Label leakage (target encoded into features)</td>
+
+<td>Model appears perfect on eval, fails in prod</td>
+
+<td>Audit every feature against the label</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="modeling">Modeling</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 31%" />
+
+<col style="width: 51%" />
+
+<col style="width: 17%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Mistake</th>
+
+<th>Why it matters</th>
+
+<th>Fix</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Evaluating on training data</td>
+
+<td>Measures memorization, not generalization</td>
+
+<td>Always use held-out validation</td>
+
+</tr>
+
+<tr>
+
+<td>Ignoring class imbalance</td>
+
+<td>Accuracy 99% on 1% fraud rate = useless model</td>
+
+<td>Use PR-AUC, class weights, or resampling</td>
+
+</tr>
+
+<tr>
+
+<td>Using default threshold (0.5)</td>
+
+<td>Wrong for imbalanced classes</td>
+
+<td>Tune threshold using precision-recall curve</td>
+
+</tr>
+
+<tr>
+
+<td>Using accuracy for imbalanced problems</td>
+
+<td>Misleading metric</td>
+
+<td>Use F1, PR-AUC, or MCC instead</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="deep-learning">Deep Learning</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 31%" />
+
+<col style="width: 51%" />
+
+<col style="width: 17%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Mistake</th>
+
+<th>Why it matters</th>
+
+<th>Fix</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Not normalizing inputs</td>
+
+<td>Gradients explode or vanish</td>
+
+<td>Standardize to mean=0, std=1</td>
+
+</tr>
+
+<tr>
+
+<td>Learning rate too high</td>
+
+<td>Loss oscillates or explodes</td>
+
+<td>Start at 1e-3 with Adam; use LR finder</td>
+
+</tr>
+
+<tr>
+
+<td>Not using early stopping</td>
+
+<td>Overfits to training data</td>
+
+<td>Monitor val loss; stop when it stops improving</td>
+
+</tr>
+
+<tr>
+
+<td>Using Softmax for multi-label problems</td>
+
+<td>Outputs compete</td>
+
+<td>Use sigmoid per label + binary cross-entropy</td>
+
+</tr>
+
+<tr>
+
+<td>Using ReLU in regression output layer</td>
+
+<td>Clips negative predictions to zero</td>
+
+<td>Use linear activation for regression output</td>
+
+</tr>
+
+<tr>
+
+<td>Forgetting <code>optimizer.zero_grad()</code> in PyTorch</td>
+
+<td>Gradients accumulate across batches</td>
+
+<td>Call it at the start of each training step</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="evaluation-2">Evaluation</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 31%" />
+
+<col style="width: 51%" />
+
+<col style="width: 17%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Mistake</th>
+
+<th>Why it matters</th>
+
+<th>Fix</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Random train/test split for time series</td>
+
+<td>Leaks future into training</td>
+
+<td>Use chronological split always</td>
+
+</tr>
+
+<tr>
+
+<td>Evaluating on test set during development</td>
+
+<td>Burns the one honest look</td>
+
+<td>Use validation set; save test for final report</td>
+
+</tr>
+
+<tr>
+
+<td>Reporting accuracy without baseline</td>
+
+<td>99% sounds good until naive model also gets 99%</td>
+
+<td>Always compare to majority-class / naive baseline</td>
+
+</tr>
+
+<tr>
+
+<td>Not checking calibration</td>
+
+<td>Model says 90% confident but is right 50%</td>
+
+<td>Use Platt scaling or isotonic regression</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="production-mlops">Production / MLOps</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 31%" />
+
+<col style="width: 51%" />
+
+<col style="width: 17%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Mistake</th>
+
+<th>Why it matters</th>
+
+<th>Fix</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>No monitoring after deployment</td>
+
+<td>Models degrade silently</td>
+
+<td>Track prediction distribution and feature distributions</td>
+
+</tr>
+
+<tr>
+
+<td>Retraining without evaluation</td>
+
+<td>New model might be worse</td>
+
+<td>Always validate new model against champion before promoting</td>
+
+</tr>
+
+<tr>
+
+<td>Serving a model trained on old data</td>
+
+<td>Performance degrades with data drift</td>
+
+<td>Schedule regular retraining or trigger on drift alerts</td>
+
+</tr>
+
+<tr>
+
+<td>Not versioning training data</td>
+
+<td>Can’t reproduce old results</td>
+
+<td>Use data versioning (DVC, Delta Lake snapshots)</td>
+
+</tr>
+
+<tr>
+
+<td>Tight coupling of training and serving code</td>
+
+<td>Feature engineering bugs in one don’t propagate</td>
+
+<td>Use a feature store or shared pipeline code</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<hr />
+
+
+<div class="chapter-nav">
+  <a href="chapter-17.html">&larr; Chapter 17: Responsible AI and Ethics</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="conclusion.html">Conclusion: Your ML Journey From Here &rarr;</a>
+</div>
+<div class="site-footer">
+  <p>&copy; 2026 Hariram Subramanian Gopal &middot; <a href="index.html">Data to Decisions</a></p>
+</div>
+</body>
+</html>

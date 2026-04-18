@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Hariram Subramanian Gopal" />
+  <title>Chapter 06: Explainable AI (XAI) and Model Interpretability | Data to Decisions</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</head>
+<body>
+<div class="chapter-nav">
+  <a href="chapter-05.html">&larr; Chapter 05: Supervised Learning</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-07.html">Chapter 07: Model Evaluation and Validation &rarr;</a>
+</div>
+<h1 id="chapter-06-explainable-ai">Chapter 06: Explainable AI (XAI) and Model Interpretability</h1>
+
+<h2 id="chapter-scope-xai">6.0 Chapter Scope</h2>
+
+<p>A model that performs well but can&#x2019;t explain its decisions is a liability in production.
+Regulators demand explanations (GDPR Article 22, EU AI Act), stakeholders need trust,
+and engineers need debugging insight. This chapter covers the full interpretability toolkit &#x2014;
+from global feature importance to local per-prediction explanations.</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px;">What you will learn</caption>
+<thead><tr>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Section</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Topic</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">6.1</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Explainable AI: SHAP, LIME, PDP, ICE, permutation importance</td></tr>
+</tbody>
+</table>
+
+<h2 id="explainable-ai-xai-and-model-interpretability">6.1 Explainable AI (XAI) and Model Interpretability</h2>
+
+<p>Training a model that works is step one. Proving <em>why</em> it makes each prediction — to regulators, business stakeholders, and your own debugging eyes — is step two. Without explainability, high-accuracy models stay locked in notebooks; with it, they ship to production.</p>
+
+<!-- ══ XAI Landscape ══ -->
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="450" viewBox="0 0 960 450" style="display:block; margin:20px auto;">
+  <defs>
+    <style>
+      .xai-h   { font-family:'Segoe UI',Arial,sans-serif; font-size:15px; fill:#fff; font-weight:700; }
+      .xai-cat { font-family:'Segoe UI',Arial,sans-serif; font-size:13px; fill:#fff; font-weight:600; }
+      .xai-m   { font-family:'Segoe UI',Arial,sans-serif; font-size:12px; fill:#1e293b; font-weight:600; }
+      .xai-d   { font-family:'Segoe UI',Arial,sans-serif; font-size:10.5px; fill:#64748b; }
+      .xai-tag { font-family:'Segoe UI',Arial,sans-serif; font-size:9.5px; font-weight:600; }
+      .xai-n   { font-family:'Segoe UI',Arial,sans-serif; font-size:11px; fill:#475569; font-style:italic; }
+    </style>
+    <filter id="xsh" x="-3%" y="-6%" width="106%" height="118%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#0002"/>
+    </filter>
+  </defs>
+
+  <!-- Title -->
+  <text x="480" y="26" text-anchor="middle" style="font-family:'Segoe UI',sans-serif; font-size:16px; fill:#1e293b; font-weight:700;">The XAI Landscape at a Glance</text>
+
+  <!-- Root -->
+  <rect x="320" y="40" width="320" height="42" rx="12" fill="#1e293b" filter="url(#xsh)"/>
+  <text x="480" y="66" text-anchor="middle" class="xai-h">How do you want to explain?</text>
+
+  <!-- Connectors from root -->
+  <line x1="390" y1="82" x2="180" y2="118" stroke="#475569" stroke-width="1.6"/>
+  <line x1="480" y1="82" x2="480" y2="118" stroke="#475569" stroke-width="1.6"/>
+  <line x1="570" y1="82" x2="790" y2="118" stroke="#475569" stroke-width="1.6"/>
+
+  <!-- Column 1: Global -->
+  <rect x="50" y="118" width="260" height="38" rx="10" fill="#2563eb" filter="url(#xsh)"/>
+  <text x="180" y="142" text-anchor="middle" class="xai-cat">Global  (whole model)</text>
+
+  <line x1="130" y1="156" x2="100" y2="180" stroke="#93c5fd" stroke-width="1.2"/>
+  <line x1="230" y1="156" x2="270" y2="180" stroke="#93c5fd" stroke-width="1.2"/>
+
+  <rect x="15" y="180" width="168" height="68" rx="8" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2"/>
+  <text x="99" y="198" text-anchor="middle" class="xai-m">Permutation Importance</text>
+  <text x="99" y="214" text-anchor="middle" class="xai-d">shuffle feature, measure</text>
+  <text x="99" y="228" text-anchor="middle" class="xai-d">drop in score</text>
+  <rect x="51" y="234" width="96" height="16" rx="4" fill="#dbeafe"/>
+  <text x="99" y="246" text-anchor="middle" class="xai-tag" fill="#1d4ed8">model-agnostic</text>
+
+  <rect x="198" y="180" width="150" height="68" rx="8" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2"/>
+  <text x="273" y="198" text-anchor="middle" class="xai-m">Built-in Importance</text>
+  <text x="273" y="214" text-anchor="middle" class="xai-d">Gini / split-based</text>
+  <text x="273" y="228" text-anchor="middle" class="xai-d">(trees only)</text>
+  <rect x="235" y="234" width="76" height="16" rx="4" fill="#fef3c7"/>
+  <text x="273" y="246" text-anchor="middle" class="xai-tag" fill="#92400e">tree-specific</text>
+
+  <!-- Column 2: Global + Local -->
+  <rect x="360" y="118" width="240" height="38" rx="10" fill="#059669" filter="url(#xsh)"/>
+  <text x="480" y="142" text-anchor="middle" class="xai-cat">Global + Local  (both)</text>
+
+  <line x1="430" y1="156" x2="415" y2="180" stroke="#6ee7b7" stroke-width="1.2"/>
+  <line x1="530" y1="156" x2="555" y2="180" stroke="#6ee7b7" stroke-width="1.2"/>
+
+  <rect x="365" y="180" width="130" height="68" rx="8" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1.2"/>
+  <text x="430" y="198" text-anchor="middle" class="xai-m">SHAP</text>
+  <text x="430" y="214" text-anchor="middle" class="xai-d">Shapley game theory</text>
+  <text x="430" y="228" text-anchor="middle" class="xai-d">fair credit assignment</text>
+  <rect x="385" y="234" width="90" height="16" rx="4" fill="#dcfce7"/>
+  <text x="430" y="246" text-anchor="middle" class="xai-tag" fill="#166534">gold standard</text>
+
+  <rect x="510" y="180" width="130" height="68" rx="8" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1.2"/>
+  <text x="575" y="198" text-anchor="middle" class="xai-m">PDP / ICE</text>
+  <text x="575" y="214" text-anchor="middle" class="xai-d">effect shape of one</text>
+  <text x="575" y="228" text-anchor="middle" class="xai-d">feature (avg + indiv)</text>
+  <rect x="527" y="234" width="96" height="16" rx="4" fill="#dbeafe"/>
+  <text x="575" y="246" text-anchor="middle" class="xai-tag" fill="#1d4ed8">model-agnostic</text>
+
+  <!-- Column 3: Local -->
+  <rect x="670" y="118" width="240" height="38" rx="10" fill="#7c3aed" filter="url(#xsh)"/>
+  <text x="790" y="142" text-anchor="middle" class="xai-cat">Local  (one prediction)</text>
+
+  <line x1="790" y1="156" x2="790" y2="180" stroke="#c4b5fd" stroke-width="1.2"/>
+
+  <rect x="720" y="180" width="140" height="68" rx="8" fill="#f5f3ff" stroke="#ddd6fe" stroke-width="1.2"/>
+  <text x="790" y="198" text-anchor="middle" class="xai-m">LIME</text>
+  <text x="790" y="214" text-anchor="middle" class="xai-d">local linear surrogate</text>
+  <text x="790" y="228" text-anchor="middle" class="xai-d">around one input</text>
+  <rect x="745" y="234" width="90" height="16" rx="4" fill="#dbeafe"/>
+  <text x="790" y="246" text-anchor="middle" class="xai-tag" fill="#1d4ed8">model-agnostic</text>
+
+  <!-- Quick-pick guide -->
+  <rect x="60" y="280" width="840" height="150" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="480" y="304" text-anchor="middle" style="font-family:'Segoe UI',sans-serif; font-size:13px; fill:#1e293b; font-weight:700;">When to Reach for Each Tool</text>
+
+  <text x="120" y="328" class="xai-d" font-size="11.5">"Which features matter overall?"</text>
+  <text x="120" y="344" style="font-family:'Segoe UI',sans-serif; font-size:12px; fill:#2563eb; font-weight:600;">→ Permutation Importance or SHAP bar plot</text>
+
+  <text x="530" y="328" class="xai-d" font-size="11.5">"What shape is the effect?"</text>
+  <text x="530" y="344" style="font-family:'Segoe UI',sans-serif; font-size:12px; fill:#059669; font-weight:600;">→ PDP + ICE overlay</text>
+
+  <text x="120" y="374" class="xai-d" font-size="11.5">"Why was this person denied a loan?"</text>
+  <text x="120" y="390" style="font-family:'Segoe UI',sans-serif; font-size:12px; fill:#7c3aed; font-weight:600;">→ SHAP waterfall or LIME</text>
+
+  <text x="530" y="374" class="xai-d" font-size="11.5">"Is this model fair? Is it drifting?"</text>
+  <text x="530" y="390" style="font-family:'Segoe UI',sans-serif; font-size:12px; fill:#dc2626; font-weight:600;">→ SHAP on protected attrs + track over time</text>
+
+  <text x="480" y="420" text-anchor="middle" class="xai-n">Start global (understand the model), go local (explain individual decisions), monitor continuously (catch drift).</text>
+</svg>
+
+<h3 id="why-explainability-matters">6.1.1 Why Explainability Matters</h3>
+
+<p>Consider a model that outputs <strong>“DENY loan.”</strong> Without an explanation, five problems surface simultaneously:</p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 22%" />
+
+<col style="width: 42%" />
+
+<col style="width: 36%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Concern</th>
+
+<th>The Question It Raises</th>
+
+<th>Real-World Consequence</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>Regulatory compliance</strong></td>
+
+<td>Can we justify this decision to a regulator?</td>
+
+<td>GDPR Art.&nbsp;22 requires an explanation for automated decisions. FCRA mandates adverse-action notices for credit denials. FDA demands traceability for clinical AI.</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Trust &amp; adoption</strong></td>
+
+<td>Will stakeholders actually use the model?</td>
+
+<td>Doctors will not follow a model they cannot interrogate. Executives will not deploy what they cannot explain to a board.</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Debugging</strong></td>
+
+<td>Did the model learn the right signal?</td>
+
+<td>A medical model once learned “patient photographed in a hospital bed” → predicted sick. Without explainability, this would never surface.</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Bias detection</strong></td>
+
+<td>Is a protected attribute driving decisions?</td>
+
+<td>High SHAP importance for zip code may encode racial bias. Explainability is how you catch proxy discrimination before it causes harm.</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Drift monitoring</strong></td>
+
+<td>Is the model still reliable?</td>
+
+<td>A shift in feature-importance rankings often <em>precedes</em> accuracy degradation — giving you an early warning before metrics collapse.</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> In regulated industries (finance, healthcare, hiring), explainability is legally required, not optional. Everywhere else, it is the fastest path to trust and faster debugging.</p>
+
+</blockquote>
+
+<h3 id="the-interpretability-landscape-global-vs-local">6.1.2 The
+
+Interpretability Landscape: Global vs Local</h3>
+
+<p>The landscape diagram above organises every XAI tool along two axes: <strong>scope</strong> (global vs local) and <strong>model dependence</strong> (agnostic vs model-specific). The sections below walk through each tool in detail, starting with the simplest and ending with the most powerful.</p>
+
+<h3 id="built-in-feature-importance-tree-models">6.1.3 Built-in Feature
+
+Importance (Tree Models)</h3>
+
+<p>Decision trees and ensembles (Random Forest, XGBoost) compute
+
+importance natively: how much each feature reduces impurity
+
+(Gini/entropy) across all splits.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb225-1"><a href="#cb225-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> xgboost <span class="im">as</span> xgb</span>
+<span id="cb225-2"><a href="#cb225-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb225-3"><a href="#cb225-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb225-4"><a href="#cb225-4" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> xgb.XGBClassifier().fit(X_train, y_train)</span>
+<span id="cb225-5"><a href="#cb225-5" aria-hidden="true" tabindex="-1"></a>importances <span class="op">=</span> model.feature_importances_</span>
+<span id="cb225-6"><a href="#cb225-6" aria-hidden="true" tabindex="-1"></a>pd.Series(importances, index<span class="op">=</span>X_train.columns).sort_values().plot(kind<span class="op">=</span><span class="st">&#39;barh&#39;</span>)</span></code></pre></div>
+
+<p><strong>Limitations:</strong> biased toward high-cardinality and
+
+correlated features. Good for a quick baseline, but verify with SHAP or
+
+permutation importance.</p>
+
+<h3 id="permutation-importance-1">6.1.4 Permutation Importance</h3>
+
+<p>More reliable than built-in importance. Shuffle one feature at a time and measure the drop in model performance:</p>
+
+<!-- Permutation Importance Algorithm SVG -->
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="180" viewBox="0 0 720 180" style="display:block; margin:16px auto;">
+  <defs>
+    <style>
+      .pi-box  { font-family:'Segoe UI',Arial,sans-serif; font-size:11.5px; fill:#fff; font-weight:600; }
+      .pi-sub  { font-family:'Segoe UI',Arial,sans-serif; font-size:10px; fill:#cbd5e1; }
+      .pi-note { font-family:'Segoe UI',Arial,sans-serif; font-size:10.5px; fill:#475569; }
+    </style>
+    <marker id="pia" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+      <polygon points="0 0, 7 2.5, 0 5" fill="#64748b"/>
+    </marker>
+    <filter id="pish" x="-3%" y="-6%" width="106%" height="118%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0002"/>
+    </filter>
+  </defs>
+
+  <!-- Step 1 -->
+  <rect x="10" y="16" width="140" height="56" rx="8" fill="#1e40af" filter="url(#pish)"/>
+  <text x="80" y="38" text-anchor="middle" class="pi-box">1. Baseline score</text>
+  <text x="80" y="56" text-anchor="middle" class="pi-sub">e.g. AUC = 0.92</text>
+
+  <!-- Arrow -->
+  <line x1="154" y1="44" x2="176" y2="44" stroke="#64748b" stroke-width="1.5" marker-end="url(#pia)"/>
+
+  <!-- Step 2 -->
+  <rect x="182" y="16" width="162" height="56" rx="8" fill="#b45309" filter="url(#pish)"/>
+  <text x="263" y="38" text-anchor="middle" class="pi-box">2. Shuffle feature f</text>
+  <text x="263" y="56" text-anchor="middle" class="pi-sub">break its signal</text>
+
+  <!-- Arrow -->
+  <line x1="348" y1="44" x2="370" y2="44" stroke="#64748b" stroke-width="1.5" marker-end="url(#pia)"/>
+
+  <!-- Step 3 -->
+  <rect x="376" y="16" width="162" height="56" rx="8" fill="#dc2626" filter="url(#pish)"/>
+  <text x="457" y="38" text-anchor="middle" class="pi-box">3. Measure new score</text>
+  <text x="457" y="56" text-anchor="middle" class="pi-sub">e.g. AUC = 0.78</text>
+
+  <!-- Arrow -->
+  <line x1="542" y1="44" x2="564" y2="44" stroke="#64748b" stroke-width="1.5" marker-end="url(#pia)"/>
+
+  <!-- Step 4 -->
+  <rect x="570" y="16" width="140" height="56" rx="8" fill="#059669" filter="url(#pish)"/>
+  <text x="640" y="34" text-anchor="middle" class="pi-box">4. Importance =</text>
+  <text x="640" y="50" text-anchor="middle" class="pi-box">baseline − new</text>
+  <text x="640" y="64" text-anchor="middle" class="pi-sub">= 0.14</text>
+
+  <!-- Bottom note -->
+  <text x="360" y="104" text-anchor="middle" class="pi-note">Bigger drop = more important feature. Repeat for every feature.</text>
+  <text x="360" y="120" text-anchor="middle" class="pi-note">Works with any model. Run on validation set, never training set.</text>
+</svg>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb227-1"><a href="#cb227-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.inspection <span class="im">import</span> permutation_importance</span>
+<span id="cb227-2"><a href="#cb227-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb227-3"><a href="#cb227-3" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> permutation_importance(model, X_val, y_val, n_repeats<span class="op">=</span><span class="dv">10</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb227-4"><a href="#cb227-4" aria-hidden="true" tabindex="-1"></a>sorted_idx <span class="op">=</span> result.importances_mean.argsort()[::<span class="op">-</span><span class="dv">1</span>]</span>
+<span id="cb227-5"><a href="#cb227-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> sorted_idx[:<span class="dv">10</span>]:</span>
+<span id="cb227-6"><a href="#cb227-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;</span><span class="sc">{</span>X_val<span class="sc">.</span>columns[i]<span class="sc">:30s}</span><span class="ss">  </span><span class="sc">{</span>result<span class="sc">.</span>importances_mean[i]<span class="sc">:.4f}</span><span class="ss"> ± </span><span class="sc">{</span>result<span class="sc">.</span>importances_std[i]<span class="sc">:.4f}</span><span class="ss">&quot;</span>)</span></code></pre></div>
+
+<p>Works with <strong>any model</strong>. Respects feature correlations
+
+better than split-based importance because it measures actual prediction
+
+impact.</p>
+
+<h3 id="partial-dependence-plots-pdp">6.1.5 Partial Dependence Plots
+
+(PDP)</h3>
+
+<p>A PDP shows the <strong>average effect</strong> of one feature on the
+
+model’s prediction, holding all other features at their observed values.
+
+It answers: <em>as this feature changes, how does the prediction change
+
+on average?</em></p>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/05_supervised_learning/pdp_transaction_amount.svg" alt="Partial Dependence Plot (PDP): average effect of transaction amount on predicted fraud risk, marginalizing all other features">
+
+<figcaption>
+
+Partial Dependence Plot (PDP): average effect of transaction amount on predicted fraud risk, marginalizing all other features
+
+</figcaption>
+
+</figure>
+
+<p><strong>How it’s computed:</strong> 1. Choose a grid of values for
+
+feature f (e.g. amount = 100, 200, …, 5000) 2. For each grid value: set
+
+that feature to this value for <strong>every row</strong> in the dataset
+
+3. Run predictions on the modified dataset → average all predictions 4.
+
+Plot average prediction vs feature value</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb228-1"><a href="#cb228-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.inspection <span class="im">import</span> PartialDependenceDisplay</span>
+<span id="cb228-2"><a href="#cb228-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb228-3"><a href="#cb228-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb228-4"><a href="#cb228-4" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">4</span>))</span>
+<span id="cb228-5"><a href="#cb228-5" aria-hidden="true" tabindex="-1"></a>PartialDependenceDisplay.from_estimator(</span>
+<span id="cb228-6"><a href="#cb228-6" aria-hidden="true" tabindex="-1"></a>    model, X_val,</span>
+<span id="cb228-7"><a href="#cb228-7" aria-hidden="true" tabindex="-1"></a>    features<span class="op">=</span>[<span class="st">&#39;transaction_amount&#39;</span>, <span class="st">&#39;hour_of_day&#39;</span>],</span>
+<span id="cb228-8"><a href="#cb228-8" aria-hidden="true" tabindex="-1"></a>    ax<span class="op">=</span>ax</span>
+<span id="cb228-9"><a href="#cb228-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb228-10"><a href="#cb228-10" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span></code></pre></div>
+
+<p><strong>Limitation:</strong> PDPs average over the marginal
+
+distribution and can show unrealistic combinations when features are
+
+correlated. Use ICE plots or SHAP dependence plots when correlations are
+
+present.</p>
+
+<h3 id="individual-conditional-expectation-ice-plots">6.1.6 Individual
+
+Conditional Expectation (ICE) Plots</h3>
+
+<p>ICE plots show the PDP curve <strong>for each individual
+
+sample</strong> rather than the population average. This reveals
+
+heterogeneity that PDPs mask.</p>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/05_supervised_learning/ice_vs_pdp_age.svg" alt="Individual Conditional Expectation (ICE) lines per observation vs the average Partial Dependence Plot (PDP) overlay">
+
+<figcaption>
+
+Individual Conditional Expectation (ICE) lines per observation vs the average Partial Dependence Plot (PDP) overlay
+
+</figcaption>
+
+</figure>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb229-1"><a href="#cb229-1" aria-hidden="true" tabindex="-1"></a><span class="co"># kind=&#39;individual&#39; gives ICE, kind=&#39;average&#39; gives PDP, kind=&#39;both&#39; overlays</span></span>
+<span id="cb229-2"><a href="#cb229-2" aria-hidden="true" tabindex="-1"></a>PartialDependenceDisplay.from_estimator(</span>
+<span id="cb229-3"><a href="#cb229-3" aria-hidden="true" tabindex="-1"></a>    model, X_val,</span>
+<span id="cb229-4"><a href="#cb229-4" aria-hidden="true" tabindex="-1"></a>    features<span class="op">=</span>[<span class="st">&#39;age&#39;</span>],</span>
+<span id="cb229-5"><a href="#cb229-5" aria-hidden="true" tabindex="-1"></a>    kind<span class="op">=</span><span class="st">&#39;both&#39;</span>,       <span class="co"># overlay ICE lines + PDP</span></span>
+<span id="cb229-6"><a href="#cb229-6" aria-hidden="true" tabindex="-1"></a>    subsample<span class="op">=</span><span class="dv">100</span>      <span class="co"># plot 100 random individual lines</span></span>
+<span id="cb229-7"><a href="#cb229-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+
+<blockquote>
+
+<p><strong>Key:</strong> Always look at ICE alongside PDP. If ICE lines
+
+cross or fan out widely, the average PDP is misleading.</p>
+
+</blockquote>
+
+<h3 id="shap-shapley-additive-explanations">6.1.7 SHAP: SHapley Additive
+
+exPlanations</h3>
+
+<p>SHAP is the gold standard for interpretability. Based on cooperative
+
+game theory (Shapley values), it assigns each feature a <strong>fair,
+
+consistent contribution</strong> to each individual prediction.</p>
+
+<p><strong>The core idea:</strong> Treat features as players in a game
+
+where the prize is the model’s prediction. Shapley values give each
+
+player its average marginal contribution across all possible orderings —
+
+the fairest possible split of the credit.</p>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/05_supervised_learning/shap_waterfall.svg" alt="SHAP waterfall: each feature's additive contribution to a single prediction, from base value to final output">
+
+<figcaption>
+
+SHAP waterfall: each feature's additive contribution to a single prediction, from base value to final output
+
+</figcaption>
+
+</figure>
+
+<p><strong>SHAP plot types — when to use each:</strong></p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Plot</th>
+
+<th>What it shows</th>
+
+<th>When to use</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>Waterfall</strong></td>
+
+<td>Step-by-step SHAP breakdown for one prediction</td>
+
+<td>Explaining a single decision to a stakeholder</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Force plot</strong></td>
+
+<td>Same as waterfall, horizontal — red pushes up, blue pushes down</td>
+
+<td>Interactive dashboards</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Beeswarm / Summary</strong></td>
+
+<td>All features × all samples — importance + direction</td>
+
+<td>Understanding global model behavior</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Dependence plot</strong></td>
+
+<td>SHAP value vs raw feature value for one feature</td>
+
+<td>Diagnosing non-linear or interaction effects</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Bar plot</strong></td>
+
+<td>Mean absolute SHAP per feature</td>
+
+<td>Quick global feature ranking</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb230-1"><a href="#cb230-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> shap</span>
+<span id="cb230-2"><a href="#cb230-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb230-3"><a href="#cb230-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Fast for tree models</span></span>
+<span id="cb230-4"><a href="#cb230-4" aria-hidden="true" tabindex="-1"></a>explainer <span class="op">=</span> shap.TreeExplainer(model)</span>
+<span id="cb230-5"><a href="#cb230-5" aria-hidden="true" tabindex="-1"></a>shap_values <span class="op">=</span> explainer(X_val)</span>
+<span id="cb230-6"><a href="#cb230-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb230-7"><a href="#cb230-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Waterfall: single prediction breakdown</span></span>
+<span id="cb230-8"><a href="#cb230-8" aria-hidden="true" tabindex="-1"></a>shap.plots.waterfall(shap_values[<span class="dv">0</span>])</span>
+<span id="cb230-9"><a href="#cb230-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb230-10"><a href="#cb230-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Beeswarm: all samples, all features (global view)</span></span>
+<span id="cb230-11"><a href="#cb230-11" aria-hidden="true" tabindex="-1"></a>shap.plots.beeswarm(shap_values)</span>
+<span id="cb230-12"><a href="#cb230-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb230-13"><a href="#cb230-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Dependence: how one feature&#39;s SHAP value varies</span></span>
+<span id="cb230-14"><a href="#cb230-14" aria-hidden="true" tabindex="-1"></a>shap.plots.scatter(shap_values[:, <span class="st">&#39;transaction_amount&#39;</span>])</span>
+<span id="cb230-15"><a href="#cb230-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb230-16"><a href="#cb230-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Bar: global feature importance ranking</span></span>
+<span id="cb230-17"><a href="#cb230-17" aria-hidden="true" tabindex="-1"></a>shap.plots.bar(shap_values)</span></code></pre></div>
+
+<p><strong>Reading a beeswarm plot:</strong></p>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/05_supervised_learning/shap_beeswarm.svg" alt="SHAP beeswarm summary: distribution of feature contributions across all predictions — feature importance + direction">
+
+<figcaption>
+
+SHAP beeswarm summary: distribution of feature contributions across all predictions — feature importance + direction
+
+</figcaption>
+
+</figure>
+
+<p><strong>SHAP interaction values</strong> (tree models only): SHAP can
+
+decompose predictions into pairwise feature interactions — useful for
+
+detecting hidden interactions that a simple feature importance ranking
+
+would miss.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb231-1"><a href="#cb231-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute interaction values (slower, but reveals feature pairs)</span></span>
+<span id="cb231-2"><a href="#cb231-2" aria-hidden="true" tabindex="-1"></a>shap_interaction <span class="op">=</span> explainer.shap_interaction_values(X_val)</span>
+<span id="cb231-3"><a href="#cb231-3" aria-hidden="true" tabindex="-1"></a>shap.summary_plot(shap_interaction, X_val, plot_type<span class="op">=</span><span class="st">&#39;dot&#39;</span>)</span></code></pre></div>
+
+<p><strong>SHAP properties:</strong></p>
+
+<ul>
+<li><strong>Local + Global</strong>:  explains individual predictions AND aggregates to global importance -  <strong>Directional</strong>: shows whether a feature pushes a  prediction up or down</li>
+<li><strong>Consistent</strong>: satisfies Shapley  axioms — fair credit assignment guaranteed</li>
+<li><strong>Additive</strong>:  SHAP values always sum to (prediction − base value)</li>
+</ul>
+
+<h3 id="lime-local-interpretable-model-agnostic-explanations">6.1.8 LIME:
+
+Local Interpretable Model-agnostic Explanations</h3>
+
+<p>LIME explains a <strong>single prediction</strong> by training a
+
+simple linear model on perturbed samples near that point. It answers:
+
+<em>what does the black-box model do in the neighbourhood of this one
+
+input?</em></p>
+
+<!-- LIME Algorithm SVG -->
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="200" viewBox="0 0 760 200" style="display:block; margin:16px auto;">
+  <defs>
+    <style>
+      .lm-box  { font-family:'Segoe UI',Arial,sans-serif; font-size:11px; fill:#fff; font-weight:600; }
+      .lm-sub  { font-family:'Segoe UI',Arial,sans-serif; font-size:9.5px; fill:#e2e8f0; }
+      .lm-res  { font-family:'Segoe UI',Arial,sans-serif; font-size:11px; fill:#1e293b; }
+      .lm-note { font-family:'Segoe UI',Arial,sans-serif; font-size:10.5px; fill:#64748b; font-style:italic; }
+    </style>
+    <marker id="lma" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+      <polygon points="0 0, 7 2.5, 0 5" fill="#64748b"/>
+    </marker>
+    <filter id="lmsh" x="-3%" y="-6%" width="106%" height="118%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0002"/>
+    </filter>
+  </defs>
+
+  <!-- Step 1 -->
+  <rect x="10" y="12" width="110" height="52" rx="8" fill="#7c3aed" filter="url(#lmsh)"/>
+  <text x="65" y="34" text-anchor="middle" class="lm-box">1. Pick input</text>
+  <text x="65" y="50" text-anchor="middle" class="lm-sub">Alice's transaction</text>
+
+  <line x1="124" y1="38" x2="142" y2="38" stroke="#64748b" stroke-width="1.4" marker-end="url(#lma)"/>
+
+  <!-- Step 2 -->
+  <rect x="148" y="12" width="120" height="52" rx="8" fill="#6d28d9" filter="url(#lmsh)"/>
+  <text x="208" y="30" text-anchor="middle" class="lm-box">2. Perturb ~1000x</text>
+  <text x="208" y="46" text-anchor="middle" class="lm-sub">randomly mask/change</text>
+  <text x="208" y="58" text-anchor="middle" class="lm-sub">features near input</text>
+
+  <line x1="272" y1="38" x2="290" y2="38" stroke="#64748b" stroke-width="1.4" marker-end="url(#lma)"/>
+
+  <!-- Step 3 -->
+  <rect x="296" y="12" width="120" height="52" rx="8" fill="#1e40af" filter="url(#lmsh)"/>
+  <text x="356" y="30" text-anchor="middle" class="lm-box">3. Black-box</text>
+  <text x="356" y="46" text-anchor="middle" class="lm-sub">predict all 1000</text>
+  <text x="356" y="58" text-anchor="middle" class="lm-sub">perturbed samples</text>
+
+  <line x1="420" y1="38" x2="438" y2="38" stroke="#64748b" stroke-width="1.4" marker-end="url(#lma)"/>
+
+  <!-- Step 4 -->
+  <rect x="444" y="12" width="120" height="52" rx="8" fill="#0369a1" filter="url(#lmsh)"/>
+  <text x="504" y="30" text-anchor="middle" class="lm-box">4. Fit weighted</text>
+  <text x="504" y="46" text-anchor="middle" class="lm-sub">linear model</text>
+  <text x="504" y="58" text-anchor="middle" class="lm-sub">(proximity weights)</text>
+
+  <line x1="568" y1="38" x2="586" y2="38" stroke="#64748b" stroke-width="1.4" marker-end="url(#lma)"/>
+
+  <!-- Step 5 -->
+  <rect x="592" y="12" width="156" height="52" rx="8" fill="#059669" filter="url(#lmsh)"/>
+  <text x="670" y="30" text-anchor="middle" class="lm-box">5. Local explanation</text>
+  <text x="670" y="46" text-anchor="middle" class="lm-sub">coefficients = feature</text>
+  <text x="670" y="58" text-anchor="middle" class="lm-sub">contributions near input</text>
+
+  <!-- Result box -->
+  <rect x="148" y="86" width="464" height="48" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="380" y="106" text-anchor="middle" class="lm-res"><tspan font-weight="600">Result:</tspan> "Near Alice's input, the model behaves as if:</text>
+  <text x="380" y="122" text-anchor="middle" class="lm-note">amount +$1000 → +0.12 fraud score  ·  country=unusual → +0.08 fraud score"</text>
+</svg>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb233-1"><a href="#cb233-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> lime <span class="im">import</span> lime_tabular</span>
+<span id="cb233-2"><a href="#cb233-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb233-3"><a href="#cb233-3" aria-hidden="true" tabindex="-1"></a>explainer <span class="op">=</span> lime_tabular.LimeTabularExplainer(</span>
+<span id="cb233-4"><a href="#cb233-4" aria-hidden="true" tabindex="-1"></a>    training_data<span class="op">=</span>X_train.values,</span>
+<span id="cb233-5"><a href="#cb233-5" aria-hidden="true" tabindex="-1"></a>    feature_names<span class="op">=</span>X_train.columns.tolist(),</span>
+<span id="cb233-6"><a href="#cb233-6" aria-hidden="true" tabindex="-1"></a>    mode<span class="op">=</span><span class="st">&#39;classification&#39;</span></span>
+<span id="cb233-7"><a href="#cb233-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb233-8"><a href="#cb233-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb233-9"><a href="#cb233-9" aria-hidden="true" tabindex="-1"></a>explanation <span class="op">=</span> explainer.explain_instance(</span>
+<span id="cb233-10"><a href="#cb233-10" aria-hidden="true" tabindex="-1"></a>    data_row<span class="op">=</span>X_val.iloc[<span class="dv">0</span>].values,</span>
+<span id="cb233-11"><a href="#cb233-11" aria-hidden="true" tabindex="-1"></a>    predict_fn<span class="op">=</span>model.predict_proba,</span>
+<span id="cb233-12"><a href="#cb233-12" aria-hidden="true" tabindex="-1"></a>    num_features<span class="op">=</span><span class="dv">10</span></span>
+<span id="cb233-13"><a href="#cb233-13" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb233-14"><a href="#cb233-14" aria-hidden="true" tabindex="-1"></a>explanation.show_in_notebook()</span></code></pre></div>
+
+<p><strong>LIME vs SHAP:</strong></p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th></th>
+
+<th>SHAP</th>
+
+<th>LIME</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>Theoretical grounding</strong></td>
+
+<td>Game theory (Shapley values)</td>
+
+<td>Local linear approximation</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Consistency</strong></td>
+
+<td>Globally consistent</td>
+
+<td>Local only — explanations can conflict across samples</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Speed (trees)</strong></td>
+
+<td>Fast (TreeExplainer)</td>
+
+<td>Slow (needs ~1000 model calls)</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Speed (neural nets)</strong></td>
+
+<td>Slow (DeepExplainer / Kernel)</td>
+
+<td>Moderate</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Reliability</strong></td>
+
+<td>High</td>
+
+<td>Can be unstable (sensitive to perturbation scheme)</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Best for</strong></td>
+
+<td>Production explainability</td>
+
+<td>Quick ad-hoc debugging, any model</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="when-to-use-what">6.1.9 When to Use What</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 20%" />
+
+<col style="width: 20%" />
+
+<col style="width: 20%" />
+
+<col style="width: 20%" />
+
+<col style="width: 20%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Tool</th>
+
+<th>Best for</th>
+
+<th>Model-agnostic?</th>
+
+<th>Global?</th>
+
+<th>Local?</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Built-in importance</td>
+
+<td>Quick baseline (trees only)</td>
+
+<td>No</td>
+
+<td>Yes</td>
+
+<td>No</td>
+
+</tr>
+
+<tr>
+
+<td>Permutation importance</td>
+
+<td>Reliable global ranking, any model</td>
+
+<td>Yes</td>
+
+<td>Yes</td>
+
+<td>No</td>
+
+</tr>
+
+<tr>
+
+<td>PDP</td>
+
+<td>Feature effect shape (average)</td>
+
+<td>Yes</td>
+
+<td>Yes</td>
+
+<td>Partial</td>
+
+</tr>
+
+<tr>
+
+<td>ICE</td>
+
+<td>Per-sample feature effects, detect heterogeneity</td>
+
+<td>Yes</td>
+
+<td>No</td>
+
+<td>Yes</td>
+
+</tr>
+
+<tr>
+
+<td>SHAP</td>
+
+<td>Production, compliance, debugging</td>
+
+<td>Yes (fast for trees)</td>
+
+<td>Yes</td>
+
+<td>Yes</td>
+
+</tr>
+
+<tr>
+
+<td>LIME</td>
+
+<td>Quick local debug, neural nets</td>
+
+<td>Yes</td>
+
+<td>No</td>
+
+<td>Yes</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> For production ML, SHAP is the industry
+
+standard. PDP + ICE give you the effect <em>shape</em>. LIME is a fast
+
+fallback when SHAP is too slow.</p>
+
+</blockquote>
+
+<h3 id="common-pitfalls-13">6.1.10 Common Pitfalls</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 50%" />
+
+<col style="width: 50%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Pitfall</th>
+
+<th>Fix</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Using built-in tree importance with correlated features</td>
+
+<td>Correlated features split importance — use permutation importance or
+
+SHAP</td>
+
+</tr>
+
+<tr>
+
+<td>Treating SHAP values as causal</td>
+
+<td>SHAP = predictive contribution, not causal effect</td>
+
+</tr>
+
+<tr>
+
+<td>Ignoring feature direction</td>
+
+<td>A feature can push predictions up for some users and down for
+
+others</td>
+
+</tr>
+
+<tr>
+
+<td>Relying on PDP when features are strongly correlated</td>
+
+<td>Use ICE or SHAP dependence plots instead</td>
+
+</tr>
+
+<tr>
+
+<td>Explaining the model without auditing the model</td>
+
+<td>Explainability reveals what the model does, not whether it is
+
+correct or fair</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="practical-workflow-explaining-a-model-in-production">6.1.11 Practical
+
+Workflow: Explaining a Model in Production</h3>
+
+<!-- XAI Production Workflow SVG -->
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="340" viewBox="0 0 800 340" style="display:block; margin:18px auto;">
+  <defs>
+    <style>
+      .wf-step { font-family:'Segoe UI',Arial,sans-serif; font-size:13px; fill:#fff; font-weight:700; }
+      .wf-num  { font-family:'Segoe UI',Arial,sans-serif; font-size:11px; fill:#fff; font-weight:700; }
+      .wf-tool { font-family:'Segoe UI',Arial,sans-serif; font-size:11px; fill:#1e293b; font-weight:600; }
+      .wf-q    { font-family:'Segoe UI',Arial,sans-serif; font-size:10.5px; fill:#64748b; font-style:italic; }
+    </style>
+    <marker id="wfa" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#94a3b8"/>
+    </marker>
+    <filter id="wfsh" x="-3%" y="-6%" width="106%" height="118%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#0002"/>
+    </filter>
+  </defs>
+
+  <!-- Step 1: Global Understanding -->
+  <rect x="20" y="14" width="172" height="36" rx="8" fill="#2563eb" filter="url(#wfsh)"/>
+  <text x="28" y="36" class="wf-num">1</text>
+  <text x="106" y="36" text-anchor="middle" class="wf-step">Global Understanding</text>
+  <rect x="20" y="56" width="172" height="80" rx="8" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+  <text x="106" y="74" text-anchor="middle" class="wf-tool">Permutation Importance</text>
+  <text x="106" y="90" text-anchor="middle" class="wf-q">"Which features matter?"</text>
+  <text x="106" y="106" text-anchor="middle" class="wf-tool">SHAP beeswarm + PDP</text>
+  <text x="106" y="122" text-anchor="middle" class="wf-q">"How? What shape?"</text>
+
+  <!-- Arrow 1→2 -->
+  <line x1="196" y1="86" x2="218" y2="86" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#wfa)"/>
+
+  <!-- Step 2: Local Explanation -->
+  <rect x="224" y="14" width="172" height="36" rx="8" fill="#7c3aed" filter="url(#wfsh)"/>
+  <text x="232" y="36" class="wf-num">2</text>
+  <text x="310" y="36" text-anchor="middle" class="wf-step">Local Explanation</text>
+  <rect x="224" y="56" width="172" height="80" rx="8" fill="#f5f3ff" stroke="#ddd6fe" stroke-width="1"/>
+  <text x="310" y="74" text-anchor="middle" class="wf-tool">SHAP waterfall / force</text>
+  <text x="310" y="90" text-anchor="middle" class="wf-q">"Why this prediction?"</text>
+  <text x="310" y="106" text-anchor="middle" class="wf-tool">LIME (if SHAP too slow)</text>
+  <text x="310" y="122" text-anchor="middle" class="wf-q">"Quick local sanity check"</text>
+
+  <!-- Arrow 2→3 -->
+  <line x1="400" y1="86" x2="422" y2="86" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#wfa)"/>
+
+  <!-- Step 3: Bias / Fairness -->
+  <rect x="428" y="14" width="172" height="36" rx="8" fill="#dc2626" filter="url(#wfsh)"/>
+  <text x="436" y="36" class="wf-num">3</text>
+  <text x="514" y="36" text-anchor="middle" class="wf-step">Bias / Fairness Check</text>
+  <rect x="428" y="56" width="172" height="80" rx="8" fill="#fef2f2" stroke="#fecaca" stroke-width="1"/>
+  <text x="514" y="74" text-anchor="middle" class="wf-tool">SHAP on protected attrs</text>
+  <text x="514" y="90" text-anchor="middle" class="wf-q">"Is zip code a proxy?"</text>
+  <text x="514" y="106" text-anchor="middle" class="wf-tool">PDP for demographics</text>
+  <text x="514" y="122" text-anchor="middle" class="wf-q">"Monotone &amp; expected?"</text>
+
+  <!-- Arrow 3→4 -->
+  <line x1="604" y1="86" x2="626" y2="86" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#wfa)"/>
+
+  <!-- Step 4: Monitor -->
+  <rect x="632" y="14" width="148" height="36" rx="8" fill="#059669" filter="url(#wfsh)"/>
+  <text x="640" y="36" class="wf-num">4</text>
+  <text x="706" y="36" text-anchor="middle" class="wf-step">Monitor in Prod</text>
+  <rect x="632" y="56" width="148" height="80" rx="8" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1"/>
+  <text x="706" y="74" text-anchor="middle" class="wf-tool">Track mean |SHAP|</text>
+  <text x="706" y="90" text-anchor="middle" class="wf-q">"Feature rankings stable?"</text>
+  <text x="706" y="106" text-anchor="middle" class="wf-tool">Alert on importance shift</text>
+  <text x="706" y="122" text-anchor="middle" class="wf-q">"Drift signal before metrics"</text>
+
+  <!-- Feedback loop arrow from Monitor back to Global -->
+  <path d="M 706,140 C 706,172 706,180 706,186 L 706,186 C 706,200 600,200 400,200 C 200,200 106,200 106,186 L 106,140"
+        fill="none" stroke="#94a3b8" stroke-width="1.4" stroke-dasharray="6,3" marker-end="url(#wfa)"/>
+  <text x="400" y="218" text-anchor="middle" style="font-family:'Segoe UI',sans-serif; font-size:10.5px; fill:#64748b; font-style:italic;">
+    Continuous loop: explanation drift often precedes accuracy drift
+  </text>
+</svg>
+
+
+
+<h2 id="ch6-interview-questions">Chapter 6 &#x2014; Interview Questions</h2>
+
+<ol type="1">
+
+<li><p><strong>What is the difference between SHAP and LIME? When would you use each?</strong><br>
+SHAP (SHapley Additive exPlanations) is grounded in cooperative game theory &#x2014; it fairly distributes the prediction among all features using Shapley values. It provides both global and local explanations and is theoretically consistent. LIME (Local Interpretable Model-agnostic Explanations) builds a local linear surrogate around a single prediction by perturbing the input. Use SHAP when you need mathematically grounded, consistent explanations across many predictions (e.g., regulatory audits); use LIME for quick, interpretable single-prediction debugging, especially when SHAP is too slow (e.g., deep learning models on images).</p></li>
+
+<li><p><strong>Explain the difference between global and local interpretability. Give an example of each.</strong><br>
+Global interpretability answers &#x201c;which features matter most across the entire dataset?&#x201d; &#x2014; examples include permutation importance, SHAP summary plots, and PDP (Partial Dependence Plots). Local interpretability answers &#x201c;why did the model make <em>this specific</em> prediction?&#x201d; &#x2014; examples include SHAP waterfall plots, LIME explanations, and ICE (Individual Conditional Expectation) curves. In practice, you need both: global for validation and stakeholder trust, local for debugging individual cases and regulatory compliance.</p></li>
+
+<li><p><strong>A regulator asks you to explain why a customer&#x2019;s loan was denied. How do you approach this?</strong><br>
+Use a local explanation method on the specific prediction. (1) Run SHAP on the denied application to get per-feature contributions. (2) Show which features pushed the prediction toward &#x201c;deny&#x201d; and by how much (e.g., &#x201c;debt-to-income ratio contributed +0.35 toward denial&#x201d;). (3) Verify no protected attributes (race, gender, postcode as proxy) have high SHAP values. (4) Generate a human-readable report mapping technical SHAP values to business language. This satisfies GDPR Article 22&#x2019;s right to &#x201c;meaningful information about the logic involved.&#x201d;</p></li>
+
+<li><p><strong>Permutation importance shows feature X is important, but SHAP shows it is not. What could explain this?</strong><br>
+Permutation importance measures how much performance <em>drops</em> when a feature is shuffled &#x2014; it captures both direct effects and interaction effects, but is sensitive to feature correlation. If X is highly correlated with another feature Y, shuffling X alone may not hurt performance (Y compensates), yet SHAP correctly attributes the shared contribution. Alternatively, permutation importance can overstate importance for correlated features when the model uses both. Always cross-check with SHAP dependence plots and be suspicious when permutation importance and SHAP disagree &#x2014; it usually indicates feature correlation.</p></li>
+
+</ol>
+
+<hr />
+
+<hr />
+
+
+<div class="chapter-nav">
+  <a href="chapter-05.html">&larr; Chapter 05: Supervised Learning</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-07.html">Chapter 07: Model Evaluation and Validation &rarr;</a>
+</div>
+<div class="site-footer">
+  <p>&copy; 2026 Hariram Subramanian Gopal &middot; <a href="index.html">Data to Decisions</a></p>
+</div>
+</body>
+</html>

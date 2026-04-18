@@ -1,0 +1,4176 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Hariram Subramanian Gopal" />
+  <title>Chapter 11: NLP and LLMs | Data to Decisions</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</head>
+<body>
+<div class="chapter-nav">
+  <a href="chapter-10.html">&larr; Chapter 10: Deep Learning</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-12.html">Chapter 12: Reinforcement Learning &rarr;</a>
+</div>
+<h1 id="chapter-11-nlp-and-llms">Chapter 11: NLP and LLMs</h1>
+
+<h2 id="chapter-scope-8">11.0 Chapter Scope</h2>
+
+<p>Natural language processing spans a wide range: classical bag-of-words
+
+models, word embeddings, transformers, and today’s large language
+
+models. This chapter is designed as a guided climb through that stack,
+
+so each new idea feels like a natural extension of the previous one
+
+rather than a jump into jargon.</p>
+
+<p><strong>What you will learn:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Section</th>
+
+<th>Topic</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>10.1</td>
+
+<td>NLP fundamentals: tasks, taxonomy, applications</td>
+
+</tr>
+
+<tr>
+
+<td>10.2</td>
+
+<td>Text representations: BoW → TF-IDF → embeddings</td>
+
+</tr>
+
+<tr>
+
+<td>10.3</td>
+
+<td>Transformer architecture: attention, BERT vs GPT</td>
+
+</tr>
+
+<tr>
+
+<td>10.4</td>
+
+<td>Tokenization and BPE</td>
+
+</tr>
+
+<tr>
+
+<td>10.5</td>
+
+<td>Dense embeddings for retrieval</td>
+
+</tr>
+
+<tr>
+
+<td>10.6</td>
+
+<td>Retrieval-Augmented Generation (RAG)</td>
+
+</tr>
+
+<tr>
+
+<td>10.7</td>
+
+<td>Fine-tuning and alignment (SFT, LoRA, RLHF, DPO)</td>
+
+</tr>
+
+<tr>
+
+<td>10.8</td>
+
+<td>Prompting and in-context learning</td>
+
+</tr>
+
+<tr>
+
+<td>10.9</td>
+
+<td>LLM evaluation and hallucination</td>
+
+</tr>
+
+<tr>
+
+<td>10.10</td>
+
+<td>Agentic AI: tool use, function calling, multi-agent systems, MCP</td>
+
+</tr>
+
+<tr>
+
+<td>10.11</td>
+
+<td>LLM Quantization: INT8, INT4, GPTQ, AWQ, GGUF</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Prerequisites:</strong> Deep learning fundamentals (Chapter
+
+10), basic linear algebra.</p>
+
+<hr />
+
+<h2 id="nlp-fundamentals-and-applications">11.1 NLP Fundamentals and
+
+Applications</h2>
+
+<h3 id="what-nlp-is">11.1.1 What NLP Is</h3>
+
+<p><strong>NLP (Natural Language Processing)</strong> = AI for human
+
+language in text and speech. <strong>Deep learning</strong> is one
+
+modeling approach within NLP. The intersection of the two is sometimes
+
+called <strong>Deep NLP (DNLP)</strong>.</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">NLP</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">= problem space (language tasks)</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">Deep Learning</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">solution family (neural models)</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">DNLP</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">= NLP solved with deep learning</td>
+</tr>
+</table>
+
+
+<p>Modern systems typically use one pretrained transformer for many
+
+tasks, but the task categories still matter for defining evaluation
+
+metrics and problem structure.</p>
+
+<h3 id="task-taxonomy">11.1.2 Task Taxonomy</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 30%" />
+
+<col style="width: 30%" />
+
+<col style="width: 39%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Group</th>
+
+<th>Tasks</th>
+
+<th>Examples</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>Understanding</strong></td>
+
+<td>Classification, NER, QA, information extraction</td>
+
+<td>Sentiment analysis, named entity recognition</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Transformation</strong></td>
+
+<td>Translation, summarization, transcription, rewriting</td>
+
+<td>Machine translation, document summarization</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Generation</strong></td>
+
+<td>Dialogue, captioning, structured generation</td>
+
+<td>Chatbot responses, report generation</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Most real NLP pipelines combine all three. A
+
+customer support bot understands the user’s intent, transforms it into a
+
+search query, and generates a response.</p>
+
+</blockquote>
+
+<div class="practical-example">
+
+<div class="pe-label">Real-World ML Use Case — NLP Fundamentals</div>
+
+<strong>Customer support copilots are really three NLP systems glued together.</strong> A user writes, “My payment failed but money got deducted.” The system first <em>understands</em> intent and urgency, then <em>transforms</em> the complaint into a search query over policies and past tickets, then <em>generates</em> a reply or agent draft. This is why production NLP is rarely “just classification” or “just generation” — the valuable systems chain multiple language tasks together.
+
+</div>
+
+<h3 id="common-applications">11.1.3 Common Applications</h3>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Application</th>
+
+<th>ML task type</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Chatbot / dialogue</td>
+
+<td>Seq2Seq generation</td>
+
+</tr>
+
+<tr>
+
+<td>Machine translation</td>
+
+<td>Seq2Seq (encoder-decoder)</td>
+
+</tr>
+
+<tr>
+
+<td>Sentiment analysis</td>
+
+<td>Classification</td>
+
+</tr>
+
+<tr>
+
+<td>Named entity recognition (NER)</td>
+
+<td>Sequence labeling</td>
+
+</tr>
+
+<tr>
+
+<td>Summarization</td>
+
+<td>Seq2Seq or extractive selection</td>
+
+</tr>
+
+<tr>
+
+<td>Question answering</td>
+
+<td>Span extraction or generation</td>
+
+</tr>
+
+<tr>
+
+<td>Speech-to-text (ASR)</td>
+
+<td>Seq2Seq (audio → text)</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Seq2Seq</strong> (sequence-to-sequence) is the core pattern
+
+when both input and output are ordered sequences:</p>
+
+<p><span class="math display">\[
+
+P(y_{1:T&#39;} \mid x_{1:T}) = \prod_{t=1}^{T&#39;} P(y_t \mid
+
+y_{&lt;t}, x_{1:T})
+
+\]</span></p>
+
+<p><strong>Where:</strong> <span class="math inline">\(x_{1:T}\)</span> = input sequence of length <span class="math inline">\(T\)</span>, <span class="math inline">\(y_{1:T'}\)</span> = output sequence, <span class="math inline">\(y_{&lt;t}\)</span> = all previously generated tokens before position <span class="math inline">\(t\)</span>.</p>
+
+<p>Seq2Seq handles: translation (English → French), summarization (long
+
+text → short text), transcription (audio → text), dialogue (utterance →
+
+response).</p>
+
+<hr />
+
+<h2 id="text-representations-bow-to-embeddings">11.2 Text
+
+Representations: BoW to Embeddings</h2>
+
+<p>The central challenge in NLP is turning variable-length text into
+
+fixed-size numerical vectors that a model can learn from.
+
+Representations evolved from sparse token counts to dense semantic
+
+vectors.</p>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/10_nlp_and_llms/text_representation_timeline.svg" alt="Text representation evolution: Bag-of-Words/TF-IDF → Word2Vec/GloVe static embeddings → BERT/LLM contextual representations">
+
+<figcaption>
+
+Text representation evolution: Bag-of-Words/TF-IDF → Word2Vec/GloVe static embeddings → BERT/LLM contextual representations
+
+</figcaption>
+
+</figure>
+
+<h3 id="bag-of-words-bow">11.2.1 Bag-of-Words (BoW)</h3>
+
+<p><strong>BoW</strong> maps a document to a vector over a vocabulary
+
+<span class="math inline">\(V\)</span>: each dimension counts the
+
+occurrence of one word.</p>
+
+<p><span class="math display">\[
+
+v \in \mathbb{R}^{|V|}, \quad v_i = \text{count of word } i \text{ in
+
+document}
+
+\]</span></p>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-family:Consolas, monospace; font-size:0.88rem; line-height:1.9;">
+<strong>Vocabulary:</strong> {"cat", "sat", "mat", "dog"}<br>
+"The cat sat on the mat" → <span style="color:#3b82f6; font-weight:600;">[1, 1, 1, 0]</span><br>
+"The dog sat" &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ <span style="color:#8b5cf6; font-weight:600;">[0, 1, 0, 1]</span>
+</div>
+
+<p><strong>Strengths:</strong> simple, fast, interpretable.
+
+<strong>Weaknesses:</strong> discards word order, treats “not good” and
+
+“good” identically, high-dimensional sparse vectors.</p>
+
+<h3 id="tf-idf">11.2.2 TF-IDF</h3>
+
+<p><strong>TF-IDF</strong> weights words by how distinctive they are to
+
+a document within the corpus.</p>
+
+<p><span class="math display">\[
+
+\text{TF-IDF}(t, d) = \underbrace{\text{tf}(t, d)}_{\text{frequency in
+
+doc}} \times \underbrace{\log \frac{N}{\text{df}(t)}}_{\text{rarity
+
+across corpus}}
+
+\]</span></p>
+
+<ul>
+
+<li>Common words (“the”, “and”) get low IDF → low weight.</li>
+
+<li>Rare, distinctive words get high IDF → high weight.</li>
+
+</ul>
+
+<p><strong>Use case:</strong> document search and classification where
+
+keyword matching matters.</p>
+
+<h3 id="n-grams-and-skip-grams">11.2.3 N-grams and Skip-grams</h3>
+
+<p><strong>N-grams</strong> extend BoW to sequences of <span
+
+class="math inline">\(n\)</span> consecutive words:</p>
+
+<ul>
+
+<li>Unigrams: <code>{quick, brown, fox}</code></li>
+
+<li>Bigrams: <code>{quick_brown, brown_fox}</code></li>
+
+<li>Trigrams: <code>{quick_brown_fox}</code></li>
+
+</ul>
+
+<p><strong>Orthogonal Sparse Bigrams (OSB)</strong> extend this with
+
+skip-aware pairing: anchor on the first word in a window, pair it with
+
+all subsequent words. Useful for classical spam filtering but replaced
+
+by embeddings in production NLP.</p>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.92rem; line-height:1.8;">
+<strong>Window</strong> [<code>free limited time offer</code>]:<br>
+<code>free_limited</code>, <code>free__time</code>, <code>free___offer</code> &ensp;<span style="color:#64748b;">(underscore count = distance)</span>
+</div>
+
+
+<h3 id="word-embeddings-word2vec-glove-fasttext">11.2.4 Word Embeddings:
+
+Word2Vec, GloVe, FastText</h3>
+
+<p>Embeddings replace sparse BoW vectors with dense <span
+
+class="math inline">\(d\)</span>-dimensional vectors where words with
+
+similar meaning are geometrically close.</p>
+
+<p><strong>Word2Vec skip-gram:</strong> train a shallow neural network
+
+to predict context words from a center word.</p>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.92rem; line-height:1.8;">
+<strong>Center word:</strong> <code>"good"</code><br>
+<strong>Context window:</strong> [<code>"are"</code>, <code>"really"</code>, <code>"at"</code>, <code>"heart"</code>]<br>
+<strong>Objective:</strong> maximize P(context | center)
+</div>
+
+
+<p>Mathematically: given center word one-hot <span
+
+class="math inline">\(x\)</span>,</p>
+
+<p><span class="math display">\[
+
+h = Wx, \quad u = W&#39;h, \quad P(w_j \mid w_c) = \frac{e^{u_j}}{\sum_k
+
+e^{u_k}}
+
+\]</span></p>
+
+<p><strong>Where:</strong> <span class="math inline">\(x\)</span> = one-hot vector of center word, <span class="math inline">\(W\)</span> = input embedding matrix, <span class="math inline">\(W'\)</span> = output embedding matrix, <span class="math inline">\(h\)</span> = hidden representation (the word embedding).</p>
+
+<p>After training, similar words cluster in the learned embedding
+
+space:</p>
+
+<div style="border-left:4px solid #8b5cf6; padding:10px 16px; background:#faf5ff; border-radius:6px; margin:16px 0; font-size:0.95rem;">
+<code>"king" − "man" + "woman" ≈ "queen"</code> &ensp;<span style="color:#64748b;">(semantic arithmetic)</span>
+</div>
+
+&quot;Paris&quot; - &quot;France&quot; + &quot;Italy&quot; ≈ &quot;Rome&quot;</div>
+
+
+<p><strong>GloVe:</strong> similar result but trained on global word
+
+co-occurrence statistics rather than local windows.</p>
+
+<p><strong>Important OOV caveat for basic embeddings:</strong> Word2Vec and GloVe usually depend on a fixed vocabulary learned during training. If an unseen token appears at inference, classical pipelines often map it to a generic <code>&lt;UNK&gt;</code> vector or ignore it. So with basic embeddings, a new product code, a brand-new company name, or a misspelled word may lose most of its meaning unless you use subword-aware methods such as FastText or BPE-based transformers.</p>
+
+<p><strong>FastText:</strong> represents each word as a bag of character
+
+n-grams. Handles out-of-vocabulary (OOV) words and morphological
+
+variants naturally.</p>
+
+<div style="border-left:4px solid #6366f1; padding:8px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.92rem;">
+<code>"running"</code> → <code>"run"</code> + <code>"runn"</code> + <code>"unni"</code> + <code>"nnin"</code> + <code>"ning"</code>
+</div>
+
+
+<p><strong>Comparison:</strong></p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 20%" />
+
+<col style="width: 23%" />
+
+<col style="width: 33%" />
+
+<col style="width: 23%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Method</th>
+
+<th>Training</th>
+
+<th>OOV handling</th>
+
+<th>Best for</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Word2Vec</td>
+
+<td>Local windows</td>
+
+<td>No</td>
+
+<td>General dense embeddings</td>
+
+</tr>
+
+<tr>
+
+<td>GloVe</td>
+
+<td>Co-occurrence matrix</td>
+
+<td>No</td>
+
+<td>Semantic similarity tasks</td>
+
+</tr>
+
+<tr>
+
+<td>FastText</td>
+
+<td>Subword n-grams</td>
+
+<td>Yes</td>
+
+<td>Morphologically rich languages, typos</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="from-static-to-contextual-embeddings">11.2.5 From Static to Contextual
+
+Embeddings</h3>
+
+<p>Word2Vec/GloVe give every word one fixed vector regardless of
+
+context. “Bank” (river vs financial) gets the same vector.
+
+<strong>Contextual embeddings</strong> (BERT, LLMs) produce a different
+
+vector for the same word depending on its sentence context.</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<thead><tr>
+<th style="padding:6px 16px; text-align:left; border-bottom:2px solid #6366f1;">Type</th>
+<th style="padding:6px 16px; text-align:left; border-bottom:2px solid #6366f1;">Example</th>
+<th style="padding:6px 16px; text-align:left; border-bottom:2px solid #6366f1;">Vector</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 16px; font-weight:600;">Static</td><td style="padding:6px 16px;">"bank" (always)</td><td style="padding:6px 16px; font-family:Consolas,monospace; font-size:0.85rem;">[0.3, 0.1, -0.2, …]</td></tr>
+<tr><td style="padding:6px 16px; font-weight:600;" rowspan="2">Contextual</td><td style="padding:6px 16px;">"bank by the <em>river</em>"</td><td style="padding:6px 16px; font-family:Consolas,monospace; font-size:0.85rem; color:#3b82f6;">[0.1, -0.3, 0.4, …]</td></tr>
+<tr><td style="padding:6px 16px;">"bank <em>account</em>"</td><td style="padding:6px 16px; font-family:Consolas,monospace; font-size:0.85rem; color:#8b5cf6;">[0.4, 0.2, -0.1, …]</td></tr>
+</tbody>
+</table>
+
+<div class="practical-example">
+
+<div class="pe-label">Real-World ML Use Case — Embeddings</div>
+
+<strong>Talent and resume matching became much better once systems stopped relying on exact words.</strong> A recruiter may search for “NLP engineer,” while a strong profile says “applied scientist, information retrieval, ranking.” Sparse keyword features miss that match; dense embeddings pull those concepts closer together. That shift from exact tokens to semantic similarity is one reason modern search, recommendation, and matching products feel far more “intelligent” than classic keyword systems.
+
+</div>
+
+<div class="intuition-note">
+
+<div class="in-label">Mental Model</div>
+
+<strong>An embedding is best thought of as a location, not a definition.</strong> The model is not storing a dictionary entry for “bank”; it is placing each usage of “bank” somewhere in a semantic landscape. Nearby points tend to mean similar things. Static embeddings put every “bank” in one place; contextual embeddings move it depending on the sentence.
+
+</div>
+
+<hr />
+
+<h2 id="transformer-architecture">11.3 Transformer Architecture</h2>
+
+<blockquote><p><strong>Recommended visual guide:</strong> <a href="https://jalammar.github.io/illustrated-transformer/" target="_blank">The Illustrated Transformer</a> (Jay Alammar). This section follows the same spirit: start with one input sentence, then unpack the moving parts one by one.</p></blockquote>
+
+<p>The Transformer can feel intimidating because people often introduce it in the middle of the math. A better way is to follow one sentence as it moves through the model.</p>
+
+<h3 id="from-input-text-to-vectors">11.3.1 From Input Text to Vectors</h3>
+
+<p>Suppose the input is:</p>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-family:Consolas, monospace; font-size:0.9rem; line-height:1.8;">
+Input text: "The bank by the river was steep."<br>
+Tokens: ["The", "bank", "by", "the", "river", "was", "steep"]<br>
+Embeddings: each token -&gt; dense vector, e.g. 768 numbers<br>
+Positional signal: add order information so the model knows which token came first, second, third, ...
+</div>
+
+<p>At this stage the model does <strong>not</strong> see words directly. It sees a sequence of vectors. Each vector says something about the token’s meaning, and positional encoding says where that token sits in the sentence.</p>
+
+<div class="intuition-note">
+
+<div class="in-label">Mental Model</div>
+
+<strong>Embeddings answer “what is this token like?” and positional encoding answers “where is it in the sequence?”</strong> The Transformer needs both. Without embeddings it has no meaning; without position it sees only a bag of tokens.</div>
+
+<h3 id="one-transformer-block">11.3.2 One Transformer Block</h3>
+
+<p>A Transformer layer is easier to understand if you think of it as two steps repeated many times:</p>
+
+<ol>
+<li><strong>Self-attention:</strong> each token looks around the sentence and decides which other tokens matter right now.</li>
+<li><strong>Feed-forward network:</strong> a small MLP refines each token representation independently.</li>
+</ol>
+
+<p>In practice, each block also uses <strong>residual connections</strong> and <strong>layer normalization</strong> so training stays stable. Conceptually, though, the heart of the model is still “mix information across tokens, then refine each token.”</p>
+
+
+<h3 id="self-attention">11.3.3 Self-Attention</h3>
+
+<p>Self-attention is the mechanism that made Transformers so powerful. When the model processes one token, it is allowed to inspect other tokens in the same sequence and borrow useful information from them.</p>
+
+<p>Take the sentence:</p>
+
+<div style="border-left:4px solid #6366f1; padding:10px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.95rem; font-style:italic; color:#334155;">
+“The bank by the river was steep.”
+</div>
+
+<p>When encoding <code>bank</code>, the model should pay attention to <code>river</code>, because that tells it “bank” means riverbank, not financial institution. That is exactly the kind of dependency self-attention captures.</p>
+
+<p>Here are two more everyday sentences where self-attention quietly does the heavy lifting:</p>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.92rem; line-height:1.75;">
+<strong>Example 1 — Pronoun resolution (the classic Winograd flip):</strong><br>
+<em>“The trophy didn’t fit in the suitcase because <u>it</u> was too big.”</em><br>
+When encoding <code>it</code>, the model has to decide: does <code>it</code> refer to the <code>trophy</code> or the <code>suitcase</code>? The clue is <code>too big</code>. Self-attention lets <code>it</code> look at the adjective <code>big</code> and the two candidate nouns together and lean on <code>trophy</code>. Now flip one word:<br>
+<em>“The trophy didn’t fit in the suitcase because <u>it</u> was too small.”</em><br>
+Same sentence structure, but now attention flips and <code>it</code> gets pulled toward <code>suitcase</code>. One adjective changes the entire attention pattern — and therefore the meaning the model encodes for <code>it</code>.
+<br><br>
+<strong>Example 2 — Same word, two different parts of speech:</strong><br>
+<em>“She wrote a new <u>book</u> for her publisher.”</em> vs. <em>“She will <u>book</u> a flight for her boss.”</em><br>
+The token <code>book</code> is spelled identically in both sentences, but in the first it is a noun (an object you can hold) and in the second it is a verb (the act of reserving). Self-attention on sentence one leans on <code>wrote</code> and <code>publisher</code>, which pull <code>book</code> toward the “written object” sense. On sentence two it leans on <code>will</code> and <code>flight</code>, which pull <code>book</code> toward the “reserve a ticket” sense. The vector that comes out for <code>book</code> is <em>different in each sentence</em> — shaped by whichever neighbors it decided to listen to.
+</div>
+
+<p>Notice what all three examples share: the <em>same word</em> means different things in different sentences, and the model resolves the ambiguity by looking at nearby tokens. This is exactly why people say Transformer embeddings are <strong>contextual</strong> rather than <strong>static</strong>. Word2Vec gives <code>bank</code> one fixed vector forever. A Transformer gives <code>bank</code> a fresh vector every time it appears, built from the neighbors it chose to attend to right now.</p>
+
+<div class="intuition-note">
+
+<div class="in-label">Mental Model</div>
+
+<strong>Self-attention lets each token ask, “which other tokens should influence my meaning right now?”</strong> It is a dynamic lookup mechanism. The answer changes from sentence to sentence — which is why the same word can carry completely different meanings depending on its company.</div>
+
+<h3 id="qkv-intuition">11.3.4 Q, K, V Intuition</h3>
+
+<p>Now we can introduce the famous <strong>Q, K, V</strong> terms. They make much more sense once you already know what the model is trying to do.</p>
+
+<ul>
+<li><strong>Query (Q):</strong> what this token is looking for in the rest of the sentence.</li>
+<li><strong>Key (K):</strong> what each token offers as a match signal.</li>
+<li><strong>Value (V):</strong> the actual information each token contributes if selected.</li>
+</ul>
+
+<p><strong>Where do these three vectors actually come from?</strong> Each token in the sequence already has an embedding vector <strong>x</strong> from the embedding layer — the “what is this token like?” representation. Inside one attention head, the model learns <em>three</em> weight matrices, <strong>W<sub>Q</sub></strong>, <strong>W<sub>K</sub></strong>, <strong>W<sub>V</sub></strong>, and for every token it simply multiplies:</p>
+
+<div style="text-align:center; font-family:Consolas,monospace; font-size:1rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:10px 16px; margin:12px auto; max-width:420px;">
+Q<sub>i</sub> = x<sub>i</sub> W<sub>Q</sub> &nbsp;&nbsp;&nbsp;
+K<sub>i</sub> = x<sub>i</sub> W<sub>K</sub> &nbsp;&nbsp;&nbsp;
+V<sub>i</sub> = x<sub>i</sub> W<sub>V</sub>
+</div>
+
+<p>So a 7-token sentence produces <strong>7 query vectors, 7 key vectors, and 7 value vectors</strong> — three vectors per token, all derived from the same input embedding but through three different learned projections. The matrices W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub> are what the model actually <em>trains</em>; the Q/K/V vectors themselves are computed fresh for every token at every layer from the current input. They are not handwritten features — they are learned so that "what each token asks for" and "what each token offers" turn out to be useful for the task.</p>
+
+<p>For the token <code>bank</code>, Q<sub>bank</sub> can be read informally as: "show me words that clarify which sense of <em>bank</em> is meant here." Tokens like <code>river</code> and <code>steep</code> produce keys that match strongly against that query, so their value vectors get blended into the updated representation of <code>bank</code>.</p>
+
+<div class="intuition-note">
+<div class="in-label">Analogy — Attention as a librarian</div>
+Imagine you walk into a huge library with a question written on a slip of paper.
+<ul style="margin-top:8px; margin-bottom:8px;">
+<li>Your <strong>query (Q)</strong> is the topic on the slip — what you are looking for.</li>
+<li>Each book has a <strong>key (K)</strong> printed on the spine — title and subject tags, a short summary of what it is about.</li>
+<li>Each book also has a <strong>value (V)</strong> — the actual contents you would read if you pulled it off the shelf.</li>
+</ul>
+A normal search engine would hand you the <em>single best-matching</em> book. Attention is softer: it reads every spine, scores how well each one matches your question, normalizes those scores so they sum to 1, and then hands you a <strong>blended summary</strong> of all the books — with the most relevant ones contributing the most. Every token in the sentence runs this “librarian lookup” in parallel, once per layer. That is the whole mechanism. Everything else — scaling by <span class="math inline">\(\sqrt{d_k}\)</span>, softmax, masking — is just details on top of this picture.
+</div>
+
+<p><span class="math display">\[
+\text{Attention}(Q, K, V) =
+\text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right) V
+\]</span></p>
+
+<p>The formula says:</p>
+
+<ol>
+<li>Compare each query with all keys using dot products.</li>
+<li>Scale by <span class="math inline">\(\sqrt{d_k}\)</span> so values do not blow up.</li>
+<li>Apply softmax to turn scores into weights that sum to 1.</li>
+<li>Take a weighted average of the value vectors.</li>
+</ol>
+
+<div style="border-left:4px solid #6366f1; padding:14px 18px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.9rem; line-height:1.75;">
+<strong>Worked example — encoding the word "it", step by step:</strong><br>
+Sentence: <em>"The animal didn't cross the street because it was too tired."</em> &nbsp;(10 tokens)<br><br>
+
+<strong>Step 1 — every token becomes three vectors.</strong><br>
+Each of the 10 tokens is projected into its own Q, K, and V using the shared W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub> matrices. That's 30 vectors in total (10 × 3) for this one head.<br><br>
+
+<strong>Step 2 — pick the token we're currently encoding: <code>it</code>.</strong><br>
+Take its query vector, Q<sub>it</sub>. Informally it says: <em>"which earlier token in this sentence best explains what I refer to?"</em><br><br>
+
+<strong>Step 3 — score Q<sub>it</sub> against every token's K using dot products.</strong><br>
+These raw scores measure how well each token's "advertisement" (its K) matches what <code>it</code> is asking for:<br>
+
+<table style="width:100%; border-collapse:collapse; font-size:0.82rem; margin:8px 0;">
+<thead>
+<tr style="background:#e0e7ff;">
+<th style="padding:4px 10px; text-align:left; border:1px solid #c7d2fe;">Token</th>
+<th style="padding:4px 10px; text-align:center; border:1px solid #c7d2fe;">Q<sub>it</sub> · K<sub>token</sub></th>
+<th style="padding:4px 10px; text-align:left; border:1px solid #c7d2fe;">Why the model might care</th>
+</tr>
+</thead>
+<tbody>
+<tr><td style="padding:3px 10px; border:1px solid #e0e7ff;">The</td><td style="padding:3px 10px; text-align:center; border:1px solid #e0e7ff;">0.4</td><td style="padding:3px 10px; border:1px solid #e0e7ff;">determiner, almost no information</td></tr>
+<tr style="background:#dcfce7;"><td style="padding:3px 10px; border:1px solid #bbf7d0;"><strong>animal</strong></td><td style="padding:3px 10px; text-align:center; border:1px solid #bbf7d0;"><strong>8.7</strong></td><td style="padding:3px 10px; border:1px solid #bbf7d0;">plausible referent for "it"</td></tr>
+<tr><td style="padding:3px 10px; border:1px solid #e0e7ff;">didn't</td><td style="padding:3px 10px; text-align:center; border:1px solid #e0e7ff;">0.2</td><td style="padding:3px 10px; border:1px solid #e0e7ff;">negation, weak signal</td></tr>
+<tr><td style="padding:3px 10px; border:1px solid #e0e7ff;">cross</td><td style="padding:3px 10px; text-align:center; border:1px solid #e0e7ff;">1.1</td><td style="padding:3px 10px; border:1px solid #e0e7ff;">action, mild clue</td></tr>
+<tr><td style="padding:3px 10px; border:1px solid #e0e7ff;">the</td><td style="padding:3px 10px; text-align:center; border:1px solid #e0e7ff;">0.3</td><td style="padding:3px 10px; border:1px solid #e0e7ff;">determiner</td></tr>
+<tr style="background:#fef3c7;"><td style="padding:3px 10px; border:1px solid #fde68a;">street</td><td style="padding:3px 10px; text-align:center; border:1px solid #fde68a;">2.4</td><td style="padding:3px 10px; border:1px solid #fde68a;">another possible referent, but weaker</td></tr>
+<tr><td style="padding:3px 10px; border:1px solid #e0e7ff;">because</td><td style="padding:3px 10px; text-align:center; border:1px solid #e0e7ff;">0.6</td><td style="padding:3px 10px; border:1px solid #e0e7ff;">discourse marker</td></tr>
+<tr><td style="padding:3px 10px; border:1px solid #e0e7ff;">it</td><td style="padding:3px 10px; text-align:center; border:1px solid #e0e7ff;">4.0</td><td style="padding:3px 10px; border:1px solid #e0e7ff;">tokens usually attend to themselves a little</td></tr>
+<tr><td style="padding:3px 10px; border:1px solid #e0e7ff;">was</td><td style="padding:3px 10px; text-align:center; border:1px solid #e0e7ff;">0.9</td><td style="padding:3px 10px; border:1px solid #e0e7ff;">copula, low info</td></tr>
+<tr><td style="padding:3px 10px; border:1px solid #e0e7ff;">too</td><td style="padding:3px 10px; text-align:center; border:1px solid #e0e7ff;">1.7</td><td style="padding:3px 10px; border:1px solid #e0e7ff;">intensifier</td></tr>
+<tr style="background:#dcfce7;"><td style="padding:3px 10px; border:1px solid #bbf7d0;"><strong>tired</strong></td><td style="padding:3px 10px; text-align:center; border:1px solid #bbf7d0;"><strong>6.5</strong></td><td style="padding:3px 10px; border:1px solid #bbf7d0;">strong clue — what kind of thing can be tired?</td></tr>
+</tbody>
+</table>
+
+<strong>Step 4 — divide by √d<sub>k</sub> and softmax.</strong> This turns the raw scores into attention weights that sum to 1:<br>
+&emsp;<code>animal</code> → <strong>0.52</strong> &nbsp;&nbsp; <code>tired</code> → <strong>0.28</strong> &nbsp;&nbsp; <code>it</code> → 0.07 &nbsp;&nbsp; <code>street</code> → 0.05 &nbsp;&nbsp; (others ≈ 0)<br><br>
+
+<strong>Step 5 — take a weighted sum of the <em>value</em> vectors.</strong><br>
+&emsp;new&nbsp;vector&nbsp;for&nbsp;"it" = 0.52·V<sub>animal</sub> + 0.28·V<sub>tired</sub> + 0.07·V<sub>it</sub> + 0.05·V<sub>street</sub> + … <br><br>
+
+The updated representation of <code>it</code> is now dominated by the value vectors of <code>animal</code> and <code>tired</code> — exactly the two tokens that explain what "it" means. Coreference has been resolved <em>without a single hand-written rule</em>, just a weighted lookup driven by dot products the model learned during training.<br><br>
+<span style="font-size:0.78rem; color:#64748b; font-style:italic;">(Scores above are illustrative. The exact numbers depend on the learned weights, but the pattern — high weight on <code>animal</code> and <code>tired</code>, near-zero on filler words — is what real attention maps actually show.)</span>
+</div>
+
+<h3 id="multi-head-attention">11.3.5 Multi-Head Attention</h3>
+
+<p>Here's the good news: once you understand single-head attention, the leap to multi-head is tiny. <strong>Multi-head attention is literally single-head attention, done <em>h</em> times in parallel</strong> — each copy with its own independent set of weight matrices W<sub>Q</sub><sup>(i)</sup>, W<sub>K</sub><sup>(i)</sup>, W<sub>V</sub><sup>(i)</sup>.</p>
+
+<p>So if the model uses 8 heads, every token doesn't have just <em>one</em> Q, K, V — it has <strong>8 queries, 8 keys, and 8 values</strong>, one triple per head. Each head runs the full attention computation (dot products → scale → softmax → weighted sum of V) on its own projections and produces its own output vector. Those <em>h</em> output vectors are then concatenated and passed through one final learned matrix <strong>W<sub>O</sub></strong> that blends them back into a single vector per token.</p>
+
+<div style="text-align:center; font-family:Consolas,monospace; font-size:0.9rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:10px 16px; margin:12px auto; max-width:540px; line-height:1.7;">
+head<sub>i</sub> = Attention(x W<sub>Q</sub><sup>(i)</sup>, &nbsp;x W<sub>K</sub><sup>(i)</sup>, &nbsp;x W<sub>V</sub><sup>(i)</sup>)<br>
+MultiHead(x) = Concat(head<sub>1</sub>, …, head<sub>h</sub>) W<sub>O</sub>
+</div>
+
+<p>That's the entire mechanism. Run attention h times with h different projections, stick the outputs together, mix them with one more matrix. No new ideas, just more lenses. In practice each head uses a <em>smaller</em> dimension so that h heads together have roughly the same compute as one big head — you're trading "one wide view" for "several narrow, specialized views."</p>
+
+<p>Why bother? Because different heads can specialize in different relationships:</p>
+
+<ul>
+<li>one head may track syntax</li>
+<li>one may focus on long-range semantics</li>
+<li>one may resolve coreference</li>
+<li>one may notice punctuation, formatting, or delimiter structure</li>
+</ul>
+
+<p>That is why attention feels richer than a single similarity lookup. The model is looking at the same sequence through several lenses at once.</p>
+
+<p>To see this concretely, take one sentence:</p>
+
+<div style="border-left:4px solid #6366f1; padding:10px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.95rem; font-style:italic; color:#334155;">
+“The tired chef who had been cooking since dawn quietly served the warm food to the waiting guests.”
+</div>
+
+<p>When the model encodes the word <code>served</code>, different heads can light up on totally different parts of the sentence — as if several readers each highlighted the line with a different colored marker:</p>
+
+<table>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 35%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr><th>Head</th><th>Mostly attends to</th><th>What it is probably learning</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Head 1</strong></td><td><code>chef</code></td><td>Who performed the action (subject tracking)</td></tr>
+<tr><td><strong>Head 2</strong></td><td><code>food</code></td><td>What was acted on (direct object)</td></tr>
+<tr><td><strong>Head 3</strong></td><td><code>guests</code></td><td>Who received the action (indirect object / beneficiary)</td></tr>
+<tr><td><strong>Head 4</strong></td><td><code>quietly</code></td><td>Manner — how the action was performed</td></tr>
+<tr><td><strong>Head 5</strong></td><td><code>tired</code>, <code>cooking since dawn</code></td><td>Long-range modifiers tied to the subject</td></tr>
+</tbody>
+</table>
+
+<svg viewBox="0 0 640 170" style="display:block; margin:16px auto; max-width:620px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Multi-head attention on the word served">
+<text x="320" y="18" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="700" fill="#1e293b">Five heads attending to the word “served”</text>
+<rect x="20" y="32" width="600" height="30" rx="6" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
+<text x="30" y="52" font-family="Consolas,monospace" font-size="11" fill="#334155">The </text>
+<text x="58" y="52" font-family="Consolas,monospace" font-size="11" font-weight="700" fill="#dc2626">tired</text>
+<text x="92" y="52" font-family="Consolas,monospace" font-size="11" font-weight="700" fill="#2563eb">chef</text>
+<text x="124" y="52" font-family="Consolas,monospace" font-size="11" fill="#334155">who had been </text>
+<text x="208" y="52" font-family="Consolas,monospace" font-size="11" font-weight="700" fill="#dc2626">cooking since dawn</text>
+<text x="329" y="52" font-family="Consolas,monospace" font-size="11" font-weight="700" fill="#9333ea">quietly</text>
+<text x="377" y="52" font-family="Consolas,monospace" font-size="11" font-weight="700" fill="#0f172a" text-decoration="underline">served</text>
+<text x="421" y="52" font-family="Consolas,monospace" font-size="11" fill="#334155">the warm </text>
+<text x="478" y="52" font-family="Consolas,monospace" font-size="11" font-weight="700" fill="#16a34a">food</text>
+<text x="506" y="52" font-family="Consolas,monospace" font-size="11" fill="#334155">to the waiting </text>
+<text x="586" y="52" font-family="Consolas,monospace" font-size="11" font-weight="700" fill="#f59e0b">guests</text>
+<g font-family="system-ui" font-size="10">
+<rect x="20" y="78" width="130" height="18" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="1"/>
+<text x="85" y="91" text-anchor="middle" fill="#1e40af" font-weight="700">Head 1: subject</text>
+<rect x="160" y="78" width="130" height="18" rx="4" fill="#dcfce7" stroke="#16a34a" stroke-width="1"/>
+<text x="225" y="91" text-anchor="middle" fill="#166534" font-weight="700">Head 2: direct object</text>
+<rect x="300" y="78" width="150" height="18" rx="4" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
+<text x="375" y="91" text-anchor="middle" fill="#92400e" font-weight="700">Head 3: beneficiary</text>
+<rect x="460" y="78" width="160" height="18" rx="4" fill="#f3e8ff" stroke="#9333ea" stroke-width="1"/>
+<text x="540" y="91" text-anchor="middle" fill="#6b21a8" font-weight="700">Head 4: manner (adverb)</text>
+<rect x="160" y="102" width="300" height="18" rx="4" fill="#fee2e2" stroke="#dc2626" stroke-width="1"/>
+<text x="310" y="115" text-anchor="middle" fill="#991b1b" font-weight="700">Head 5: long-range modifiers of the subject</text>
+</g>
+<text x="320" y="148" text-anchor="middle" font-family="system-ui" font-size="10" fill="#64748b" font-style="italic">Each head produces its own attention pattern; their outputs are concatenated and mixed into the new vector for “served”.</text>
+</svg>
+
+<p>None of these roles were programmed in by hand. The model was simply asked to predict the next word across billions of sentences, and to do that well it discovered that running several attention patterns in parallel is far more useful than computing one. When researchers visualize real attention weights head by head after training, they genuinely see this kind of specialization — some heads track syntactic roles, others track coreference, others fire on punctuation, sentence boundaries, or repeated entities.</p>
+
+<div class="intuition-note">
+<div class="in-label">Mental Model</div>
+<strong>One attention head is a single pair of eyes. Multi-head attention is a committee of readers.</strong> Each member of the committee looks at the same sentence through its own lens — grammar, meaning, position, style, long-range links — and their findings are concatenated and blended into the token’s updated representation. That committee is the reason a Transformer is so much more expressive than any model that computes only one similarity pattern.
+</div>
+
+<h3 id="where-encoder-and-decoder-fit">11.3.6 Where Encoder and Decoder Fit</h3>
+
+<p>The original 2017 Transformer (from the "Attention Is All You Need" paper) had <strong>an encoder stack</strong> and <strong>a decoder stack</strong>, wired together by a special kind of attention called <em>cross-attention</em>. Here is the full picture:</p>
+
+<svg viewBox="0 0 740 650" xmlns="http://www.w3.org/2000/svg" style="display:block; margin:20px auto; max-width:720px;" role="img" aria-label="Transformer encoder-decoder architecture diagram">
+  <defs>
+    <marker id="ed-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="ed-arrow-pink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#db2777"/>
+    </marker>
+  </defs>
+
+  <text x="370" y="22" text-anchor="middle" font-family="system-ui" font-size="15" font-weight="700" fill="#0f172a">Transformer — Encoder-Decoder Architecture</text>
+
+  <!-- ENCODER column -->
+  <rect x="60" y="215" width="260" height="325" rx="10" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="52" y="380" text-anchor="end" font-family="system-ui" font-size="12" font-weight="700" fill="#475569">N×</text>
+  <text x="190" y="234" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#334155">ENCODER LAYER</text>
+
+  <rect x="85" y="470" width="210" height="44" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="190" y="491" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#92400e">Multi-Head Self-Attention</text>
+  <text x="190" y="505" text-anchor="middle" font-family="system-ui" font-size="9" fill="#b45309">tokens look at each other (Q, K, V all from input)</text>
+
+  <rect x="110" y="436" width="160" height="24" rx="4" fill="#e0e7ff" stroke="#6366f1" stroke-width="1"/>
+  <text x="190" y="452" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#3730a3">Add &amp; Norm</text>
+
+  <rect x="85" y="370" width="210" height="44" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="190" y="391" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#166534">Feed Forward</text>
+  <text x="190" y="405" text-anchor="middle" font-family="system-ui" font-size="9" fill="#15803d">per-token MLP, refines each vector</text>
+
+  <rect x="110" y="336" width="160" height="24" rx="4" fill="#e0e7ff" stroke="#6366f1" stroke-width="1"/>
+  <text x="190" y="352" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#3730a3">Add &amp; Norm</text>
+
+  <line x1="190" y1="470" x2="190" y2="460" stroke="#475569" stroke-width="1.2" marker-end="url(#ed-arrow)"/>
+  <line x1="190" y1="436" x2="190" y2="414" stroke="#475569" stroke-width="1.2" marker-end="url(#ed-arrow)"/>
+  <line x1="190" y1="370" x2="190" y2="360" stroke="#475569" stroke-width="1.2" marker-end="url(#ed-arrow)"/>
+
+  <circle cx="190" cy="560" r="14" fill="#fff" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="190" y="565" text-anchor="middle" font-family="system-ui" font-size="15" font-weight="700" fill="#7c3aed">+</text>
+  <text x="215" y="565" font-family="system-ui" font-size="10" fill="#6b21a8">Positional encoding</text>
+  <line x1="190" y1="546" x2="190" y2="514" stroke="#475569" stroke-width="1.2" marker-end="url(#ed-arrow)"/>
+
+  <rect x="120" y="588" width="140" height="28" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="190" y="606" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#1e40af">Input Embedding</text>
+  <line x1="190" y1="588" x2="190" y2="574" stroke="#475569" stroke-width="1.2" marker-end="url(#ed-arrow)"/>
+
+  <text x="190" y="636" text-anchor="middle" font-family="system-ui" font-size="10" fill="#64748b" font-style="italic">Inputs  (e.g. "The cat sat on the mat")</text>
+
+  <!-- DECODER column -->
+  <rect x="420" y="160" width="260" height="380" rx="10" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="688" y="355" text-anchor="start" font-family="system-ui" font-size="12" font-weight="700" fill="#475569">N×</text>
+  <text x="550" y="179" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#334155">DECODER LAYER</text>
+
+  <rect x="445" y="470" width="210" height="44" rx="6" fill="#fed7aa" stroke="#ea580c" stroke-width="1.5"/>
+  <text x="550" y="488" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#9a3412">Masked Multi-Head</text>
+  <text x="550" y="502" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#9a3412">Self-Attention</text>
+
+  <rect x="470" y="436" width="160" height="24" rx="4" fill="#e0e7ff" stroke="#6366f1" stroke-width="1"/>
+  <text x="550" y="452" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#3730a3">Add &amp; Norm</text>
+
+  <rect x="445" y="370" width="210" height="44" rx="6" fill="#fce7f3" stroke="#db2777" stroke-width="1.5"/>
+  <text x="550" y="389" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#9d174d">Cross-Attention (MHA)</text>
+  <text x="550" y="403" text-anchor="middle" font-family="system-ui" font-size="9" fill="#be185d">Q from decoder, K &amp; V from encoder</text>
+
+  <rect x="470" y="336" width="160" height="24" rx="4" fill="#e0e7ff" stroke="#6366f1" stroke-width="1"/>
+  <text x="550" y="352" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#3730a3">Add &amp; Norm</text>
+
+  <rect x="445" y="272" width="210" height="44" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="550" y="293" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#166534">Feed Forward</text>
+  <text x="550" y="307" text-anchor="middle" font-family="system-ui" font-size="9" fill="#15803d">per-token MLP</text>
+
+  <rect x="470" y="238" width="160" height="24" rx="4" fill="#e0e7ff" stroke="#6366f1" stroke-width="1"/>
+  <text x="550" y="254" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#3730a3">Add &amp; Norm</text>
+
+  <line x1="550" y1="470" x2="550" y2="460" stroke="#475569" stroke-width="1.2" marker-end="url(#ed-arrow)"/>
+  <line x1="550" y1="436" x2="550" y2="414" stroke="#475569" stroke-width="1.2" marker-end="url(#ed-arrow)"/>
+  <line x1="550" y1="370" x2="550" y2="360" stroke="#475569" stroke-width="1.2" marker-end="url(#ed-arrow)"/>
+  <line x1="550" y1="336" x2="550" y2="316" stroke="#475569" stroke-width="1.2" marker-end="url(#ed-arrow)"/>
+  <line x1="550" y1="272" x2="550" y2="262" stroke="#475569" stroke-width="1.2" marker-end="url(#ed-arrow)"/>
+
+  <circle cx="550" cy="560" r="14" fill="#fff" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="550" y="565" text-anchor="middle" font-family="system-ui" font-size="15" font-weight="700" fill="#7c3aed">+</text>
+  <text x="575" y="565" font-family="system-ui" font-size="10" fill="#6b21a8">Positional encoding</text>
+  <line x1="550" y1="546" x2="550" y2="514" stroke="#475569" stroke-width="1.2" marker-end="url(#ed-arrow)"/>
+
+  <rect x="470" y="588" width="160" height="28" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="550" y="606" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#1e40af">Output Embedding</text>
+  <line x1="550" y1="588" x2="550" y2="574" stroke="#475569" stroke-width="1.2" marker-end="url(#ed-arrow)"/>
+
+  <text x="550" y="636" text-anchor="middle" font-family="system-ui" font-size="10" fill="#64748b" font-style="italic">Outputs (shifted right — what has been generated so far)</text>
+
+  <!-- Linear + Softmax above decoder -->
+  <line x1="550" y1="238" x2="550" y2="138" stroke="#475569" stroke-width="1.2" marker-end="url(#ed-arrow)"/>
+  <rect x="470" y="108" width="160" height="28" rx="6" fill="#e0f2fe" stroke="#0284c7" stroke-width="1.5"/>
+  <text x="550" y="126" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#075985">Linear</text>
+  <line x1="550" y1="108" x2="550" y2="92" stroke="#475569" stroke-width="1.2" marker-end="url(#ed-arrow)"/>
+  <rect x="470" y="62" width="160" height="28" rx="6" fill="#fae8ff" stroke="#c026d3" stroke-width="1.5"/>
+  <text x="550" y="80" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#86198f">Softmax</text>
+  <line x1="550" y1="62" x2="550" y2="46" stroke="#475569" stroke-width="1.2" marker-end="url(#ed-arrow)"/>
+  <text x="550" y="42" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="700" fill="#475569">Output probabilities over vocabulary</text>
+
+  <!-- Cross-attention arrow from encoder top to decoder cross-attention block -->
+  <path d="M 190 215 V 190 H 410 V 392 H 445" fill="none" stroke="#db2777" stroke-width="1.8" stroke-dasharray="5,3" marker-end="url(#ed-arrow-pink)"/>
+  <rect x="270" y="178" width="70" height="22" rx="4" fill="#fff" stroke="#db2777" stroke-width="1"/>
+  <text x="305" y="193" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#9d174d">K, V</text>
+</svg>
+
+<p>Read the diagram bottom-up. Input tokens enter the <strong>encoder</strong> on the left, get embedded, get positional encoding added, then pass through N encoder layers — each one a Multi-Head Self-Attention followed by a Feed Forward, both wrapped in Add &amp; Norm residual connections. After the last encoder layer, you have one contextual vector per input token. These vectors become the <strong>K and V</strong> that the decoder will attend to.</p>
+
+<p>On the right, the <strong>decoder</strong> takes whatever has been generated so far (shifted right so the model always predicts the next token), embeds it, adds positions, and passes it through N decoder layers. Each decoder layer has <em>three</em> sub-blocks instead of two:</p>
+
+<ol>
+<li><strong>Masked self-attention</strong> — the decoder looks at its own previous tokens, but the mask prevents it from peeking at future positions. This is what makes generation causal (left-to-right).</li>
+<li><strong>Cross-attention</strong> — the pink arrow. Here the decoder's tokens provide the queries, and the K and V come from the encoder's final output. This is where "the output looks at the input" actually happens — for example, where "chat" in the English translation attends to "<em>gato</em>" in the Spanish source.</li>
+<li><strong>Feed Forward</strong> — the same per-token MLP refinement.</li>
+</ol>
+
+<p>At the very top, the decoder's final vector for the current position is sent through a Linear layer and a Softmax to produce a probability distribution over the entire vocabulary — pick the next token, append it to the output, feed the whole thing back in, and repeat.</p>
+
+<div class="intuition-note">
+<div class="in-label">Mental Model — Cross-attention is the bridge</div>
+<strong>Self-attention lets tokens talk within the same sequence. Cross-attention lets the output sequence talk to the input sequence.</strong> In machine translation, every output word gets to "ask" the encoded input, "which source words are most relevant to what I'm writing right now?" That is how translation, summarization, and any encoder-decoder task actually connect the two sides. Today's decoder-only LLMs (GPT, Llama, Claude) drop the encoder entirely and use only masked self-attention — everything the model needs to look at is already in the same left-to-right sequence.
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Part</th>
+<th>What it does</th>
+<th>Typical use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Encoder</td>
+<td>Builds contextual representations of the input sequence</td>
+<td>Understanding tasks: classification, NER, embeddings</td>
+</tr>
+<tr>
+<td>Decoder</td>
+<td>Generates output tokens one by one</td>
+<td>Generation tasks: translation, chat, writing</td>
+</tr>
+<tr>
+<td>Encoder-decoder</td>
+<td>Reads one sequence, generates another</td>
+<td>Translation, summarization</td>
+</tr>
+</tbody>
+</table>
+
+<p>Today, the family has split into three common forms:</p>
+
+<table>
+<colgroup>
+<col style="width: 22%" />
+<col style="width: 10%" />
+<col style="width: 19%" />
+<col style="width: 31%" />
+<col style="width: 15%" />
+</colgroup>
+<thead>
+<tr>
+<th>Architecture</th>
+<th>Type</th>
+<th>Attention</th>
+<th>Pre-training task</th>
+<th>Best for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BERT</td>
+<td>Encoder-only</td>
+<td>Bidirectional</td>
+<td>Masked language modeling</td>
+<td>Classification, NER, embeddings</td>
+</tr>
+<tr>
+<td>GPT</td>
+<td>Decoder-only</td>
+<td>Causal (left-to-right)</td>
+<td>Next token prediction</td>
+<td>Text generation, chat</td>
+</tr>
+<tr>
+<td>T5, BART</td>
+<td>Encoder-decoder</td>
+<td>Mixed</td>
+<td>Span masking / denoising</td>
+<td>Translation, summarization</td>
+</tr>
+</tbody>
+</table>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-family:Consolas, monospace; font-size:0.88rem; line-height:1.9;">
+<strong style="color:#3b82f6;">BERT:</strong>&nbsp; [cls] The bank <span style="background:#fef3c7; padding:2px 4px; border-radius:3px;">[mask]</span> the river [sep] -> predict "by"<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#3b82f6;">sees both left and right context</span><br><br>
+<strong style="color:#8b5cf6;">GPT:</strong>&nbsp;&nbsp; The bank by the river -> predicts "was"<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#8b5cf6;">only sees past tokens</span>
+</div>
+
+<div class="intuition-note">
+<div class="in-label">Mental Model — BERT vs GPT in one image</div>
+<strong>BERT is a reader with a highlighter. GPT is a storyteller with no spoilers.</strong><br><br>
+BERT is handed the whole sentence at once with a few words crossed out, and its job is to guess what was crossed out. Because it can see <em>both</em> sides of each blank, it develops deep, bidirectional understanding — perfect for classification, entity extraction, and semantic similarity, where you just need to <em>understand</em> the text.<br><br>
+GPT is handed the sentence one word at a time, left to right, and asked to guess what comes next — forever. It is never allowed to peek ahead. Because its only job is “what word is next?”, it becomes a natural writer: chat, code, drafts, summaries, and reasoning all get framed as <em>keep continuing this sequence</em>. One simple objective, endless downstream uses.
+</div>
+
+<h3 id="why-decoder-only-models-work-so-well">11.3.7 Why Decoder-Only Models Work So Well</h3>
+
+<p>Decoder-only models can look almost too simple. They only learn one task: predict the next token. But that objective is powerful because almost every language task can be framed as sequence continuation.</p>
+
+<ul>
+<li><strong>Training scales beautifully:</strong> almost any raw text becomes training data with no manual labels.</li>
+<li><strong>Generation is native:</strong> chat, drafting, coding, summarization, and reasoning all look like “continue this sequence.”</li>
+<li><strong>In-context learning emerges naturally:</strong> examples in the prompt become part of the sequence, so the model can continue the pattern.</li>
+</ul>
+
+<div class="intuition-note">
+
+<div class="in-label">Mental Model</div>
+
+<strong>A decoder-only LLM is a very general completion engine.</strong> Give it a conversation, and it completes the assistant turn. Give it code, and it completes the next lines. Give it a few examples of a task, and it completes the pattern. That is why one architecture can power chatbots, coding assistants, summarizers, and writing tools.</div>
+
+<div class="did-you-know">
+
+<div class="dyk-label">Did You Know?</div>
+
+<strong>LLMs often cope with misspellings and abstract prompts because they match patterns, not perfect dictionary entries.</strong> Misspelled text still gets broken into recognizable subword pieces, and training data contains lots of noisy real-world writing. Abstract prompts like “make this sound more executive” work because the model has seen many examples where tone, audience, and style are implied rather than formally defined.</div>
+
+<h3 id="why-transformers-replaced-rnns">11.3.8 Why Transformers Replaced RNNs</h3>
+
+<table>
+<colgroup>
+<col style="width: 38%" />
+<col style="width: 61%" />
+</colgroup>
+<thead>
+<tr>
+<th>RNN weakness</th>
+<th>Transformer solution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sequential - cannot parallelize well</td>
+<td>All tokens can be processed together on modern hardware</td>
+</tr>
+<tr>
+<td>Long-range information fades through the hidden state</td>
+<td>Any token can directly attend to any other token</td>
+</tr>
+<tr>
+<td>One hidden state is a narrow bottleneck</td>
+<td>Each layer preserves token-wise representations with rich cross-token mixing</td>
+</tr>
+<tr>
+<td>Task-specific architectures were often needed</td>
+<td>One flexible architecture now covers language understanding and generation</td>
+</tr>
+</tbody>
+</table>
+
+<div class="practical-example">
+
+<div class="pe-label">Real-World ML Use Case — Transformers</div>
+
+<strong>Autocomplete, translation, and code assistants all benefit from “look anywhere” attention.</strong> In Smart Compose-style email suggestion or code completion, the next token may depend on something said many words earlier: a variable name, a city, a customer, a date, or a constraint. Attention lets the model reach back to the relevant part directly instead of carrying everything through one fragile hidden state.</div>
+
+<hr />
+
+<h2 id="tokenization-and-bpe">11.4 Tokenization and BPE (Byte-Pair Encoding)</h2>
+
+<p>Before any text enters a model, it must be converted to tokens —
+
+discrete units the model processes. How you split text significantly
+
+affects model quality.</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> Tokenization determines the vocabulary and
+
+directly affects how well a model handles rare words, code, and
+
+non-English text.</p>
+
+</blockquote>
+
+<h3 id="word-vs-subword-vs-character">11.4.1 Word vs Subword vs Character</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 22%" />
+
+<col style="width: 42%" />
+
+<col style="width: 17%" />
+
+<col style="width: 17%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Method</th>
+
+<th>“tokenization”</th>
+
+<th>Pros</th>
+
+<th>Cons</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Word-level</td>
+
+<td>[“tokenization”]</td>
+
+<td>Simple</td>
+
+<td>OOV problem, huge vocab</td>
+
+</tr>
+
+<tr>
+
+<td>Character-level</td>
+
+<td>[“t”,“o”,“k”,“e”,…]</td>
+
+<td>No OOV</td>
+
+<td>Long sequences, slow</td>
+
+</tr>
+
+<tr>
+
+<td>Subword (BPE)</td>
+
+<td>[“token”,“ization”]</td>
+
+<td>Best balance</td>
+
+<td>Requires vocabulary building</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="byte-pair-encoding-bpe">11.4.2 Byte-Pair Encoding (BPE)</h3>
+
+<p>BPE is the dominant subword algorithm used by GPT-2, GPT-3, GPT-4,
+
+LLaMA, and most modern LLMs.</p>
+
+<p>The simplest way to think about BPE: <strong>start very small, then keep merging the pieces that appear together most often</strong>. Frequent patterns become reusable tokens. Rare words stay decomposable into smaller pieces.</p>
+
+<p><strong>Algorithm:</strong></p>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.9rem; line-height:1.9;">
+<strong style="color:#6366f1;">BPE Algorithm</strong><br>
+<span style="color:#64748b;">1.</span> Start with character-level vocabulary<br>
+<span style="color:#64748b;">2.</span> Count all adjacent pairs of symbols in the corpus<br>
+<span style="color:#64748b;">3.</span> Merge the most frequent pair into a new symbol<br>
+<span style="color:#64748b;">4.</span> Repeat until target vocabulary size is reached<br><br>
+<strong>Example:</strong> Corpus: "low low lower newest newest widest"<br>
+<span style="font-family:Consolas,monospace; font-size:0.85rem;">Initial: l o w &nbsp;l o w &nbsp;l o w e r &nbsp;n e w e s t …</span><br>
+Iteration 1: merge (e, s) → <span style="color:#3b82f6;">"es"</span><br>
+Iteration 2: merge (es, t) → <span style="color:#8b5cf6;">"est"</span><br>
+Iteration 3: merge (lo, w) → <span style="color:#22c55e;">"low"</span><br>
+…<br>
+Final vocab: "low", "lower", "newest", "est", "new"
+</div>
+
+<div class="intuition-note">
+
+<div class="in-label">Mental Model</div>
+
+<strong>BPE builds a box of reusable Lego blocks for text.</strong> At first the blocks are tiny. As the tokenizer sees the same combinations over and over, it replaces those combinations with bigger blocks. Common words may become one block; uncommon words are assembled from a few smaller ones.
+
+</div>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.88rem; line-height:1.8;">
+<strong style="color:#4f46e5;">A more intuitive toy example:</strong><br><br>
+<strong>Corpus:</strong> <code>"play played player playing"</code><br><br>
+<strong>Start with characters:</strong><br>
+<code>p l a y &nbsp; p l a y e d &nbsp; p l a y e r &nbsp; p l a y i n g</code><br><br>
+Because <code>"play"</code> appears repeatedly, BPE keeps merging those frequent pieces.<br>
+Then endings like <code>"ed"</code>, <code>"er"</code>, and <code>"ing"</code> become their own reusable tokens.<br><br>
+<strong>So later:</strong><br>
+&emsp;<code>"player"</code> &nbsp;→&nbsp; [<code>"play"</code>, <code>"er"</code>]<br>
+&emsp;<code>"playing"</code> → [<code>"play"</code>, <code>"ing"</code>]<br><br>
+<span style="color:#64748b;">This is why BPE avoids a giant word vocabulary while still handling new words.</span>
+</div>
+
+<p><strong>Why it works:</strong> Common words get their own tokens.
+
+Rare words split into meaningful subwords. New words can always be
+
+represented.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb360-1"><a href="#cb360-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> transformers <span class="im">import</span> AutoTokenizer</span>
+<span id="cb360-2"><a href="#cb360-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb360-3"><a href="#cb360-3" aria-hidden="true" tabindex="-1"></a>tokenizer <span class="op">=</span> AutoTokenizer.from_pretrained(<span class="st">&quot;gpt2&quot;</span>)</span>
+<span id="cb360-4"><a href="#cb360-4" aria-hidden="true" tabindex="-1"></a>text <span class="op">=</span> <span class="st">&quot;The quick brown fox jumps&quot;</span></span>
+<span id="cb360-5"><a href="#cb360-5" aria-hidden="true" tabindex="-1"></a>tokens <span class="op">=</span> tokenizer.encode(text)</span>
+<span id="cb360-6"><a href="#cb360-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(tokenizer.convert_ids_to_tokens(tokens))</span>
+<span id="cb360-7"><a href="#cb360-7" aria-hidden="true" tabindex="-1"></a><span class="co"># [&#39;The&#39;, &#39;Ġquick&#39;, &#39;Ġbrown&#39;, &#39;Ġfox&#39;, &#39;Ġjumps&#39;]</span></span>
+<span id="cb360-8"><a href="#cb360-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Ġ prefix = space before word (byte-level BPE)</span></span></code></pre></div>
+
+<h3 id="context-windows">11.4.3 Context Windows</h3>
+
+<p>Every transformer has a <strong>context window</strong> — the maximum
+
+number of tokens it can process at once.</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">GPT-3.5:</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">4,096 tokens  (~3,000 words)</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">GPT-4:</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">128,000 tokens  (~96,000 words)</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">Claude 3</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">200,000 tokens</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">Gemini</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">1,000,000+ tokens</td>
+</tr>
+</table>
+
+
+<p><strong>Token counting rule of thumb:</strong> 1 token ≈ 4 characters
+
+≈ 0.75 English words. Code and non-English text can use 2–4× more tokens
+
+than English prose. Token counts directly affect API cost.</p>
+
+<div class="practical-example">
+
+<div class="pe-label">Real-World ML Use Case — Tokenization</div>
+
+<strong>Token budget quickly becomes a product decision, not a preprocessing footnote.</strong> A legal or support copilot may receive pages of logs, tickets, contracts, or policies. If the tokenizer explodes that input into too many tokens, latency and cost spike, and relevant context gets pushed out of the window. In practice, good teams count tokens first, then decide what to chunk, summarize, cache, or retrieve.
+
+</div>
+
+<hr />
+
+<h2 id="embeddings-for-retrieval">11.5 Embeddings for Retrieval</h2>
+
+<p>Modern NLP systems don’t just classify text — they need to
+
+<strong>find relevant information</strong> in large corpora. Dense
+
+vector embeddings enable semantic search.</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> Embeddings turn text into vectors where
+
+semantically similar text is geometrically close.</p>
+
+</blockquote>
+
+<div class="intuition-note">
+
+<div class="in-label">Mental Model</div>
+
+<strong>Think of dense retrieval as searching by meaning, not by spelling.</strong> BM25 is like asking “which documents contain these words?” Embedding retrieval is like asking “which documents live in the same semantic neighborhood as this query?” The best production systems usually use both because exact identifiers and fuzzy intent are both valuable.
+
+</div>
+
+<h3 id="sparse-vs-dense-retrieval">11.5.1 Sparse vs Dense Retrieval</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 26%" />
+
+<col style="width: 20%" />
+
+<col style="width: 20%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Approach</th>
+
+<th>Method</th>
+
+<th>Pros</th>
+
+<th>Cons</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Sparse (TF-IDF/BM25)</td>
+
+<td>Keyword matching</td>
+
+<td>Fast, interpretable</td>
+
+<td>Misses synonyms, paraphrases</td>
+
+</tr>
+
+<tr>
+
+<td>Dense (embedding-based)</td>
+
+<td>Vector similarity</td>
+
+<td>Semantic matching</td>
+
+<td>Requires embedding model</td>
+
+</tr>
+
+<tr>
+
+<td>Hybrid</td>
+
+<td>Both combined</td>
+
+<td>Best of both</td>
+
+<td>More complex</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/10_nlp_and_llms/embeddings_retrieval.svg" alt="Dense embeddings: semantic clusters in vector space and the retrieval pipeline from corpus to query to top-k results">
+
+<figcaption>
+
+Dense embeddings for retrieval: semantically similar text clusters together in vector space; ANN search returns top-k passages for a query in milliseconds
+
+</figcaption>
+
+</figure>
+
+<h3 id="embedding-models">11.5.2 Embedding Models</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb362-1"><a href="#cb362-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sentence_transformers <span class="im">import</span> SentenceTransformer</span>
+<span id="cb362-2"><a href="#cb362-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb362-3"><a href="#cb362-3" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> SentenceTransformer(<span class="st">&#39;all-MiniLM-L6-v2&#39;</span>)  <span class="co"># lightweight, fast</span></span>
+<span id="cb362-4"><a href="#cb362-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb362-5"><a href="#cb362-5" aria-hidden="true" tabindex="-1"></a>sentences <span class="op">=</span> [</span>
+<span id="cb362-6"><a href="#cb362-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;The cat sat on the mat&quot;</span>,</span>
+<span id="cb362-7"><a href="#cb362-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;A feline rested on a rug&quot;</span>,        <span class="co"># semantically similar</span></span>
+<span id="cb362-8"><a href="#cb362-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Python is a programming language&quot;</span>  <span class="co"># different topic</span></span>
+<span id="cb362-9"><a href="#cb362-9" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb362-10"><a href="#cb362-10" aria-hidden="true" tabindex="-1"></a>embeddings <span class="op">=</span> model.encode(sentences)   <span class="co"># shape: (3, 384)</span></span>
+<span id="cb362-11"><a href="#cb362-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb362-12"><a href="#cb362-12" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics.pairwise <span class="im">import</span> cosine_similarity</span>
+<span id="cb362-13"><a href="#cb362-13" aria-hidden="true" tabindex="-1"></a>sims <span class="op">=</span> cosine_similarity(embeddings)</span>
+<span id="cb362-14"><a href="#cb362-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(sims[<span class="dv">0</span>, <span class="dv">1</span>])   <span class="co"># ~0.85 — high (similar meaning)</span></span>
+<span id="cb362-15"><a href="#cb362-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(sims[<span class="dv">0</span>, <span class="dv">2</span>])   <span class="co"># ~0.15 — low (different topic)</span></span></code></pre></div>
+
+<h3 id="how-retrieval-embeddings-are-trained">11.5.3 How Retrieval Embeddings Are Trained</h3>
+
+<p>For search and retrieval, a common design is a <strong>dual-encoder</strong> (also called a <strong>two-tower model</strong>): one encoder maps the query to a vector and another maps the document or passage to a vector. Training teaches relevant pairs to land close together in vector space.</p>
+
+<p><span class="math display">\[
+
+q = f_{\text{query}}(x_q), \qquad d = f_{\text{doc}}(x_d), \qquad
+
+\text{score}(q, d) = q^\top d
+
+\]</span></p>
+
+<p>Modern retrieval models are usually trained with a <strong>contrastive objective</strong>: pull clicked or labeled-positive pairs together, and push irrelevant pairs apart.</p>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.88rem; line-height:1.8;">
+<strong style="color:#166534;">Positive pair:</strong><br>
+&emsp;query &nbsp;&nbsp;= <em>"how do I reset my password?"</em><br>
+&emsp;passage = <em>"Go to Settings &gt; Security to change your password."</em><br><br>
+<strong style="color:#991b1b;">Negative pair:</strong><br>
+&emsp;query &nbsp;&nbsp;= <em>"how do I reset my password?"</em><br>
+&emsp;passage = <em>"How to update your billing address"</em><br><br>
+<strong>Train so</strong> cosine(query, positive) ≫ cosine(query, negative)
+</div>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Stage</th>
+
+<th>What happens</th>
+
+<th>Why it matters</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Training</td>
+
+<td>Learn from query-document pairs, clicks, paraphrases, or QA pairs</td>
+
+<td>Teaches the geometry of “relevance,” not just word overlap</td>
+
+</tr>
+
+<tr>
+
+<td>Offline indexing</td>
+
+<td>Embed every document once and build an ANN index</td>
+
+<td>Pays most of the compute upfront</td>
+
+</tr>
+
+<tr>
+
+<td>Online inference</td>
+
+<td>Embed only the incoming query, then search nearest neighbors</td>
+
+<td>Keeps user-facing latency low</td>
+
+</tr>
+
+<tr>
+
+<td>Reranking</td>
+
+<td>Use a stronger cross-encoder or LLM on the top-k candidates</td>
+
+<td>Improves precision after fast recall</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="oov-and-messy-text-at-inference">11.5.4 OOV and Messy Text at Inference</h3>
+
+<p>Readers often hear “subword tokenization solves OOV” and think the problem disappears. In practice, OOV becomes a <strong>robustness problem</strong> rather than a hard failure.</p>
+
+<ul>
+
+<li><strong>Classic word-level embeddings:</strong> unseen token → <code>&lt;UNK&gt;</code>. Every rare word collapses to the same vector.</li>
+
+<li><strong>FastText:</strong> unseen words can still get useful vectors from character n-grams.</li>
+
+<li><strong>BPE / WordPiece / SentencePiece:</strong> new text is broken into known subwords, so names, slang, typos, and SKUs are still representable.</li>
+
+</ul>
+
+<p>But “representable” does not mean “well understood.” A new medicine name, a product code like <code>XJ-4400-Pro</code>, or a noisy misspelling may still retrieve poorly because the model has weak semantic evidence for that pattern.</p>
+
+<p><strong>Production fixes:</strong> normalize text, preserve aliases and synonyms, log low-click queries, and combine dense retrieval with BM25 so exact identifiers can still be matched even when the embedding model is uncertain.</p>
+
+<h3 id="vector-databases">11.5.5 Vector Databases</h3>
+
+<p>When you have millions of documents, exhaustive cosine search is too
+
+slow. <strong>Approximate Nearest Neighbor (ANN) indexes</strong>
+
+retrieve the closest vectors in milliseconds.</p>
+
+<svg viewBox="0 0 400 250" style="display:block; margin:20px auto; max-width:380px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Vector search pipeline: query to retrieved documents">
+<defs><marker id="vs-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<rect x="120" y="5" width="140" height="30" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="190" y="24" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#1e40af">Query text</text>
+<line x1="190" y1="35" x2="190" y2="55" stroke="#6366f1" stroke-width="1.5" marker-end="url(#vs-a)"/>
+<text x="250" y="50" font-family="system-ui" font-size="9" fill="#64748b">embed query</text>
+<rect x="70" y="60" width="240" height="34" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="190" y="81" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#5b21b6">Vector DB (FAISS / Pinecone / Chroma)</text>
+<line x1="190" y1="94" x2="190" y2="115" stroke="#6366f1" stroke-width="1.5" marker-end="url(#vs-a)"/>
+<text x="250" y="109" font-family="system-ui" font-size="9" fill="#64748b">ANN search</text>
+<rect x="70" y="120" width="240" height="30" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="190" y="139" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#92400e">Top-k similar document vectors</text>
+<line x1="190" y1="150" x2="190" y2="170" stroke="#6366f1" stroke-width="1.5" marker-end="url(#vs-a)"/>
+<rect x="90" y="175" width="200" height="30" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="190" y="194" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#166534">Retrieved documents</text>
+</svg>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb364-1"><a href="#cb364-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> faiss</span>
+<span id="cb364-2"><a href="#cb364-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb364-3"><a href="#cb364-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb364-4"><a href="#cb364-4" aria-hidden="true" tabindex="-1"></a>d <span class="op">=</span> <span class="dv">384</span>                                 <span class="co"># embedding dimension</span></span>
+<span id="cb364-5"><a href="#cb364-5" aria-hidden="true" tabindex="-1"></a>index <span class="op">=</span> faiss.IndexFlatIP(d)            <span class="co"># inner product (= cosine if normalized)</span></span>
+<span id="cb364-6"><a href="#cb364-6" aria-hidden="true" tabindex="-1"></a>embeddings_normalized <span class="op">=</span> embeddings <span class="op">/</span> np.linalg.norm(embeddings, axis<span class="op">=</span><span class="dv">1</span>, keepdims<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb364-7"><a href="#cb364-7" aria-hidden="true" tabindex="-1"></a>index.add(embeddings_normalized.astype(<span class="st">&#39;float32&#39;</span>))</span>
+<span id="cb364-8"><a href="#cb364-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb364-9"><a href="#cb364-9" aria-hidden="true" tabindex="-1"></a>query <span class="op">=</span> model.encode([<span class="st">&quot;A cat resting&quot;</span>])</span>
+<span id="cb364-10"><a href="#cb364-10" aria-hidden="true" tabindex="-1"></a>query <span class="op">/=</span> np.linalg.norm(query, axis<span class="op">=</span><span class="dv">1</span>, keepdims<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb364-11"><a href="#cb364-11" aria-hidden="true" tabindex="-1"></a>distances, indices <span class="op">=</span> index.search(query.astype(<span class="st">&#39;float32&#39;</span>), k<span class="op">=</span><span class="dv">3</span>)</span></code></pre></div>
+
+<h3 id="industry-case-study-snapshots">11.5.6 Industry Case Study Snapshots</h3>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Company / pattern</th>
+
+<th>Retrieval challenge</th>
+
+<th>Main lesson</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>LinkedIn talent search</td>
+
+<td>Recruiter queries and profile language rarely match exactly</td>
+
+<td>Dense retrieval helps bridge vocabulary mismatch, but filters and ranking still decide the final shortlist</td>
+
+</tr>
+
+<tr>
+
+<td>Marketplace search (Airbnb / Instacart style)</td>
+
+<td>Users express fuzzy intent while inventory, geography, and availability impose hard constraints</td>
+
+<td>The winning stack is usually hybrid: lexical filters + dense recall + a stronger ranker</td>
+
+</tr>
+
+<tr>
+
+<td>Enterprise knowledge search</td>
+
+<td>Fresh documents, permissions, and traceability matter as much as semantic similarity</td>
+
+<td>“Good retrieval” means not just relevance, but also access control, citations, and freshness</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<div class="practical-example">
+
+<div class="pe-label">Real-World ML Use Case — Retrieval Embeddings</div>
+
+<strong>E-commerce search is where hybrid retrieval becomes obvious.</strong> A shopper types “waterproof running jacket for monsoon” while the catalog contains “rain shell,” “windbreaker,” and SKU-heavy product titles. BM25 is good at exact brand names and product IDs; embeddings are good at intent and paraphrases. In production, teams usually combine both, then rerank, because users care about the right item, not which retrieval philosophy won.
+
+</div>
+
+<hr />
+
+<h2 id="retrieval-augmented-generation-rag">11.6 Retrieval-Augmented
+
+Generation (RAG)</h2>
+
+<p>RAG combines retrieval with generation: instead of relying solely on
+
+knowledge baked into model weights, the LLM fetches relevant documents
+
+at inference time and uses them to generate a grounded response.</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> RAG = retriever + reader. Retrieval provides
+
+context; generation produces the answer.</p>
+
+</blockquote>
+
+<h3 id="why-rag">11.6.1 Why RAG?</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 40%" />
+
+<col style="width: 59%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Problem</th>
+
+<th>RAG solution</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>LLM knowledge is frozen at training cutoff</td>
+
+<td>Retrieve up-to-date documents</td>
+
+</tr>
+
+<tr>
+
+<td>LLM hallucinates facts</td>
+
+<td>Ground response in retrieved documents</td>
+
+</tr>
+
+<tr>
+
+<td>Private / proprietary data</td>
+
+<td>Index your own documents; don’t retrain</td>
+
+</tr>
+
+<tr>
+
+<td>Need citations</td>
+
+<td>Return source documents alongside answer</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<div class="intuition-note">
+
+<div class="in-label">Mental Model</div>
+
+<strong>RAG is an open-book exam; fine-tuning is changing what the student has memorized.</strong> If the information changes every week, you usually want a better book and a better index, not a more expensive retraining run. Fine-tuning is better when the problem is behavior, style, or output format rather than fresh knowledge.
+
+</div>
+
+<h3 id="rag-pipeline">11.6.2 RAG Pipeline</h3>
+
+<svg viewBox="0 0 520 300" style="display:block; margin:20px auto; max-width:500px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="RAG pipeline: offline indexing and online query flow">
+<defs><marker id="rg-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<!-- Offline -->
+<text x="140" y="15" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#64748b">Offline (index time)</text>
+<rect x="20" y="22" width="90" height="26" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="65" y="39" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#1e40af">Documents</text>
+<line x1="110" y1="35" x2="125" y2="35" stroke="#6366f1" stroke-width="1.2" marker-end="url(#rg-a)"/>
+<rect x="130" y="22" width="80" height="26" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="170" y="39" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#5b21b6">Chunking</text>
+<line x1="210" y1="35" x2="225" y2="35" stroke="#6366f1" stroke-width="1.2" marker-end="url(#rg-a)"/>
+<rect x="230" y="22" width="90" height="26" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="275" y="39" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#92400e">Embedding</text>
+<line x1="320" y1="35" x2="335" y2="35" stroke="#6366f1" stroke-width="1.2" marker-end="url(#rg-a)"/>
+<rect x="340" y="22" width="90" height="26" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="385" y="39" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#166534">Vector DB</text>
+<!-- Separator -->
+<line x1="20" y1="62" x2="500" y2="62" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,3"/>
+<!-- Online -->
+<text x="260" y="80" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#64748b">Online (query time)</text>
+<rect x="200" y="88" width="120" height="26" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="260" y="105" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#1e40af">User query</text>
+<line x1="260" y1="114" x2="260" y2="130" stroke="#6366f1" stroke-width="1.5" marker-end="url(#rg-a)"/>
+<text x="310" y="126" font-family="system-ui" font-size="9" fill="#64748b">embed</text>
+<rect x="170" y="135" width="180" height="26" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="260" y="152" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#5b21b6">Vector DB → top-k chunks</text>
+<line x1="260" y1="161" x2="260" y2="177" stroke="#6366f1" stroke-width="1.5" marker-end="url(#rg-a)"/>
+<text x="325" y="173" font-family="system-ui" font-size="9" fill="#64748b">assemble prompt</text>
+<rect x="100" y="182" width="320" height="30" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="260" y="201" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#92400e">[System + retrieved chunks + user question]</text>
+<line x1="260" y1="212" x2="260" y2="228" stroke="#6366f1" stroke-width="1.5" marker-end="url(#rg-a)"/>
+<text x="310" y="224" font-family="system-ui" font-size="9" fill="#64748b">LLM call</text>
+<rect x="130" y="233" width="260" height="30" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="260" y="252" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#166534">Generated answer (grounded in context)</text>
+</svg>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb366-1"><a href="#cb366-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> langchain_community.vectorstores <span class="im">import</span> Chroma</span>
+<span id="cb366-2"><a href="#cb366-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> langchain_community.embeddings <span class="im">import</span> HuggingFaceEmbeddings</span>
+<span id="cb366-3"><a href="#cb366-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> langchain_core.prompts <span class="im">import</span> ChatPromptTemplate</span>
+<span id="cb366-4"><a href="#cb366-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> langchain_openai <span class="im">import</span> ChatOpenAI</span>
+<span id="cb366-5"><a href="#cb366-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb366-6"><a href="#cb366-6" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Embed and store documents</span></span>
+<span id="cb366-7"><a href="#cb366-7" aria-hidden="true" tabindex="-1"></a>embeddings <span class="op">=</span> HuggingFaceEmbeddings(model_name<span class="op">=</span><span class="st">&#39;all-MiniLM-L6-v2&#39;</span>)</span>
+<span id="cb366-8"><a href="#cb366-8" aria-hidden="true" tabindex="-1"></a>vectorstore <span class="op">=</span> Chroma.from_documents(documents, embeddings)</span>
+<span id="cb366-9"><a href="#cb366-9" aria-hidden="true" tabindex="-1"></a>retriever <span class="op">=</span> vectorstore.as_retriever(search_kwargs<span class="op">=</span>{<span class="st">&quot;k&quot;</span>: <span class="dv">4</span>})</span>
+<span id="cb366-10"><a href="#cb366-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb366-11"><a href="#cb366-11" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. RAG prompt</span></span>
+<span id="cb366-12"><a href="#cb366-12" aria-hidden="true" tabindex="-1"></a>template <span class="op">=</span> <span class="st">&quot;&quot;&quot;Answer the question based on the context below.</span></span>
+<span id="cb366-13"><a href="#cb366-13" aria-hidden="true" tabindex="-1"></a><span class="st">Context: </span><span class="sc">{context}</span></span>
+<span id="cb366-14"><a href="#cb366-14" aria-hidden="true" tabindex="-1"></a><span class="st">Question: </span><span class="sc">{question}</span></span>
+<span id="cb366-15"><a href="#cb366-15" aria-hidden="true" tabindex="-1"></a><span class="st">Answer:&quot;&quot;&quot;</span></span>
+<span id="cb366-16"><a href="#cb366-16" aria-hidden="true" tabindex="-1"></a>prompt <span class="op">=</span> ChatPromptTemplate.from_template(template)</span>
+<span id="cb366-17"><a href="#cb366-17" aria-hidden="true" tabindex="-1"></a>llm <span class="op">=</span> ChatOpenAI(model<span class="op">=</span><span class="st">&quot;gpt-4o&quot;</span>, temperature<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb366-18"><a href="#cb366-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb366-19"><a href="#cb366-19" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. RAG chain</span></span>
+<span id="cb366-20"><a href="#cb366-20" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> rag_answer(question):</span>
+<span id="cb366-21"><a href="#cb366-21" aria-hidden="true" tabindex="-1"></a>    docs <span class="op">=</span> retriever.invoke(question)</span>
+<span id="cb366-22"><a href="#cb366-22" aria-hidden="true" tabindex="-1"></a>    context <span class="op">=</span> <span class="st">&quot;</span><span class="ch">\n\n</span><span class="st">&quot;</span>.join(d.page_content <span class="cf">for</span> d <span class="kw">in</span> docs)</span>
+<span id="cb366-23"><a href="#cb366-23" aria-hidden="true" tabindex="-1"></a>    response <span class="op">=</span> llm.invoke(prompt.<span class="bu">format</span>(context<span class="op">=</span>context, question<span class="op">=</span>question))</span>
+<span id="cb366-24"><a href="#cb366-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> response.content, docs</span></code></pre></div>
+
+<h3 id="chunking-strategy-matters">11.6.3 Chunking Strategy Matters</h3>
+
+<p>How you split documents significantly affects retrieval quality.</p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Strategy</th>
+
+<th>Use when</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Fixed size (512 tokens + overlap)</td>
+
+<td>General baseline</td>
+
+</tr>
+
+<tr>
+
+<td>Sentence / paragraph boundaries</td>
+
+<td>Better coherence</td>
+
+</tr>
+
+<tr>
+
+<td>Semantic chunking</td>
+
+<td>Group related sentences</td>
+
+</tr>
+
+<tr>
+
+<td>Hierarchical (summary + detail)</td>
+
+<td>Long structured documents</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Overlap</strong> (50–100 token overlap between chunks)
+
+prevents splitting context that belongs together.</p>
+
+<h3 id="rag-evaluation-ch11">11.6.4 RAG Evaluation</h3>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>What to measure</th>
+
+<th>How</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Retrieval quality</td>
+
+<td>Recall@k — does the right chunk get retrieved?</td>
+
+</tr>
+
+<tr>
+
+<td>Faithfulness</td>
+
+<td>Does the answer only use retrieved context?</td>
+
+</tr>
+
+<tr>
+
+<td>Answer relevance</td>
+
+<td>Does the answer address the question?</td>
+
+</tr>
+
+<tr>
+
+<td>End-to-end quality</td>
+
+<td>Human eval or LLM-as-judge (RAGAS framework)</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<div class="practical-example">
+
+<div class="pe-label">Real-World ML Use Case — RAG</div>
+
+<strong>Enterprise advisor and policy assistants are classic RAG systems.</strong> Public deployments such as wealth-management knowledge assistants work because the model is not expected to memorize every internal document. Instead, it retrieves the relevant memo, handbook section, or product note at inference time and answers with citations. The hard engineering work is usually chunking, permissions, freshness, and abstaining when retrieval is weak.
+
+</div>
+
+<hr />
+
+<h2 id="fine-tuning-and-alignment">11.7 Fine-Tuning and Alignment</h2>
+
+<p>Pre-trained LLMs are powerful but may need adaptation for specific
+
+tasks or to behave safely.</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> Pre-training costs millions; fine-tuning costs
+
+thousands; prompting costs cents. Choose the level that solves your
+
+problem.</p>
+
+</blockquote>
+
+<h3 id="prompt-vs-rag-vs-fine-tune">11.7.1 Choose the Right Lever</h3>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>If your problem is…</th>
+
+<th>Start with…</th>
+
+<th>Why</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>You need better instructions or output formatting</td>
+
+<td>Prompting / structured output</td>
+
+<td>Cheapest lever; often enough for workflow reliability</td>
+
+</tr>
+
+<tr>
+
+<td>You need fresh or private knowledge</td>
+
+<td>RAG</td>
+
+<td>Updates at inference time; easier to cite and audit</td>
+
+</tr>
+
+<tr>
+
+<td>You need consistent tone, schema, or domain behavior</td>
+
+<td>LoRA / adapter fine-tuning</td>
+
+<td>Teaches the model how to behave, not just what to read</td>
+
+</tr>
+
+<tr>
+
+<td>You need a major capability shift and have substantial data + budget</td>
+
+<td>Full fine-tuning</td>
+
+<td>Most powerful, but highest cost and operational burden</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="the-adaptation-ladder">11.7.2 The Adaptation Ladder</h3>
+
+<svg viewBox="0 0 400 320" style="display:block; margin:20px auto; max-width:380px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="LLM adaptation ladder from prompting to pre-training">
+<defs><marker id="al-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<rect x="80" y="5" width="240" height="28" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="200" y="23" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#166534">Prompting / in-context learning</text>
+<text x="345" y="23" font-family="system-ui" font-size="8" fill="#64748b">cheapest</text>
+<line x1="200" y1="33" x2="200" y2="45" stroke="#6366f1" stroke-width="1.2" marker-end="url(#al-a)"/>
+<rect x="100" y="50" width="200" height="28" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="200" y="68" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#166534">Few-shot prompting</text>
+<line x1="200" y1="78" x2="200" y2="90" stroke="#6366f1" stroke-width="1.2" marker-end="url(#al-a)"/>
+<rect x="80" y="95" width="240" height="28" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="200" y="113" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#92400e">Prompt tuning / prefix tuning</text>
+<line x1="200" y1="123" x2="200" y2="135" stroke="#6366f1" stroke-width="1.2" marker-end="url(#al-a)"/>
+<rect x="80" y="140" width="240" height="28" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="200" y="158" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#92400e">LoRA / adapter fine-tuning</text>
+<text x="345" y="158" font-family="system-ui" font-size="8" fill="#64748b">moderate cost</text>
+<line x1="200" y1="168" x2="200" y2="180" stroke="#6366f1" stroke-width="1.2" marker-end="url(#al-a)"/>
+<rect x="110" y="185" width="180" height="28" rx="6" fill="#fce7f3" stroke="#ec4899" stroke-width="1.5"/>
+<text x="200" y="203" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#9d174d">Full fine-tuning</text>
+<text x="345" y="203" font-family="system-ui" font-size="8" fill="#64748b">expensive</text>
+<line x1="200" y1="213" x2="200" y2="225" stroke="#6366f1" stroke-width="1.2" marker-end="url(#al-a)"/>
+<rect x="80" y="230" width="240" height="28" rx="6" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+<text x="200" y="248" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#991b1b">Pre-training from scratch</text>
+<text x="345" y="248" font-family="system-ui" font-size="8" fill="#64748b">most expensive</text>
+</svg>
+
+<h3 id="supervised-fine-tuning-sft">11.7.3 Supervised Fine-Tuning (SFT)</h3>
+
+<p>Standard fine-tuning: train on (instruction, desired response) pairs
+
+with next-token prediction loss.</p>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.92rem; line-height:1.8;">
+<strong>Dataset:</strong> [(instruction, response), …]<br>
+<strong>Loss:</strong> cross-entropy on response tokens only<br>
+<span style="color:#64748b;">(mask the instruction tokens — don’t compute loss on them)</span>
+</div>
+
+
+<h3 id="lora-low-rank-adaptation">11.7.4 LoRA (Low-Rank Adaptation)</h3>
+
+<p>Fine-tuning all 70B+ parameters is expensive. LoRA freezes the
+
+original weights and trains small <strong>low-rank update
+
+matrices</strong>:</p>
+
+<p><span class="math display">\[
+
+W&#39; = W + \Delta W = W + BA
+
+\]</span></p>
+
+<p>where <span class="math inline">\(B \in \mathbb{R}^{d \times
+
+r}\)</span> and <span class="math inline">\(A \in \mathbb{R}^{r \times
+
+k}\)</span> with <span class="math inline">\(r \ll \min(d,
+
+k)\)</span>.</p>
+
+<div style="border-left:4px solid #8b5cf6; padding:12px 16px; background:#faf5ff; border-radius:6px; margin:16px 0; font-size:0.92rem; line-height:1.8;">
+<strong style="color:#5b21b6;">Original weight matrix W</strong> <span style="color:#64748b;">(frozen, 70B+ params)</span><br>
++ <strong>Low-rank update:</strong> B × A &ensp;<span style="color:#64748b;">(trainable, ~0.1% of params)</span><br>
+Typical r = 8 or 16<br>
+<strong>QLoRA:</strong> quantize W to 4-bit, LoRA adapters in float16
+</div>
+
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb370-1"><a href="#cb370-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> peft <span class="im">import</span> LoraConfig, get_peft_model</span>
+<span id="cb370-2"><a href="#cb370-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb370-3"><a href="#cb370-3" aria-hidden="true" tabindex="-1"></a>config <span class="op">=</span> LoraConfig(</span>
+<span id="cb370-4"><a href="#cb370-4" aria-hidden="true" tabindex="-1"></a>    r<span class="op">=</span><span class="dv">16</span>,                                          <span class="co"># rank</span></span>
+<span id="cb370-5"><a href="#cb370-5" aria-hidden="true" tabindex="-1"></a>    lora_alpha<span class="op">=</span><span class="dv">32</span>,                                 <span class="co"># scaling</span></span>
+<span id="cb370-6"><a href="#cb370-6" aria-hidden="true" tabindex="-1"></a>    target_modules<span class="op">=</span>[<span class="st">&quot;q_proj&quot;</span>, <span class="st">&quot;v_proj&quot;</span>],           <span class="co"># which layers to adapt</span></span>
+<span id="cb370-7"><a href="#cb370-7" aria-hidden="true" tabindex="-1"></a>    lora_dropout<span class="op">=</span><span class="fl">0.1</span>,</span>
+<span id="cb370-8"><a href="#cb370-8" aria-hidden="true" tabindex="-1"></a>    bias<span class="op">=</span><span class="st">&quot;none&quot;</span>,</span>
+<span id="cb370-9"><a href="#cb370-9" aria-hidden="true" tabindex="-1"></a>    task_type<span class="op">=</span><span class="st">&quot;CAUSAL_LM&quot;</span></span>
+<span id="cb370-10"><a href="#cb370-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb370-11"><a href="#cb370-11" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> get_peft_model(base_model, config)</span>
+<span id="cb370-12"><a href="#cb370-12" aria-hidden="true" tabindex="-1"></a>model.print_trainable_parameters()   <span class="co"># e.g., trainable params: 0.5%</span></span></code></pre></div>
+
+<h3 id="why-lora-works">11.7.5 Why LoRA Can Work Even Though It Trains So Little</h3>
+
+<p>At first glance LoRA feels almost magical: how can changing 0.1–1% of the parameters noticeably alter model behavior? The key is that the pretrained model already knows a huge amount. Fine-tuning usually does <em>not</em> need to teach grammar, world knowledge, or coding syntax from scratch. It mostly needs to <strong>steer</strong> those capabilities.</p>
+
+<ul>
+
+<li><strong>The base model is already near a good solution.</strong> Downstream training is often a nudge, not a rebuild.</li>
+
+<li><strong>Useful weight changes are highly correlated.</strong> Many tasks do not need an independent update for every weight; a low-rank matrix can capture the dominant directions of change.</li>
+
+<li><strong>Attention projections are leverage points.</strong> Small changes in <code>q_proj</code> and <code>v_proj</code> can noticeably alter what the model attends to and how it routes information.</li>
+
+</ul>
+
+<div style="border-left:4px solid #f59e0b; padding:12px 16px; background:#fffbeb; border-radius:6px; margin:16px 0; font-size:0.92rem; line-height:1.8;">
+<strong style="color:#92400e;">Intuition:</strong><br>
+The base model is a giant sound studio that is already built and tuned.<br>
+LoRA does <em>not</em> rebuild the studio.<br>
+It learns a <strong>small control panel</strong> that shifts the few knobs that matter together:<br>
+style, domain vocabulary, output format, refusal behavior, or task emphasis.
+</div>
+
+<div class="practical-example">
+
+<div class="pe-label">Real-World ML Use Case — LoRA Fine-Tuning</div>
+
+<strong>A company-specific assistant usually needs steering, not a new brain.</strong> Suppose a support team wants an open model to answer in its house style, use the company’s escalation taxonomy, and return strict JSON actions. The base model already understands troubleshooting and English. The LoRA adapter only learns the delta: your tone, your labels, your schema, your edge cases. That is why a surprisingly small adapter can work so well.
+
+</div>
+
+<h3 id="rlhf-reinforcement-learning-from-human-feedback">11.7.6 RLHF
+
+(Reinforcement Learning from Human Feedback)</h3>
+
+<p>Used by ChatGPT, Claude, and Gemini to align LLMs with human
+
+preferences:</p>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.92rem; line-height:1.9;">
+<strong style="color:#4f46e5;">Step 1: SFT</strong> — fine-tune on human-written demonstrations<br>
+<strong style="color:#4f46e5;">Step 2: Reward model</strong> — train on human preference comparisons<br>
+<span style="color:#64748b;">&emsp;(given two outputs, which is better?)</span><br>
+<strong style="color:#4f46e5;">Step 3: PPO</strong> — use RL to optimize the SFT model against the reward model<br><br>
+<strong>RL objective:</strong>&ensp;maximize 𝐸[reward] − β·KL(fine-tuned ∥ SFT)<br>
+<span style="color:#64748b;">(KL penalty prevents diverging too far from SFT)</span>
+</div>
+
+
+<h3 id="dpo-direct-preference-optimization">11.7.7 DPO (Direct Preference
+
+Optimization)</h3>
+
+<p>Simpler alternative to RLHF — directly optimizes the policy from
+
+preferences without a separate reward model:</p>
+
+<p><span class="math display">\[
+
+\mathcal{L}_{\text{DPO}} = -\log \sigma\left(\beta
+
+\log\frac{\pi_\theta(y_w \mid x)}{\pi_\text{ref}(y_w \mid x)} - \beta
+
+\log\frac{\pi_\theta(y_l \mid x)}{\pi_\text{ref}(y_l \mid x)}\right)
+
+\]</span></p>
+
+<p><strong>Where:</strong> <span class="math inline">\(\pi_\theta\)</span> = policy being optimized, <span class="math inline">\(\pi_{\text{ref}}\)</span> = reference policy (the SFT model), <span class="math inline">\(\beta\)</span> = temperature controlling deviation from reference, <span class="math inline">\(y_w, y_l\)</span> = preferred and dispreferred responses.</p>
+
+
+<hr />
+
+<h2 id="prompting-and-in-context-learning">11.8 Prompting and In-Context
+
+Learning</h2>
+
+<p>Prompting is often the fastest and cheapest path to task
+
+adaptation.</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> A well-crafted prompt can match fine-tuning
+
+quality for many tasks. Write prompts like you’re writing precise
+
+instructions for a highly capable but literal-minded assistant.</p>
+
+</blockquote>
+
+<h3 id="prompting-patterns">11.8.1 Prompting Patterns</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 25%" />
+
+<col style="width: 37%" />
+
+<col style="width: 37%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Pattern</th>
+
+<th>What it does</th>
+
+<th>When to use</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Zero-shot</td>
+
+<td>Just describe the task</td>
+
+<td>Simple, well-known tasks</td>
+
+</tr>
+
+<tr>
+
+<td>Few-shot</td>
+
+<td>Provide examples in the prompt</td>
+
+<td>When output format matters</td>
+
+</tr>
+
+<tr>
+
+<td>Chain-of-thought (CoT)</td>
+
+<td>Ask model to think step by step</td>
+
+<td>Multi-step reasoning</td>
+
+</tr>
+
+<tr>
+
+<td>System prompt</td>
+
+<td>Set model persona/behavior globally</td>
+
+<td>Production deployments</td>
+
+</tr>
+
+<tr>
+
+<td>Role prompting</td>
+
+<td>“Act as an expert in…”</td>
+
+<td>Specialized tone/knowledge</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb372-1"><a href="#cb372-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> openai <span class="im">import</span> OpenAI</span>
+<span id="cb372-2"><a href="#cb372-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb372-3"><a href="#cb372-3" aria-hidden="true" tabindex="-1"></a>client <span class="op">=</span> OpenAI()</span>
+<span id="cb372-4"><a href="#cb372-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb372-5"><a href="#cb372-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Few-shot prompting</span></span>
+<span id="cb372-6"><a href="#cb372-6" aria-hidden="true" tabindex="-1"></a>response <span class="op">=</span> client.chat.completions.create(</span>
+<span id="cb372-7"><a href="#cb372-7" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span><span class="st">&quot;gpt-4o&quot;</span>,</span>
+<span id="cb372-8"><a href="#cb372-8" aria-hidden="true" tabindex="-1"></a>    messages<span class="op">=</span>[</span>
+<span id="cb372-9"><a href="#cb372-9" aria-hidden="true" tabindex="-1"></a>        {<span class="st">&quot;role&quot;</span>: <span class="st">&quot;system&quot;</span>, <span class="st">&quot;content&quot;</span>: <span class="st">&quot;You are a helpful data scientist.&quot;</span>},</span>
+<span id="cb372-10"><a href="#cb372-10" aria-hidden="true" tabindex="-1"></a>        {<span class="st">&quot;role&quot;</span>: <span class="st">&quot;user&quot;</span>, <span class="st">&quot;content&quot;</span>: <span class="st">&quot;&quot;&quot;Classify sentiment. Examples:</span></span>
+<span id="cb372-11"><a href="#cb372-11" aria-hidden="true" tabindex="-1"></a><span class="st">Text: &quot;I love this product!&quot; → Positive</span></span>
+<span id="cb372-12"><a href="#cb372-12" aria-hidden="true" tabindex="-1"></a><span class="st">Text: &quot;The delivery was late.&quot; → Negative</span></span>
+<span id="cb372-13"><a href="#cb372-13" aria-hidden="true" tabindex="-1"></a><span class="st">Text: &quot;It&#39;s okay I guess.&quot; → Neutral</span></span>
+<span id="cb372-14"><a href="#cb372-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb372-15"><a href="#cb372-15" aria-hidden="true" tabindex="-1"></a><span class="st">Text: &quot;Absolutely fantastic experience!&quot; → &quot;&quot;&quot;</span>}</span>
+<span id="cb372-16"><a href="#cb372-16" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb372-17"><a href="#cb372-17" aria-hidden="true" tabindex="-1"></a>    temperature<span class="op">=</span><span class="dv">0</span>,</span>
+<span id="cb372-18"><a href="#cb372-18" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb372-19"><a href="#cb372-19" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(response.choices[<span class="dv">0</span>].message.content)   <span class="co"># Positive</span></span></code></pre></div>
+
+<h3 id="chain-of-thought-prompting">11.8.2 Chain-of-Thought Prompting</h3>
+
+<p>Adding “think step by step” dramatically improves multi-step
+
+reasoning:</p>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.88rem; line-height:1.8;">
+<strong style="color:#991b1b;">Without CoT:</strong><br>
+<strong>Q:</strong> <em>"A store has 23 items. It sells 7 and receives 12. How many?"</em><br>
+<strong>A:</strong> "28" &ensp;<span style="color:#64748b;">← correct, but unreliable for hard problems</span><br><br>
+<strong style="color:#166534;">With CoT:</strong><br>
+<strong>Q:</strong> Same question + <em>"Think step by step."</em><br>
+<strong>A:</strong> "The store starts with 23 items.<br>
+&emsp;It sells 7: 23 − 7 = 16 remaining.<br>
+&emsp;It receives 12: 16 + 12 = 28.<br>
+&emsp;<strong>Answer: 28</strong>"
+</div>
+
+
+<h3 id="structured-output">11.8.3 Structured Output</h3>
+
+<p>For production use, enforce structured outputs to avoid parsing
+
+errors:</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb374-1"><a href="#cb374-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> openai <span class="im">import</span> OpenAI</span>
+<span id="cb374-2"><a href="#cb374-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pydantic <span class="im">import</span> BaseModel</span>
+<span id="cb374-3"><a href="#cb374-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb374-4"><a href="#cb374-4" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ExtractionResult(BaseModel):</span>
+<span id="cb374-5"><a href="#cb374-5" aria-hidden="true" tabindex="-1"></a>    entity: <span class="bu">str</span></span>
+<span id="cb374-6"><a href="#cb374-6" aria-hidden="true" tabindex="-1"></a>    entity_type: <span class="bu">str</span></span>
+<span id="cb374-7"><a href="#cb374-7" aria-hidden="true" tabindex="-1"></a>    confidence: <span class="bu">float</span></span>
+<span id="cb374-8"><a href="#cb374-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb374-9"><a href="#cb374-9" aria-hidden="true" tabindex="-1"></a>client <span class="op">=</span> OpenAI()</span>
+<span id="cb374-10"><a href="#cb374-10" aria-hidden="true" tabindex="-1"></a>response <span class="op">=</span> client.beta.chat.completions.parse(</span>
+<span id="cb374-11"><a href="#cb374-11" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span><span class="st">&quot;gpt-4o&quot;</span>,</span>
+<span id="cb374-12"><a href="#cb374-12" aria-hidden="true" tabindex="-1"></a>    messages<span class="op">=</span>[{<span class="st">&quot;role&quot;</span>: <span class="st">&quot;user&quot;</span>, <span class="st">&quot;content&quot;</span>: <span class="st">&quot;Extract entities: Apple announced the new iPhone.&quot;</span>}],</span>
+<span id="cb374-13"><a href="#cb374-13" aria-hidden="true" tabindex="-1"></a>    response_format<span class="op">=</span>ExtractionResult,</span>
+<span id="cb374-14"><a href="#cb374-14" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb374-15"><a href="#cb374-15" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> response.choices[<span class="dv">0</span>].message.parsed</span></code></pre></div>
+
+<h3 id="advanced-prompting-techniques">11.8.4 Advanced Prompting Techniques</h3>
+
+<p>Beyond basic zero/few-shot prompting, several techniques unlock significantly stronger reasoning and reliability from LLMs.</p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 22%" />
+
+<col style="width: 40%" />
+
+<col style="width: 38%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Technique</th>
+
+<th>How it works</th>
+
+<th>Best for</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>Self-Consistency (SC)</strong></td>
+
+<td>Sample multiple reasoning paths (high temperature), take majority-vote answer</td>
+
+<td>Math, logic, factual QA — reduces variance</td>
+
+</tr>
+
+<tr>
+
+<td><strong>ReAct (Reason + Act)</strong></td>
+
+<td>Interleave reasoning traces with tool actions (search, calculator, API calls)</td>
+
+<td>Agentic tasks requiring external knowledge</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Tree of Thought (ToT)</strong></td>
+
+<td>Generate multiple reasoning branches, evaluate and prune, explore the best path</td>
+
+<td>Complex planning, puzzles, multi-step decisions</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Least-to-Most (LtM)</strong></td>
+
+<td>Decompose a hard problem into simpler sub-problems, solve sequentially</td>
+
+<td>Long-horizon tasks, compositional reasoning</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Meta-Prompting</strong></td>
+
+<td>Ask the model to write its own prompt or evaluate/improve its own output</td>
+
+<td>Automatic prompt optimization</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Constitutional AI (CAI)</strong></td>
+
+<td>Provide a set of principles; model critiques and revises its own response against them</td>
+
+<td>Safety-critical outputs, alignment</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="react-prompting-pattern">11.8.5 ReAct: Reason + Act Pattern</h3>
+
+<p>ReAct is the backbone of modern LLM agents. The model alternates between <strong>Thought</strong> (reasoning), <strong>Action</strong> (tool call), and <strong>Observation</strong> (tool result) until it arrives at a final answer:</p>
+
+<div style="border-left:4px solid #8b5cf6; padding:12px 16px; background:#faf5ff; border-radius:6px; margin:16px 0; font-size:0.88rem; line-height:1.8;">
+<strong>Question:</strong> <em>What is the population of the capital of France?</em><br><br>
+<span style="color:#1e40af;"><strong>Thought:</strong></span> I need to find the capital of France and then its population.<br>
+<span style="color:#166534;"><strong>Action:</strong></span> Search(<em>"capital of France"</em>)<br>
+<span style="color:#92400e;"><strong>Observation:</strong></span> Paris is the capital of France.<br><br>
+<span style="color:#1e40af;"><strong>Thought:</strong></span> Now I need the population of Paris.<br>
+<span style="color:#166534;"><strong>Action:</strong></span> Search(<em>"population of Paris 2024"</em>)<br>
+<span style="color:#92400e;"><strong>Observation:</strong></span> Paris has a population of approximately 2.1 million (city proper).<br><br>
+<span style="color:#1e40af;"><strong>Thought:</strong></span> I have the answer.<br>
+<strong style="color:#4f46e5;">Final Answer:</strong> The population of Paris (capital of France) is approximately 2.1 million.
+</div>
+
+
+<p>ReAct is implemented in frameworks like LangChain, LlamaIndex, and the OpenAI Assistants API (with function calling). It dramatically reduces hallucination by grounding reasoning in retrieved facts.</p>
+
+<h3 id="self-consistency-prompting">11.8.6 Self-Consistency Prompting</h3>
+
+<p>Standard CoT is deterministic (temperature=0). Self-Consistency samples <em>N</em> diverse reasoning paths at temperature&gt;0 and returns the majority answer:</p>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.9rem; line-height:1.8;">
+<strong>Prompt:</strong> "Solve step by step. Think step by step."<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ temperature = 0.7, n = 10 samples<br><br>
+Sample 1 → Answer: <span style="color:#22c55e; font-weight:600;">42</span><br>
+Sample 2 → Answer: <span style="color:#22c55e; font-weight:600;">42</span><br>
+Sample 3 → Answer: <span style="color:#ef4444;">39</span> <span style="color:#64748b; font-size:0.85rem;">← outlier</span><br>
+Sample 4 → Answer: <span style="color:#22c55e; font-weight:600;">42</span><br>
+…<br>
+<strong>Majority vote → Final answer: <span style="color:#22c55e;">42 ✓</span></strong>
+</div>
+
+<p>Self-consistency improves accuracy by 10–20% on arithmetic and commonsense benchmarks, at the cost of N× inference calls. Use it when accuracy matters more than latency.</p>
+
+<h3 id="prompt-engineering-best-practices">11.8.7 Prompt Engineering Best Practices</h3>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Principle</th>
+
+<th>Example</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>Be specific about format</strong></td>
+
+<td>"Return a JSON with keys: entity, type, confidence"</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Specify persona when useful</strong></td>
+
+<td>"You are a senior data scientist reviewing code…"</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Use delimiters for structure</strong></td>
+
+<td>Wrap inputs in triple backticks or XML tags: &lt;document&gt;…&lt;/document&gt;</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Show don't-do examples</strong></td>
+
+<td>"Do NOT include disclaimers. Do NOT repeat the question."</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Ask for confidence</strong></td>
+
+<td>"If unsure, say so rather than guessing."</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Iterate systematically</strong></td>
+
+<td>Change one thing at a time; track prompt versions and scores</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<div class="practical-example">
+
+<div class="pe-label">Real-World ML Use Case — Prompt Engineering</div>
+
+<strong>Customer support ticket routing with few-shot + structured output.</strong> A SaaS company uses an LLM to classify 10,000 daily support tickets into 12 categories (billing, login, performance, feature request, etc.) and assign a priority (P1–P3). A naive zero-shot prompt achieved 71% accuracy. After adding: (1) 3 few-shot examples per category, (2) a system prompt defining the 12 categories with descriptions, and (3) structured output (JSON with category + priority + confidence), accuracy improved to 94% — matching human labellers. The prompt was versioned in a git-tracked YAML file, and prompt changes were A/B tested before deployment, treating prompts with the same rigour as model code.
+
+</div>
+
+<hr />
+
+<h2 id="llm-evaluation-and-hallucination">11.9 LLM Evaluation and
+
+Hallucination</h2>
+
+<h3 id="the-hallucination-problem">11.9.1 The Hallucination Problem</h3>
+
+<p>LLMs generate text by predicting the next token — they do not “know”
+
+things the way humans do. They will produce confident-sounding but
+
+incorrect facts.</p>
+
+<div style="border-left:4px solid #ef4444; padding:12px 16px; background:#fef2f2; border-radius:6px; margin:16px 0; font-size:0.92rem; line-height:1.8;">
+<strong style="color:#991b1b;">Why LLMs hallucinate:</strong><br>
+<span style="color:#64748b;">•</span> Trained to produce <em>plausible</em> text, not verified facts<br>
+<span style="color:#64748b;">•</span> Knowledge is frozen at training time (stale)<br>
+<span style="color:#64748b;">•</span> No internal fact-checker<br>
+<span style="color:#64748b;">•</span> Rare facts are underrepresented in training data<br>
+<span style="color:#64748b;">•</span> Prompt phrasing can trigger wrong associations
+</div>
+
+
+<p><strong>Types of hallucination:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Type</th>
+
+<th>Example</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Factual error</td>
+
+<td>“The Eiffel Tower is in London”</td>
+
+</tr>
+
+<tr>
+
+<td>Fabricated reference</td>
+
+<td>Citing a paper that doesn’t exist</td>
+
+</tr>
+
+<tr>
+
+<td>Reasoning error</td>
+
+<td>Correct steps, wrong conclusion</td>
+
+</tr>
+
+<tr>
+
+<td>Instruction drift</td>
+
+<td>Ignoring constraints in long prompts</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Mitigation strategies:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Strategy</th>
+
+<th>How it helps</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>RAG</td>
+
+<td>Ground answers in retrieved documents</td>
+
+</tr>
+
+<tr>
+
+<td>Constrain to context</td>
+
+<td>“Answer only from the provided context”</td>
+
+</tr>
+
+<tr>
+
+<td>Ask for citations</td>
+
+<td>Forces the model to be more specific</td>
+
+</tr>
+
+<tr>
+
+<td>Temperature = 0</td>
+
+<td>More deterministic, less creative</td>
+
+</tr>
+
+<tr>
+
+<td>Self-consistency</td>
+
+<td>Sample multiple outputs, take majority</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="evaluation-metrics-for-llms">11.9.2 Evaluation Metrics for LLMs</h3>
+
+<p>Unlike classification, LLM outputs are hard to evaluate
+
+automatically:</p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 21%" />
+
+<col style="width: 43%" />
+
+<col style="width: 35%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Metric</th>
+
+<th>What it measures</th>
+
+<th>When to use</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>BLEU</td>
+
+<td>N-gram overlap with reference</td>
+
+<td>Translation, legacy benchmarks</td>
+
+</tr>
+
+<tr>
+
+<td>ROUGE</td>
+
+<td>Recall of n-grams</td>
+
+<td>Summarization</td>
+
+</tr>
+
+<tr>
+
+<td>BERTScore</td>
+
+<td>Semantic similarity via embeddings</td>
+
+<td>Better than BLEU for meaning</td>
+
+</tr>
+
+<tr>
+
+<td>LLM-as-judge</td>
+
+<td>GPT-4 rates response quality</td>
+
+<td>Production eval at scale</td>
+
+</tr>
+
+<tr>
+
+<td>Human eval</td>
+
+<td>Human preference ratings</td>
+
+<td>Gold standard, expensive</td>
+
+</tr>
+
+<tr>
+
+<td>Faithfulness (RAGAS)</td>
+
+<td>Is answer grounded in context?</td>
+
+<td>RAG systems</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb376-1"><a href="#cb376-1" aria-hidden="true" tabindex="-1"></a><span class="co"># LLM-as-judge pattern</span></span>
+<span id="cb376-2"><a href="#cb376-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> evaluate_response(question, answer, reference):</span>
+<span id="cb376-3"><a href="#cb376-3" aria-hidden="true" tabindex="-1"></a>    prompt <span class="op">=</span> <span class="ss">f&quot;&quot;&quot;Rate the answer on a scale of 1-5 for:</span></span>
+<span id="cb376-4"><a href="#cb376-4" aria-hidden="true" tabindex="-1"></a><span class="ss">1. Correctness (does it answer the question accurately?)</span></span>
+<span id="cb376-5"><a href="#cb376-5" aria-hidden="true" tabindex="-1"></a><span class="ss">2. Completeness (does it cover all key points?)</span></span>
+<span id="cb376-6"><a href="#cb376-6" aria-hidden="true" tabindex="-1"></a><span class="ss">3. Faithfulness (is it grounded in the reference?)</span></span>
+<span id="cb376-7"><a href="#cb376-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb376-8"><a href="#cb376-8" aria-hidden="true" tabindex="-1"></a><span class="ss">Question: </span><span class="sc">{</span>question<span class="sc">}</span></span>
+<span id="cb376-9"><a href="#cb376-9" aria-hidden="true" tabindex="-1"></a><span class="ss">Answer: </span><span class="sc">{</span>answer<span class="sc">}</span></span>
+<span id="cb376-10"><a href="#cb376-10" aria-hidden="true" tabindex="-1"></a><span class="ss">Reference: </span><span class="sc">{</span>reference<span class="sc">}</span></span>
+<span id="cb376-11"><a href="#cb376-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb376-12"><a href="#cb376-12" aria-hidden="true" tabindex="-1"></a><span class="ss">Respond in JSON: </span><span class="ch">{{</span><span class="ss">&quot;correctness&quot;: N, &quot;completeness&quot;: N, &quot;faithfulness&quot;: N, &quot;reasoning&quot;: &quot;.&quot;</span><span class="ch">}}</span></span>
+<span id="cb376-13"><a href="#cb376-13" aria-hidden="true" tabindex="-1"></a><span class="ss">&quot;&quot;&quot;</span></span>
+<span id="cb376-14"><a href="#cb376-14" aria-hidden="true" tabindex="-1"></a>    response <span class="op">=</span> client.chat.completions.create(</span>
+<span id="cb376-15"><a href="#cb376-15" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span><span class="st">&quot;gpt-4o&quot;</span>,</span>
+<span id="cb376-16"><a href="#cb376-16" aria-hidden="true" tabindex="-1"></a>        messages<span class="op">=</span>[{<span class="st">&quot;role&quot;</span>: <span class="st">&quot;user&quot;</span>, <span class="st">&quot;content&quot;</span>: prompt}],</span>
+<span id="cb376-17"><a href="#cb376-17" aria-hidden="true" tabindex="-1"></a>        response_format<span class="op">=</span>{<span class="st">&quot;type&quot;</span>: <span class="st">&quot;json_object&quot;</span>},</span>
+<span id="cb376-18"><a href="#cb376-18" aria-hidden="true" tabindex="-1"></a>        temperature<span class="op">=</span><span class="dv">0</span></span>
+<span id="cb376-19"><a href="#cb376-19" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb376-20"><a href="#cb376-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> json.loads(response.choices[<span class="dv">0</span>].message.content)</span></code></pre></div>
+
+<h3 id="production-llm-serving">11.9.3 Production LLM Serving</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 41%" />
+
+<col style="width: 29%" />
+
+<col style="width: 29%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Consideration</th>
+
+<th>Options</th>
+
+<th>Trade-off</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Model size</td>
+
+<td>7B vs 70B vs 405B</td>
+
+<td>Speed/cost vs quality</td>
+
+</tr>
+
+<tr>
+
+<td>Quantization</td>
+
+<td>FP16, INT8, INT4</td>
+
+<td>Faster/cheaper vs slight quality loss</td>
+
+</tr>
+
+<tr>
+
+<td>Inference engine</td>
+
+<td>vLLM, TGI, Ollama (local)</td>
+
+<td>Latency, cost, privacy</td>
+
+</tr>
+
+<tr>
+
+<td>API vs self-hosted</td>
+
+<td>OpenAI/Anthropic vs local</td>
+
+<td>Cost, control, data privacy</td>
+
+</tr>
+
+<tr>
+
+<td>Context caching</td>
+
+<td>Reuse KV cache for shared prefix</td>
+
+<td>Reduce cost on repeated context</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<div class="practical-example">
+
+<div class="pe-label">Real-World ML Use Case — Hallucination and Eval</div>
+
+<strong>A trustworthy HR or policy assistant must know when not to answer.</strong> Strong teams do not measure success only by how fluent the answer sounds. They add citation checks, abstention logic, retrieval-quality thresholds, and human escalation for sensitive cases. In production, “I could not find a grounded answer in the handbook” is often better than a polished hallucination.
+
+</div>
+
+<hr />
+
+<h2 id="agentic-ai-and-tool-use">11.10 Agentic AI and Tool Use</h2>
+
+
+
+<p>An LLM that answers questions is a <em>chatbot</em>. An LLM that can <strong>reason about what to do next,
+
+call external tools, observe results, and iterate</strong> until a goal is met is an <strong>agent</strong>.
+
+Agentic AI is the fastest-moving frontier in applied ML — and one every data scientist needs to understand.</p>
+
+
+
+<h3 id="what-makes-an-agent">11.10.1 What Makes an Agent?</h3>
+
+
+
+<p>Three capabilities separate an agent from a simple prompt-response system:</p>
+
+
+
+<table>
+
+<thead><tr><th>Capability</th><th>Chatbot</th><th>Agent</th></tr></thead>
+
+<tbody>
+
+<tr><td><strong>Planning</strong></td><td>Responds to one turn</td><td>Breaks a goal into sub-tasks, decides order</td></tr>
+
+<tr><td><strong>Tool use</strong></td><td>Text-only output</td><td>Calls APIs, databases, code interpreters, search</td></tr>
+
+<tr><td><strong>Memory &amp; state</strong></td><td>Stateless (or short context)</td><td>Maintains working memory across steps</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<!-- Agent architecture SVG -->
+
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="320" viewBox="0 0 780 320" style="display:block; margin:20px auto;">
+
+  <defs>
+
+    <style>
+
+      .at { font-family:'Segoe UI',Arial,sans-serif; font-size:15px; font-weight:bold; fill:#0f172a; }
+
+      .as { font-family:'Segoe UI',Arial,sans-serif; font-size:11.5px; fill:#475569; }
+
+      .ah { font-family:'Segoe UI',Arial,sans-serif; font-size:16px; font-weight:bold; fill:#0f172a; }
+
+    </style>
+
+    <marker id="aha" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+
+      <polygon points="0 0, 7 2.5, 0 5" fill="#94a3b8"/>
+
+    </marker>
+
+  </defs>
+
+
+
+  <text x="390" y="24" text-anchor="middle" class="ah">The Agent Loop: Reason → Act → Observe → Repeat</text>
+
+
+
+  <!-- User goal -->
+
+  <rect x="20" y="50" width="140" height="50" rx="10" fill="#fef9c3" stroke="#facc15" stroke-width="1.5"/>
+
+  <text x="90" y="72" text-anchor="middle" class="at" fill="#b45309">User Goal</text>
+
+  <text x="90" y="88" text-anchor="middle" class="as">"Analyze Q1 sales"</text>
+
+
+
+  <!-- Arrow to LLM -->
+
+  <line x1="160" y1="75" x2="210" y2="75" stroke="#94a3b8" stroke-width="2" marker-end="url(#aha)"/>
+
+
+
+  <!-- LLM Brain (center) -->
+
+  <rect x="215" y="40" width="200" height="70" rx="14" fill="#dbeafe" stroke="#60a5fa" stroke-width="2"/>
+
+  <text x="315" y="68" text-anchor="middle" class="at" fill="#2563eb">LLM (Reasoning)</text>
+
+  <text x="315" y="86" text-anchor="middle" class="as">Plans next action</text>
+
+
+
+  <!-- Arrow down to Tools -->
+
+  <line x1="315" y1="110" x2="315" y2="148" stroke="#94a3b8" stroke-width="2" marker-end="url(#aha)"/>
+
+  <text x="328" y="137" class="as" font-style="italic" fill="#059669">Act</text>
+
+
+
+  <!-- Tools row -->
+
+  <rect x="100" y="152" width="120" height="48" rx="8" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.3"/>
+
+  <text x="160" y="175" text-anchor="middle" class="at" font-size="13" fill="#059669">SQL Query</text>
+
+  <text x="160" y="191" text-anchor="middle" class="as">tool</text>
+
+
+
+  <rect x="240" y="152" width="120" height="48" rx="8" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.3"/>
+
+  <text x="300" y="175" text-anchor="middle" class="at" font-size="13" fill="#059669">Python Code</text>
+
+  <text x="300" y="191" text-anchor="middle" class="as">tool</text>
+
+
+
+  <rect x="380" y="152" width="120" height="48" rx="8" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.3"/>
+
+  <text x="440" y="175" text-anchor="middle" class="at" font-size="13" fill="#059669">Web Search</text>
+
+  <text x="440" y="191" text-anchor="middle" class="as">tool</text>
+
+
+
+  <!-- Arrow up from tools back to LLM -->
+
+  <line x1="440" y1="152" x2="480" y2="110" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#aha)"/>
+
+  <text x="480" y="137" class="as" font-style="italic" fill="#7c3aed">Observe</text>
+
+
+
+  <!-- Loop arrow (right side) -->
+
+  <path d="M 415 50 Q 480 30, 480 75 Q 480 100, 415 110" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#aha)"/>
+
+  <text x="500" y="72" class="as" font-style="italic" fill="#94a3b8">Loop</text>
+
+
+
+  <!-- Memory box -->
+
+  <rect x="560" y="44" width="190" height="62" rx="10" fill="#f3e8ff" stroke="#c084fc" stroke-width="1.3"/>
+
+  <text x="655" y="68" text-anchor="middle" class="at" font-size="13" fill="#7c3aed">Working Memory</text>
+
+  <text x="655" y="86" text-anchor="middle" class="as">Prior steps, observations,</text>
+
+  <text x="655" y="98" text-anchor="middle" class="as">intermediate results</text>
+
+
+
+  <line x1="415" y1="62" x2="558" y2="62" stroke="#94a3b8" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#aha)"/>
+
+
+
+  <!-- Final output -->
+
+  <rect x="560" y="152" width="190" height="48" rx="10" fill="#ecfeff" stroke="#22d3ee" stroke-width="1.5"/>
+
+  <text x="655" y="175" text-anchor="middle" class="at" font-size="13" fill="#0891b2">Final Answer</text>
+
+  <text x="655" y="191" text-anchor="middle" class="as">with evidence &amp; sources</text>
+
+
+
+  <line x1="500" y1="176" x2="558" y2="176" stroke="#94a3b8" stroke-width="2" marker-end="url(#aha)"/>
+
+  <text x="528" y="168" class="as" font-style="italic" fill="#0891b2">Done</text>
+
+
+
+  <!-- Bottom: ReAct pattern -->
+
+  <rect x="60" y="228" width="660" height="78" rx="12" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.2"/>
+
+  <text x="390" y="250" text-anchor="middle" class="at" font-size="13">The ReAct Pattern (Reason + Act)</text>
+
+  <text x="390" y="270" text-anchor="middle" class="as">Thought: "I need Q1 revenue by region" → Action: run_sql("SELECT region, SUM(revenue)...")</text>
+
+  <text x="390" y="287" text-anchor="middle" class="as">→ Observation: {APAC: $12M, EMEA: $9M, NA: $15M} → Thought: "Now I should visualize this"</text>
+
+  <text x="390" y="300" text-anchor="middle" class="as">→ Action: python_plot(data) → Observation: chart.png → Final Answer: "Q1 revenue was $36M, led by NA..."</text>
+
+</svg>
+
+
+
+<h3 id="function-calling-tool-use">11.10.2 Function Calling and Tool Use</h3>
+
+
+
+<p><strong>Function calling</strong> is the mechanism that gives LLMs hands. Instead of generating only text,
+
+the model outputs a structured request — a function name and arguments — which your code executes.
+
+The result is fed back as an observation.</p>
+
+
+
+<table>
+
+<thead><tr><th>Concept</th><th>What it does</th><th>Example</th></tr></thead>
+
+<tbody>
+
+<tr><td><strong>Tool definition</strong></td><td>JSON schema describing name, parameters, types</td><td><code>{"name": "get_weather", "parameters": {"city": "string"}}</code></td></tr>
+
+<tr><td><strong>Tool call</strong></td><td>Model decides to invoke a tool instead of (or alongside) text</td><td>Model outputs: <code>get_weather(city="London")</code></td></tr>
+
+<tr><td><strong>Tool result</strong></td><td>Your code runs the function and returns the result to the model</td><td><code>{"temp": 14, "condition": "cloudy"}</code></td></tr>
+
+<tr><td><strong>Grounded response</strong></td><td>Model uses the real result to compose its answer</td><td>"It's 14°C and cloudy in London right now."</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<blockquote>
+
+<p><strong>Key:</strong> Function calling solves hallucination for factual queries — the model
+
+retrieves real data instead of guessing. It also extends LLMs to <em>do</em> things:
+
+send emails, write to databases, trigger workflows.</p>
+
+</blockquote>
+
+
+
+<h3 id="agent-design-patterns">11.10.3 Agent Design Patterns</h3>
+
+
+
+<p>Four patterns have emerged as standard building blocks for agentic systems:</p>
+
+
+
+<table>
+
+<thead><tr><th>Pattern</th><th>How it works</th><th>When to use</th></tr></thead>
+
+<tbody>
+
+<tr><td><strong>ReAct</strong></td><td>Alternate Thought → Action → Observation loops until task complete</td><td>General-purpose agents; most common starting point</td></tr>
+
+<tr><td><strong>Plan-then-Execute</strong></td><td>Generate full plan upfront, execute steps sequentially</td><td>Well-defined multi-step tasks (data pipelines, report generation)</td></tr>
+
+<tr><td><strong>Reflection</strong></td><td>Agent critiques its own output, then revises</td><td>Code generation, writing, complex reasoning where first attempt is often wrong</td></tr>
+
+<tr><td><strong>Multi-agent</strong></td><td>Specialised agents collaborate (planner, coder, reviewer, etc.)</td><td>Complex systems where different sub-tasks need different expertise</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<h3 id="multi-agent-systems">11.10.4 Multi-Agent Systems</h3>
+
+
+
+<p>Instead of one monolithic agent, modern systems decompose work across <strong>specialised agents</strong> that
+
+communicate via message passing. This mirrors how software teams work: a planner breaks down the task,
+
+a coder writes the solution, a reviewer checks it, and a tester validates it.</p>
+
+
+
+<table>
+
+<thead><tr><th>Architecture</th><th>Description</th><th>Example</th></tr></thead>
+
+<tbody>
+
+<tr><td><strong>Orchestrator + workers</strong></td><td>Central agent delegates to specialist sub-agents</td><td>Research agent dispatches to search, summarize, and fact-check agents</td></tr>
+
+<tr><td><strong>Pipeline</strong></td><td>Agents pass output sequentially</td><td>Extract → Transform → Analyze → Report</td></tr>
+
+<tr><td><strong>Debate / consensus</strong></td><td>Multiple agents propose answers, then converge</td><td>Medical diagnosis with multiple specialist LLM reviewers</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<h3 id="mcp-model-context-protocol">11.10.5 MCP: Model Context Protocol</h3>
+
+
+
+<p><strong>Model Context Protocol (MCP)</strong> is an open standard that provides a universal way
+
+to connect LLMs to external tools and data sources. Think of it as
+
+<em>USB-C for AI</em> — a single interface that any tool can implement, so any agent can use it.</p>
+
+
+
+<p><strong>Why MCP matters:</strong></p>
+
+<ul>
+
+<li><strong>Before MCP:</strong> Every tool integration was custom — different APIs, auth patterns, and data formats per tool. An agent that uses 10 tools needs 10 custom integrations.</li>
+
+<li><strong>After MCP:</strong> Tools expose a standard interface (resources, tools, prompts). An MCP-compatible agent can discover and use any MCP server without custom code.</li>
+
+</ul>
+
+
+
+<p><strong>MCP architecture:</strong></p>
+
+<table>
+
+<thead><tr><th>Component</th><th>Role</th><th>Example</th></tr></thead>
+
+<tbody>
+
+<tr><td><strong>MCP Host</strong></td><td>The application running the agent</td><td>Claude Code, IDE extension, custom app</td></tr>
+
+<tr><td><strong>MCP Client</strong></td><td>Maintains connection to servers</td><td>Built into the host application</td></tr>
+
+<tr><td><strong>MCP Server</strong></td><td>Exposes tools/data via the standard protocol</td><td>Database server, GitHub server, Slack server</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<blockquote>
+
+<p><strong>Key:</strong> MCP shifts agent development from "build integrations" to "compose capabilities."
+
+An agent with access to MCP servers for SQL, email, and calendar can autonomously answer
+
+"What meetings do I have today and what were last week's sales numbers?" — no custom glue code.</p>
+
+</blockquote>
+
+
+
+<h3 id="agent-evaluation-ch11">11.10.6 Evaluating Agents</h3>
+
+
+
+<p>Agent evaluation is harder than model evaluation — you must assess the <em>process</em>,
+
+not just the final answer.</p>
+
+
+
+<table>
+
+<thead><tr><th>Metric</th><th>What it measures</th><th>How to measure</th></tr></thead>
+
+<tbody>
+
+<tr><td><strong>Task completion rate</strong></td><td>Did the agent achieve the goal?</td><td>Binary pass/fail on benchmark tasks</td></tr>
+
+<tr><td><strong>Tool accuracy</strong></td><td>Did it call the right tools with correct arguments?</td><td>Compare tool calls against gold-standard trajectories</td></tr>
+
+<tr><td><strong>Efficiency</strong></td><td>How many steps / tokens / API calls to complete?</td><td>Count steps; lower is better for equivalent outcomes</td></tr>
+
+<tr><td><strong>Safety &amp; guardrails</strong></td><td>Did it avoid dangerous actions? (deleting data, leaking PII)</td><td>Adversarial test suites; permission boundary checks</td></tr>
+
+<tr><td><strong>Recovery</strong></td><td>Can it handle tool failures gracefully?</td><td>Inject errors (API timeout, wrong format) and measure recovery</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<h3 id="when-to-use-agents">11.10.7 When to Use Agents (and When Not To)</h3>
+
+
+
+<table>
+
+<thead><tr><th>Use an agent when…</th><th>Use a simple prompt/RAG when…</th></tr></thead>
+
+<tbody>
+
+<tr><td>Task requires multiple steps with branching logic</td><td>Task is a single question → answer</td></tr>
+
+<tr><td>Task needs real-time data from external systems</td><td>All needed context fits in the prompt</td></tr>
+
+<tr><td>Output depends on intermediate results you can't predict</td><td>Output format and content are predictable</td></tr>
+
+<tr><td>User expects autonomous execution (e.g., "book me a flight")</td><td>User just needs information or a draft</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<blockquote>
+
+<p><strong>Key:</strong> Agents add latency, cost, and complexity. The simplest approach that solves the problem
+
+is always the right one. Don't build an agent when a well-crafted prompt will do.</p>
+
+</blockquote>
+
+
+
+<div class="practical-example">
+
+<div class="pe-label">Real-World ML Use Case — Agentic AI</div>
+
+<strong>Automated data analysis agent for business teams.</strong> A fintech company deploys an internal agent
+
+that business analysts interact with in natural language. When asked "What caused the drop in APAC
+
+revenue last Tuesday?", the agent: (1) queries the data warehouse for daily revenue by region,
+
+(2) detects the anomaly date, (3) runs a drill-down query by product category and payment method,
+
+(4) identifies that a payment gateway outage caused 73% of failed transactions in APAC,
+
+(5) generates a summary with charts and links to the incident log. The entire investigation takes
+
+90 seconds vs. 2 hours of manual SQL exploration. The agent uses ReAct with SQL and plotting tools,
+
+and all tool calls are logged for audit.
+
+</div>
+
+<hr />
+
+<h2 id="llm-quantization">11.11 LLM Quantization</h2>
+
+<p>A 70B-parameter model in FP32 requires <strong>280 GB</strong> of memory just to load. Quantization reduces
+weight precision from high-bitwidth floats to lower-bitwidth integers or floats, slashing memory and
+speeding inference — often with surprisingly little quality loss.</p>
+
+<blockquote>
+<p><strong>Key:</strong> Quantization is lossy compression for model weights. It makes LLMs
+runnable on commodity hardware by trading a small accuracy margin for 2–4× memory savings.</p>
+</blockquote>
+
+<h3 id="why-quantize">11.11.1 Why Quantize?</h3>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">Model</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Llama 3 70B</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">Precision</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Memory</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Hardware needed</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Tokens/sec (approx)</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">FP32</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">280 GB</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">8× A100-80GB</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">baseline (impractical)</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">FP16 / BF16</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">140 GB</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">2× A100-80GB</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">1×</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">INT8</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">~70 GB</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">1× A100-80GB</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">1.2–1.5×</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">INT4</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">~35 GB</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">1× RTX 4090 (24GB)</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">1.5–2×</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">4× smaller than FP16, runs on a gaming GPU</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+</tr>
+</table>
+
+
+<h3 id="quantization-types">11.11.2 Two Quantization Approaches</h3>
+
+<svg viewBox="0 0 620 180" style="display:block; margin:20px auto; max-width:100%;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two quantization approaches: PTQ vs QAT">
+<!-- PTQ -->
+<rect x="10" y="10" width="290" height="65" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="155" y="30" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="700" fill="#1e40af">Post-Training Quantization (PTQ)</text>
+<text x="155" y="45" text-anchor="middle" font-family="system-ui" font-size="9" fill="#1e40af">Quantize AFTER training • No retraining needed</text>
+<text x="155" y="58" text-anchor="middle" font-family="system-ui" font-size="9" fill="#3b82f6">GPTQ, AWQ, GGUF, bitsandbytes</text>
+<!-- vs -->
+<text x="310" y="50" text-anchor="middle" font-family="system-ui" font-size="14" font-weight="700" fill="#64748b">vs.</text>
+<!-- QAT -->
+<rect x="320" y="10" width="290" height="65" rx="10" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="465" y="30" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="700" fill="#5b21b6">Quantization-Aware Training (QAT)</text>
+<text x="465" y="45" text-anchor="middle" font-family="system-ui" font-size="9" fill="#5b21b6">Simulate quantization DURING training</text>
+<text x="465" y="58" text-anchor="middle" font-family="system-ui" font-size="9" fill="#8b5cf6">Higher accuracy • Requires full loop • QLoRA</text>
+</svg>
+
+<h3 id="quantization-math">11.11.3 The Core Math</h3>
+
+<p>Linear (symmetric) quantization maps a floating-point range to integers:</p>
+
+<p><span class="math display">\[
+q = \text{round}\left(\frac{w}{s}\right), \quad s = \frac{\max(|w|)}{2^{b-1} - 1}
+\]</span></p>
+
+<p>where <span class="math inline">\(w\)</span> = original weight, <span class="math inline">\(s\)</span> = scale factor, <span class="math inline">\(b\)</span> = target bits, <span class="math inline">\(q\)</span> = quantized integer. Dequantization: <span class="math inline">\(\hat{w} = q \cdot s\)</span>.</p>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.88rem; line-height:1.8;">
+<strong style="color:#4f46e5;">Example:</strong> quantizing FP16 weight 0.0312 to INT8<br><br>
+scale <em>s</em> = max(|weights|) / 127 = 0.50 / 127 ≈ <strong>0.00394</strong><br>
+<em>q</em> = round(0.0312 / 0.00394) = round(7.92) = <strong>8</strong><br>
+Dequantized: 8 × 0.00394 = <strong>0.03152</strong> &ensp;<span style="color:#64748b;">(error: 0.00032)</span>
+</div>
+
+
+<h3 id="popular-quantization-methods">11.11.4 Popular Methods Compared</h3>
+
+<table>
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 10%" />
+<col style="width: 14%" />
+<col style="width: 22%" />
+<col style="width: 40%" />
+</colgroup>
+<thead>
+<tr>
+<th>Method</th>
+<th>Bits</th>
+<th>Calibration?</th>
+<th>Speed</th>
+<th>Best for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>bitsandbytes</strong></td>
+<td>4 / 8</td>
+<td>No</td>
+<td>Good (NVIDIA GPUs)</td>
+<td>QLoRA fine-tuning, easy on-the-fly loading</td>
+</tr>
+<tr>
+<td><strong>GPTQ</strong></td>
+<td>2–8</td>
+<td>Yes</td>
+<td>Fast inference</td>
+<td>High-accuracy 4-bit with calibration; many pre-quantized models on HF Hub</td>
+</tr>
+<tr>
+<td><strong>AWQ</strong></td>
+<td>4</td>
+<td>Yes</td>
+<td>Fast inference</td>
+<td>Often beats GPTQ accuracy; faster calibration (~10 min on A100)</td>
+</tr>
+<tr>
+<td><strong>GGUF</strong></td>
+<td>2–8</td>
+<td>No</td>
+<td>CPU + GPU (llama.cpp)</td>
+<td>Local/laptop inference; <code>ollama run llama3</code> uses GGUF under the hood</td>
+</tr>
+<tr>
+<td><strong>FP8</strong></td>
+<td>8</td>
+<td>No</td>
+<td>Fastest (H100/H200)</td>
+<td>Production serving on Hopper GPUs; near-lossless</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="quantization-decision-tree">11.11.5 Decision Tree: Which Method to Use?</h3>
+
+<svg viewBox="0 0 520 220" style="display:block; margin:20px auto; max-width:500px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Quantization method decision tree">
+<defs><marker id="qd-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<!-- Root -->
+<rect x="180" y="5" width="160" height="30" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="260" y="24" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#5b21b6">What's your goal?</text>
+<!-- Branches -->
+<line x1="200" y1="35" x2="80" y2="65" stroke="#6366f1" stroke-width="1.2"/>
+<line x1="260" y1="35" x2="260" y2="65" stroke="#6366f1" stroke-width="1.2"/>
+<line x1="320" y1="35" x2="440" y2="65" stroke="#6366f1" stroke-width="1.2"/>
+<!-- Laptop -->
+<rect x="20" y="70" width="120" height="24" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="80" y="86" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#92400e">Run on laptop?</text>
+<line x1="80" y1="94" x2="80" y2="115" stroke="#6366f1" stroke-width="1.2" marker-end="url(#qd-a)"/>
+<rect x="20" y="120" width="120" height="35" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="80" y="136" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#1e40af">GGUF</text>
+<text x="80" y="149" text-anchor="middle" font-family="system-ui" font-size="8" fill="#3b82f6">Ollama / llama.cpp</text>
+<!-- Prod -->
+<rect x="185" y="70" width="150" height="24" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="260" y="86" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#92400e">Serve in production?</text>
+<line x1="230" y1="94" x2="210" y2="130" stroke="#6366f1" stroke-width="1"/>
+<line x1="290" y1="94" x2="310" y2="130" stroke="#6366f1" stroke-width="1"/>
+<text x="200" y="128" font-family="system-ui" font-size="8" fill="#64748b">H100?</text>
+<rect x="165" y="135" width="65" height="30" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="197" y="152" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#166534">FP8</text>
+<text x="197" y="162" text-anchor="middle" font-family="system-ui" font-size="7" fill="#22c55e">near-lossless</text>
+<rect x="265" y="135" width="90" height="30" rx="6" fill="#fce7f3" stroke="#ec4899" stroke-width="1.5"/>
+<text x="310" y="152" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#9d174d">AWQ/GPTQ</text>
+<text x="310" y="162" text-anchor="middle" font-family="system-ui" font-size="7" fill="#ec4899">4-bit, vLLM</text>
+<!-- Fine-tune -->
+<rect x="380" y="70" width="130" height="24" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="445" y="86" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#92400e">Fine-tune cheaply?</text>
+<line x1="445" y1="94" x2="445" y2="115" stroke="#6366f1" stroke-width="1.2" marker-end="url(#qd-a)"/>
+<rect x="385" y="120" width="120" height="35" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="445" y="136" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#5b21b6">QLoRA</text>
+<text x="445" y="149" text-anchor="middle" font-family="system-ui" font-size="8" fill="#8b5cf6">bnb 4-bit + LoRA</text>
+</svg>
+
+<h3 id="practical-quantization-examples">11.11.6 Practical Examples</h3>
+
+<p><strong>1. Run a quantized model locally with Ollama (GGUF, ~4 GB RAM):</strong></p>
+
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># Downloads a 4-bit quantized GGUF model and runs it locally</span>
+<span class="ex">$</span> ollama run llama3.1:8b-instruct-q4_K_M
+
+<span class="co"># That's it — a 8B model running on your laptop in ~4.5 GB RAM</span></code></pre></div>
+
+
+<p><strong>2. Load a 4-bit model in Python with bitsandbytes (QLoRA-ready):</strong></p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="im">from</span> transformers <span class="im">import</span> AutoModelForCausalLM, BitsAndBytesConfig
+
+bnb_config <span class="op">=</span> BitsAndBytesConfig(
+    load_in_4bit<span class="op">=</span><span class="va">True</span>,
+    bnb_4bit_quant_type<span class="op">=</span><span class="st">"nf4"</span>,          <span class="co"># NormalFloat4 — best for LLMs</span>
+    bnb_4bit_compute_dtype<span class="op">=</span><span class="st">"bfloat16"</span>,  <span class="co"># compute in bf16 for speed</span>
+    bnb_4bit_use_double_quant<span class="op">=</span><span class="va">True</span>,     <span class="co"># quantize the quantization constants</span>
+)
+model <span class="op">=</span> AutoModelForCausalLM.from_pretrained(
+    <span class="st">"meta-llama/Llama-3.1-8B-Instruct"</span>,
+    quantization_config<span class="op">=</span>bnb_config,
+    device_map<span class="op">=</span><span class="st">"auto"</span>
+)
+<span class="co"># Model loaded in ~5 GB instead of ~16 GB (FP16) — ready for QLoRA</span></code></pre></div>
+
+<p><strong>3. Quantize with GPTQ (calibration-based, high accuracy):</strong></p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="im">from</span> transformers <span class="im">import</span> AutoModelForCausalLM, AutoTokenizer, GPTQConfig
+
+tokenizer <span class="op">=</span> AutoTokenizer.from_pretrained(<span class="st">"meta-llama/Llama-3.1-8B"</span>)
+quant_config <span class="op">=</span> GPTQConfig(
+    bits<span class="op">=</span><span class="dv">4</span>,
+    dataset<span class="op">=</span><span class="st">"c4"</span>,            <span class="co"># calibration dataset</span>
+    tokenizer<span class="op">=</span>tokenizer
+)
+model <span class="op">=</span> AutoModelForCausalLM.from_pretrained(
+    <span class="st">"meta-llama/Llama-3.1-8B"</span>,
+    quantization_config<span class="op">=</span>quant_config,
+    device_map<span class="op">=</span><span class="st">"auto"</span>
+)
+model.save_pretrained(<span class="st">"./llama3-8b-gptq-4bit"</span>)  <span class="co"># save for reuse</span></code></pre></div>
+
+<p><strong>4. Serve a quantized model in production with vLLM:</strong></p>
+
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># Serve an AWQ-quantized model at high throughput</span>
+<span class="ex">$</span> vllm serve TheBloke/Llama-2-70B-Chat-AWQ <span class="dt">\</span>
+    --quantization awq <span class="dt">\</span>
+    --tensor-parallel-size 2 <span class="dt">\</span>
+    --max-model-len 4096
+
+<span class="co"># Or serve with GPTQ:</span>
+<span class="ex">$</span> vllm serve TheBloke/Llama-2-70B-Chat-GPTQ <span class="dt">\</span>
+    --quantization gptq</code></pre></div>
+
+
+<h3 id="quality-cost-tradeoff">11.11.7 Quality vs. Cost Tradeoff</h3>
+
+<svg viewBox="0 0 520 220" style="display:block; margin:20px auto; max-width:500px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Quantization accuracy vs memory savings chart">
+<!-- Axes -->
+<line x1="80" y1="15" x2="80" y2="175" stroke="#334155" stroke-width="1.5"/>
+<line x1="80" y1="175" x2="480" y2="175" stroke="#334155" stroke-width="1.5"/>
+<text x="30" y="100" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#334155" transform="rotate(-90,30,100)">Accuracy</text>
+<text x="280" y="195" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#334155">Memory savings →</text>
+<!-- Bars -->
+<rect x="95" y="25" width="50" height="145" rx="4" fill="#3b82f6"/>
+<text x="120" y="18" text-anchor="middle" font-family="system-ui" font-size="9" font-weight="600" fill="#1e40af">FP16</text>
+<text x="120" y="42" text-anchor="middle" font-family="system-ui" font-size="9" fill="white">100%</text>
+<rect x="165" y="30" width="50" height="140" rx="4" fill="#22c55e"/>
+<text x="190" y="18" text-anchor="middle" font-family="system-ui" font-size="9" font-weight="600" fill="#166534">FP8</text>
+<text x="190" y="47" text-anchor="middle" font-family="system-ui" font-size="9" fill="white">99%</text>
+<rect x="235" y="38" width="50" height="132" rx="4" fill="#8b5cf6"/>
+<text x="260" y="18" text-anchor="middle" font-family="system-ui" font-size="9" font-weight="600" fill="#5b21b6">INT8</text>
+<text x="260" y="55" text-anchor="middle" font-family="system-ui" font-size="9" fill="white">98%</text>
+<rect x="305" y="55" width="50" height="115" rx="4" fill="#f59e0b"/>
+<text x="330" y="18" text-anchor="middle" font-family="system-ui" font-size="8" font-weight="600" fill="#92400e">INT4 cal.</text>
+<text x="330" y="72" text-anchor="middle" font-family="system-ui" font-size="9" fill="white">96%</text>
+<rect x="375" y="75" width="50" height="95" rx="4" fill="#ec4899"/>
+<text x="400" y="18" text-anchor="middle" font-family="system-ui" font-size="8" font-weight="600" fill="#9d174d">INT4 naive</text>
+<text x="400" y="92" text-anchor="middle" font-family="system-ui" font-size="9" fill="white">93%</text>
+<rect x="445" y="105" width="30" height="65" rx="4" fill="#ef4444"/>
+<text x="460" y="18" text-anchor="middle" font-family="system-ui" font-size="8" font-weight="600" fill="#991b1b">INT2-3</text>
+<text x="460" y="122" text-anchor="middle" font-family="system-ui" font-size="8" fill="white">88%</text>
+<!-- Sweet spot labels -->
+<text x="300" y="212" text-anchor="middle" font-family="system-ui" font-size="9" fill="#64748b" font-style="italic">Sweet spot: INT4 with AWQ/GPTQ (prod) or GGUF Q4_K_M (local)</text>
+</svg>
+
+<div class="practical-example">
+
+<div class="pe-label">Real-World ML Use Case — Quantization</div>
+
+<strong>Quantization often changes who is allowed to experiment.</strong> A 7B–13B assistant that was too expensive in FP16 can become cheap enough in INT4 to run on a single GPU or even a high-end laptop. That does not just reduce inference cost; it shortens the feedback loop for product teams, because they can prototype, benchmark, and debug without waiting for scarce large-GPU capacity.
+
+</div>
+
+<h3 id="interview-ready-summary">11.11.8 Interview-Ready Summary</h3>
+
+<table>
+<colgroup>
+<col style="width: 40%" />
+<col style="width: 60%" />
+</colgroup>
+<thead>
+<tr>
+<th>Question</th>
+<th>Key answer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What is quantization?</td>
+<td>Reducing weight precision (e.g. FP16 → INT4) to cut memory and speed up inference</td>
+</tr>
+<tr>
+<td>PTQ vs. QAT?</td>
+<td>PTQ = after training (fast, easy); QAT = during training (higher quality, slower)</td>
+</tr>
+<tr>
+<td>GPTQ vs. AWQ?</td>
+<td>Both are calibration-based PTQ for 4-bit. AWQ is faster to calibrate; GPTQ has more community models</td>
+</tr>
+<tr>
+<td>What is GGUF?</td>
+<td>A file format for CPU-friendly quantized models used by llama.cpp and Ollama</td>
+</tr>
+<tr>
+<td>What is QLoRA?</td>
+<td>Quantize base model to 4-bit (NF4), then fine-tune LoRA adapters in FP16. Enables fine-tuning 70B models on a single 48 GB GPU</td>
+</tr>
+<tr>
+<td>Does quantization hurt quality?</td>
+<td>INT8 is near-lossless. INT4 with calibration loses 1–3% on benchmarks. Below 4-bit, quality degrades noticeably</td>
+</tr>
+</tbody>
+</table>
+
+<hr />
+
+<h2 id="key-takeaways-15">Key Takeaways</h2>
+
+<svg viewBox="0 0 620 50" style="display:block; margin:20px auto; max-width:100%;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="NLP evolution: Classical NLP to RAG + Fine-tuning">
+<defs><marker id="ne-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<rect x="5" y="5" width="95" height="38" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="52" y="20" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#1e40af">Classical NLP</text>
+<text x="52" y="34" text-anchor="middle" font-family="system-ui" font-size="8" fill="#3b82f6">bag-of-words</text>
+<line x1="100" y1="24" x2="118" y2="24" stroke="#6366f1" stroke-width="1.2" marker-end="url(#ne-a)"/>
+<rect x="123" y="5" width="95" height="38" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="170" y="20" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#5b21b6">Embeddings</text>
+<text x="170" y="34" text-anchor="middle" font-family="system-ui" font-size="8" fill="#8b5cf6">word2vec</text>
+<line x1="218" y1="24" x2="236" y2="24" stroke="#6366f1" stroke-width="1.2" marker-end="url(#ne-a)"/>
+<rect x="241" y="5" width="100" height="38" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="291" y="20" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#92400e">Transformers</text>
+<text x="291" y="34" text-anchor="middle" font-family="system-ui" font-size="8" fill="#f59e0b">BERT / GPT</text>
+<line x1="341" y1="24" x2="359" y2="24" stroke="#6366f1" stroke-width="1.2" marker-end="url(#ne-a)"/>
+<rect x="364" y="5" width="80" height="38" rx="6" fill="#fce7f3" stroke="#ec4899" stroke-width="1.5"/>
+<text x="404" y="20" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#9d174d">LLMs</text>
+<text x="404" y="34" text-anchor="middle" font-family="system-ui" font-size="8" fill="#ec4899">GPT-4</text>
+<line x1="444" y1="24" x2="462" y2="24" stroke="#6366f1" stroke-width="1.2" marker-end="url(#ne-a)"/>
+<rect x="467" y="5" width="140" height="38" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="537" y="20" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#166534">RAG + Fine-tuning</text>
+<text x="537" y="34" text-anchor="middle" font-family="system-ui" font-size="8" fill="#22c55e">grounded generation</text>
+</svg>
+
+<ul>
+
+<li><strong>BoW and TF-IDF</strong> are fast and interpretable but
+
+discard word order and semantics. Still useful baselines for text
+
+classification.</li>
+
+<li><strong>Word embeddings</strong> (Word2Vec, GloVe, FastText) learn
+
+dense semantic representations from co-occurrence. FastText handles OOV
+
+via subword n-grams.</li>
+
+<li><strong>Transformers</strong> replaced RNNs by enabling parallel
+
+computation and direct attention to any token regardless of distance.
+
+The attention formula <span
+
+class="math inline">\(\text{softmax}(QK^T/\sqrt{d_k})V\)</span> is worth
+
+memorizing.</li>
+
+<li><strong>BERT</strong> (encoder, bidirectional) is best for
+
+understanding tasks. <strong>GPT</strong> (decoder, causal) is best for
+
+generation. <strong>T5/BART</strong> (encoder-decoder) for seq2seq
+
+tasks.</li>
+
+<li><strong>BPE tokenization</strong> handles rare words and OOV by
+
+splitting into subwords. 1 token ≈ 4 characters in English.</li>
+
+<li><strong>RAG</strong> grounds LLM outputs in retrieved documents:
+
+solves stale knowledge, hallucination, and private data problems without
+
+retraining.</li>
+
+<li><strong>LoRA</strong> fine-tunes large models efficiently by
+
+training low-rank update matrices; typical r=8–16 trains ~0.1% of
+
+parameters.</li>
+
+<li><strong>RLHF and DPO</strong> align model behavior with human
+
+preferences; DPO is simpler and increasingly preferred.</li>
+
+<li><strong>Hallucination is inherent</strong> in autoregressive models
+
+— mitigate with RAG, grounding prompts, temperature = 0, and
+
+self-consistency.</li>
+
+<li><strong>Quantization</strong> (INT8/INT4) makes large models
+
+runnable on consumer hardware with minimal quality loss. GPTQ and AWQ
+
+are the go-to methods for production; GGUF for local/laptop use.</li>
+
+<li>The field moves fast. The fundamentals (attention, embeddings,
+
+fine-tuning trade-offs) are stable. Specific models and APIs are
+
+not.</li>
+
+</ul>
+
+<hr />
+
+<h2 id="common-pitfalls-22">Common Pitfalls</h2>
+
+<table>
+
+<colgroup>
+
+<col style="width: 64%" />
+
+<col style="width: 35%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Pitfall</th>
+
+<th>Fix</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Using BoW for generation tasks</td>
+
+<td>BoW discards order — use Seq2Seq or LLM</td>
+
+</tr>
+
+<tr>
+
+<td>Assuming word2vec captures context</td>
+
+<td>Word2Vec is static; use BERT/LLM for contextual meaning</td>
+
+</tr>
+
+<tr>
+
+<td>Not normalizing embeddings before cosine search</td>
+
+<td>Unnormalized dot products ≠ cosine similarity</td>
+
+</tr>
+
+<tr>
+
+<td>Random train/test split for NLP</td>
+
+<td>Text is often temporal — use chronological split</td>
+
+</tr>
+
+<tr>
+
+<td>Using default temperature (1.0) for extraction</td>
+
+<td>Use temperature=0 for factual extraction</td>
+
+</tr>
+
+<tr>
+
+<td>Evaluating LLMs only with BLEU</td>
+
+<td>BLEU misses paraphrase quality; use BERTScore or LLM-as-judge</td>
+
+</tr>
+
+<tr>
+
+<td>Treating RAG as a silver bullet</td>
+
+<td>RAG quality depends on chunking, embedding model, and retrieval
+
+recall</td>
+
+</tr>
+
+<tr>
+
+<td>Fine-tuning when prompting would suffice</td>
+
+<td>Fine-tuning is expensive; always try zero-shot and few-shot
+
+first</td>
+
+</tr>
+
+<tr>
+
+<td>Ignoring context window costs</td>
+
+<td>Long prompts compound rapidly in API cost</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<hr />
+
+<h2 id="further-reading-1">Further Reading</h2>
+
+<table>
+
+<colgroup>
+
+<col style="width: 40%" />
+
+<col style="width: 60%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Resource</th>
+
+<th>Why it matters</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Vaswani et al., “Attention Is All You Need” (2017)</td>
+
+<td>The original Transformer paper — essential reading</td>
+
+</tr>
+
+<tr>
+
+<td>Devlin et al., “BERT: Pre-training Deep Bidirectional Transformers”
+
+(2019)</td>
+
+<td>How encoder-only pretraining works</td>
+
+</tr>
+
+<tr>
+
+<td>Brown et al., “Language Models are Few-Shot Learners” (GPT-3,
+
+2020)</td>
+
+<td>In-context learning at scale</td>
+
+</tr>
+
+<tr>
+
+<td>Lewis et al., “Retrieval-Augmented Generation for
+
+Knowledge-Intensive NLP Tasks” (2020)</td>
+
+<td>The RAG paper</td>
+
+</tr>
+
+<tr>
+
+<td>Hu et al., “LoRA: Low-Rank Adaptation of Large Language Models”
+
+(2022)</td>
+
+<td>Parameter-efficient fine-tuning</td>
+
+</tr>
+
+<tr>
+
+<td>Frantar et al., &ldquo;GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers&rdquo; (ICLR 2023)</td>
+
+<td>The leading calibration-based weight quantization method for LLMs</td>
+
+</tr>
+
+<tr>
+
+<td>Lin et al., &ldquo;AWQ: Activation-aware Weight Quantization for On-Device LLM Compression&rdquo; (MLSys 2024)</td>
+
+<td>Fast calibration-free 4-bit quantization preserving salient weights</td>
+
+</tr>
+
+<tr>
+
+<td>Ouyang et al., “Training language models to follow instructions with
+
+human feedback” (InstructGPT, 2022)</td>
+
+<td>RLHF in practice</td>
+
+</tr>
+
+<tr>
+
+<td>Yao et al., &ldquo;ReAct: Synergizing Reasoning and Acting in Language Models&rdquo; (2023)</td>
+
+<td>The foundational agent pattern — interleaving thought and tool use</td>
+
+</tr>
+
+<tr>
+
+<td>Anthropic, &ldquo;Model Context Protocol (MCP) Specification&rdquo; (2024)</td>
+
+<td>Open standard for connecting LLMs to tools and data sources</td>
+
+</tr>
+
+<tr>
+
+<td>Shinn et al., &ldquo;Reflexion: Language Agents with Verbal Reinforcement Learning&rdquo; (2023)</td>
+
+<td>Self-reflection pattern for agents — learning from mistakes within a session</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<hr />
+
+<h2 id="ch11-interview-qa">Chapter 11 Interview Q&amp;A</h2>
+
+
+
+<h3>Q1. Explain how the Transformer attention mechanism works.</h3>
+
+<p><strong>A.</strong> The scaled dot-product attention mechanism computes, for each query vector Q, a weighted sum over value vectors V, where weights are determined by similarity to key vectors K:</p>
+
+<p>Attention(Q, K, V) = softmax(QK<sup>T</sup> / &radic;d<sub>k</sub>) V</p>
+
+<p>Q, K, V are linear projections of the input. Dividing by &radic;d<sub>k</sub> prevents softmax from saturating when dimensions are large. <strong>Multi-head attention</strong> runs h attention heads in parallel, each attending to different representation subspaces, then concatenates and projects the outputs. This allows the model to simultaneously attend to information from different positions and with different &ldquo;perspectives.&rdquo; Self-attention (Q=K=V from same sequence) is what gives transformers their ability to model arbitrary long-range dependencies in O(n<sup>2</sup>) time &mdash; the main cost vs. RNN&rsquo;s O(n).</p>
+
+
+
+<h3>Q2. What is positional encoding and why is it necessary in Transformers?</h3>
+
+<p><strong>A.</strong> Transformer attention is permutation-invariant &mdash; the same tokens in different order produce the same attention output without positional information. Positional encoding injects order information by adding a position-dependent vector to each token embedding. The original Transformer used fixed sinusoidal encodings: PE(pos, 2i) = sin(pos/10000<sup>2i/d</sup>), PE(pos, 2i+1) = cos(pos/10000<sup>2i/d</sup>). Modern LLMs use <strong>RoPE</strong> (Rotary Position Embedding) or <strong>ALiBi</strong> (attention with linear biases), which generalize better to longer sequences than the model saw at training time. Without positional encoding, the model would treat all input sequences as bags of tokens.</p>
+
+
+
+<h3>Q3. What is the difference between BERT and GPT in terms of architecture and use case?</h3>
+
+<p><strong>A.</strong></p>
+
+<table>
+
+<thead><tr><th></th><th>BERT</th><th>GPT</th></tr></thead>
+
+<tbody>
+
+<tr><td><strong>Architecture</strong></td><td>Encoder-only Transformer</td><td>Decoder-only Transformer</td></tr>
+
+<tr><td><strong>Attention</strong></td><td>Bidirectional (sees full context)</td><td>Causal/unidirectional (sees only past tokens)</td></tr>
+
+<tr><td><strong>Pretraining</strong></td><td>Masked Language Modeling (MLM) + NSP</td><td>Next-token prediction (autoregressive)</td></tr>
+
+<tr><td><strong>Best for</strong></td><td>Classification, NER, QA, embeddings</td><td>Text generation, chat, code, few-shot prompting</td></tr>
+
+<tr><td><strong>Fine-tuning</strong></td><td>Add task head, fine-tune on labeled data</td><td>Instruction-tune or prompt-engineer</td></tr>
+
+</tbody>
+
+</table>
+
+<p>BERT&rsquo;s bidirectional context makes its representations richer for understanding tasks; GPT&rsquo;s autoregressive objective naturally produces fluent text generation.</p>
+
+
+
+<h3>Q4. What is RAG (Retrieval-Augmented Generation) and when would you use it over fine-tuning?</h3>
+
+<p><strong>A.</strong> RAG augments an LLM at inference time by retrieving relevant documents from an external knowledge base and including them in the prompt context. The model then generates a response grounded in the retrieved documents. <strong>Use RAG when</strong>: (1) knowledge is dynamic and changes frequently (product catalogues, news, internal docs) &mdash; retrieval always reflects current state without retraining; (2) you need citations and traceability &mdash; the source documents are explicit; (3) domain data is too large to fine-tune on or proprietary. <strong>Use fine-tuning when</strong>: (1) the task requires a specific style, format, or persona that prompting cannot capture; (2) latency is critical (no retrieval step); (3) the knowledge is stable and can be baked into weights.</p>
+
+
+
+<h3>Q5. Explain tokenization. What are BPE, WordPiece, and SentencePiece?</h3>
+
+<p><strong>A.</strong> Tokenization splits raw text into sub-word units (tokens) that the model operates on. <strong>BPE (Byte-Pair Encoding)</strong>: starts with character-level vocabulary; iteratively merges the most frequent adjacent pair of symbols until vocabulary size is reached. Used by GPT models. <strong>WordPiece</strong>: similar to BPE but merges based on maximizing training data likelihood, not raw frequency; tends to preserve meaningful morphological units. Used by BERT. <strong>SentencePiece</strong>: language-agnostic; treats the text as a raw byte/character stream without pre-tokenisation (handles CJK, no whitespace assumptions); used by T5, LLaMA. All three handle OOV (out-of-vocabulary) words by breaking them into known sub-word pieces, balancing vocabulary size vs. sequence length.</p>
+
+
+
+<h3>Q6. What is RLHF and why is it used to train models like ChatGPT?</h3>
+
+<p><strong>A.</strong> Reinforcement Learning from Human Feedback (RLHF) has three stages: (1) <strong>Supervised fine-tuning (SFT)</strong>: fine-tune a pretrained LLM on high-quality human-written demonstrations. (2) <strong>Reward model training</strong>: collect human preference labels (response A vs. B; which is better?); train a reward model R(prompt, response) &rarr; scalar score. (3) <strong>RL optimization</strong>: use PPO to update the SFT model to maximize R while adding a KL penalty to prevent it from drifting too far from the SFT policy. Why: pure SFT on demonstrations doesn&rsquo;t teach the model to decline harmful requests, follow nuanced instructions, or be appropriately concise. RLHF aligns the model with human preferences in ways direct supervision cannot fully capture.</p>
+
+
+
+<h3>Q7. What is hallucination in LLMs? What causes it and how can you mitigate it?</h3>
+
+<p><strong>A.</strong> Hallucination = the model generates fluent, confident text that is factually incorrect or unsupported. Causes: (1) <strong>Training data patterns</strong> &mdash; the model learns to produce plausible-sounding continuations, not verified facts. (2) <strong>No grounding</strong> &mdash; the model has no external knowledge source to verify against. (3) <strong>Over-confident generation</strong> &mdash; beam search/sampling can produce confident text even in low-probability regions. Mitigations: (1) <strong>RAG</strong> &mdash; ground answers in retrieved documents, check faithfulness with an LLM judge. (2) <strong>Structured output with citations</strong> &mdash; require the model to cite its sources. (3) <strong>Self-consistency</strong> &mdash; sample multiple responses and take the majority answer. (4) <strong>Temperature tuning</strong> &mdash; lower temperature for factual tasks. (5) <strong>Factuality fine-tuning</strong> &mdash; RLHF or DPO with factuality as a reward signal.</p>
+
+
+
+<h3>Q8. What is LoRA and why is it useful for fine-tuning large models?</h3>
+
+<p><strong>A.</strong> LoRA (Low-Rank Adaptation) freezes all pretrained weights and injects trainable low-rank matrices at each attention layer. For a weight matrix W (d&times;k), instead of updating W directly, it trains two small matrices B (d&times;r) and A (r&times;k) where r &lt;&lt; min(d,k). The effective update is W + BA. During inference, AB can be merged into W with no added latency. Benefits: (1) Only 0.1&ndash;1% of parameters trained, reducing GPU memory and compute by orders of magnitude. (2) Multiple LoRA adapters can be swapped in/out for different tasks without reloading the base model. (3) Catastrophic forgetting is reduced because base weights are frozen. LoRA is the standard approach for fine-tuning 7B&ndash;70B models on consumer hardware.</p>
+
+
+
+<h3>Q9. How does TF-IDF differ from word embeddings like Word2Vec? When would you use each?</h3>
+
+<p><strong>A.</strong> <strong>TF-IDF</strong> is a sparse, count-based representation. Each document is a vector with dimension equal to vocabulary size; values are term frequency &times; inverse document frequency. It captures word importance within a document relative to the corpus, but ignores word order, synonymy, and context. <strong>Word2Vec</strong> (and GloVe) produces dense, low-dimensional embeddings (e.g., 300-d) by training a neural network to predict surrounding words; semantically similar words have similar vectors. Use TF-IDF for: keyword search, simple text classification, information retrieval baselines, interpretable features. Use Word2Vec/embeddings for: neural models that need semantic similarity, downstream fine-tuning, tasks where synonyms matter. BERT contextual embeddings (different embedding for the same word in different contexts) have superseded both for most NLP tasks.</p>
+
+
+
+<h3>Q10. How would you build and evaluate a production-grade text classification pipeline?</h3>
+
+<p><strong>A.</strong></p>
+
+<ol>
+
+<li><strong>Data</strong>: Collect labeled examples; check class balance; deduplicate; create train/val/test splits with stratification. Ensure test set reflects production distribution.</li>
+
+<li><strong>Baseline</strong>: TF-IDF + logistic regression. Fast, interpretable, hard to beat on small datasets.</li>
+
+<li><strong>Model</strong>: Fine-tune a pretrained encoder (BERT/RoBERTa) on the classification task. Use LoRA if GPU-constrained. Try larger models only if baseline gap justifies compute cost.</li>
+
+<li><strong>Evaluation</strong>: Accuracy for balanced classes; F1/PR-AUC for imbalanced; confusion matrix to identify systematic errors; error analysis on hard cases.</li>
+
+<li><strong>Deployment</strong>: Export to ONNX for CPU inference; quantise to INT8 for throughput; add a confidence threshold &mdash; route low-confidence predictions to human review.</li>
+
+<li><strong>Monitoring</strong>: Log input text distribution (embedding drift), prediction distribution, and upstream label quality. Retrain when distribution drift is detected.</li>
+
+</ol>
+
+
+
+<h3>Q11. What is the difference between a chatbot and an AI agent? When would you use each?</h3>
+
+<p><strong>A.</strong> A <strong>chatbot</strong> maps a single user message to a single model response — it is stateless and text-only. An <strong>agent</strong> adds three capabilities: (1) <strong>planning</strong> — decomposing a goal into sub-tasks, (2) <strong>tool use</strong> — calling external APIs, databases, or code interpreters, and (3) <strong>memory</strong> — maintaining state across multiple reasoning steps. Use a chatbot for Q&amp;A, summarisation, and single-turn tasks where all context fits in the prompt. Use an agent when the task requires multi-step reasoning with real-time data retrieval, when the output depends on intermediate results you cannot predict, or when autonomous execution is needed (e.g., "investigate why revenue dropped and produce a report"). Agents add latency, cost, and failure modes (wrong tool calls, infinite loops), so default to simpler approaches and escalate to agents only when the task demands it.</p>
+
+
+
+<h3>Q12. Explain the ReAct pattern. How does function calling work in modern LLMs?</h3>
+
+<p><strong>A.</strong> <strong>ReAct</strong> (Reason + Act) interleaves chain-of-thought reasoning with tool execution in a loop: <em>Thought</em> (what do I need?) → <em>Action</em> (call a tool) → <em>Observation</em> (read the result) → repeat until the task is done. <strong>Function calling</strong> is the implementation mechanism: tools are described to the model as JSON schemas (name, parameters, types). When the model decides a tool is needed, it outputs a structured function call instead of text. The application executes the function and returns the result as a new message. The model then reasons over the result. Key design considerations: (1) keep tool descriptions concise — long schemas waste context, (2) validate tool arguments before execution (the model can hallucinate parameter values), (3) implement timeouts and retry logic for tool failures, (4) log all tool calls for auditability. <strong>MCP</strong> (Model Context Protocol) standardizes this interface so agents can discover and use tools without custom integration code per tool.</p>
+
+<hr />
+
+
+<div class="chapter-nav">
+  <a href="chapter-10.html">&larr; Chapter 10: Deep Learning</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-12.html">Chapter 12: Reinforcement Learning &rarr;</a>
+</div>
+<div class="site-footer">
+  <p>&copy; 2026 Hariram Subramanian Gopal &middot; <a href="index.html">Data to Decisions</a></p>
+</div>
+</body>
+</html>

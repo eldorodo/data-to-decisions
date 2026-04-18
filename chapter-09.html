@@ -1,0 +1,3284 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Hariram Subramanian Gopal" />
+  <title>Chapter 09: Recommendation Systems | Data to Decisions</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</head>
+<body>
+<div class="chapter-nav">
+  <a href="chapter-08.html">&larr; Chapter 08: Unsupervised Learning</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-10.html">Chapter 10: Deep Learning &rarr;</a>
+</div>
+<h1 id="chapter-09-recommendation-systems">Chapter 09: Recommendation
+
+Systems</h1>
+
+<h2 id="chapter-scope-7">9.0 Chapter Scope</h2>
+
+<p>Recommendation systems are among the highest-impact ML applications
+
+in production: they drive content feeds, product discovery, playlist
+
+curation, and search ranking. This chapter builds from first principles
+
+— why recommendations are hard, how collaborative filtering works
+
+mathematically, what content-based filtering adds — then advances to the
+
+multi-stage architecture that powers Netflix, Spotify, and Amazon at
+
+scale.</p>
+
+<p><strong>What you will learn:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Section</th>
+
+<th>Topic</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>8.1</td>
+
+<td>The recommendation problem: taxonomy and cold start</td>
+
+</tr>
+
+<tr>
+
+<td>8.2</td>
+
+<td>Collaborative filtering: memory-based and matrix factorization</td>
+
+</tr>
+
+<tr>
+
+<td>8.3</td>
+
+<td>Content-based filtering</td>
+
+</tr>
+
+<tr>
+
+<td>8.4</td>
+
+<td>Hybrid systems</td>
+
+</tr>
+
+<tr>
+
+<td>8.5</td>
+
+<td>Modern multi-stage architecture</td>
+
+</tr>
+
+<tr>
+
+<td>8.6</td>
+
+<td>Exploration, diversity, and ranking signals</td>
+
+</tr>
+
+<tr>
+
+<td>8.7</td>
+
+<td>Evaluation: offline and online</td>
+
+</tr>
+
+<tr>
+
+<td>8.8</td>
+
+<td>Case study: Netflix/Spotify-style systems</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Prerequisites:</strong> Linear algebra (dot products, matrix
+
+decomposition), basic probability, gradient descent (Chapter 5).</p>
+
+<hr />
+
+<h2 id="the-recommendation-problem">9.1 The Recommendation Problem</h2>
+
+<h3 id="what-we-are-trying-to-do">9.1.1 What We Are Trying to Do</h3>
+
+<p>Given a user and a catalog of items, surface the items that user is
+
+most likely to engage with — click, watch, buy, save — out of millions
+
+of candidates.</p>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.9rem; line-height:1.8;">
+<strong>User ──▶ ?</strong> &nbsp;&nbsp; (10M items, sparse interaction history,<br>
+changing preferences, new users &amp; items every hour)
+</div>
+
+<p>The problem has three hard sub-problems:</p>
+
+<ol type="1">
+
+<li><strong>Relevance</strong> — what does this user actually want?</li>
+
+<li><strong>Discovery</strong> — how do we surface things they haven’t
+
+seen yet?</li>
+
+<li><strong>Scale</strong> — how do we score millions of candidates in
+
+milliseconds?</li>
+
+</ol>
+
+<h3 id="three-paradigms">9.1.2 Three Paradigms</h3>
+
+<figure class="rich-figure">
+
+<svg viewBox="0 0 560 280" style="display:block; margin:18px auto; max-width:520px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three recommendation paradigms">
+  <defs>
+    <marker id="tp-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#475569"/>
+    </marker>
+  </defs>
+  <!-- Goal box -->
+  <rect x="160" y="6" width="240" height="42" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="280" y="22" text-anchor="middle" font-family="system-ui" font-size="9" font-weight="700" fill="#475569">COMMON GOAL</text>
+  <text x="280" y="38" text-anchor="middle" font-family="system-ui" font-size="10" fill="#334155">Rank items most worth showing right now</text>
+  <!-- Branch lines -->
+  <line x1="280" y1="48" x2="100" y2="76" stroke="#475569" stroke-width="1.5" marker-end="url(#tp-a)"/>
+  <line x1="280" y1="48" x2="280" y2="76" stroke="#475569" stroke-width="1.5" marker-end="url(#tp-a)"/>
+  <line x1="280" y1="48" x2="460" y2="76" stroke="#475569" stroke-width="1.5" marker-end="url(#tp-a)"/>
+  <!-- Collaborative Filtering -->
+  <rect x="10" y="82" width="180" height="100" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="100" y="102" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="700" fill="#1d4ed8">Collaborative Filtering</text>
+  <text x="24" y="122" font-family="system-ui" font-size="9" font-weight="600" fill="#475569">SIGNAL</text>
+  <text x="24" y="136" font-family="system-ui" font-size="10" fill="#334155">Clicks, plays, ratings</text>
+  <text x="24" y="154" font-family="system-ui" font-size="9" font-weight="600" fill="#475569">BEST WHEN</text>
+  <text x="24" y="168" font-family="system-ui" font-size="10" fill="#334155">Rich behavior data</text>
+  <!-- Content-Based -->
+  <rect x="200" y="82" width="160" height="100" rx="10" fill="#f0fdf4" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="280" y="102" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="700" fill="#15803d">Content-Based</text>
+  <text x="214" y="122" font-family="system-ui" font-size="9" font-weight="600" fill="#475569">SIGNAL</text>
+  <text x="214" y="136" font-family="system-ui" font-size="10" fill="#334155">Genres, tags, metadata</text>
+  <text x="214" y="154" font-family="system-ui" font-size="9" font-weight="600" fill="#475569">BEST WHEN</text>
+  <text x="214" y="168" font-family="system-ui" font-size="10" fill="#334155">Strong item features</text>
+  <!-- Hybrid -->
+  <rect x="370" y="82" width="180" height="100" rx="10" fill="#faf5ff" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="460" y="102" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="700" fill="#7c3aed">Hybrid</text>
+  <text x="384" y="122" font-family="system-ui" font-size="9" font-weight="600" fill="#475569">SIGNAL</text>
+  <text x="384" y="136" font-family="system-ui" font-size="10" fill="#334155">All of the above + context</text>
+  <text x="384" y="154" font-family="system-ui" font-size="9" font-weight="600" fill="#475569">BEST WHEN</text>
+  <text x="384" y="168" font-family="system-ui" font-size="10" fill="#334155">Cold-start + quality needed</text>
+  <!-- Merge arrows into Production -->
+  <line x1="100" y1="182" x2="200" y2="222" stroke="#6366f1" stroke-width="1" stroke-dasharray="4,3"/>
+  <line x1="280" y1="182" x2="280" y2="222" stroke="#6366f1" stroke-width="1" stroke-dasharray="4,3"/>
+  <line x1="460" y1="182" x2="360" y2="222" stroke="#6366f1" stroke-width="1" stroke-dasharray="4,3"/>
+  <rect x="180" y="224" width="200" height="34" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="280" y="245" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#92400e">Production: blend them all</text>
+  <text x="280" y="272" text-anchor="middle" font-family="system-ui" font-size="9" fill="#64748b">Popularity is a useful fallback baseline, not a separate paradigm.</text>
+</svg>
+
+<figcaption>
+
+Three recommendation paradigms: collaborative filtering, content-based filtering, and hybrid systems. Popularity is a useful fallback baseline, not a fourth paradigm.
+
+</figcaption>
+
+</figure>
+
+<table>
+
+<colgroup>
+
+<col style="width: 25%" />
+
+<col style="width: 32%" />
+
+<col style="width: 42%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Paradigm</th>
+
+<th>Main signal</th>
+
+<th>When it shines</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Collaborative filtering</td>
+
+<td>User–item interactions</td>
+
+<td>Rich interaction history, weak metadata, strong repeat behavior</td>
+
+</tr>
+
+<tr>
+
+<td>Content-based</td>
+
+<td>Item attributes</td>
+
+<td>New items, metadata-rich catalogs, transparent explanations</td>
+
+</tr>
+
+<tr>
+
+<td>Hybrid</td>
+
+<td>Behavior + metadata + rules</td>
+
+<td>Production systems that must handle cold start, scale, and ranking trade-offs</td>
+
+</tr>
+
+<tr>
+
+<td>Popularity fallback</td>
+
+<td>Aggregate engagement</td>
+
+<td>Useful for day-zero users, sparse catalogs, and safety rails</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="the-cold-start-problem">9.1.3 The Cold Start Problem</h3>
+
+<p>Cold start is the hardest operational problem in production
+
+recommenders.</p>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="210" viewBox="0 0 400 210" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .cs-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .cs-item { font: 11px system-ui, sans-serif; fill: #334155; }
+  </style>
+  <defs><marker id="cs-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <rect x="100" y="6" width="200" height="34" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="200" y="28" text-anchor="middle" class="cs-lbl">New user arrives</text>
+  <line x1="200" y1="40" x2="200" y2="56" stroke="#6366f1" stroke-width="2" marker-end="url(#cs-a)"/>
+  <rect x="40" y="64" width="320" height="28" rx="5" fill="#fef2f2" stroke="#ef4444" stroke-width="1"/>
+  <text x="200" y="83" text-anchor="middle" class="cs-item">No history → cannot run collaborative filtering</text>
+  <rect x="40" y="98" width="320" height="28" rx="5" fill="#fef2f2" stroke="#ef4444" stroke-width="1"/>
+  <text x="200" y="117" text-anchor="middle" class="cs-item">No explicit preferences → no content-based</text>
+  <line x1="200" y1="130" x2="200" y2="140" stroke="#6366f1" stroke-width="2" marker-end="url(#cs-a)"/>
+  <text x="200" y="155" text-anchor="middle" class="cs-lbl">What to do?</text>
+  <rect x="30" y="164" width="80" height="22" rx="4" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+  <text x="70" y="180" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#334155">Popular items</text>
+  <rect x="118" y="164" width="80" height="22" rx="4" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="158" y="180" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#334155">Onboarding Q</text>
+  <rect x="206" y="164" width="80" height="22" rx="4" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
+  <text x="246" y="180" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#334155">Side info</text>
+  <rect x="294" y="164" width="80" height="22" rx="4" fill="#dcfce7" stroke="#22c55e" stroke-width="1"/>
+  <text x="334" y="180" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#334155">Content-based</text>
+</svg>
+
+<table>
+
+<colgroup>
+
+<col style="width: 43%" />
+
+<col style="width: 24%" />
+
+<col style="width: 32%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Cold start type</th>
+
+<th>Problem</th>
+
+<th>Mitigation</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>New user</td>
+
+<td>No interaction history</td>
+
+<td>Popularity, onboarding, side features</td>
+
+</tr>
+
+<tr>
+
+<td>New item</td>
+
+<td>No ratings yet</td>
+
+<td>Content-based, warm-up via metadata</td>
+
+</tr>
+
+<tr>
+
+<td>New user + new item</td>
+
+<td>Both unknown</td>
+
+<td>Purely content-based or non-personalized</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Every production recommender needs a cold-start
+
+fallback strategy. Collaborative filtering alone cannot handle day-zero
+
+users.</p>
+
+</blockquote>
+
+<h3 id="the-useritem-matrix">9.1.4 The User–Item Matrix</h3>
+
+<p>Collaborative filtering operates on the user–item interaction matrix
+
+<strong>R</strong>.</p>
+
+<table style="border-collapse:collapse; margin:16px 0; font-family:'Consolas',monospace; font-size:0.85rem;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px; font-family:system-ui,sans-serif; font-size:0.95rem;">User–Item interaction matrix R</caption>
+<thead><tr>
+  <th style="padding:4px 10px; border-bottom:2px solid #6366f1;"></th>
+  <th style="padding:4px 10px; text-align:center; border-bottom:2px solid #6366f1;">Item1</th>
+  <th style="padding:4px 10px; text-align:center; border-bottom:2px solid #6366f1;">Item2</th>
+  <th style="padding:4px 10px; text-align:center; border-bottom:2px solid #6366f1;">Item3</th>
+  <th style="padding:4px 10px; text-align:center; border-bottom:2px solid #6366f1;">Item4</th>
+  <th style="padding:4px 10px; text-align:center; border-bottom:2px solid #6366f1;">Item5</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:4px 10px; font-weight:600;">User1</td>
+    <td style="padding:4px 10px; text-align:center;">5</td>
+    <td style="padding:4px 10px; text-align:center; color:#64748b;">?</td>
+    <td style="padding:4px 10px; text-align:center;">3</td>
+    <td style="padding:4px 10px; text-align:center; color:#64748b;">?</td>
+    <td style="padding:4px 10px; text-align:center;">1</td></tr>
+<tr><td style="padding:4px 10px; font-weight:600;">User2</td>
+    <td style="padding:4px 10px; text-align:center;">4</td>
+    <td style="padding:4px 10px; text-align:center; color:#64748b;">?</td>
+    <td style="padding:4px 10px; text-align:center; color:#64748b;">?</td>
+    <td style="padding:4px 10px; text-align:center;">1</td>
+    <td style="padding:4px 10px; text-align:center; color:#64748b;">?</td></tr>
+<tr><td style="padding:4px 10px; font-weight:600;">User3</td>
+    <td style="padding:4px 10px; text-align:center; color:#64748b;">?</td>
+    <td style="padding:4px 10px; text-align:center;">1</td>
+    <td style="padding:4px 10px; text-align:center; color:#64748b;">?</td>
+    <td style="padding:4px 10px; text-align:center;">5</td>
+    <td style="padding:4px 10px; text-align:center; color:#64748b;">?</td></tr>
+<tr><td style="padding:4px 10px; font-weight:600;">User4</td>
+    <td style="padding:4px 10px; text-align:center;">1</td>
+    <td style="padding:4px 10px; text-align:center; color:#64748b;">?</td>
+    <td style="padding:4px 10px; text-align:center;">2</td>
+    <td style="padding:4px 10px; text-align:center; color:#64748b;">?</td>
+    <td style="padding:4px 10px; text-align:center;">4</td></tr>
+</tbody>
+</table>
+
+<ul>
+
+<li><strong>★ = observed rating</strong> (explicit) or <strong>implicit
+
+signal</strong> (click, play, purchase)</li>
+
+<li><strong>? = unobserved</strong> — not rated, not necessarily
+
+disliked</li>
+
+<li>Typical sparsity: 99%+ missing for large catalogs</li>
+
+</ul>
+
+<p>The goal: fill in the <code>?</code> values and rank the top-K
+
+predictions per user.</p>
+
+<hr />
+
+<h2 id="collaborative-filtering">9.2 Collaborative Filtering</h2>
+
+<h3 id="memory-based-neighborhood-methods">9.2.1 Memory-Based:
+
+Neighborhood Methods</h3>
+
+<p>The oldest approach: find users (or items) similar to the target,
+
+borrow their ratings.</p>
+
+<p><strong>User–User Collaborative Filtering</strong></p>
+
+<svg viewBox="0 0 520 36" style="display:block; margin:16px auto; max-width:500px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="User-user CF: target user to similar users to ratings">
+<defs><marker id="uu-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6366f1"/></marker></defs>
+<rect x="5" y="4" width="100" height="28" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="55" y="23" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#1e40af">Target user A</text>
+<line x1="110" y1="18" x2="140" y2="18" stroke="#6366f1" stroke-width="1.5" marker-end="url(#uu-a)"/>
+<rect x="145" y="4" width="160" height="28" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="225" y="23" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#5b21b6">Find K similar users</text>
+<line x1="310" y1="18" x2="340" y2="18" stroke="#6366f1" stroke-width="1.5" marker-end="url(#uu-a)"/>
+<rect x="345" y="4" width="170" height="28" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="430" y="23" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#166534">Avg ratings on unseen items</text>
+</svg>
+
+
+<p><strong>Cosine similarity</strong> between users i and j:</p>
+
+<p><span class="math display">\[
+
+\text{sim}(i, j) = \frac{\sum_{k \in \mathcal{I}_{ij}} r_{ik}
+
+r_{jk}}{\sqrt{\sum_{k \in \mathcal{I}_{ij}} r_{ik}^2} \cdot
+
+\sqrt{\sum_{k \in \mathcal{I}_{ij}} r_{jk}^2}}
+
+\]</span></p>
+
+<p>where <span class="math inline">\(\mathcal{I}_{ij}\)</span> is the
+
+set of items rated by both users i and j.</p>
+
+<p><strong>Pearson correlation</strong> (mean-centered, handles rating
+
+scale bias):</p>
+
+<p><span class="math display">\[
+
+\text{sim}(i, j) = \frac{\sum_{k} (r_{ik} - \bar{r}_i)(r_{jk} -
+
+\bar{r}_j)}{\sqrt{\sum_k (r_{ik} - \bar{r}_i)^2} \cdot \sqrt{\sum_k
+
+(r_{jk} - \bar{r}_j)^2}}
+
+\]</span></p>
+
+<p><strong>Where:</strong> <span class="math inline">\(r_{ik}\)</span> = rating user <span class="math inline">\(i\)</span> gave item <span class="math inline">\(k\)</span>, <span class="math inline">\(\bar{r}_i\)</span> = average rating of user <span class="math inline">\(i\)</span>.</p>
+
+<p><strong>Prediction</strong> for user i on item j using top-K
+
+neighbors N(i):</p>
+
+<p><span class="math display">\[
+
+\hat{r}_{ij} = \bar{r}_i + \frac{\sum_{u \in N(i)} \text{sim}(i, u)
+
+\cdot (r_{uj} - \bar{r}_u)}{\sum_{u \in N(i)} |\text{sim}(i, u)|}
+
+\]</span></p>
+
+<p><strong>Where:</strong> <span class="math inline">\(\hat{r}_{ij}\)</span> = predicted rating of user <span class="math inline">\(i\)</span> for item <span class="math inline">\(j\)</span>, <span class="math inline">\(N(i)\)</span> = top-K neighbors of user <span class="math inline">\(i\)</span>, <span class="math inline">\(\bar{r}_i\)</span> = user <span class="math inline">\(i\)</span>&rsquo;s mean rating.</p>
+
+<p><strong>Item–Item Collaborative Filtering</strong></p>
+
+<p>Instead of finding similar users, find items similar to what the user
+
+already liked.</p>
+
+<svg viewBox="0 0 460 36" style="display:block; margin:16px auto; max-width:440px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Item-item CF: liked item to similar items to recommendations">
+<defs><marker id="ii-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6366f1"/></marker></defs>
+<rect x="5" y="4" width="130" height="28" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="70" y="23" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#1e40af">User liked item A</text>
+<line x1="140" y1="18" x2="170" y2="18" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ii-a)"/>
+<rect x="175" y="4" width="130" height="28" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="240" y="23" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#5b21b6">Items similar to A</text>
+<line x1="310" y1="18" x2="340" y2="18" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ii-a)"/>
+<rect x="345" y="4" width="110" height="28" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="400" y="23" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#166534">Recommend those</text>
+</svg>
+
+
+<p><span class="math display">\[
+
+\hat{r}_{uj} = \frac{\sum_{i \in N(j)} \text{sim}(i, j) \cdot
+
+r_{ui}}{\sum_{i \in N(j)} |\text{sim}(i, j)|}
+
+\]</span></p>
+
+<p><strong>User–User vs Item–Item:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Property</th>
+
+<th>User–User CF</th>
+
+<th>Item–Item CF</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Similarity computation</td>
+
+<td>Between users</td>
+
+<td>Between items</td>
+
+</tr>
+
+<tr>
+
+<td>Stability</td>
+
+<td>Users change faster</td>
+
+<td>Item catalog more stable</td>
+
+</tr>
+
+<tr>
+
+<td>Scalability</td>
+
+<td>O(U²) user pairs</td>
+
+<td>O(I²) item pairs, precomputed</td>
+
+</tr>
+
+<tr>
+
+<td>Best for</td>
+
+<td>Smaller user bases</td>
+
+<td>Large stable catalogs</td>
+
+</tr>
+
+<tr>
+
+<td>Amazon’s choice</td>
+
+<td>—</td>
+
+<td>Item–item (precomputed offline)</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Item–item CF scales better in practice because
+
+item similarities can be precomputed and cached, while user similarities
+
+must be recomputed as users interact.</p>
+
+</blockquote>
+
+<p><strong>Worked Example: Item–Item CF</strong></p>
+
+<p>Given the rating matrix:</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<thead><tr>
+<th style="padding:6px 16px; text-align:center; border-bottom:2px solid #6366f1;"></th>
+<th style="padding:6px 16px; text-align:center; border-bottom:2px solid #6366f1;">Item 1</th>
+<th style="padding:6px 16px; text-align:center; border-bottom:2px solid #6366f1;">Item 2</th>
+<th style="padding:6px 16px; text-align:center; border-bottom:2px solid #6366f1;">Item 3</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 16px; font-weight:600;">User 1</td><td style="padding:6px 16px; text-align:center; background:#dbeafe;">5</td><td style="padding:6px 16px; text-align:center; background:#dbeafe;">4</td><td style="padding:6px 16px; text-align:center; background:#fef3c7; font-weight:600;">?</td></tr>
+<tr><td style="padding:6px 16px; font-weight:600;">User 2</td><td style="padding:6px 16px; text-align:center; background:#fef3c7; font-weight:600;">?</td><td style="padding:6px 16px; text-align:center; background:#fef3c7; font-weight:600;">?</td><td style="padding:6px 16px; text-align:center; background:#dbeafe;">3</td></tr>
+<tr><td style="padding:6px 16px; font-weight:600;">User 3</td><td style="padding:6px 16px; text-align:center; background:#dbeafe;">2</td><td style="padding:6px 16px; text-align:center; background:#fef3c7; font-weight:600;">?</td><td style="padding:6px 16px; text-align:center; background:#dbeafe;">4</td></tr>
+</tbody>
+</table>
+
+<p>Compute similarity(Item1, Item3) using users who rated both (User1
+
+and User3):</p>
+
+<ul>
+
+<li>User1 on Item1: 5, User3 on Item1: 2</li>
+
+<li>User1 on Item3: unknown (skip), User3 on Item3: 4</li>
+
+</ul>
+
+<p>Actually for User1 and User3 with both Item1 and Item3 rated by User3
+
+only — sim requires co-rated users. Here User1 has no Item3 rating so
+
+co-rated set is just User3, which gives unstable similarity. This is
+
+sparsity in action — the minimum support threshold matters.</p>
+
+<h3 id="limitations-of-memory-based-cf">9.2.2 Limitations of Memory-Based CF</h3>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<thead><tr>
+<th style="padding:6px 16px; text-align:left; border-bottom:2px solid #6366f1;">Limitation</th>
+<th style="padding:6px 16px; text-align:left; border-bottom:2px solid #6366f1;">Description</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 16px; font-weight:600;">Scale</td><td style="padding:6px 16px;">Computing all pairwise similarities is O(U²) or O(I²)</td></tr>
+<tr><td style="padding:6px 16px; font-weight:600;">Sparsity</td><td style="padding:6px 16px;">Few co-rated items → unstable similarity estimates</td></tr>
+<tr><td style="padding:6px 16px; font-weight:600;">Coverage</td><td style="padding:6px 16px;">Can't recommend items no neighbor has rated</td></tr>
+<tr><td style="padding:6px 16px; font-weight:600;">Cold start</td><td style="padding:6px 16px;">No history → no neighbors</td></tr>
+</tbody>
+</table>
+
+<p>Matrix factorization solves the scale and sparsity problems.</p>
+
+<h3 id="model-based-matrix-factorization">9.2.3 Model-Based: Matrix
+
+Factorization</h3>
+
+<p>Instead of storing the full matrix, decompose it into two low-rank
+
+matrices.</p>
+
+<p><span class="math display">\[
+
+R \approx W \cdot U^T
+
+\]</span></p>
+
+<ul>
+
+<li><span class="math inline">\(R\)</span>: <span
+
+class="math inline">\(N \times M\)</span> user–item rating matrix</li>
+
+<li><span class="math inline">\(W\)</span>: <span
+
+class="math inline">\(N \times K\)</span> user embedding matrix (one row
+
+per user)</li>
+
+<li><span class="math inline">\(U\)</span>: <span
+
+class="math inline">\(M \times K\)</span> item embedding matrix (one row
+
+per item)</li>
+
+<li><span class="math inline">\(K\)</span>: number of latent dimensions
+
+(typically 10–300)</li>
+
+</ul>
+
+<svg viewBox="0 0 700 170" style="display:block; margin:20px auto; max-width:560px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Matrix factorization: R ≈ W × U^T">
+<defs><marker id="mf-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<!-- R matrix -->
+<rect x="10" y="15" width="140" height="80" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="80" y="45" text-anchor="middle" font-family="system-ui" font-size="16" font-weight="700" fill="#92400e">R</text>
+<text x="80" y="65" text-anchor="middle" font-family="system-ui" font-size="10" fill="#92400e">N users × M items</text>
+<text x="80" y="80" text-anchor="middle" font-family="system-ui" font-size="9" fill="#92400e">130k × 26k = 3.38B (mostly ?)</text>
+<!-- ≈ -->
+<text x="175" y="55" text-anchor="middle" font-family="system-ui" font-size="22" font-weight="700" fill="#6366f1">≈</text>
+<!-- W matrix -->
+<rect x="200" y="15" width="140" height="80" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="270" y="45" text-anchor="middle" font-family="system-ui" font-size="16" font-weight="700" fill="#1e40af">W</text>
+<text x="270" y="65" text-anchor="middle" font-family="system-ui" font-size="10" fill="#1e40af">N users × K factors</text>
+<text x="270" y="80" text-anchor="middle" font-family="system-ui" font-size="9" fill="#1e40af">130k × 10 = 1.3M params</text>
+<!-- × -->
+<text x="365" y="55" text-anchor="middle" font-family="system-ui" font-size="22" font-weight="700" fill="#6366f1">×</text>
+<!-- U^T matrix -->
+<rect x="390" y="15" width="140" height="80" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="460" y="45" text-anchor="middle" font-family="system-ui" font-size="16" font-weight="700" fill="#5b21b6">Uᵀ</text>
+<text x="460" y="65" text-anchor="middle" font-family="system-ui" font-size="10" fill="#5b21b6">K factors × M items</text>
+<text x="460" y="80" text-anchor="middle" font-family="system-ui" font-size="9" fill="#5b21b6">10 × 26k = 260k params</text>
+<!-- Total -->
+<rect x="200" y="110" width="330" height="34" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="365" y="132" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="600" fill="#166534">Total: 1.56M parameters (vs 3.38B cells)</text>
+<!-- Bracket lines -->
+<line x1="220" y1="98" x2="220" y2="110" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="3,2"/>
+<line x1="510" y1="98" x2="510" y2="110" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="3,2"/>
+</svg>
+
+<p><strong>How this becomes a recommendation:</strong> after training,
+
+the system scores every unseen movie for a user and ranks the highest
+
+ones.</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px;">Actual movie example: observed ratings matrix</caption>
+<thead><tr>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1;"></th>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1;">Toy Story</th>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1;">Finding Nemo</th>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1;">Interstellar</th>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1;">Mad Max</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 12px; font-weight:600;">Alice</td><td style="padding:6px 12px; text-align:center;">5</td><td style="padding:6px 12px; text-align:center;">4</td><td style="padding:6px 12px; text-align:center; color:#64748b;">?</td><td style="padding:6px 12px; text-align:center;">1</td></tr>
+<tr><td style="padding:6px 12px; font-weight:600;">Ben</td><td style="padding:6px 12px; text-align:center;">1</td><td style="padding:6px 12px; text-align:center; color:#64748b;">?</td><td style="padding:6px 12px; text-align:center;">5</td><td style="padding:6px 12px; text-align:center;">4</td></tr>
+<tr><td style="padding:6px 12px; font-weight:600;">Cara</td><td style="padding:6px 12px; text-align:center;">4</td><td style="padding:6px 12px; text-align:center;">5</td><td style="padding:6px 12px; text-align:center;">2</td><td style="padding:6px 12px; text-align:center; color:#64748b;">?</td></tr>
+</tbody>
+</table>
+
+<p>After factorization, Alice and <em>Finding Nemo</em> end up close in
+
+latent space, while Alice and <em>Interstellar</em> are much farther apart.
+
+That is why the model recommends <em>Finding Nemo</em> first: not because
+
+the movie metadata was hand-coded into the formula, but because similar
+
+users created a matching hidden pattern.</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px;">Example candidate ranking for Alice after training</caption>
+<thead><tr>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1;">Unseen movie</th>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1;">Relative score</th>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1;">Result</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 12px; font-weight:600;">Finding Nemo</td><td style="padding:6px 12px; text-align:center;">High</td><td style="padding:6px 12px;">Show near the top</td></tr>
+<tr><td style="padding:6px 12px; font-weight:600;">Interstellar</td><td style="padding:6px 12px; text-align:center;">Low</td><td style="padding:6px 12px;">Demote for Alice</td></tr>
+<tr><td style="padding:6px 12px; font-weight:600;">Mad Max</td><td style="padding:6px 12px; text-align:center;">Very low</td><td style="padding:6px 12px;">Do not surface unless needed for exploration</td></tr>
+</tbody>
+</table>
+
+<p><strong>Storage comparison:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Representation</th>
+
+<th>Size (130k users, 26k items, K=10)</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Full matrix</td>
+
+<td>3.38B entries</td>
+
+</tr>
+
+<tr>
+
+<td>Factorized</td>
+
+<td>1.56M parameters</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Factorization makes storage and learning
+
+feasible. The latent space K encodes hidden taste dimensions the model
+
+discovers from data.</p>
+
+</blockquote>
+
+<p><strong>Interpreting Latent Dimensions</strong></p>
+
+<p>The model learns dimensions like “action”, “sci-fi”, “classic” — but
+
+without labels. They emerge from rating patterns.</p>
+
+<div style="border-left:4px solid #8b5cf6; padding:12px 16px; background:#faf5ff; border-radius:6px; margin:16px 0; font-size:0.88rem; line-height:1.8;">
+<strong style="color:#5b21b6;">K = 5 latent dimensions</strong> &ensp;<span style="color:#64748b;">[action, comedy, romance, horror, animation]</span><br><br>
+<table style="border-collapse:collapse; font-size:0.88rem; margin:4px 0;">
+<tr><td style="padding:3px 8px; font-weight:600; color:#1e40af;">User vector w<sub>i</sub></td><td style="padding:3px 8px;">[0.9, 0.1, 0.2, 0.0, 0.5]</td><td style="padding:3px 8px; color:#64748b;">Alice prefers action+animation</td></tr>
+<tr><td style="padding:3px 8px; font-weight:600; color:#166534;">Item vector u<sub>j</sub></td><td style="padding:3px 8px;">[0.8, 0.0, 0.1, 0.0, 0.6]</td><td style="padding:3px 8px; color:#64748b;">The Incredibles</td></tr>
+<tr><td style="padding:3px 8px; font-weight:600; color:#92400e;">Score</td><td colspan="2" style="padding:3px 8px;">w<sub>i</sub> · u<sub>j</sub> = 0.72 + 0 + 0.02 + 0 + 0.30 = <strong>1.04</strong></td></tr>
+</table>
+</div>
+
+
+<p><strong>Prediction formula:</strong></p>
+
+<p><span class="math display">\[
+
+\hat{r}_{ij} = w_i^T u_j
+
+\]</span></p>
+
+<p><strong>Where:</strong> <span class="math inline">\(\hat{r}_{ij}\)</span> = predicted rating of user <span class="math inline">\(i\)</span> for item <span class="math inline">\(j\)</span>, <span class="math inline">\(w_i\)</span> = user latent vector, <span class="math inline">\(u_j\)</span> = item latent vector.</p>
+
+<p><strong>With bias terms</strong> (user rating habit + item average
+
+popularity):</p>
+
+<p><span class="math display">\[
+
+\hat{r}_{ij} = \mu + b_i + b_j + w_i^T u_j
+
+\]</span></p>
+
+<ul>
+
+<li><span class="math inline">\(\mu\)</span>: global mean rating</li>
+
+<li><span class="math inline">\(b_i\)</span>: user bias (do they rate
+
+high or low generally?)</li>
+
+<li><span class="math inline">\(b_j\)</span>: item bias (is this item
+
+rated high or low generally?)</li>
+
+</ul>
+
+<p><strong>Worked example with biases:</strong></p>
+
+<p>Use a smaller latent interaction so the final prediction stays on the
+
+1-5 scale. Suppose <span class="math inline">\(w_i^T u_j = 0.9\)</span>,
+
+<span class="math inline">\(b_i = -0.2\)</span>, <span
+
+class="math inline">\(b_j = +0.3\)</span>, and <span
+
+class="math inline">\(\mu = 3.5\)</span>:</p>
+
+<p><span class="math display">\[
+
+\hat{r}_{ij} = 3.5 + (-0.2) + 0.3 + 0.9 = 4.5
+
+\]</span></p>
+
+<p><em>This is easier to read intuitively: the movie is above average, the
+
+user is a slightly harsh rater, and the personalized interaction still
+
+pushes the final prediction high.</em></p>
+
+<blockquote>
+
+<p><strong>Key:</strong> Biases capture systematic tendencies
+
+independent of personalization.</p>
+
+</blockquote>
+
+<h3 id="training-sgd-and-als">9.2.4 Training the Factor Model: Stochastic
+
+Gradient Descent (SGD) and Alternating Least Squares (ALS)</h3>
+
+<p><strong>Stochastic Gradient Descent (SGD)</strong> means: look at one
+
+known rating at a time, measure the error, and nudge the user vector and
+
+item vector a little in the right direction.</p>
+
+<p><strong>Alternating Least Squares (ALS)</strong> means: freeze all item
+
+vectors and solve for the best user vectors, then freeze all user vectors
+
+and solve for the best item vectors. Alternate until the model settles.</p>
+
+<svg viewBox="0 0 640 210" style="display:block; margin:18px auto; max-width:500px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Intuition for SGD versus ALS in matrix factorization">
+<defs><marker id="sgdals-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#6366f1"/></marker></defs>
+<rect x="20" y="18" width="270" height="150" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="155" y="42" text-anchor="middle" font-family="system-ui" font-size="14" font-weight="700" fill="#1e40af">SGD intuition</text>
+<rect x="45" y="58" width="220" height="28" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+<text x="155" y="77" text-anchor="middle" font-family="system-ui" font-size="11" fill="#1e40af">Take one observed rating: Alice rated Toy Story = 5</text>
+<line x1="155" y1="86" x2="155" y2="104" stroke="#6366f1" stroke-width="1.4" marker-end="url(#sgdals-a)"/>
+<rect x="45" y="108" width="220" height="28" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1"/>
+<text x="155" y="127" text-anchor="middle" font-family="system-ui" font-size="11" fill="#5b21b6">Prediction is too low or too high</text>
+<line x1="155" y1="136" x2="155" y2="154" stroke="#6366f1" stroke-width="1.4" marker-end="url(#sgdals-a)"/>
+<rect x="45" y="158" width="220" height="28" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1"/>
+<text x="155" y="177" text-anchor="middle" font-family="system-ui" font-size="11" fill="#166534">Nudge user and movie vectors a little</text>
+<rect x="350" y="18" width="270" height="150" rx="10" fill="#faf5ff" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="485" y="42" text-anchor="middle" font-family="system-ui" font-size="14" font-weight="700" fill="#5b21b6">ALS intuition</text>
+<rect x="375" y="58" width="220" height="28" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1"/>
+<text x="485" y="77" text-anchor="middle" font-family="system-ui" font-size="11" fill="#5b21b6">Hold movie vectors fixed</text>
+<line x1="485" y1="86" x2="485" y2="104" stroke="#6366f1" stroke-width="1.4" marker-end="url(#sgdals-a)"/>
+<rect x="375" y="108" width="220" height="28" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
+<text x="485" y="127" text-anchor="middle" font-family="system-ui" font-size="11" fill="#92400e">Solve the best user vectors all at once</text>
+<line x1="485" y1="136" x2="485" y2="154" stroke="#6366f1" stroke-width="1.4" marker-end="url(#sgdals-a)"/>
+<rect x="375" y="158" width="220" height="28" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1"/>
+<text x="485" y="177" text-anchor="middle" font-family="system-ui" font-size="11" fill="#166534">Then swap: hold users fixed, solve movies</text>
+</svg>
+
+<table style="border-collapse:collapse; margin:16px 0; width:100%;">
+<thead><tr>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1; text-align:left;">Method</th>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1; text-align:left;">Best intuition</th>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1; text-align:left;">Typical use</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 12px; font-weight:600;">SGD</td><td style="padding:6px 12px;">Many tiny corrections</td><td style="padding:6px 12px;">Explicit ratings, flexible online-style training</td></tr>
+<tr><td style="padding:6px 12px; font-weight:600;">ALS</td><td style="padding:6px 12px;">Solve one side exactly while freezing the other</td><td style="padding:6px 12px;">Large-scale implicit feedback and parallel systems</td></tr>
+</tbody>
+</table>
+
+<div style="border-left:4px solid #22c55e; padding:12px 16px; background:#f0fdf4; border-radius:6px; margin:16px 0; font-size:0.92rem; line-height:1.8;">
+<strong style="color:#166534;">Analogy:</strong> Imagine you asked 1,000 friends to rate 50 restaurants.
+Most friends only visited a few places, so most cells in your spreadsheet are blank.<br>
+<strong>SGD</strong> is like walking through each filled cell one by one: "Alice rated Sushi Zen 4.5,
+but our model predicted 3.8 &mdash; nudge Alice's taste vector and Sushi Zen's profile a little
+to close the gap." Repeat millions of times.<br>
+<strong>ALS</strong> takes a different approach: pretend you know each restaurant's personality
+perfectly, then figure out the single best taste vector for every friend at once (a linear
+algebra solve). Then swap &mdash; pretend friends are known, solve for restaurants. Back and forth
+until stable.
+</div>
+
+<p><strong>Objective:</strong> minimize RMSE on observed ratings with L2
+
+regularization.</p>
+
+<p><span class="math display">\[
+
+\mathcal{L} = \sum_{(i,j) \in \text{observed}} (r_{ij} - \hat{r}_{ij})^2
+
++ \lambda(\|w_i\|^2 + \|u_j\|^2)
+
+\]</span></p>
+
+<p><strong>Where:</strong> <span class="math inline">\(r_{ij}\)</span> = observed rating, <span class="math inline">\(\hat{r}_{ij}\)</span> = predicted rating, <span class="math inline">\(\lambda\)</span> = regularization strength, <span class="math inline">\(w_i, u_j\)</span> = user and item latent vectors.</p>
+
+<div style="border:2px solid #3b82f6; border-radius:10px; padding:16px 20px; margin:20px 0; background:#f8fafc;">
+<strong style="color:#1d4ed8; font-size:1rem;">Algorithm: SGD for Matrix Factorization</strong>
+<hr style="border:none; border-top:1px solid #dbeafe; margin:8px 0;">
+<div style="font-family:system-ui, sans-serif; font-size:0.92rem; line-height:2;">
+<span style="color:#64748b;">Input:</span> observed ratings {(i, j, r<sub>ij</sub>)}, learning rate &alpha;, regularization &lambda;, latent dim K<br>
+<span style="color:#64748b;">1.</span> Initialize W, U with small random values<br>
+<span style="color:#64748b;">2.</span> <strong>For</strong> each epoch:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#64748b;">3.</span> <strong>For</strong> each observed rating (i, j):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#64748b;">4.</span> Predict: <span class="math inline">\(\hat{r}_{ij} = w_i^T u_j\)</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#64748b;">5.</span> Compute error: <span class="math inline">\(e_{ij} = r_{ij} - \hat{r}_{ij}\)</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#64748b;">6.</span> Update user vector: <span class="math inline">\(w_i \leftarrow w_i + \alpha(e_{ij} \cdot u_j - \lambda \cdot w_i)\)</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#64748b;">7.</span> Update item vector: <span class="math inline">\(u_j \leftarrow u_j + \alpha(e_{ij} \cdot w_i - \lambda \cdot u_j)\)</span><br>
+<span style="color:#64748b;">Output:</span> learned W, U &mdash; predict any blank cell as <span class="math inline">\(\hat{r}_{ij} = w_i^T u_j\)</span>
+</div>
+</div>
+
+<div style="border:2px solid #8b5cf6; border-radius:10px; padding:16px 20px; margin:20px 0; background:#faf5ff;">
+<strong style="color:#5b21b6; font-size:1rem;">Algorithm: ALS for Matrix Factorization</strong>
+<hr style="border:none; border-top:1px solid #ede9fe; margin:8px 0;">
+<div style="font-family:system-ui, sans-serif; font-size:0.92rem; line-height:2;">
+<span style="color:#64748b;">Input:</span> observed ratings {(i, j, r<sub>ij</sub>)}, regularization &lambda;, latent dim K<br>
+<span style="color:#64748b;">1.</span> Initialize W, U with small random values<br>
+<span style="color:#64748b;">2.</span> <strong>Repeat</strong> until convergence:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#3b82f6;">3. Fix U</span> &mdash; for each user i, solve in closed form:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(w_i = (U^T U + \lambda I)^{-1} \; U^T \; r_i\)</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<em style="color:#64748b;">(all users can be solved <strong>in parallel</strong> &mdash; they are independent)</em><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#8b5cf6;">4. Fix W</span> &mdash; for each item j, solve in closed form:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(u_j = (W^T W + \lambda I)^{-1} \; W^T \; r_j\)</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<em style="color:#64748b;">(all items can be solved in parallel too)</em><br>
+<span style="color:#64748b;">Output:</span> learned W, U &mdash; predict any blank cell as <span class="math inline">\(\hat{r}_{ij} = w_i^T u_j\)</span>
+</div>
+</div>
+
+<blockquote>
+<p><strong>Key difference:</strong> SGD makes <em>many tiny updates</em> by walking through
+ratings one at a time. ALS makes <em>few large exact solves</em> by alternating which
+side is frozen. Both produce the same W and U matrices that fill the same blank cells.
+ALS is preferred at scale because step 3 and step 4 are embarrassingly parallel.</p>
+</blockquote>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Property</th>
+
+<th>SGD</th>
+
+<th>ALS</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Update style</td>
+
+<td>One rating at a time, gradient step</td>
+
+<td>All users (or items) at once, closed-form solve</td>
+
+</tr>
+
+<tr>
+
+<td>Parallelizable</td>
+
+<td>Partial</td>
+
+<td>Highly (each user/item is independent)</td>
+
+</tr>
+
+<tr>
+
+<td>Handles implicit feedback</td>
+
+<td>With modification (negative sampling)</td>
+
+<td>Naturally (weighted confidence formulation)</td>
+
+</tr>
+
+<tr>
+
+<td>Best for</td>
+
+<td>Explicit ratings, flexible online training</td>
+
+<td>Implicit feedback at large scale</td>
+
+</tr>
+
+<tr>
+
+<td>Used by</td>
+
+<td>Netflix Prize winning solution</td>
+
+<td>Spark MLlib, Apple Music</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="connection-to-svd">9.2.5 Connection to SVD</h3>
+
+<p><strong>SVD</strong> stands for <strong>Singular Value
+
+Decomposition</strong>. The connection is conceptual: both SVD and matrix
+
+factorization are trying to explain a large matrix with a much smaller
+
+low-rank structure.</p>
+
+<div style="border-left:4px solid #3b82f6; padding:12px 16px; background:#eff6ff; border-radius:6px; margin:16px 0; font-size:0.92rem; line-height:1.8;">
+<strong style="color:#1d4ed8;">Quick intuition:</strong> SVD is a mathematical tool that can exactly decompose <em>any</em> matrix into
+three factors (U &Sigma; V<sup>T</sup>). Matrix Factorization (MF) is a practical technique that
+<em>approximately</em> decomposes a <em>sparse</em> matrix into just two factors (W U<sup>T</sup>),
+ignoring missing entries. Think of SVD as the ideal decomposition you'd get if there
+were no missing ratings, and MF as the "real world" version that learns from whatever
+ratings exist.<br>
+<strong>Why it matters:</strong> Knowing SVD helps you understand what MF is <em>trying</em> to
+approximate, and why adding bias terms and regularization on top of the basic factorization
+improves results.
+</div>
+
+
+<svg viewBox="0 0 620 150" style="display:block; margin:18px auto; max-width:520px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Classical SVD needs a complete matrix, recommender matrix factorization trains only on observed entries">
+<rect x="20" y="28" width="250" height="92" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="145" y="52" text-anchor="middle" font-family="system-ui" font-size="14" font-weight="700" fill="#1e40af">Classical SVD</text>
+<text x="145" y="74" text-anchor="middle" font-family="system-ui" font-size="11" fill="#1e40af">Works on a complete dense matrix</text>
+<text x="145" y="94" text-anchor="middle" font-family="system-ui" font-size="11" fill="#1e40af">Best low-rank approximation of all cells</text>
+<rect x="350" y="28" width="250" height="92" rx="10" fill="#faf5ff" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="475" y="52" text-anchor="middle" font-family="system-ui" font-size="14" font-weight="700" fill="#5b21b6">Recommender MF</text>
+<text x="475" y="74" text-anchor="middle" font-family="system-ui" font-size="11" fill="#5b21b6">Works on a sparse ratings matrix</text>
+<text x="475" y="94" text-anchor="middle" font-family="system-ui" font-size="11" fill="#5b21b6">Learns factors from observed cells only</text>
+</svg>
+
+<p>Classical SVD: <span class="math inline">\(R = U \Sigma V^T\)</span>
+
+requires a complete matrix. With missing entries, it breaks.</p>
+
+<p>Recommender MF: train <span class="math inline">\(W\)</span> and
+
+<span class="math inline">\(U\)</span> only on <strong>observed</strong>
+
+entries. This is called “incomplete SVD” or “truncated MF.”</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<thead><tr>
+<th style="padding:6px 16px; text-align:left; border-bottom:2px solid #6366f1;">Method</th>
+<th style="padding:6px 16px; text-align:left; border-bottom:2px solid #6366f1;">Input</th>
+<th style="padding:6px 16px; text-align:left; border-bottom:2px solid #6366f1;">Decomposition</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 16px; font-weight:600;">Classical SVD</td><td style="padding:6px 16px;">R (complete)</td><td style="padding:6px 16px;">U Σ Vᵀ</td></tr>
+<tr><td style="padding:6px 16px; font-weight:600;">Recommender MF</td><td style="padding:6px 16px;">R (sparse)</td><td style="padding:6px 16px;">W · Uᵀ trained on observed (i,j) pairs only</td></tr>
+</tbody>
+</table>
+
+<div style="border:2px solid #22c55e; border-radius:10px; padding:16px 20px; margin:20px 0; background:#f0fdf4;">
+<strong style="color:#166534; font-size:1rem;">Algorithm: Classical SVD (Singular Value Decomposition)</strong>
+<hr style="border:none; border-top:1px solid #dcfce7; margin:8px 0;">
+<div style="font-family:system-ui, sans-serif; font-size:0.92rem; line-height:2;">
+<span style="color:#64748b;">Input:</span> a <strong>complete</strong> matrix R (N &times; M) &mdash; no blanks allowed<br>
+<span style="color:#64748b;">1.</span> Decompose: R = U &Sigma; V<sup>T</sup><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&bull; U (N &times; N) &mdash; left singular vectors (user directions)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&bull; &Sigma; (N &times; M diagonal) &mdash; singular values, sorted largest first<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&bull; V<sup>T</sup> (M &times; M) &mdash; right singular vectors (item directions)<br>
+<span style="color:#64748b;">2.</span> Truncate: keep only the top K singular values (set the rest to 0)<br>
+<span style="color:#64748b;">3.</span> Reconstruct: R<sub>K</sub> = U<sub>K</sub> &Sigma;<sub>K</sub> V<sub>K</sub><sup>T</sup> &mdash; best rank-K approximation<br>
+<span style="color:#64748b;">Output:</span> R<sub>K</sub> captures the most important patterns while ignoring noise
+</div>
+</div>
+
+<div style="border-left:4px solid #f59e0b; padding:12px 16px; background:#fffbeb; border-radius:6px; margin:16px 0; font-size:0.92rem; line-height:1.8;">
+<strong style="color:#92400e;">Why SVD can&rsquo;t directly fill our sparse matrix:</strong> Classical SVD
+requires <em>every</em> cell to have a value. Our user-item matrix is 99% blank.
+If you fill blanks with zeros and run SVD, the zeros are treated as &ldquo;rated 0&rdquo; &mdash;
+a terrible assumption. That&rsquo;s exactly why we use <strong>Matrix Factorization
+(trained with SGD or ALS)</strong> instead: it only looks at cells that actually have
+ratings, ignoring the blanks entirely. MF is the practical, sparse-friendly
+cousin of SVD.
+</div>
+
+<p><strong>SVD++</strong> is the next intuition step: do not only use the
+
+movies a user rated explicitly; also let the model learn from the movies
+
+they touched implicitly. In practice, that means the user vector is
+
+enriched by the set of items they interacted with, which usually helps
+
+when explicit ratings are scarce.</p>
+
+<svg viewBox="0 0 540 200" style="display:block; margin:24px auto; max-width:480px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Relationship: SVD is exact math, MF is the sparse-friendly version, SGD and ALS are two ways to train MF">
+<defs><marker id="rel-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#6366f1"/></marker></defs>
+<!-- SVD -->
+<rect x="10" y="10" width="160" height="50" rx="10" fill="#f0fdf4" stroke="#22c55e" stroke-width="2"/>
+<text x="90" y="32" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="700" fill="#166534">SVD</text>
+<text x="90" y="48" text-anchor="middle" font-family="system-ui" font-size="9" fill="#166534">Exact decomposition</text>
+<!-- Arrow: SVD inspires MF -->
+<line x1="170" y1="35" x2="218" y2="35" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#rel-a)"/>
+<text x="194" y="28" text-anchor="middle" font-family="system-ui" font-size="8" fill="#6366f1">inspires</text>
+<!-- MF -->
+<rect x="224" y="10" width="200" height="50" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+<text x="324" y="30" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="700" fill="#92400e">Matrix Factorization</text>
+<text x="324" y="48" text-anchor="middle" font-family="system-ui" font-size="9" fill="#92400e">Fills the sparse matrix (the GOAL)</text>
+<!-- Arrows from MF down to SGD and ALS -->
+<line x1="290" y1="60" x2="160" y2="108" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#rel-a)"/>
+<line x1="360" y1="60" x2="430" y2="108" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#rel-a)"/>
+<text x="210" y="82" text-anchor="middle" font-family="system-ui" font-size="8" fill="#3b82f6">trained with</text>
+<text x="410" y="82" text-anchor="middle" font-family="system-ui" font-size="8" fill="#8b5cf6">trained with</text>
+<!-- SGD -->
+<rect x="60" y="114" width="200" height="50" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+<text x="160" y="136" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="700" fill="#1d4ed8">SGD</text>
+<text x="160" y="152" text-anchor="middle" font-family="system-ui" font-size="9" fill="#1e40af">One rating at a time, nudge</text>
+<!-- ALS -->
+<rect x="330" y="114" width="200" height="50" rx="10" fill="#ede9fe" stroke="#8b5cf6" stroke-width="2"/>
+<text x="430" y="136" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="700" fill="#5b21b6">ALS</text>
+<text x="430" y="152" text-anchor="middle" font-family="system-ui" font-size="9" fill="#5b21b6">Freeze one side, solve the other</text>
+<!-- Bottom note -->
+<text x="270" y="190" text-anchor="middle" font-family="system-ui" font-size="10" fill="#64748b">MF is the model. SGD and ALS are the training algorithms. SVD is the mathematical ancestor.</text>
+</svg>
+
+<h3 id="sparsity-and-implicit-feedback">9.2.6 Sparsity and Implicit
+
+Feedback</h3>
+
+<p>Most real interaction data is implicit: clicks, plays, purchases —
+
+not 1–5 star ratings.</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<thead><tr>
+<th style="padding:6px 16px; text-align:left; border-bottom:2px solid #6366f1;">Signal Type</th>
+<th style="padding:6px 16px; text-align:left; border-bottom:2px solid #6366f1;">Example</th>
+<th style="padding:6px 16px; text-align:left; border-bottom:2px solid #6366f1;">Interpretation</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 16px; font-weight:600;">Explicit</td><td style="padding:6px 16px;">User gave Star Wars 4/5</td><td style="padding:6px 16px; color:#166534;">Clear signal</td></tr>
+<tr><td style="padding:6px 16px; font-weight:600;" rowspan="3">Implicit</td><td style="padding:6px 16px;">User played track 3 times</td><td style="padding:6px 16px; color:#3b82f6;">Positive (uncertain)</td></tr>
+<tr><td style="padding:6px 16px;">User skipped after 5 seconds</td><td style="padding:6px 16px; color:#f59e0b;">Negative (noisy)</td></tr>
+<tr><td style="padding:6px 16px;">User never interacted with item</td><td style="padding:6px 16px; color:#64748b;">Unknown (not necessarily dislike)</td></tr>
+</tbody>
+</table>
+
+<p><strong>Weighted ALS for implicit feedback</strong> (Hu et al.,
+
+2008):</p>
+
+<p>Define confidence <span class="math inline">\(c_{ij} = 1 + \alpha
+
+\cdot \text{count}_{ij}\)</span> (higher play count = more
+
+confident).</p>
+
+<p><span class="math display">\[
+
+\mathcal{L} = \sum_{i,j} c_{ij}(p_{ij} - w_i^T u_j)^2 +
+
+\lambda(\|W\|_F^2 + \|U\|_F^2)
+
+\]</span></p>
+
+<p>where <span class="math inline">\(p_{ij} = 1\)</span> if any
+
+interaction observed, 0 otherwise.</p>
+
+<hr />
+
+<h2 id="content-based-filtering">9.3 Content-Based Filtering</h2>
+
+<h3 id="what-it-is-10">9.3.1 What It Is</h3>
+
+<p>Content-based filtering recommends items similar to what a user
+
+already liked, based on item attributes rather than other users’
+
+behavior.</p>
+
+<svg viewBox="0 0 440 210" style="display:block; margin:20px auto; max-width:420px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Content-based filtering flow">
+<defs><marker id="cb-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<rect x="70" y="10" width="300" height="40" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="220" y="35" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#1e40af">User watched Inception (sci-fi, Nolan, mindbending)</text>
+<line x1="220" y1="50" x2="220" y2="75" stroke="#6366f1" stroke-width="1.5" marker-end="url(#cb-a)"/>
+<rect x="100" y="80" width="240" height="34" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="220" y="101" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#5b21b6">Find items with similar attributes</text>
+<line x1="220" y1="114" x2="220" y2="140" stroke="#6366f1" stroke-width="1.5" marker-end="url(#cb-a)"/>
+<rect x="40" y="145" width="360" height="40" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="220" y="170" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#166534">Recommend Interstellar (sci-fi, Nolan, complex narrative)</text>
+</svg>
+
+<h3 id="item-representation">9.3.2 Item Representation</h3>
+
+<p>Items are represented as feature vectors using their metadata.</p>
+
+<p><strong>For text items (articles, movies):</strong> TF-IDF over
+
+descriptions.</p>
+
+<p><span class="math display">\[
+
+\text{TF-IDF}(t, d) = \text{tf}(t, d) \times \log \frac{N}{\text{df}(t)}
+
+\]</span></p>
+
+<p><strong>For structured attributes:</strong> one-hot encoding,
+
+normalized numerics.</p>
+
+<p><strong>For rich content:</strong> embeddings from pre-trained models
+
+(BERT for text, ResNet for images).</p>
+
+<h3 id="user-profile">9.3.3 User Profile</h3>
+
+<p>The user profile is built by aggregating features of items they
+
+liked.</p>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.88rem; line-height:1.8;">
+<strong>User liked:</strong><br>
+<span style="color:#64748b;">•</span> Action movie: <code>[1, 0, 0, 0.8, 0.2]</code><br>
+<span style="color:#64748b;">•</span> Action movie: <code>[1, 0, 0, 0.9, 0.1]</code><br>
+<span style="color:#64748b;">•</span> Comedy movie: <code>[0, 1, 0, 0.2, 0.3]</code><br><br>
+<strong style="color:#166534;">User profile (average):</strong> <code>[0.67, 0.33, 0, 0.63, 0.20]</code>
+</div>
+
+
+<p><strong>Predict affinity</strong> of user u for item j:</p>
+
+<p><span class="math display">\[
+
+\hat{r}_{uj} = \cos(\text{profile}_u, \text{embed}_j) =
+
+\frac{\text{profile}_u \cdot \text{embed}_j}{\|\text{profile}_u\| \cdot
+
+\|\text{embed}_j\|}
+
+\]</span></p>
+
+<h3 id="strengths-and-weaknesses">9.3.4 Strengths and Weaknesses</h3>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Property</th>
+
+<th>Content-Based</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Cold start for new items</td>
+
+<td>Handles well (item has metadata)</td>
+
+</tr>
+
+<tr>
+
+<td>Cold start for new users</td>
+
+<td>Still fails (needs interaction history)</td>
+
+</tr>
+
+<tr>
+
+<td>Serendipity</td>
+
+<td>Low — tends to recommend more of the same</td>
+
+</tr>
+
+<tr>
+
+<td>Cross-domain discovery</td>
+
+<td>Low — won’t surface different genres</td>
+
+</tr>
+
+<tr>
+
+<td>Explainability</td>
+
+<td>High — “because you watched X”</td>
+
+</tr>
+
+<tr>
+
+<td>Requires item features</td>
+
+<td>Yes — fails if metadata is poor</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<svg viewBox="0 0 400 280" style="display:block; margin:20px auto; max-width:380px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Content-based filter bubble pitfall">
+<defs><marker id="fb-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ef4444"/></marker></defs>
+<text x="200" y="18" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="700" fill="#ef4444">Filter Bubble Pitfall</text>
+<rect x="80" y="30" width="240" height="34" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="200" y="51" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#1e40af">User only watches thrillers</text>
+<line x1="200" y1="64" x2="200" y2="85" stroke="#ef4444" stroke-width="1.5" marker-end="url(#fb-a)"/>
+<rect x="90" y="90" width="220" height="34" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="200" y="111" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#5b21b6">Profile becomes pure thriller</text>
+<line x1="200" y1="124" x2="200" y2="145" stroke="#ef4444" stroke-width="1.5" marker-end="url(#fb-a)"/>
+<rect x="65" y="150" width="270" height="34" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="200" y="171" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#92400e">System only recommends thrillers</text>
+<line x1="200" y1="184" x2="200" y2="205" stroke="#ef4444" stroke-width="1.5" marker-end="url(#fb-a)"/>
+<rect x="50" y="210" width="300" height="40" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+<text x="200" y="234" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#991b1b">User never discovers comedy they'd love</text>
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> Content-based filtering is great for new items
+
+and explainability, but suffers from filter bubbles and serendipity
+
+gaps.</p>
+
+</blockquote>
+
+<hr />
+
+<h2 id="hybrid-systems">9.4 Hybrid Systems</h2>
+
+<h3 id="why-hybrid">9.4.1 Why Hybrid?</h3>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Approach</th>
+
+<th>Fails when</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Collaborative filtering</td>
+
+<td>New users, new items (cold start)</td>
+
+</tr>
+
+<tr>
+
+<td>Content-based</td>
+
+<td>No item metadata, filter bubble</td>
+
+</tr>
+
+<tr>
+
+<td>Popularity baseline</td>
+
+<td>Ignores personalization</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p>Hybrid systems combine multiple signals to cover each other’s
+
+gaps.</p>
+
+<h3 id="hybrid-strategies">9.4.2 Hybrid Strategies</h3>
+
+<p><strong>1. Weighted hybrid:</strong> linear combination of
+
+scores.</p>
+
+<p><span class="math display">\[
+
+\hat{r}_{hybrid} = \alpha \hat{r}_{CF} + (1 - \alpha) \hat{r}_{CB}
+
+\]</span></p>
+
+<p><strong>Where:</strong> <span class="math inline">\(\hat{r}_{CF}\)</span> = collaborative filtering score, <span class="math inline">\(\hat{r}_{CB}\)</span> = content-based score, <span class="math inline">\(\alpha\)</span> = blending weight.</p>
+
+<p>Tune <span class="math inline">\(\alpha\)</span> per user segment
+
+(e.g., <span class="math inline">\(\alpha = 0.1\)</span> for new users,
+
+<span class="math inline">\(\alpha = 0.9\)</span> for long-term
+
+users).</p>
+
+<p><strong>2. Switching hybrid:</strong> use CF when enough history,
+
+else content-based.</p>
+
+<div class="sourceCode"><pre class="sourceCode python" style="font-size:0.88rem;"><code class="sourceCode python"><span class="cf">if</span> user_interaction_count &gt; threshold:
+    use collaborative filtering
+<span class="cf">else</span>:
+    use content<span class="op">-</span>based</code></pre></div>
+
+
+<p><strong>3. Cascade hybrid:</strong> one stage narrows the candidate set,
+
+then the next stage spends more compute reranking only those survivors.</p>
+
+<svg viewBox="0 0 520 210" style="display:block; margin:18px auto; max-width:420px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cascade hybrid pipeline">
+<defs><marker id="ch-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<rect x="10" y="10" width="200" height="50" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="110" y="30" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#1e40af">Content-based</text>
+<text x="110" y="48" text-anchor="middle" font-family="system-ui" font-size="10" fill="#1e40af">top 500 candidates</text>
+<line x1="210" y1="35" x2="245" y2="35" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ch-a)"/>
+<rect x="250" y="10" width="200" height="50" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="350" y="30" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#5b21b6">Collaborative filtering</text>
+<text x="350" y="48" text-anchor="middle" font-family="system-ui" font-size="10" fill="#5b21b6">rerank to top 20</text>
+<line x1="350" y1="60" x2="350" y2="85" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ch-a)"/>
+<rect x="250" y="90" width="200" height="50" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="350" y="110" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#166534">Business rules</text>
+<text x="350" y="128" text-anchor="middle" font-family="system-ui" font-size="10" fill="#166534">final 10 shown</text>
+</svg>
+
+<p><strong>4. Feature augmentation:</strong> feed collaborative embeddings
+
+into a richer supervised ranker together with metadata and context, rather
+
+than forcing one model family to do everything alone.</p>
+
+<svg viewBox="0 0 530 100" style="display:block; margin:18px auto; max-width:400px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Feature augmentation: embeddings plus metadata into a supervised ranker">
+<defs><marker id="fa-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<rect x="10" y="8" width="160" height="28" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="90" y="27" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#1e40af">Item embedding (MF)</text>
+<rect x="10" y="42" width="160" height="28" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="90" y="61" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#92400e">Item metadata features</text>
+<rect x="10" y="76" width="160" height="28" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="90" y="95" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#5b21b6">User embedding (MF)</text>
+<line x1="170" y1="22" x2="230" y2="55" stroke="#6366f1" stroke-width="1.2"/>
+<line x1="170" y1="56" x2="230" y2="55" stroke="#6366f1" stroke-width="1.2"/>
+<line x1="170" y1="90" x2="230" y2="55" stroke="#6366f1" stroke-width="1.2"/>
+<circle cx="235" cy="55" r="6" fill="#6366f1"/>
+<line x1="241" y1="55" x2="268" y2="55" stroke="#6366f1" stroke-width="1.5" marker-end="url(#fa-a)"/>
+<rect x="273" y="35" width="140" height="38" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="343" y="59" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#5b21b6">Supervised ranker</text>
+<line x1="413" y1="55" x2="445" y2="55" stroke="#6366f1" stroke-width="1.5" marker-end="url(#fa-a)"/>
+<rect x="450" y="38" width="80" height="32" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="490" y="59" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#166534">Ranked list</text>
+</svg>
+
+<hr />
+
+<h2 id="deep-learning-for-recommendations">9.5 Deep Learning for
+
+Recommendations</h2>
+
+<p>Deep recommenders are usually trained as supervised models on logged
+
+interaction data. The model sees a <strong>user</strong>, an
+
+<strong>item</strong>, optional <strong>context</strong>, and a
+
+<strong>label</strong> such as clicked, watched, purchased, or skipped.</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:100%; max-width:760px;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px;">Example training rows for a neural recommender</caption>
+<thead><tr>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1; text-align:left;">User</th>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1; text-align:left;">Context</th>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1; text-align:left;">Item</th>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1; text-align:left;">Label</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 12px;">Alice</td><td style="padding:6px 12px;">Evening, TV app</td><td style="padding:6px 12px;">Interstellar</td><td style="padding:6px 12px;">1 = watched</td></tr>
+<tr><td style="padding:6px 12px;">Alice</td><td style="padding:6px 12px;">Evening, TV app</td><td style="padding:6px 12px;">Mad Max</td><td style="padding:6px 12px;">0 = skipped / sampled negative</td></tr>
+<tr><td style="padding:6px 12px;">Ben</td><td style="padding:6px 12px;">Mobile, commute</td><td style="padding:6px 12px;">Toy Story</td><td style="padding:6px 12px;">0 = not engaged</td></tr>
+</tbody>
+</table>
+
+<p>In practice the pipeline is: log impressions and interactions, build
+
+positive and negative training pairs, turn high-cardinality IDs into
+
+embeddings, add side features, train with a click / watch / purchase loss,
+
+then use the model either for retrieval or reranking.</p>
+
+<p>Neural Collaborative Filtering (NCF) replaces the dot product with a
+
+learned interaction function:</p>
+
+<svg viewBox="0 0 500 120" style="display:block; margin:18px auto; max-width:420px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Neural Collaborative Filtering architecture">
+<defs><marker id="nc-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<rect x="10" y="10" width="80" height="28" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="50" y="29" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#1e40af">User ID</text>
+<line x1="90" y1="24" x2="112" y2="24" stroke="#6366f1" stroke-width="1.2" marker-end="url(#nc-a)"/>
+<rect x="117" y="10" width="110" height="28" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="172" y="29" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#1e40af">User Embedding</text>
+<rect x="10" y="75" width="80" height="28" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="50" y="94" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#5b21b6">Item ID</text>
+<line x1="90" y1="89" x2="112" y2="89" stroke="#8b5cf6" stroke-width="1.2" marker-end="url(#nc-a)"/>
+<rect x="117" y="75" width="110" height="28" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="172" y="94" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#5b21b6">Item Embedding</text>
+<!-- Merge -->
+<line x1="227" y1="24" x2="260" y2="56" stroke="#6366f1" stroke-width="1.2"/>
+<line x1="227" y1="89" x2="260" y2="56" stroke="#6366f1" stroke-width="1.2"/>
+<circle cx="265" cy="56" r="6" fill="#6366f1"/>
+<line x1="271" y1="56" x2="290" y2="56" stroke="#6366f1" stroke-width="1.5" marker-end="url(#nc-a)"/>
+<rect x="295" y="38" width="90" height="34" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="340" y="59" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="700" fill="#92400e">MLP layers</text>
+<line x1="385" y1="56" x2="405" y2="56" stroke="#6366f1" stroke-width="1.5" marker-end="url(#nc-a)"/>
+<rect x="410" y="42" width="80" height="28" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="450" y="58" text-anchor="middle" font-family="system-ui" font-size="9" font-weight="600" fill="#166534">sigmoid → P(i)</text>
+</svg>
+
+<p><strong>Neural Collaborative Filtering (NCF)</strong> replaces the raw
+
+dot product with a learned nonlinear interaction function. That gives the
+
+model more flexibility when simple linear compatibility is not enough.</p>
+
+<p><strong>Wide &amp; Deep</strong> is another common pattern: the
+
+<em>wide</em> side memorizes strong known feature crosses, while the
+
+<em>deep</em> side generalizes to new combinations.</p>
+
+<svg viewBox="0 0 520 130" style="display:block; margin:18px auto; max-width:420px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Wide and Deep model architecture">
+<defs><marker id="wd-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<!-- Wide part -->
+<rect x="10" y="10" width="230" height="42" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="125" y="28" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="700" fill="#1e40af">Wide part</text>
+<text x="125" y="43" text-anchor="middle" font-family="system-ui" font-size="9" fill="#1e40af">Cross-product features (memorize co-occurrences)</text>
+<!-- Deep part -->
+<rect x="10" y="65" width="230" height="42" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="125" y="83" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="700" fill="#5b21b6">Deep part</text>
+<text x="125" y="98" text-anchor="middle" font-family="system-ui" font-size="9" fill="#5b21b6">Embedding + MLP (generalize to unseen combos)</text>
+<!-- Merge lines -->
+<line x1="240" y1="31" x2="290" y2="58" stroke="#6366f1" stroke-width="1.2"/>
+<line x1="240" y1="86" x2="290" y2="58" stroke="#6366f1" stroke-width="1.2"/>
+<text x="280" y="52" text-anchor="middle" font-family="system-ui" font-size="9" fill="#6366f1">↓</text>
+<!-- Combined -->
+<rect x="295" y="42" width="120" height="32" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="355" y="62" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#92400e">Combined output</text>
+<line x1="415" y1="58" x2="440" y2="58" stroke="#6366f1" stroke-width="1.5" marker-end="url(#wd-a)"/>
+<rect x="445" y="42" width="70" height="32" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="480" y="62" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#166534">Ranking</text>
+</svg>
+
+<hr />
+
+<h2 id="modern-multi-stage-architecture">9.6 Modern Multi-Stage
+
+Architecture</h2>
+
+<p>Production recommenders at Netflix, Spotify, TikTok, and Amazon do
+
+not score all items with one model. The catalog is too large. Instead,
+
+they use a multi-stage funnel.</p>
+
+<svg viewBox="0 0 500 430" style="display:block; margin:20px auto; max-width:440px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Multi-stage recommendation funnel: 100M items to 10-20 shown">
+<defs><marker id="ms-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<!-- 100M items -->
+<text x="250" y="18" text-anchor="middle" font-family="system-ui" font-size="14" font-weight="700" fill="#334155">100M items</text>
+<line x1="250" y1="24" x2="250" y2="42" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ms-a)"/>
+<!-- Retrieval -->
+<rect x="100" y="48" width="300" height="65" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="250" y="70" text-anchor="middle" font-family="system-ui" font-size="14" font-weight="700" fill="#1e40af">RETRIEVAL</text>
+<text x="250" y="86" text-anchor="middle" font-family="system-ui" font-size="10" fill="#1e40af">ANN search, embedding lookup, heuristic filters</text>
+<text x="250" y="100" text-anchor="middle" font-family="system-ui" font-size="10" fill="#3b82f6">≈ 10,000 items · Fast · Recall-focused</text>
+<line x1="250" y1="113" x2="250" y2="132" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ms-a)"/>
+<!-- Candidate Gen -->
+<rect x="115" y="138" width="270" height="65" rx="10" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="250" y="160" text-anchor="middle" font-family="system-ui" font-size="14" font-weight="700" fill="#5b21b6">CANDIDATE GEN.</text>
+<text x="250" y="176" text-anchor="middle" font-family="system-ui" font-size="10" fill="#5b21b6">Coarse scoring: collaborative signals, session context</text>
+<text x="250" y="190" text-anchor="middle" font-family="system-ui" font-size="10" fill="#8b5cf6">≈ 1,000 items · Medium cost</text>
+<line x1="250" y1="203" x2="250" y2="222" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ms-a)"/>
+<!-- Ranking -->
+<rect x="130" y="228" width="240" height="65" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="250" y="250" text-anchor="middle" font-family="system-ui" font-size="14" font-weight="700" fill="#92400e">RANKING</text>
+<text x="250" y="266" text-anchor="middle" font-family="system-ui" font-size="10" fill="#92400e">Full feature set, heavy model (GBDT, DNN)</text>
+<text x="250" y="280" text-anchor="middle" font-family="system-ui" font-size="10" fill="#f59e0b">≈ 100 items · Expensive OK</text>
+<line x1="250" y1="293" x2="250" y2="312" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ms-a)"/>
+<!-- Reranking -->
+<rect x="145" y="318" width="210" height="65" rx="10" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="250" y="340" text-anchor="middle" font-family="system-ui" font-size="14" font-weight="700" fill="#166534">RERANKING</text>
+<text x="250" y="356" text-anchor="middle" font-family="system-ui" font-size="10" fill="#166534">Diversity, freshness, business rules, policy</text>
+<text x="250" y="370" text-anchor="middle" font-family="system-ui" font-size="10" fill="#22c55e">≈ 10–20 items · Final surface</text>
+<line x1="250" y1="383" x2="250" y2="400" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ms-a)"/>
+<!-- User sees -->
+<text x="250" y="420" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="700" fill="#334155">User sees 10–20 items</text>
+</svg>
+
+<h3 id="retrieval">9.6.1 Retrieval</h3>
+
+<p>Retrieval must be fast (&lt; 10ms) and recall-focused: better to
+
+include some irrelevant items than miss good ones.</p>
+
+<p><strong>Techniques:</strong></p>
+
+<ul>
+
+<li><strong>Approximate Nearest Neighbor (ANN):</strong> embed user and
+
+items in the same space; retrieve items closest to the user embedding.
+
+Tools: FAISS, ScaNN, Annoy.</li>
+
+<li><strong>Item–item similarity lookup:</strong> “users who liked this
+
+also liked…”</li>
+
+<li><strong>Popularity filters:</strong> always include some trending
+
+items</li>
+
+<li><strong>Collaborative signals:</strong> users with similar history →
+
+retrieve their top items</li>
+
+</ul>
+
+<svg viewBox="0 0 560 140" style="display:block; margin:20px auto; max-width:480px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ANN search in item embedding space">
+<defs><marker id="an-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<!-- User embedding -->
+<rect x="10" y="30" width="130" height="38" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="75" y="46" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#1e40af">User embedding</text>
+<text x="75" y="60" text-anchor="middle" font-family="Consolas,monospace" font-size="9" fill="#3b82f6">[0.3, 0.8]</text>
+<line x1="140" y1="49" x2="175" y2="49" stroke="#6366f1" stroke-width="1.5" marker-end="url(#an-a)"/>
+<!-- ANN box -->
+<rect x="180" y="15" width="190" height="110" rx="10" fill="#f8fafc" stroke="#6366f1" stroke-width="1.5"/>
+<text x="275" y="35" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="700" fill="#6366f1">FAISS index</text>
+<!-- Items -->
+<circle cx="220" cy="60" r="5" fill="#22c55e" stroke="#166534" stroke-width="1"/>
+<text x="235" y="64" font-family="Consolas,monospace" font-size="9" fill="#334155">[0.3, 0.7] Item1 ← close</text>
+<circle cx="220" cy="82" r="5" fill="#22c55e" stroke="#166534" stroke-width="1"/>
+<text x="235" y="86" font-family="Consolas,monospace" font-size="9" fill="#334155">[0.1, 0.9] Item2 ← close</text>
+<circle cx="220" cy="104" r="5" fill="#94a3b8" stroke="#64748b" stroke-width="1"/>
+<text x="235" y="108" font-family="Consolas,monospace" font-size="9" fill="#94a3b8">[0.9, 0.1] Item3 &mdash; far</text>
+<!-- Output -->
+<line x1="370" y1="70" x2="405" y2="70" stroke="#6366f1" stroke-width="1.5" marker-end="url(#an-a)"/>
+<rect x="410" y="50" width="130" height="38" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="475" y="74" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#166534">Top K candidates</text>
+</svg>
+
+<p><strong>Two-tower model</strong> (used by YouTube, Pinterest):</p>
+
+<svg viewBox="0 0 600 150" style="display:block; margin:20px auto; max-width:480px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two-tower model architecture">
+<defs><marker id="tt-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<!-- User tower -->
+<rect x="10" y="10" width="100" height="60" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="60" y="30" text-anchor="middle" font-family="system-ui" font-size="9" fill="#1e40af">User ID</text>
+<text x="60" y="42" text-anchor="middle" font-family="system-ui" font-size="9" fill="#1e40af">User features</text>
+<text x="60" y="54" text-anchor="middle" font-family="system-ui" font-size="9" fill="#1e40af">User history</text>
+<line x1="110" y1="40" x2="135" y2="40" stroke="#3b82f6" stroke-width="1.2" marker-end="url(#tt-a)"/>
+<rect x="140" y="22" width="60" height="34" rx="6" fill="#3b82f6" stroke="#1e40af" stroke-width="1"/>
+<text x="170" y="43" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="white">DNN</text>
+<line x1="200" y1="40" x2="225" y2="40" stroke="#3b82f6" stroke-width="1.2" marker-end="url(#tt-a)"/>
+<rect x="230" y="24" width="50" height="30" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="255" y="44" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#1e40af">hᵤ</text>
+<!-- Item tower -->
+<rect x="10" y="90" width="100" height="60" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="60" y="110" text-anchor="middle" font-family="system-ui" font-size="9" fill="#5b21b6">Item ID</text>
+<text x="60" y="122" text-anchor="middle" font-family="system-ui" font-size="9" fill="#5b21b6">Item features</text>
+<text x="60" y="134" text-anchor="middle" font-family="system-ui" font-size="9" fill="#5b21b6">Item metadata</text>
+<line x1="110" y1="120" x2="135" y2="120" stroke="#8b5cf6" stroke-width="1.2" marker-end="url(#tt-a)"/>
+<rect x="140" y="102" width="60" height="34" rx="6" fill="#8b5cf6" stroke="#5b21b6" stroke-width="1"/>
+<text x="170" y="123" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="white">DNN</text>
+<line x1="200" y1="120" x2="225" y2="120" stroke="#8b5cf6" stroke-width="1.2" marker-end="url(#tt-a)"/>
+<rect x="230" y="104" width="50" height="30" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="255" y="124" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#5b21b6">hᵢ</text>
+<!-- Dot product -->
+<line x1="280" y1="40" x2="340" y2="78" stroke="#6366f1" stroke-width="1.2"/>
+<line x1="280" y1="120" x2="340" y2="78" stroke="#6366f1" stroke-width="1.2"/>
+<rect x="340" y="58" width="140" height="38" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="410" y="82" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="700" fill="#166534">Score = hᵤ · hᵢ</text>
+</svg>
+
+<p>Train with sampled softmax or in-batch negatives. At inference,
+
+precompute all <span class="math inline">\(h_i\)</span> and build an ANN
+
+index.</p>
+
+<h3 id="candidate-generation">9.6.2 Candidate Generation</h3>
+
+<p>Candidate generation is a medium-cost coarse scoring step that
+
+filters retrieval output.</p>
+
+<p>Common signals added here:</p>
+
+<ul>
+<li>User’s recent session context (what did  they do in the last 30 minutes?)</li>
+<li>Collaborative filtering scores at  coarser granularity</li>
+<li>Basic feature interactions (user age group × item  genre)</li>
+</ul>
+
+<h3 id="ranking">9.6.3 Ranking</h3>
+
+<p>Ranking takes the candidate set and scores every item with a full
+
+feature set.</p>
+
+<p><strong>Features used in ranking:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Feature type</th>
+
+<th>Examples</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>User features</td>
+
+<td>Age, country, device, tenure, activity level</td>
+
+</tr>
+
+<tr>
+
+<td>Item features</td>
+
+<td>Category, age, popularity, quality score</td>
+
+</tr>
+
+<tr>
+
+<td>Interaction features</td>
+
+<td>User × item affinity from embeddings</td>
+
+</tr>
+
+<tr>
+
+<td>Context features</td>
+
+<td>Time of day, day of week, session length</td>
+
+</tr>
+
+<tr>
+
+<td>Historical features</td>
+
+<td>Has user seen this item before?</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Common ranking models:</strong></p>
+
+<ul>
+
+<li><strong>Gradient Boosted Decision Trees
+
+(GBDT/XGBoost/LightGBM):</strong> fast, handles tabular features well,
+
+highly interpretable</li>
+
+<li><strong>Deep neural network with embedding inputs:</strong> handles
+
+high-cardinality categoricals via embeddings</li>
+
+<li><strong>Pointwise:</strong> predict P(click) or P(convert) for each
+
+item independently</li>
+
+<li><strong>Pairwise (LambdaRank):</strong> predict which of two items
+
+user prefers</li>
+
+<li><strong>Listwise (LambdaMART, SoftRank):</strong> optimize the full
+
+ranking metric</li>
+
+</ul>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.92rem; line-height:1.8;">
+<strong style="color:#4f46e5;">LambdaRank update:</strong><br>
+For each pair (i, j) where i is preferred over j:<br>
+&emsp;Update model to increase score(i) − score(j)<br>
+&emsp;Weight by ΔNDCG from swapping positions
+</div>
+
+
+<h3 id="reranking">9.6.4 Reranking</h3>
+
+<p>Reranking applies post-processing after the ranking model to address
+
+objectives the model alone can’t optimize.</p>
+
+<p><strong>Diversity:</strong> prevent showing 10 consecutive action
+
+movies.</p>
+
+<div style="border-left:4px solid #8b5cf6; padding:12px 16px; background:#faf5ff; border-radius:6px; margin:16px 0; font-size:0.92rem; line-height:1.8;">
+<strong style="color:#5b21b6;">Maximal Marginal Relevance (MMR):</strong><br>
+Score<sub>MMR</sub>(i) = λ · score<sub>relevance</sub>(i) − (1−λ) · max<sub>j ∈ selected</sub> sim(i, j)<br>
+<span style="color:#64748b;">Balance relevance against similarity to already-selected items.</span>
+</div>
+
+
+<p><strong>Freshness:</strong> boost items published recently.</p>
+
+<p><strong>Business rules:</strong></p>
+
+<ul>
+<li>Sponsored items must appear at  defined positions</li>
+<li>Certain content restricted by region, age rating -  Maximum exposure cap per publisher/artist</li>
+</ul>
+
+<svg viewBox="0 0 620 50" style="display:block; margin:20px auto; max-width:520px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Final ranking pipeline">
+<defs><marker id="fp-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<rect x="5" y="8" width="90" height="32" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="50" y="29" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#1e40af">Model score</text>
+<line x1="95" y1="24" x2="118" y2="24" stroke="#6366f1" stroke-width="1.2" marker-end="url(#fp-a)"/>
+<rect x="123" y="8" width="110" height="32" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="178" y="29" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#5b21b6">MMR diversity</text>
+<line x1="233" y1="24" x2="256" y2="24" stroke="#6366f1" stroke-width="1.2" marker-end="url(#fp-a)"/>
+<rect x="261" y="8" width="110" height="32" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="316" y="29" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#92400e">Freshness boost</text>
+<line x1="371" y1="24" x2="394" y2="24" stroke="#6366f1" stroke-width="1.2" marker-end="url(#fp-a)"/>
+<rect x="399" y="8" width="100" height="32" rx="6" fill="#fce7f3" stroke="#ec4899" stroke-width="1.5"/>
+<text x="449" y="29" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#9d174d">Policy filters</text>
+<line x1="499" y1="24" x2="522" y2="24" stroke="#6366f1" stroke-width="1.2" marker-end="url(#fp-a)"/>
+<rect x="527" y="8" width="70" height="32" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="562" y="29" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#166534">Display</text>
+</svg>
+
+<hr />
+
+<h2 id="exploration-diversity-and-ranking-signals">9.7 Exploration,
+
+Diversity, and Ranking Signals</h2>
+
+<h3 id="the-explorationexploitation-dilemma">9.7.1 The
+
+Exploration–Exploitation Dilemma</h3>
+
+<p>If you always recommend items with the highest predicted score, you:</p>
+
+<ul>
+<li>Miss new items you haven’t learned enough about</li>
+<li>Lock users into a  filter bubble</li>
+<li>Cannot A/B test new content effectively</li>
+</ul>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<thead><tr>
+<th style="padding:6px 16px; text-align:left; border-bottom:2px solid #6366f1;">Strategy</th>
+<th style="padding:6px 16px; text-align:left; border-bottom:2px solid #6366f1;">Approach</th>
+<th style="padding:6px 16px; text-align:left; border-bottom:2px solid #6366f1;">Risk</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 16px; font-weight:600;">Exploitation</td><td style="padding:6px 16px;">Recommend the best known item</td><td style="padding:6px 16px; color:#f59e0b;">Filter bubble, stale catalog</td></tr>
+<tr><td style="padding:6px 16px; font-weight:600;">Exploration</td><td style="padding:6px 16px;">Occasionally try something uncertain</td><td style="padding:6px 16px; color:#f59e0b;">Annoying, irrelevant recommendations</td></tr>
+</tbody>
+</table>
+
+<p><strong>Upper Confidence Bound (UCB):</strong></p>
+
+<p><span class="math display">\[
+
+\text{score}_{UCB}(i) = \hat{\mu}_i + c \sqrt{\frac{\ln t}{n_i}}
+
+\]</span></p>
+
+<ul>
+
+<li><span class="math inline">\(\hat{\mu}_i\)</span>: estimated mean
+
+engagement for item <span class="math inline">\(i\)</span></li>
+
+<li><span class="math inline">\(n_i\)</span>: number of times item <span
+
+class="math inline">\(i\)</span> has been shown</li>
+
+<li><span class="math inline">\(t\)</span>: total rounds</li>
+
+<li><span class="math inline">\(c\)</span>: exploration coefficient</li>
+
+</ul>
+
+<p>Items shown fewer times get a bonus — they’re less certain.</p>
+
+<p><strong>Thompson Sampling:</strong> maintain a Beta distribution over
+
+click probability for each item; sample from it at ranking time. Items
+
+with fewer observations have wider distributions → naturally more
+
+explored.</p>
+
+<p><strong><span
+
+class="math inline">\(\epsilon\)</span>-greedy:</strong> with
+
+probability <span class="math inline">\(\epsilon\)</span>, recommend a
+
+random item; with probability <span class="math inline">\(1 -
+
+\epsilon\)</span>, recommend the best-known item.</p>
+
+<h3 id="diversity-and-serendipity">9.7.2 Diversity and Serendipity</h3>
+
+<p><strong>Intra-list diversity:</strong> measure how different the
+
+items in a recommendation list are from each other.</p>
+
+<p><span class="math display">\[
+
+\text{ILD}(L) = \frac{1}{|L|(|L|-1)} \sum_{i \neq j \in L} d(i, j)
+
+\]</span></p>
+
+<p>where <span class="math inline">\(d(i, j)\)</span> is item
+
+dissimilarity (e.g., 1 − cosine similarity between embeddings).</p>
+
+<p><strong>Serendipity:</strong> recommend something relevant but
+
+unexpected — items the user would not have found themselves.</p>
+
+<h3 id="association-based-retrieval-lift">9.7.3 Association-Based Retrieval:
+
+Lift</h3>
+
+<p>Lift measures whether two items co-occur more than chance, useful for
+
+“frequently bought together” signals.</p>
+
+<p><span class="math display">\[
+
+\text{Lift}(A, B) = \frac{P(A, B)}{P(A) \cdot P(B)}
+
+\]</span></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Lift value</th>
+
+<th>Meaning</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>= 1</td>
+
+<td>Independent — no association</td>
+
+</tr>
+
+<tr>
+
+<td>&gt; 1</td>
+
+<td>Positive association — buy A → more likely to buy B</td>
+
+</tr>
+
+<tr>
+
+<td>&lt; 1</td>
+
+<td>Negative association — buying A predicts NOT buying B</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Example:</strong> <span class="math inline">\(P(A) =
+
+0.10\)</span>, <span class="math inline">\(P(B) = 0.20\)</span>, <span
+
+class="math inline">\(P(A, B) = 0.06\)</span></p>
+
+<p><span class="math display">\[
+
+\text{Lift} = \frac{0.06}{0.10 \times 0.20} = \frac{0.06}{0.02} = 3.0
+
+\]</span></p>
+
+<p>Items A and B co-occur 3× more than independence predicts.</p>
+
+<blockquote>
+
+<p><strong>Warning:</strong> Rare pairs get unstable/inflated lift.
+
+Always apply a minimum support threshold (e.g., minimum 100
+
+co-occurrences) before trusting lift values.</p>
+
+</blockquote>
+
+<h3 id="freshness-and-popularity-decay">9.7.4 Freshness and Popularity
+
+Decay</h3>
+
+<p>Popular items should not dominate the feed forever. The Hacker News
+
+scoring formula illustrates the pattern:</p>
+
+<p><span class="math display">\[
+
+\text{score} = \frac{(\text{votes})^{0.8}}{(\text{age\_hours} +
+
+2)^{1.8}} \times \text{penalty}
+
+\]</span></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Component</th>
+
+<th>Effect</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><span class="math inline">\(\text{votes}^{0.8}\)</span></td>
+
+<td>Sublinear — each extra vote matters less</td>
+
+</tr>
+
+<tr>
+
+<td><span class="math inline">\((\text{age}+2)^{1.8}\)</span></td>
+
+<td>Age penalty grows faster than vote reward</td>
+
+</tr>
+
+<tr>
+
+<td><span class="math inline">\(\text{penalty}\)</span></td>
+
+<td>Business rule overrides (spam, policy violations)</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Gravity</strong> is the exponent on the age term in the denominator.
+Think of it as a "freshness dial": turning it up makes older items sink
+faster, so the feed rotates more aggressively toward recent content.
+Turning it down lets popular evergreen items stay visible longer.
+Hold votes fixed and only change gravity &mdash; the higher the gravity, the
+faster old items sink. In the Hacker News formula, the default gravity of 1.8
+means a story with no new votes loses roughly half its score every six hours.</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<thead><tr>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1; text-align:left;">Age</th>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1; text-align:left;">Gravity = 1.2</th>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1; text-align:left;">Gravity = 1.8</th>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1; text-align:left;">Takeaway</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 12px;">2 hours</td><td style="padding:6px 12px;">mild decay</td><td style="padding:6px 12px;">stronger decay</td><td style="padding:6px 12px;">both items are still competitive</td></tr>
+<tr><td style="padding:6px 12px;">12 hours</td><td style="padding:6px 12px;">still visible</td><td style="padding:6px 12px;">drops much faster</td><td style="padding:6px 12px;">higher gravity rotates the feed sooner</td></tr>
+<tr><td style="padding:6px 12px;">24 hours</td><td style="padding:6px 12px;">may remain in the mix</td><td style="padding:6px 12px;">usually buried</td><td style="padding:6px 12px;">freshness bias dominates</td></tr>
+</tbody>
+</table>
+
+<svg viewBox="0 0 460 240" style="display:block; margin:18px auto; max-width:400px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Higher gravity causes faster score decay with age">
+<line x1="60" y1="25" x2="60" y2="190" stroke="#334155" stroke-width="1.5"/>
+<line x1="60" y1="190" x2="420" y2="190" stroke="#334155" stroke-width="1.5"/>
+<text x="30" y="110" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="700" fill="#334155" transform="rotate(-90,30,110)">relative score</text>
+<text x="240" y="222" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="700" fill="#334155">age (hours)</text>
+<text x="240" y="18" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="700" fill="#334155">Same votes, different gravity</text>
+<path d="M60,42 C110,68 180,98 420,150" fill="none" stroke="#3b82f6" stroke-width="2.5"/>
+<text x="340" y="128" font-family="system-ui" font-size="11" fill="#3b82f6">gravity = 1.2</text>
+<path d="M60,42 C110,82 180,130 420,182" fill="none" stroke="#8b5cf6" stroke-width="2.5"/>
+<text x="330" y="176" font-family="system-ui" font-size="11" fill="#8b5cf6">gravity = 1.8</text>
+<line x1="150" y1="190" x2="150" y2="195" stroke="#334155" stroke-width="1.2"/>
+<text x="150" y="210" text-anchor="middle" font-family="system-ui" font-size="10" fill="#475569">6</text>
+<line x1="240" y1="190" x2="240" y2="195" stroke="#334155" stroke-width="1.2"/>
+<text x="240" y="210" text-anchor="middle" font-family="system-ui" font-size="10" fill="#475569">12</text>
+<line x1="330" y1="190" x2="330" y2="195" stroke="#334155" stroke-width="1.2"/>
+<text x="330" y="210" text-anchor="middle" font-family="system-ui" font-size="10" fill="#475569">18</text>
+<text x="240" y="236" text-anchor="middle" font-family="system-ui" font-size="10" fill="#64748b">Read left to right: the purple curve falls faster, so older posts leave the feed sooner.</text>
+</svg>
+
+<hr />
+
+<h2 id="evaluation">9.8 Evaluation</h2>
+
+<h3 id="offline-evaluation">9.8.1 Offline Evaluation</h3>
+
+<p><strong>Rating prediction metrics (explicit feedback):</strong></p>
+
+<table style="width:100%;">
+
+<colgroup>
+
+<col style="width: 29%" />
+
+<col style="width: 33%" />
+
+<col style="width: 37%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Metric</th>
+
+<th>Formula</th>
+
+<th>Use when</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>RMSE</td>
+
+<td><span class="math inline">\(\sqrt{\frac{1}{n}\sum (r_{ij} -
+
+\hat{r}_{ij})^2}\)</span></td>
+
+<td>Penalizes large errors</td>
+
+</tr>
+
+<tr>
+
+<td>MAE</td>
+
+<td><span class="math inline">\(\frac{1}{n}\sum |r_{ij} -
+
+\hat{r}_{ij}|\)</span></td>
+
+<td>More robust to outliers</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Ranking metrics (top-K lists):</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Metric</th>
+
+<th>What it measures</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Precision@K</td>
+
+<td>Fraction of top-K that are relevant</td>
+
+</tr>
+
+<tr>
+
+<td>Recall@K</td>
+
+<td>Fraction of relevant items in top-K</td>
+
+</tr>
+
+<tr>
+
+<td>NDCG@K</td>
+
+<td>Ranking quality weighted by position</td>
+
+</tr>
+
+<tr>
+
+<td>MAP</td>
+
+<td>Mean average precision across users/queries</td>
+
+</tr>
+
+<tr>
+
+<td>MRR</td>
+
+<td>Mean reciprocal rank of first relevant item</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>NDCG@K</strong> (Normalized Discounted Cumulative Gain):</p>
+
+<p><span class="math display">\[
+
+\text{DCG@K} = \sum_{k=1}^{K} \frac{2^{r_k} - 1}{\log_2(k+1)}
+
+\]</span></p>
+
+<p><strong>Where:</strong> <span class="math inline">\(r_k\)</span> = relevance grade at rank <span class="math inline">\(k\)</span>, <span class="math inline">\(K\)</span> = cutoff depth, IDCG = DCG of the ideal (perfect) ranking. <em>Note: This is the exponential gain variant (standard in industry). Chapter 7 uses the simpler linear variant <span class="math inline">\(r_k / \log_2(k+1)\)</span>, which is equivalent when relevance is binary.</em></p>
+
+<p><span class="math display">\[
+
+\text{NDCG@K} = \frac{\text{DCG@K}}{\text{IDCG@K}}
+
+\]</span></p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<thead><tr>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1; text-align:left;">Position</th>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1; text-align:center;">1</th>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1; text-align:center;">2</th>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1; text-align:center;">3</th>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1; text-align:center;">4</th>
+<th style="padding:6px 12px; border-bottom:2px solid #6366f1; text-align:center;">5</th>
+</tr></thead>
+<tbody>
+<tr>
+<td style="padding:6px 12px; font-weight:600;">Relevant?</td>
+<td style="padding:6px 12px; text-align:center; color:#22c55e; font-weight:600;">yes</td>
+<td style="padding:6px 12px; text-align:center; color:#64748b;">no</td>
+<td style="padding:6px 12px; text-align:center; color:#22c55e; font-weight:600;">yes</td>
+<td style="padding:6px 12px; text-align:center; color:#64748b;">no</td>
+<td style="padding:6px 12px; text-align:center; color:#64748b;">no</td>
+</tr>
+<tr>
+<td style="padding:6px 12px; font-weight:600;">Discount 1/log<sub>2</sub>(k+1)</td>
+<td style="padding:6px 12px; text-align:center;">1/1 = 1.00</td>
+<td style="padding:6px 12px; text-align:center;">1/1.58 = 0.63</td>
+<td style="padding:6px 12px; text-align:center;">1/2.00 = 0.50</td>
+<td style="padding:6px 12px; text-align:center;">1/2.32 = 0.43</td>
+<td style="padding:6px 12px; text-align:center;">1/2.58 = 0.39</td>
+</tr>
+<tr>
+<td style="padding:6px 12px; font-weight:600;">Gain (binary)</td>
+<td style="padding:6px 12px; text-align:center; font-weight:600;">1.00</td>
+<td style="padding:6px 12px; text-align:center;">0</td>
+<td style="padding:6px 12px; text-align:center; font-weight:600;">0.50</td>
+<td style="padding:6px 12px; text-align:center;">0</td>
+<td style="padding:6px 12px; text-align:center;">0</td>
+</tr>
+</tbody>
+</table>
+
+<p style="font-size:0.92rem;"><strong>DCG@5</strong> = 1.00 + 0 + 0.50 + 0 + 0 = <strong>1.50</strong>.
+If the ideal ranking puts both relevant items at positions 1 and 2, then
+IDCG@5 = 1.00 + 0.63 = <strong>1.63</strong>, so NDCG@5 = 1.50 / 1.63 = <strong>0.92</strong>.
+Not bad &mdash; the relevant items were nearly at the top.</p>
+
+
+<blockquote>
+
+<p><strong>Key:</strong> NDCG is position-aware — a relevant item at
+
+position 1 contributes far more than at position 5. Use NDCG@10 as the
+
+primary offline ranking metric.</p>
+
+</blockquote>
+
+<p><strong>Coverage and Catalog Health:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Metric</th>
+
+<th>Definition</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Catalog coverage</td>
+
+<td>% of items recommended to at least one user</td>
+
+</tr>
+
+<tr>
+
+<td>Long-tail exposure</td>
+
+<td>% of recommendations from tail items</td>
+
+</tr>
+
+<tr>
+
+<td>Novelty</td>
+
+<td>Average popularity rank of recommended items</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="online-evaluation">9.8.2 Online Evaluation</h3>
+
+<p><strong>A/B testing:</strong> split users into control and treatment
+
+groups; measure downstream business metrics.</p>
+
+<svg viewBox="0 0 580 100" style="display:block; margin:20px auto; max-width:480px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A/B testing traffic split">
+<defs><marker id="ab-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<rect x="10" y="28" width="70" height="34" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="45" y="50" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#1e40af">Users</text>
+<!-- Branch -->
+<line x1="80" y1="38" x2="140" y2="20" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ab-a)"/>
+<line x1="80" y1="52" x2="140" y2="72" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ab-a)"/>
+<!-- Control -->
+<rect x="145" y="5" width="160" height="30" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="225" y="25" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#5b21b6">Control (Model A)</text>
+<line x1="305" y1="20" x2="335" y2="20" stroke="#6366f1" stroke-width="1.2" marker-end="url(#ab-a)"/>
+<rect x="340" y="5" width="220" height="30" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="450" y="25" text-anchor="middle" font-family="system-ui" font-size="10" fill="#166534">measure CTR, watch time, conversions</text>
+<!-- Treatment -->
+<rect x="145" y="57" width="160" height="30" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="225" y="77" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#92400e">Treatment (Model B)</text>
+<line x1="305" y1="72" x2="335" y2="72" stroke="#6366f1" stroke-width="1.2" marker-end="url(#ab-a)"/>
+<rect x="340" y="57" width="220" height="30" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="450" y="77" text-anchor="middle" font-family="system-ui" font-size="10" fill="#166534">measure CTR, watch time, conversions</text>
+</svg>
+
+<p><strong>Interleaving:</strong> blend rankings from two models in a
+
+single list; measure which model’s items get clicked. More sensitive
+
+than A/B for ranking comparisons.</p>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.92rem; line-height:1.8; font-family:Consolas, monospace;">
+<strong>Model A ranks:</strong> [1, 2, 3, 4, 5]<br>
+<strong>Model B ranks:</strong> [2, 1, 4, 3, 5]<br>
+<strong>Interleaved:</strong>&nbsp;&nbsp; [1<sub>A</sub>, 2<sub>B</sub>, 3<sub>A</sub>, 4<sub>B</sub>, 5]<br>
+<span style="color:#22c55e;">User clicks on 2<sub>B</sub> → point to <strong>Model B</strong></span>
+</div>
+
+<p><strong>Guardrail metrics:</strong> not just CTR. Watch for:</p>
+
+<ul>
+<li>User  satisfaction scores (surveys, thumbs up/down)</li>
+<li>Diversity of content  consumed</li>
+<li>Long-term retention (does the user return next week?) -  Session length (longer isn’t always better)</li>
+</ul>
+
+<blockquote>
+
+<p><strong>Pitfall:</strong> Optimizing only for CTR can lead to
+
+clickbait-heavy, engagement-addictive, low-quality recommendations.
+
+Guardrail metrics protect against gaming the primary metric.</p>
+
+</blockquote>
+
+<h3 id="the-offlineonline-gap">9.8.3 The Offline–Online Gap</h3>
+
+<p>Offline evaluation often does not predict online performance:</p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Offline metric improves</th>
+
+<th>Online metric</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>NDCG ↑</td>
+
+<td>CTR flat</td>
+
+</tr>
+
+<tr>
+
+<td>RMSE ↓</td>
+
+<td>Watch time ↓</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Use offline metrics to filter candidates and
+
+catch regressions. Use A/B tests to make ship/no-ship decisions.</p>
+
+</blockquote>
+
+<hr />
+
+<h2 id="case-study-netflixspotify-style-systems">9.9 Case Study:
+
+Netflix/Spotify-Style Systems</h2>
+
+<h3 id="netflix-multi-objective-personalization">9.9.1 Netflix:
+
+Multi-Objective Personalization</h3>
+
+<p>Netflix runs multiple recommendation rows simultaneously, each with a
+
+different objective:</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:100%; max-width:600px;">
+<caption style="font-weight:700; font-size:1rem; padding-bottom:8px; text-align:left;">Netflix Homepage Rows</caption>
+<thead><tr>
+<th style="padding:8px 12px; text-align:left; border-bottom:2px solid #6366f1;">Row</th>
+<th style="padding:8px 12px; text-align:left; border-bottom:2px solid #6366f1;">Model</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 12px; font-weight:600;">Continue Watching</td><td style="padding:6px 12px;">Resumption model</td></tr>
+<tr style="background:#f8fafc;"><td style="padding:6px 12px; font-weight:600;">Trending Now</td><td style="padding:6px 12px;">Popularity × recency</td></tr>
+<tr><td style="padding:6px 12px; font-weight:600;">Because You Watched [X]</td><td style="padding:6px 12px;">Item similarity (CF)</td></tr>
+<tr style="background:#f8fafc;"><td style="padding:6px 12px; font-weight:600;">Top Picks for You</td><td style="padding:6px 12px;">Personalized ranking</td></tr>
+<tr><td style="padding:6px 12px; font-weight:600;">New Releases</td><td style="padding:6px 12px;">Freshness filter</td></tr>
+</tbody>
+</table>
+
+<p>Key design choices:</p>
+
+<ul>
+<li><strong>Artwork personalization:</strong>  different thumbnail images shown to different users for the same title  (A/B test thumbnails by user segment)</li>
+<li><strong>Evidence-based  explanations:</strong> “Because you watched Stranger Things” increases  click-through</li>
+<li><strong>Multi-armed bandits for exploration:</strong>  test new content against personalized slots</li>
+<li><strong>Two-tower  retrieval:</strong> large-scale ANN lookup over 200M+ member–title  pairs</li>
+</ul>
+
+<h3 id="spotify-session-aware-recommendations">9.9.2 Spotify: Session-Aware
+
+Recommendations</h3>
+
+<p>Spotify’s Discover Weekly and Daily Mix use:</p>
+
+<ul>
+
+<li><strong>Collaborative filtering at scale:</strong> 400M+ users with
+
+listening history → matrix factorization to generate user and track
+
+embeddings</li>
+
+<li><strong>Audio features:</strong> tempo, key, danceability, energy
+
+from audio analysis models</li>
+
+<li><strong>Session context:</strong> what’s the user doing right now?
+
+(workout, sleep, focus?)</li>
+
+<li><strong>Natural language processing:</strong> analyze playlist
+
+titles, blog posts about artists to enrich item embeddings</li>
+
+</ul>
+
+<svg viewBox="0 0 530 80" style="display:block; margin:20px auto; max-width:440px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Spotify hybrid model: user embedding + audio + context">
+<defs><marker id="sp-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<rect x="10" y="5" width="160" height="24" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="90" y="21" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#1e40af">User embedding (from CF)</text>
+<rect x="10" y="33" width="160" height="24" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="90" y="49" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#5b21b6">Audio features</text>
+<rect x="10" y="61" width="160" height="24" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="90" y="77" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#92400e">Listening context</text>
+<line x1="170" y1="17" x2="210" y2="43" stroke="#6366f1" stroke-width="1"/>
+<line x1="170" y1="45" x2="210" y2="43" stroke="#6366f1" stroke-width="1"/>
+<line x1="170" y1="73" x2="210" y2="43" stroke="#6366f1" stroke-width="1"/>
+<circle cx="215" cy="43" r="5" fill="#6366f1"/>
+<line x1="220" y1="43" x2="245" y2="43" stroke="#6366f1" stroke-width="1.5" marker-end="url(#sp-a)"/>
+<rect x="250" y="26" width="110" height="32" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="305" y="46" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#5b21b6">Hybrid model</text>
+<line x1="360" y1="42" x2="385" y2="42" stroke="#6366f1" stroke-width="1.5" marker-end="url(#sp-a)"/>
+<rect x="390" y="22" width="135" height="40" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="457" y="38" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#166534">Discover Weekly</text>
+<text x="457" y="52" text-anchor="middle" font-family="system-ui" font-size="10" fill="#166534">playlist</text>
+</svg>
+
+<p><strong>Podcast vs music separation:</strong> Spotify treats podcasts
+
+and music as different modalities — separate retrieval towers, combined
+
+reranking layer.</p>
+
+<h3 id="engineering-the-full-stack">9.9.3 Engineering the Full Stack</h3>
+
+<svg viewBox="0 0 480 490" style="display:block; margin:20px auto; max-width:420px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Full recommendation stack: data collection through frontend">
+<defs><marker id="fs-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<!-- Data collection -->
+<rect x="40" y="5" width="400" height="50" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="240" y="24" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="700" fill="#1e40af">Data Collection</text>
+<text x="240" y="42" text-anchor="middle" font-family="system-ui" font-size="9" fill="#1e40af">User events: plays, skips, saves, shares (Kafka → data lake)</text>
+<line x1="240" y1="55" x2="240" y2="72" stroke="#6366f1" stroke-width="1.5" marker-end="url(#fs-a)"/>
+<!-- Feature store -->
+<rect x="40" y="78" width="400" height="55" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="240" y="96" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="700" fill="#5b21b6">Feature Store</text>
+<text x="240" y="112" text-anchor="middle" font-family="system-ui" font-size="9" fill="#5b21b6">Precomputed: user/item embeddings, popularity | Real-time: session context</text>
+<line x1="240" y1="133" x2="240" y2="150" stroke="#6366f1" stroke-width="1.5" marker-end="url(#fs-a)"/>
+<!-- Retrieval -->
+<rect x="60" y="156" width="360" height="50" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="240" y="175" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="700" fill="#92400e">Retrieval Service</text>
+<text x="240" y="192" text-anchor="middle" font-family="system-ui" font-size="9" fill="#92400e">FAISS/ScaNN ANN index → ~1,000 candidates | &lt; 10ms SLA</text>
+<line x1="240" y1="206" x2="240" y2="222" stroke="#6366f1" stroke-width="1.5" marker-end="url(#fs-a)"/>
+<!-- Ranking -->
+<rect x="80" y="228" width="320" height="50" rx="8" fill="#fce7f3" stroke="#ec4899" stroke-width="1.5"/>
+<text x="240" y="247" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="700" fill="#9d174d">Ranking Service</text>
+<text x="240" y="264" text-anchor="middle" font-family="system-ui" font-size="9" fill="#9d174d">LightGBM or DNN on full feature set → scored candidates | &lt; 50ms SLA</text>
+<line x1="240" y1="278" x2="240" y2="294" stroke="#6366f1" stroke-width="1.5" marker-end="url(#fs-a)"/>
+<!-- Reranking -->
+<rect x="100" y="300" width="280" height="55" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="240" y="319" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="700" fill="#166534">Reranking Layer</text>
+<text x="240" y="335" text-anchor="middle" font-family="system-ui" font-size="9" fill="#166534">Diversity (MMR) | Business rules | Freshness boost</text>
+<line x1="240" y1="355" x2="240" y2="372" stroke="#6366f1" stroke-width="1.5" marker-end="url(#fs-a)"/>
+<!-- API -->
+<rect x="130" y="378" width="220" height="36" rx="8" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5"/>
+<text x="240" y="400" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#334155">API Response (~10–50 items/row)</text>
+<line x1="240" y1="414" x2="240" y2="430" stroke="#6366f1" stroke-width="1.5" marker-end="url(#fs-a)"/>
+<!-- Frontend -->
+<rect x="150" y="436" width="180" height="36" rx="8" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5"/>
+<text x="240" y="458" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#334155">Frontend (A/B test variants)</text>
+<!-- Feedback loop -->
+<path d="M330,454 Q440,454 440,28 Q440,5 420,5" fill="none" stroke="#6366f1" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#fs-a)"/>
+<text x="455" y="230" font-family="system-ui" font-size="8" fill="#6366f1" transform="rotate(90,455,230)">impression tracking</text>
+</svg>
+
+<p><strong>Cold start handling in production:</strong></p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 52%" />
+
+<col style="width: 47%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Scenario</th>
+
+<th>Strategy</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>New user, no history</td>
+
+<td>Onboarding quiz → populate seed preferences; show popularity-based
+
+feed</td>
+
+</tr>
+
+<tr>
+
+<td>New user, 1–5 interactions</td>
+
+<td>Lightweight CF on similar session patterns; content-based on
+
+interacted items</td>
+
+</tr>
+
+<tr>
+
+<td>New item, no plays</td>
+
+<td>Embed via metadata and audio/image models; surface in “New Releases”
+
+row; warm up via editorial placements</td>
+
+</tr>
+
+<tr>
+
+<td>New item, 50+ plays</td>
+
+<td>Full CF pipeline kicks in as embedding quality improves</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Monitoring in production:</strong></p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 66%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Signal</th>
+
+<th>What it detects</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>CTR below baseline</td>
+
+<td>Retrieval recall degraded or ranking model drifted</td>
+
+</tr>
+
+<tr>
+
+<td>Coverage drop</td>
+
+<td>New items not entering the retrieval funnel</td>
+
+</tr>
+
+<tr>
+
+<td>Diversity drop</td>
+
+<td>Filter bubble forming; reranking config broken</td>
+
+</tr>
+
+<tr>
+
+<td>Popularity concentration</td>
+
+<td>Top-10 items getting &gt;40% of impressions</td>
+
+</tr>
+
+<tr>
+
+<td>P99 latency spike</td>
+
+<td>ANN index rebuild needed or ranking service overloaded</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<hr />
+
+<h2 id="key-takeaways-14">Key Takeaways</h2>
+
+<ul>
+
+<li><strong>Collaborative filtering</strong> leverages collective
+
+behavior: user–user CF finds similar users; item–item CF finds similar
+
+items; matrix factorization learns compact latent representations.
+
+<strong>Item–item scales better</strong> because similarities can be
+
+precomputed.</li>
+
+<li><strong>Matrix factorization</strong> decomposes the rating matrix
+
+into <span class="math inline">\(W \cdot U^T\)</span>; ALS scales to
+
+large implicit-feedback datasets; bias terms (<span
+
+class="math inline">\(\mu + b_i + b_j\)</span>) capture rating-scale
+
+effects independent of personalization.</li>
+
+<li><strong>Content-based filtering</strong> works for new items (cold
+
+start) but suffers from filter bubbles and poor serendipity.</li>
+
+<li><strong>Hybrid systems</strong> cover each approach’s weaknesses:
+
+switch between CF and content-based depending on data availability, or
+
+cascade them for coarse-to-fine filtering.</li>
+
+<li><strong>Modern production systems</strong> use a multi-stage funnel:
+
+<strong>retrieval (~10K) → candidate generation (~1K) → ranking (~100) →
+
+reranking (~10–20)</strong>. Each stage trades off speed vs
+
+accuracy.</li>
+
+<li><strong>Two-tower models</strong> enable efficient retrieval: user
+
+and item towers produce embeddings; ANN search replaces exhaustive
+
+scoring.</li>
+
+<li><strong>Exploration is not optional:</strong> pure exploitation
+
+causes filter bubbles and prevents learning about new content. UCB,
+
+Thompson Sampling, and ε-greedy balance exploit vs explore.</li>
+
+<li><strong>Offline metrics</strong> (NDCG@K, MAP, MRR) guide
+
+development; <strong>online A/B tests</strong> make ship decisions. The
+
+offline–online gap is real and often large.</li>
+
+<li><strong>Cold start</strong> is the hardest operational problem:
+
+every production system needs a fallback strategy for new users and new
+
+items.</li>
+
+<li><strong>Diversity and freshness</strong> require explicit
+
+post-processing (MMR, decay scoring, business rules) — ranking models
+
+alone optimize relevance, not quality of the full slate.</li>
+
+</ul>
+
+<hr />
+
+<h2 id="common-pitfalls-19">Common Pitfalls</h2>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 48%" />
+
+<col style="width: 18%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Pitfall</th>
+
+<th>Consequence</th>
+
+<th>Fix</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>No cold start strategy</td>
+
+<td>Day-zero users see broken, irrelevant content</td>
+
+<td>Popularity baseline + content-based fallback</td>
+
+</tr>
+
+<tr>
+
+<td>Evaluating only with RMSE</td>
+
+<td>Misses ranking quality; great RMSE can still recommend in wrong
+
+order</td>
+
+<td>Add NDCG@K, MAP to evaluation suite</td>
+
+</tr>
+
+<tr>
+
+<td>Optimizing only for CTR</td>
+
+<td>Clickbait, low-quality, engagement-addictive recommendations</td>
+
+<td>Add diversity, long-term retention as guardrail metrics</td>
+
+</tr>
+
+<tr>
+
+<td>Linear popularity scaling</td>
+
+<td>Viral items lock in forever; long-tail never surfaces</td>
+
+<td>Apply log or power-law transform to popularity signals</td>
+
+</tr>
+
+<tr>
+
+<td>Single-stage scoring</td>
+
+<td>Cannot score 100M items in real time</td>
+
+<td>Implement retrieval → ranking funnel</td>
+
+</tr>
+
+<tr>
+
+<td>No exploration</td>
+
+<td>Filter bubble; model never learns about new content</td>
+
+<td>Add ε-greedy, UCB, or Thompson Sampling</td>
+
+</tr>
+
+<tr>
+
+<td>Ignoring item age</td>
+
+<td>Old popular items never leave top positions</td>
+
+<td>Freshness decay in scoring</td>
+
+</tr>
+
+<tr>
+
+<td>Using raw lift without support threshold</td>
+
+<td>Rare item pairs get inflated, unstable lift scores</td>
+
+<td>Require minimum co-occurrence count</td>
+
+</tr>
+
+<tr>
+
+<td>Training/serving feature mismatch</td>
+
+<td>Model uses features unavailable at inference time</td>
+
+<td>Feature store with consistent offline/online definitions</td>
+
+</tr>
+
+<tr>
+
+<td>Evaluation leakage</td>
+
+<td>Test items appear in training history</td>
+
+<td>Temporal splits: train on history before cutoff, evaluate on
+
+after</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<hr />
+
+<h2 id="further-reading">Further Reading</h2>
+
+<table>
+
+<colgroup>
+
+<col style="width: 40%" />
+
+<col style="width: 60%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Resource</th>
+
+<th>Why it matters</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Koren et al., “Matrix Factorization Techniques for Recommender
+
+Systems” (IEEE Computer, 2009)</td>
+
+<td>The paper that launched modern MF recommenders; SVD++ and ALS
+
+explained</td>
+
+</tr>
+
+<tr>
+
+<td>Hu, Koren &amp; Volinsky, “Collaborative Filtering for Implicit
+
+Feedback Datasets” (ICDM 2008)</td>
+
+<td>Weighted ALS for implicit feedback — the basis for Spark ALS</td>
+
+</tr>
+
+<tr>
+
+<td>Covington et al., “Deep Neural Networks for YouTube Recommendations”
+
+(RecSys 2016)</td>
+
+<td>Two-tower architecture and large-scale retrieval at Google</td>
+
+</tr>
+
+<tr>
+
+<td>He et al., “Neural Collaborative Filtering” (WWW 2017)</td>
+
+<td>NCF — neural replacement for dot-product MF</td>
+
+</tr>
+
+<tr>
+
+<td>Kang &amp; McAuley, “Self-Attentive Sequential Recommendation” (ICDM
+
+2018)</td>
+
+<td>Transformer-based session-aware recommendations</td>
+
+</tr>
+
+<tr>
+
+<td>Sculley et al., “Hidden Technical Debt in Machine Learning Systems”
+
+(NeurIPS 2015)</td>
+
+<td>Why production ML is harder than research; applies directly to
+
+recommender pipelines</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<hr />
+
+<h2 id="ch9-interview-qa">Chapter 9 Interview Q&amp;A</h2>
+
+
+
+<h3>Q1. What is the difference between collaborative filtering and content-based filtering? When would you prefer each?</h3>
+
+<p><strong>A.</strong> <strong>Collaborative filtering (CF)</strong> relies solely on user-item interaction history &mdash; users who behaved similarly in the past will likely agree in the future. It requires no item features and can surface unexpected items (serendipity), but suffers from cold-start for new users/items. <strong>Content-based filtering</strong> builds a user profile from item attributes (genre, price, text) and matches it to item features. It handles new items well (no interaction needed) but can over-specialise and create filter bubbles. Prefer CF when you have rich interaction data and catalogue stability; prefer content-based for new catalogues, items with rich metadata, or users with minimal history. Hybrid systems use both.</p>
+
+
+
+<h3>Q2. Explain the cold-start problem and three concrete mitigations.</h3>
+
+<p><strong>A.</strong> Cold-start occurs when a new user or item has no interaction history, making CF impossible. Three mitigations: (1) <strong>Onboarding questionnaire</strong> &mdash; ask the new user to rate a few seed items or select preference tags, giving the model an immediate prior. (2) <strong>Side-information fallback</strong> &mdash; use demographic or contextual signals (location, device, referral source) as a proxy until interactions accumulate. (3) <strong>Popularity-based baseline</strong> &mdash; serve globally or contextually popular items until the user has &ge;10 interactions, then switch to personalised CF. For new items, use content-based or knowledge-graph embeddings to position them near similar items before any ratings exist.</p>
+
+
+
+<h3>Q3. How does matrix factorization work? What do the latent factors represent?</h3>
+
+<p><strong>Answer:</strong> Matrix factorization decomposes the sparse user-item rating matrix <em>R</em> (m&times;n) into two low-rank matrices: <em>U</em> (m&times;k user embeddings) and <em>V</em> (n&times;k item embeddings), minimizing reconstruction error on observed entries: min ||R &minus; UV<sup>T</sup>||<sup>2</sup> + &lambda;(||U||<sup>2</sup> + ||V||<sup>2</sup>). The k latent dimensions capture abstract concepts &mdash; for movies they might correspond loosely to &ldquo;genre&rdquo;, &ldquo;era&rdquo;, or &ldquo;tone&rdquo;, but they are learned, not interpretable. A predicted rating for user i, item j is the dot product U<sub>i</sub> &middot; V<sub>j</sub>. Training uses SGD (online, flexible) or ALS (parallelisable, preferred for implicit feedback and large scale).</p>
+
+
+
+<h3>Q4. What is implicit feedback and how do you train on it?</h3>
+
+<p><strong>A.</strong> Implicit feedback is inferred preference signal with no explicit rating: clicks, purchases, dwell time, skips. Unlike explicit ratings (1&ndash;5 stars), implicit data has no true negatives &mdash; a missing entry could mean &ldquo;not interested&rdquo; or just &ldquo;never saw it.&rdquo; The standard approach (Hu, Koren &amp; Volinsky 2008) introduces confidence weights: observations are treated as positive (r<sub>ui</sub>=1) but with confidence c<sub>ui</sub> = 1 + &alpha;&middot;f<sub>ui</sub> where f<sub>ui</sub> is raw frequency. The weighted ALS loss becomes: min &sum; c<sub>ui</sub>(r<sub>ui</sub> &minus; U<sub>i</sub>V<sub>j</sub>)<sup>2</sup> + regularization. Higher confidence = model must fit this entry more precisely.</p>
+
+
+
+<h3>Q5. Describe the two-tower architecture for large-scale recommendation retrieval.</h3>
+
+<p><strong>A.</strong> A two-tower model has a <strong>user tower</strong> and an <strong>item tower</strong>, each producing a dense embedding. The user tower takes user features (history, demographics) and maps them to a k-dimensional vector; the item tower does the same for item features. At training time, cosine or dot-product similarity between matching user-item pairs is maximized (positive pairs) while mismatched pairs are pushed apart (in-batch negatives or hard negatives). At serving time, user embeddings are computed on-the-fly; item embeddings are pre-computed and indexed in an ANN (Approximate Nearest Neighbour) store (e.g., Faiss, ScaNN). A user query retrieves the top-k candidates in milliseconds from billions of items &mdash; this is the retrieval stage in a retrieval &rarr; ranking pipeline.</p>
+
+
+
+<h3>Q6. What offline metrics do you use to evaluate a recommender? What are their limitations?</h3>
+
+<p><strong>A.</strong> Common offline metrics: <strong>Precision@k</strong> (fraction of top-k recommendations the user actually interacted with), <strong>Recall@k</strong> (fraction of all relevant items captured in top-k), <strong>NDCG@k</strong> (graded relevance with position discounting &mdash; higher-ranked hits score more), <strong>MRR</strong> (mean reciprocal rank of first hit). Limitations: (1) offline data only covers observed interactions &mdash; items never shown are treated as irrelevant, biasing evaluation; (2) offline metrics don&rsquo;t capture novelty, diversity, or serendipity; (3) the &ldquo;relevance&rdquo; definition may not match business value (clicks != purchases != satisfaction); (4) offline performance can decorrelate strongly from online A/B test results. Always complement with online experiments.</p>
+
+
+
+<h3>Q7. Why can offline metrics be a poor predictor of online performance?</h3>
+
+<p><strong>A.</strong> The offline-online gap has three main causes: (1) <strong>Exposure bias</strong> &mdash; offline evaluation is based on what past systems recommended; new candidates may be better but have no interaction data to judge them on. (2) <strong>Position and presentation effects</strong> &mdash; the same item performs differently depending on where it appears on screen; offline metrics ignore layout. (3) <strong>Feedback loop</strong> &mdash; the model was trained on data generated by previous systems; deploying a new model changes user behavior in ways not captured in historical logs. A model that memorises past popular items can score high offline while failing to improve engagement because it never explores new candidates.</p>
+
+
+
+<h3>Q8. What is the explore-exploit tradeoff in recommendations? How do you handle it?</h3>
+
+<p><strong>A.</strong> <strong>Exploit</strong> = recommend items you are confident the user will like (high predicted reward). <strong>Explore</strong> = show items you are uncertain about to learn whether they are good. Pure exploitation leads to filter bubbles and stale models; pure exploration degrades the user experience. Common strategies: (1) <strong>&epsilon;-greedy</strong> &mdash; with probability &epsilon; pick a random item, otherwise exploit; simple but wastes budget on uniformly random choices. (2) <strong>Upper Confidence Bound (UCB)</strong> &mdash; score items by predicted reward + uncertainty bonus; naturally explores items with fewer exposures. (3) <strong>Thompson Sampling</strong> &mdash; sample reward from the posterior distribution and pick the highest sample; Bayesian, well-calibrated, often outperforms UCB in practice. Online systems often use a small dedicated exploration slot (1&ndash;2 positions) rather than randomising the full slate.</p>
+
+
+
+<h3>Q9. How would you design a recommender for a brand new e-commerce site with no user data?</h3>
+
+<p><strong>A.</strong></p>
+
+<ol>
+
+<li><strong>Phase 0 (day 0)</strong>: Serve global popularity (top sellers by category). Simple, fast, no data needed.</li>
+
+<li><strong>Phase 1 (after first interactions)</strong>: Session-based recommendations using item co-occurrence or a sequential model (GRU4Rec) based on in-session behavior. No persistent user profile needed.</li>
+
+<li><strong>Phase 2 (weeks 2&ndash;4)</strong>: Once users have repeat visits, switch to content-based filtering using item attributes (category, price, text description) to build lightweight user profiles.</li>
+
+<li><strong>Phase 3 (months 1&ndash;3)</strong>: Enough interactions to train CF or a two-tower model. Run A/B tests comparing each stage.</li>
+
+<li><strong>Cold-start for new items</strong>: Use content embeddings (product title + category) to place new items near existing ones in the embedding space; bootstrap them into the rotation via exploration budget.</li>
+
+</ol>
+
+
+
+<h3>Q10. Why is ALS preferred over SGD for large-scale implicit-feedback matrix factorization?</h3>
+
+<p><strong>A.</strong> ALS (Alternating Least Squares) alternates between fixing item embeddings and solving for user embeddings (closed-form least-squares), then vice versa. Each sub-problem has an analytic solution, making convergence stable and predictable. Key advantages for implicit feedback at scale: (1) <strong>Parallelisable</strong> &mdash; each user embedding update is independent of other users, so all users can be updated in parallel (used in Spark MLlib ALS). (2) <strong>Efficient for dense confidence weights</strong> &mdash; the implicit ALS formulation requires a sum over all items (including unobserved), but the closed-form update can be computed in O(k<sup>2</sup>n + k<sup>3</sup>) per user using a precomputed global term. SGD with implicit data requires sampling negatives carefully and struggles to parallelise naturally. ALS is the standard for production implicit-feedback MF.</p>
+
+<hr />
+
+
+<div class="chapter-nav">
+  <a href="chapter-08.html">&larr; Chapter 08: Unsupervised Learning</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-10.html">Chapter 10: Deep Learning &rarr;</a>
+</div>
+<div class="site-footer">
+  <p>&copy; 2026 Hariram Subramanian Gopal &middot; <a href="index.html">Data to Decisions</a></p>
+</div>
+</body>
+</html>

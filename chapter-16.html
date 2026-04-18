@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Hariram Subramanian Gopal" />
+  <title>Chapter 16: ML Systems and MLOps | Data to Decisions</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</head>
+<body>
+<div class="chapter-nav">
+  <a href="chapter-15.html">&larr; Chapter 15: Data and SQL</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-17.html">Chapter 17: Responsible AI and Ethics &rarr;</a>
+</div>
+<h1 id="chapter-16-ml-systems-and-mlops">Chapter 16: ML Systems and MLOps</h1>
+
+<h2 id="chapter-scope-14a">16.0 Chapter Scope</h2>
+
+<p>A trained model is a research artifact. A <em>production</em> model is one that can be deployed,
+
+monitored, and retrained when the world changes. MLOps is the discipline of bridging that gap.</p>
+
+<p>The core insight: <strong>ML usually breaks in the system, not in the model.</strong> Preprocessing
+
+mismatches, stale features, silent drift, and broken pipelines cause far more production failures
+
+than weak algorithms do. This chapter covers the full lifecycle: drift detection, end-to-end
+
+pipelines, experiment tracking, deployment patterns, feature stores, CI/CD for ML, and
+
+champion/challenger rollout strategies.</p>
+
+<p><strong>What you will learn:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Section</th>
+
+<th>Topic</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>16.1</td>
+
+<td>Why MLOps? The drift problem</td>
+
+</tr>
+
+<tr>
+
+<td>16.2</td>
+
+<td>The end-to-end ML pipeline</td>
+
+</tr>
+
+<tr>
+
+<td>16.3</td>
+
+<td>Experiment tracking and model registry</td>
+
+</tr>
+
+<tr>
+
+<td>16.4</td>
+
+<td>Deployment patterns</td>
+
+</tr>
+
+<tr>
+
+<td>16.5</td>
+
+<td>Feature stores and train-serve parity</td>
+
+</tr>
+
+<tr>
+
+<td>16.6</td>
+
+<td>CI/CD and retraining triggers</td>
+
+</tr>
+
+<tr>
+
+<td>16.7</td>
+
+<td>Champion/challenger and rollback</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Prerequisites:</strong> Supervised learning (Chapter 5), model evaluation (Chapter 7), basic Python (Chapter 3).</p>
+
+<hr />
+
+<h2 id="why-mlops-drift">16.1 Why MLOps? The Drift Problem</h2>
+
+
+
+<p>A deployed model is frozen. The world it was trained on keeps changing. This gap is called
+
+<strong>drift</strong>, and it is the single most important reason MLOps exists.</p>
+
+
+
+<!-- Drift taxonomy SVG -->
+
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="340" viewBox="0 0 820 340" style="display:block; margin:16px auto;">
+
+  <defs>
+
+    <style>
+
+      .dt { font-family:'Segoe UI',Arial,sans-serif; font-size:14px; font-weight:bold; fill:#0f172a; }
+
+      .dd { font-family:'Segoe UI',Arial,sans-serif; font-size:11.5px; fill:#475569; }
+
+      .dh { font-family:'Segoe UI',Arial,sans-serif; font-size:15px; font-weight:bold; fill:#0f172a; }
+
+    </style>
+
+  </defs>
+
+
+
+  <text x="410" y="24" text-anchor="middle" class="dh">Types of Drift in Production ML</text>
+
+
+
+  <!-- Data Drift -->
+
+  <rect x="16" y="44" width="190" height="140" rx="10" fill="#dbeafe" stroke="#60a5fa" stroke-width="1.5"/>
+
+  <text x="111" y="70" text-anchor="middle" class="dt" fill="#2563eb">Data Drift</text>
+
+  <line x1="36" y1="78" x2="186" y2="78" stroke="#bfdbfe" stroke-width="1"/>
+
+  <text x="111" y="96" text-anchor="middle" class="dd">P(X) changes</text>
+
+  <text x="111" y="112" text-anchor="middle" class="dd">Input features shift</text>
+
+  <text x="111" y="136" text-anchor="middle" class="dd" font-style="italic" fill="#3b82f6">e.g. user age distribution</text>
+
+  <text x="111" y="152" text-anchor="middle" class="dd" font-style="italic" fill="#3b82f6">changes as new cohort joins</text>
+
+  <text x="111" y="174" text-anchor="middle" class="dd" font-weight="bold">Detect: PSI, KS test</text>
+
+
+
+  <!-- Concept Drift -->
+
+  <rect x="222" y="44" width="190" height="140" rx="10" fill="#fef9c3" stroke="#facc15" stroke-width="1.5"/>
+
+  <text x="317" y="70" text-anchor="middle" class="dt" fill="#b45309">Concept Drift</text>
+
+  <line x1="242" y1="78" x2="392" y2="78" stroke="#fde68a" stroke-width="1"/>
+
+  <text x="317" y="96" text-anchor="middle" class="dd">P(y|X) changes</text>
+
+  <text x="317" y="112" text-anchor="middle" class="dd">Same features, different</text>
+
+  <text x="317" y="128" text-anchor="middle" class="dd">meaning for prediction</text>
+
+  <text x="317" y="148" text-anchor="middle" class="dd" font-style="italic" fill="#b45309">e.g. user behavior shifts</text>
+
+  <text x="317" y="162" text-anchor="middle" class="dd" font-style="italic" fill="#b45309">after a competitor launches</text>
+
+  <text x="317" y="178" text-anchor="middle" class="dd" font-weight="bold">Detect: monitor P(y|X)</text>
+
+
+
+  <!-- Feature Drift -->
+
+  <rect x="428" y="44" width="190" height="140" rx="10" fill="#f3e8ff" stroke="#c084fc" stroke-width="1.5"/>
+
+  <text x="523" y="70" text-anchor="middle" class="dt" fill="#7c3aed">Feature Drift</text>
+
+  <line x1="448" y1="78" x2="598" y2="78" stroke="#e9d5ff" stroke-width="1"/>
+
+  <text x="523" y="96" text-anchor="middle" class="dd">A specific feature's</text>
+
+  <text x="523" y="112" text-anchor="middle" class="dd">distribution shifts</text>
+
+  <text x="523" y="136" text-anchor="middle" class="dd" font-style="italic" fill="#7c3aed">e.g. salary field changes</text>
+
+  <text x="523" y="152" text-anchor="middle" class="dd" font-style="italic" fill="#7c3aed">from annual to monthly</text>
+
+  <text x="523" y="174" text-anchor="middle" class="dd" font-weight="bold">Detect: per-feature PSI</text>
+
+
+
+  <!-- Label Drift -->
+
+  <rect x="634" y="44" width="170" height="140" rx="10" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.5"/>
+
+  <text x="719" y="70" text-anchor="middle" class="dt" fill="#059669">Label Drift</text>
+
+  <line x1="654" y1="78" x2="784" y2="78" stroke="#a7f3d0" stroke-width="1"/>
+
+  <text x="719" y="96" text-anchor="middle" class="dd">P(y) changes</text>
+
+  <text x="719" y="112" text-anchor="middle" class="dd">Outcome rates shift</text>
+
+  <text x="719" y="136" text-anchor="middle" class="dd" font-style="italic" fill="#059669">e.g. fraud rate doubles</text>
+
+  <text x="719" y="152" text-anchor="middle" class="dd" font-style="italic" fill="#059669">after a data breach</text>
+
+  <text x="719" y="174" text-anchor="middle" class="dd" font-weight="bold">Fix: adjust threshold</text>
+
+
+
+  <!-- Bottom: why it matters -->
+
+  <rect x="100" y="210" width="620" height="110" rx="12" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.5"/>
+
+  <text x="410" y="236" text-anchor="middle" class="dt" fill="#991b1b">Why this matters</text>
+
+  <line x1="160" y1="244" x2="660" y2="244" stroke="#fecaca" stroke-width="1"/>
+
+  <text x="410" y="265" text-anchor="middle" class="dd">Drift causes silent failures &#8212; the model keeps predicting, but accuracy degrades</text>
+
+  <text x="410" y="282" text-anchor="middle" class="dd">without any error messages. All system health checks pass. Business metrics drop.</text>
+
+  <text x="410" y="302" text-anchor="middle" class="dd" font-weight="bold">MLOps exists to detect, alert on, and respond to drift before it causes damage.</text>
+
+</svg>
+
+
+
+<p><strong>Measuring drift &mdash; Population Stability Index (PSI):</strong></p>
+
+<p><span class="math display">\[\text{PSI} = \sum_i \left(
+
+p_{\text{expected},i} - p_{\text{actual},i} \right) \ln\!\left(
+
+\frac{p_{\text{expected},i}}{p_{\text{actual},i}} \right)\]</span></p>
+
+<p><strong>Where:</strong> <span class="math inline">\(p_{\text{expected},i}\)</span> = proportion in bin <span class="math inline">\(i\)</span> for the reference (training) distribution, <span class="math inline">\(p_{\text{actual},i}\)</span> = proportion for the current (production) distribution.</p>
+
+
+
+<table>
+
+<thead><tr><th>PSI value</th><th>Interpretation</th></tr></thead>
+
+<tbody>
+
+<tr><td>&lt; 0.1</td><td>Minimal shift &mdash; model should still be reliable</td></tr>
+
+<tr><td>0.1 &ndash; 0.2</td><td>Moderate shift &mdash; investigate</td></tr>
+
+<tr><td>&gt; 0.2</td><td>Significant shift &mdash; likely needs retraining</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<h2 id="the-end-to-end-ml-pipeline">16.2 The End-to-End ML Pipeline</h2>
+
+
+
+<p>Every deployed ML system is a pipeline. The model is just one stage of it.</p>
+
+
+
+<figure class="rich-figure">
+
+<img src="figures/generated/15_ml_systems_and_mlops/end_to_end_ml_pipeline.svg" alt="End-to-end ML pipeline: data ingestion → feature engineering → training → evaluation → serving → monitoring">
+
+<figcaption>
+
+End-to-end ML pipeline: data ingestion → feature engineering → training → evaluation → serving → monitoring
+
+</figcaption>
+
+</figure>
+
+
+
+<p><strong>Common pipeline failure points:</strong></p>
+
+<table>
+
+<thead><tr><th>Failure</th><th>Root cause</th><th>Prevention</th></tr></thead>
+
+<tbody>
+
+<tr><td>Training/serving mismatch</td><td>Different preprocessing code paths</td><td>Feature store or shared library</td></tr>
+
+<tr><td>Data drift</td><td>Input distribution changes</td><td>Statistical monitoring (PSI)</td></tr>
+
+<tr><td>Concept drift</td><td>Feature-label relationship changes</td><td>Monitor model output + business metrics</td></tr>
+
+<tr><td>Stale features</td><td>Feature pipeline not refreshing</td><td>Pipeline SLAs and freshness checks</td></tr>
+
+<tr><td>Schema change</td><td>Upstream data schema evolved</td><td>Schema validation at ingestion</td></tr>
+
+</tbody>
+
+</table>
+
+<h2 id="experiment-tracking">16.3 Experiment Tracking and Model Registry</h2>
+
+
+
+<p><strong>Experiment tracking</strong> is version control for model training. For every run, log:
+
+hyperparameters, validation metrics, dataset version, git commit, and model artifact. Without it,
+
+you cannot reproduce your best model or understand why one run outperformed another.
+
+Tools: <strong>MLflow</strong> (most common), Weights &amp; Biases, Neptune.</p>
+
+
+
+<p><strong>Model registry</strong> is the handoff point between training and serving. A model registered
+
+here has been evaluated and approved for deployment. Every version tracks its lifecycle stage:</p>
+
+
+
+<!-- Model lifecycle SVG -->
+
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="100" viewBox="0 0 680 100" style="display:block; margin:16px auto;">
+
+  <defs><style>.ml{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;font-weight:bold;}</style></defs>
+
+  <rect x="10" y="25" width="130" height="50" rx="10" fill="#f3e8ff" stroke="#c084fc" stroke-width="1.5"/>
+
+  <text x="75" y="45" text-anchor="middle" class="ml" fill="#7c3aed">Candidate</text>
+
+  <text x="75" y="62" text-anchor="middle" font-family="'Segoe UI',Arial,sans-serif" font-size="10" fill="#7c3aed">newly registered</text>
+
+  <polygon points="148,50 162,43 162,57" fill="#94a3b8"/>
+
+  <rect x="170" y="25" width="130" height="50" rx="10" fill="#fef9c3" stroke="#facc15" stroke-width="1.5"/>
+
+  <text x="235" y="45" text-anchor="middle" class="ml" fill="#b45309">Staging</text>
+
+  <text x="235" y="62" text-anchor="middle" font-family="'Segoe UI',Arial,sans-serif" font-size="10" fill="#b45309">shadow / A-B testing</text>
+
+  <polygon points="308,50 322,43 322,57" fill="#94a3b8"/>
+
+  <rect x="330" y="25" width="130" height="50" rx="10" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.5"/>
+
+  <text x="395" y="45" text-anchor="middle" class="ml" fill="#059669">Production</text>
+
+  <text x="395" y="62" text-anchor="middle" font-family="'Segoe UI',Arial,sans-serif" font-size="10" fill="#059669">serving live traffic</text>
+
+  <polygon points="468,50 482,43 482,57" fill="#94a3b8"/>
+
+  <rect x="490" y="25" width="130" height="50" rx="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5"/>
+
+  <text x="555" y="45" text-anchor="middle" class="ml" fill="#475569">Archived</text>
+
+  <text x="555" y="62" text-anchor="middle" font-family="'Segoe UI',Arial,sans-serif" font-size="10" fill="#475569">kept for rollback</text>
+
+</svg>
+
+
+
+<blockquote>
+
+<p><strong>Key:</strong> Always keep the previous production version warm in the registry.
+
+Fast rollback is what separates a 10-minute recovery from a 4-hour incident.</p>
+
+</blockquote>
+
+<h2 id="deployment-patterns">16.4 Deployment Patterns</h2>
+
+<p>Deployment strategy determines how risk is managed during the transition from an old model to a new one.</p>
+
+
+
+<!-- Deployment strategies SVG -->
+
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="280" viewBox="0 0 780 280" style="display:block; margin:16px auto;">
+
+  <defs><style>.ds{font-family:'Segoe UI',Arial,sans-serif;}.dsn{font-size:14px;font-weight:bold;fill:#0f172a;}.dsd{font-size:11px;fill:#475569;}</style></defs>
+
+
+
+  <text x="390" y="22" text-anchor="middle" class="ds" font-size="15" font-weight="bold" fill="#0f172a">Deployment Strategies Compared</text>
+
+
+
+  <!-- Blue-Green -->
+
+  <rect x="10" y="40" width="240" height="220" rx="12" fill="#dbeafe" stroke="#60a5fa" stroke-width="1.5"/>
+
+  <text x="130" y="65" text-anchor="middle" class="ds dsn" fill="#2563eb">Blue-Green</text>
+
+  <line x1="30" y1="74" x2="230" y2="74" stroke="#bfdbfe" stroke-width="1"/>
+
+  <text x="130" y="95" text-anchor="middle" class="ds dsd">Two identical environments.</text>
+
+  <text x="130" y="112" text-anchor="middle" class="ds dsd">Switch 100% traffic atomically.</text>
+
+  <text x="130" y="135" text-anchor="middle" class="ds dsd" fill="#2563eb" font-weight="bold">Blue (current) ← 100%</text>
+
+  <text x="130" y="155" text-anchor="middle" class="ds dsd" fill="#2563eb" font-weight="bold">Green (new) ← 0%</text>
+
+  <text x="130" y="175" text-anchor="middle" class="ds dsd">Then flip:</text>
+
+  <text x="130" y="195" text-anchor="middle" class="ds dsd" fill="#2563eb" font-weight="bold">Green ← 100%</text>
+
+  <text x="130" y="220" text-anchor="middle" class="ds dsd" font-style="italic" fill="#059669">Instant rollback</text>
+
+  <text x="130" y="237" text-anchor="middle" class="ds dsd" font-style="italic" fill="#dc2626">2x infrastructure cost</text>
+
+
+
+  <!-- Canary -->
+
+  <rect x="270" y="40" width="240" height="220" rx="12" fill="#fef9c3" stroke="#facc15" stroke-width="1.5"/>
+
+  <text x="390" y="65" text-anchor="middle" class="ds dsn" fill="#b45309">Canary</text>
+
+  <line x1="290" y1="74" x2="490" y2="74" stroke="#fde68a" stroke-width="1"/>
+
+  <text x="390" y="95" text-anchor="middle" class="ds dsd">Route small % to new model.</text>
+
+  <text x="390" y="112" text-anchor="middle" class="ds dsd">Gradually increase if healthy.</text>
+
+  <text x="390" y="140" text-anchor="middle" class="ds dsd" fill="#b45309" font-weight="bold">v1 ← 95%   v2 ← 5%</text>
+
+  <text x="390" y="160" text-anchor="middle" class="ds dsd">Monitor 24h...</text>
+
+  <text x="390" y="180" text-anchor="middle" class="ds dsd" fill="#b45309" font-weight="bold">v1 ← 50%   v2 ← 50%</text>
+
+  <text x="390" y="200" text-anchor="middle" class="ds dsd" fill="#b45309" font-weight="bold">v1 ← 0%    v2 ← 100%</text>
+
+  <text x="390" y="225" text-anchor="middle" class="ds dsd" font-style="italic" fill="#059669">Low risk, real validation</text>
+
+  <text x="390" y="242" text-anchor="middle" class="ds dsd" font-style="italic" fill="#dc2626">Needs traffic routing logic</text>
+
+
+
+  <!-- Shadow -->
+
+  <rect x="530" y="40" width="240" height="220" rx="12" fill="#f3e8ff" stroke="#c084fc" stroke-width="1.5"/>
+
+  <text x="650" y="65" text-anchor="middle" class="ds dsn" fill="#7c3aed">Shadow (Dark Launch)</text>
+
+  <line x1="550" y1="74" x2="750" y2="74" stroke="#e9d5ff" stroke-width="1"/>
+
+  <text x="650" y="95" text-anchor="middle" class="ds dsd">Both models run on all traffic.</text>
+
+  <text x="650" y="112" text-anchor="middle" class="ds dsd">Only v1 responses served.</text>
+
+  <text x="650" y="132" text-anchor="middle" class="ds dsd">v2 predictions logged only.</text>
+
+  <text x="650" y="165" text-anchor="middle" class="ds dsd" fill="#7c3aed" font-weight="bold">v1 → serves users</text>
+
+  <text x="650" y="185" text-anchor="middle" class="ds dsd" fill="#7c3aed" font-weight="bold">v2 → logged, not served</text>
+
+  <text x="650" y="215" text-anchor="middle" class="ds dsd" font-style="italic" fill="#059669">Zero production risk</text>
+
+  <text x="650" y="232" text-anchor="middle" class="ds dsd" font-style="italic" fill="#dc2626">Double compute cost</text>
+
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> For high-stakes models (fraud, pricing, medical), always use canary or
+
+shadow before full rollout. Never do direct cutover without a tested rollback plan.</p>
+
+</blockquote>
+
+
+
+<h2 id="feature-stores-mlops">16.5 Feature Stores and Train-Serve Parity</h2>
+
+
+
+<p>The most insidious production failure is <strong>train-serve skew</strong>: the model was trained
+
+on features computed one way, but production computes them differently. A <strong>feature store</strong>
+
+solves this by centralizing feature computation &mdash; the same transformation logic is used for both
+
+offline training and online serving.</p>
+
+
+
+<p><strong>Key principle:</strong> Write feature computation once as a shared library. Use the offline
+
+store to build training datasets. Use the online store (e.g., Redis) to serve features at prediction
+
+time. Validate that offline and online values match. Tools: <strong>Feast</strong> (open-source),
+
+Tecton, Hopsworks.</p>
+
+
+
+<blockquote>
+
+<p><strong>Key:</strong> If you compute features differently in training and serving, your model
+
+is being tested on one distribution and deployed on another. The results will disappoint.</p>
+
+</blockquote>
+
+
+
+<h2 id="cicd-and-retraining">16.6 CI/CD and Retraining Triggers</h2>
+
+
+
+<p>ML CI/CD is like software CI/CD, but the definition of &ldquo;change&rdquo; is broader: a code change,
+
+a data change, or a model change can each trigger the pipeline.</p>
+
+
+
+<p><strong>Quality gates</strong> that must pass before any model reaches production:</p>
+
+<ul>
+
+<li>Validation metrics above baseline (e.g., AUC &ge; 0.75)</li>
+
+<li>Inference latency within SLA (e.g., P99 &lt; 200ms)</li>
+
+<li>Data validation passes (expected schema, no out-of-range values)</li>
+
+<li>Predictions on a test fixture match expected outputs</li>
+
+</ul>
+
+
+
+<p><strong>When to retrain:</strong></p>
+
+<table>
+
+<thead><tr><th>Trigger</th><th>When to use</th></tr></thead>
+
+<tbody>
+
+<tr><td><strong>Scheduled</strong></td><td>Low-risk models; predictable drift (weekly, monthly)</td></tr>
+
+<tr><td><strong>Performance-based</strong></td><td>Metric drops below threshold on labeled window</td></tr>
+
+<tr><td><strong>Distribution-based</strong></td><td>PSI exceeds threshold on key features</td></tr>
+
+<tr><td><strong>Event-based</strong></td><td>Known external event (market shock, product launch)</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<blockquote>
+
+<p><strong>Key:</strong> Monitoring without action is just logging. Define thresholds and automation
+
+for what happens when they are breached.</p>
+
+</blockquote>
+
+
+
+<h2 id="champion-challenger">16.7 Champion/Challenger and Rollback</h2>
+
+
+
+<p><strong>Champion/challenger</strong> is a controlled comparison of your current production model
+
+(champion) against a candidate replacement (challenger). Route 5% of traffic to the challenger,
+
+compare metrics over 7&ndash;14 days, and promote only if the improvement is statistically significant
+
+and translates to business impact.</p>
+
+
+
+<p><strong>Rollback checklist</strong> when an alert fires:</p>
+
+<ol>
+
+<li><strong>Detect:</strong> automated alert or user report</li>
+
+<li><strong>Triage:</strong> is it model quality, data pipeline, or infrastructure?</li>
+
+<li><strong>Contain:</strong> route traffic away from the failing model (rollback to previous registry version)</li>
+
+<li><strong>Investigate:</strong> check feature distributions, prediction histograms, logs</li>
+
+<li><strong>Fix:</strong> retrain with corrected data, fix pipeline, or restore previous version</li>
+
+<li><strong>Post-mortem:</strong> document root cause and prevention measures</li>
+
+</ol>
+
+
+
+<blockquote>
+
+<p><strong>Key:</strong> A rollback plan must be rehearsed, not improvised. Run game-day simulations
+
+before an incident happens in production.</p>
+
+</blockquote>
+
+<h2 id="chapter-16-summary">Chapter 16 Summary</h2>
+
+<p><strong>The minimum viable MLOps stack:</strong></p>
+
+
+
+<table>
+
+<thead><tr><th>Component</th><th>What it does</th><th>Tools</th></tr></thead>
+
+<tbody>
+
+<tr><td>Experiment tracking</td><td>Log params, metrics, artifacts per run</td><td>MLflow, W&amp;B, Neptune</td></tr>
+
+<tr><td>Model registry</td><td>Version models, lifecycle stages, rollback</td><td>MLflow, built-in platform registries</td></tr>
+
+<tr><td>Feature store</td><td>Shared feature logic for train and serve</td><td>Feast, Tecton, Hopsworks</td></tr>
+
+<tr><td>CI/CD pipeline</td><td>Automated testing + deployment with quality gates</td><td>GitHub Actions, Jenkins, Argo</td></tr>
+
+<tr><td>Monitoring</td><td>Drift detection, performance alerts</td><td>Evidently, WhyLabs, custom PSI jobs</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<p><strong>What kills production ML:</strong></p>
+
+<ul>
+
+<li>Train-serve preprocessing mismatch</li>
+
+<li>No monitoring &rarr; silent drift</li>
+
+<li>No model versioning &rarr; cannot rollback</li>
+
+<li>Notebooks in production &rarr; no tests, no error handling, no logging</li>
+
+</ul>
+
+
+
+<h2 id="further-reading-14">Further Reading</h2>
+
+<ul>
+
+<li><strong>Designing Machine Learning Systems</strong> (Chip Huyen) &mdash; the best production ML book</li>
+
+<li><strong>Hidden Technical Debt in Machine Learning Systems</strong> (Sculley et al., 2015) &mdash; the Google paper that defined the MLOps problem</li>
+
+<li><strong>MLflow documentation</strong> (mlflow.org) &mdash; open-source experiment tracking and model registry</li>
+
+</ul>
+
+
+<h2 id="ch16-interview-qa">Chapter 16 Interview Q&amp;A</h2>
+
+<h3>Q1. What is the difference between model deployment and model serving?</h3>
+<p><strong>A.</strong> Deployment is the process of packaging a trained model and placing it in an environment where it can receive requests — containerizing, setting up endpoints, configuring infrastructure. Serving is the runtime act of accepting input data, running inference, and returning predictions. A model can be deployed but not yet serving (e.g., staged behind a feature flag). In practice, deployment also includes health checks, autoscaling configuration, and CI/CD integration.</p>
+
+<h3>Q2. What is data drift vs concept drift? How do you detect each?</h3>
+<p><strong>A.</strong> Data drift (covariate shift) means the distribution of input features has changed — e.g., user demographics shift after a marketing campaign. Concept drift means the relationship between inputs and the target has changed — e.g., "what constitutes fraud" evolves. Detect data drift with statistical tests on feature distributions (PSI, KS test, Jensen-Shannon divergence). Detect concept drift by monitoring prediction performance metrics (accuracy, F1) over time — if inputs look the same but performance drops, the concept has drifted.</p>
+
+<h3>Q3. Explain the champion/challenger deployment pattern.</h3>
+<p><strong>A.</strong> The champion is the current production model. A challenger is a new candidate model that receives a small fraction of live traffic (e.g., 5-10%). You compare their performance on real data over a set period. If the challenger statistically outperforms the champion, you promote it. This is safer than a hard cutover because you limit blast radius, and you evaluate on real — not just historical — data. Always define success criteria and a rollback plan before starting.</p>
+
+<h3>Q4. What is a feature store and why is it important?</h3>
+<p><strong>A.</strong> A feature store is a centralized system that manages feature computation, storage, and serving for ML models. It solves train-serve skew by ensuring the exact same feature logic runs in both training pipelines and real-time serving. It also enables feature reuse across teams, provides point-in-time correctness for historical features, and maintains a catalog of documented, versioned features. Examples include Feast (open source), Tecton, and platform-native stores in Vertex AI and SageMaker.</p>
+
+<h3>Q5. How do you decide when to retrain a model?</h3>
+<p><strong>A.</strong> Common triggers: (1) performance degradation detected via monitoring (accuracy/F1/AUC drops below threshold), (2) data drift detected (PSI &gt; 0.2 or KS test p-value &lt; 0.05), (3) scheduled cadence (weekly/monthly) based on domain knowledge of how fast the world changes, (4) upstream data schema changes. Avoid retraining on a fixed schedule alone — combine scheduled checks with drift-triggered retraining. Always validate the new model against the current champion before promoting.</p>
+
+<h3>Q6. What is train-serve skew and how do you prevent it?</h3>
+<p><strong>A.</strong> Train-serve skew occurs when features computed at training time differ from those computed at inference time — different code paths, different libraries, or timing differences (e.g., using future data during training). Prevention strategies: use a feature store with shared feature definitions, log serving-time features and compare distributions to training features, write feature transformations once and use them in both pipelines, and run integration tests that verify feature parity end-to-end.</p>
+
+<h3>Q7. Explain canary deployment vs blue-green deployment for ML models.</h3>
+<p><strong>A.</strong> Blue-green maintains two identical environments: "blue" runs the current model, "green" runs the new one. You switch all traffic at once by flipping a load balancer — fast rollback by switching back. Canary deployment gradually shifts traffic: start with 1-5% on the new model, monitor metrics, and increase incrementally. Canary is preferred for ML because model failures are often subtle (degraded accuracy, not crashes) and only visible under real traffic distribution.</p>
+
+<h3>Q8. What metrics would you monitor for a production ML system?</h3>
+<p><strong>A.</strong> Three layers: (1) <strong>Infrastructure</strong> — latency (p50/p99), throughput, error rates, CPU/memory usage. (2) <strong>Data quality</strong> — input feature distributions (PSI), missing value rates, schema violations, volume anomalies. (3) <strong>Model performance</strong> — prediction distribution shifts, business KPIs (click-through rate, conversion), ground-truth metrics when labels arrive (delayed accuracy, F1). Set alerts on each layer with different urgency levels.</p>
+
+<h3>Q9. What is an ML pipeline? What are its key stages?</h3>
+<p><strong>A.</strong> An ML pipeline is an automated, reproducible workflow that takes raw data through to a deployed model. Key stages: data ingestion and validation, feature engineering, model training, model evaluation (against champion), model registration (versioned artifact store), deployment (canary/blue-green), and post-deployment monitoring. Orchestrators like Airflow, Kubeflow Pipelines, or Prefect manage dependencies and retries. The pipeline should be idempotent — rerunning with the same inputs produces the same outputs.</p>
+
+<h3>Q10. How do you version ML models and experiments?</h3>
+<p><strong>A.</strong> Version three things together: (1) <strong>Code</strong> — git commit hash for training scripts and feature logic. (2) <strong>Data</strong> — snapshot or hash of training data (DVC, Delta Lake versioning, or S3 versioned buckets). (3) <strong>Model artifacts</strong> — registered in a model registry (MLflow, Weights &amp; Biases, SageMaker Model Registry) with metadata: hyperparameters, metrics, training data reference, and parent experiment ID. This triad lets you reproduce any past model exactly.</p>
+
+<h2 id="common-pitfalls-ch15">Common Pitfalls</h2>
+
+<table>
+<thead>
+<tr><th>Pitfall</th><th>Why it matters</th></tr>
+</thead>
+<tbody>
+<tr><td>Deploying without monitoring</td><td>Silent model degradation &mdash; you only discover failures when business metrics tank weeks later</td></tr>
+<tr><td>Not versioning data alongside models</td><td>Cannot reproduce past results or debug regressions; "works on my data" problem</td></tr>
+<tr><td>Different feature code in training vs serving</td><td>Train-serve skew causes prediction errors that are invisible in offline evaluation</td></tr>
+<tr><td>Ignoring data drift</td><td>Feature distributions shift over time; a model trained on old data makes increasingly wrong predictions</td></tr>
+<tr><td>Manual deployment with no CI/CD</td><td>Error-prone, slow, unrepeatable; no audit trail of what was deployed when</td></tr>
+<tr><td>No rollback plan</td><td>If a new model degrades performance, you need to revert in minutes, not hours</td></tr>
+<tr><td>Retraining on a rigid schedule only</td><td>Misses sudden drift events; wastes compute when data is stable</td></tr>
+<tr><td>Notebooks in production</td><td>No error handling, no tests, no logging, no dependency management &mdash; fragile and unauditable</td></tr>
+</tbody>
+</table>
+
+
+<hr />
+
+
+
+
+
+<hr />
+
+
+<div class="chapter-nav">
+  <a href="chapter-15.html">&larr; Chapter 15: Data and SQL</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-17.html">Chapter 17: Responsible AI and Ethics &rarr;</a>
+</div>
+<div class="site-footer">
+  <p>&copy; 2026 Hariram Subramanian Gopal &middot; <a href="index.html">Data to Decisions</a></p>
+</div>
+</body>
+</html>

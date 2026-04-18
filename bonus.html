@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Hariram Subramanian Gopal" />
+  <title>Bonus: LeetCode Problem Index | Data to Decisions</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</head>
+<body>
+<div class="chapter-nav">
+  <a href="conclusion.html">&larr; Conclusion: Your ML Journey From Here</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <span class="nav-disabled">Next &rarr;</span>
+</div>
+<h1 id="bonus-leetcode-problem-index">Bonus: LeetCode Problem Index</h1>
+
+<p>Coding interviews are a reality for data scientists and ML engineers alike. The problems below &mdash; solved by the author over several years &mdash; are organized by the
+
+core technique each one tests. Use this index as a study map: master one category at a time, starting with
+
+the pattern rather than the individual problem.</p>
+
+
+
+<blockquote>
+
+<p><strong>How to use this section:</strong> Each category opens with a one-line description of the pattern.
+
+Problems are sorted by number within each group. &ldquo;Easy&rdquo; problems build intuition for the pattern;
+
+&ldquo;Medium&rdquo; problems test whether you can apply it under constraints.</p>
+
+</blockquote>
+
+
+
+<!-- ─── Arrays & Hashing ─── -->
+
+<h2 id="lc-arrays-and-hashing">Arrays &amp; Hashing</h2>
+
+<p><em>Pattern:</em> Use hash maps for O(1) lookups, or manipulate arrays in-place to avoid extra space.</p>
+
+<table>
+
+<thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Key Idea</th></tr></thead>
+
+<tbody>
+
+<tr><td>1</td><td><a href="https://leetcode.com/problems/two-sum">Two Sum</a></td><td>Easy</td><td>Hash map for complement lookup</td></tr>
+
+<tr><td>238</td><td><a href="https://leetcode.com/problems/product-of-array-except-self">Product of Array Except Self</a></td><td>Med.</td><td>Prefix and suffix products without division</td></tr>
+
+<tr><td>380</td><td><a href="https://leetcode.com/problems/insert-delete-getrandom-o1">Insert Delete GetRandom O(1)</a></td><td>Med.</td><td>Hash map + array swap trick for O(1) operations</td></tr>
+
+<tr><td>387</td><td><a href="https://leetcode.com/problems/first-unique-character-in-a-string">First Unique Character in a String</a></td><td>Easy</td><td>Frequency count with hash map</td></tr>
+
+<tr><td>442</td><td><a href="https://leetcode.com/problems/find-all-duplicates-in-an-array">Find All Duplicates in an Array</a></td><td>Med.</td><td>Index-as-hash: negate visited positions</td></tr>
+
+<tr><td>771</td><td><a href="https://leetcode.com/problems/jewels-and-stones">Jewels and Stones</a></td><td>Easy</td><td>Set membership check</td></tr>
+
+<tr><td>1108</td><td><a href="https://leetcode.com/problems/defanging-an-ip-address">Defanging an IP Address</a></td><td>Easy</td><td>Simple string replacement</td></tr>
+
+<tr><td>1470</td><td><a href="https://leetcode.com/problems/shuffle-the-array">Shuffle the Array</a></td><td>Easy</td><td>Interleave two halves of an array</td></tr>
+
+<tr><td>1480</td><td><a href="https://leetcode.com/problems/running-sum-of-1d-array">Running Sum of 1d Array</a></td><td>Easy</td><td>In-place prefix sum</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<!-- ─── Two Pointers ─── -->
+
+<h2 id="lc-two-pointers">Two Pointers</h2>
+
+<p><em>Pattern:</em> Walk two indices from opposite ends (or same direction) to reduce search space from O(n&sup2;) to O(n).</p>
+
+<table>
+
+<thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Key Idea</th></tr></thead>
+
+<tbody>
+
+<tr><td>11</td><td><a href="https://leetcode.com/problems/container-with-most-water">Container With Most Water</a></td><td>Med.</td><td>Shrink from both ends; move the shorter wall</td></tr>
+
+<tr><td>15</td><td><a href="https://leetcode.com/problems/3sum">3Sum</a></td><td>Med.</td><td>Sort + two pointers after fixing one element</td></tr>
+
+<tr><td>532</td><td><a href="https://leetcode.com/problems/k-diff-pairs-in-an-array">K-diff Pairs in an Array</a></td><td>Med.</td><td>Sort then two pointers or hash set for pair finding</td></tr>
+
+<tr><td>680</td><td><a href="https://leetcode.com/problems/valid-palindrome-ii">Valid Palindrome II</a></td><td>Easy</td><td>Two pointers with one allowed skip</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<!-- ─── Sliding Window ─── -->
+
+<h2 id="lc-sliding-window">Sliding Window</h2>
+
+<p><em>Pattern:</em> Maintain a window [left, right] over a sequence; expand right, shrink left when a constraint breaks.</p>
+
+<table>
+
+<thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Key Idea</th></tr></thead>
+
+<tbody>
+
+<tr><td>3</td><td><a href="https://leetcode.com/problems/longest-substring-without-repeating-characters">Longest Substring Without Repeating Characters</a></td><td>Med.</td><td>Expand until duplicate; shrink to remove it</td></tr>
+
+<tr><td>424</td><td><a href="https://leetcode.com/problems/longest-repeating-character-replacement">Longest Repeating Character Replacement</a></td><td>Med.</td><td>Window valid while replacements &le; k</td></tr>
+
+<tr><td>485</td><td><a href="https://leetcode.com/problems/max-consecutive-ones">Max Consecutive Ones</a></td><td>Easy</td><td>Simple running count; reset on zero</td></tr>
+
+<tr><td>1004</td><td><a href="https://leetcode.com/problems/max-consecutive-ones-iii">Max Consecutive Ones III</a></td><td>Med.</td><td>Sliding window with at most k zero flips</td></tr>
+
+<tr><td>1343</td><td><a href="https://leetcode.com/problems/number-of-sub-arrays-of-size-k-and-average-greater-than-or-equal-to-threshold">Sub-arrays of Size K with Average &ge; Threshold</a></td><td>Med.</td><td>Fixed-size sliding window; track running sum</td></tr>
+
+<tr><td>1493</td><td><a href="https://leetcode.com/problems/longest-subarray-of-1s-after-deleting-one-element">Longest Subarray of 1&rsquo;s After Deleting One Element</a></td><td>Med.</td><td>Sliding window allowing one zero</td></tr>
+
+<tr><td>2024</td><td><a href="https://leetcode.com/problems/maximize-the-confusion-of-an-exam">Maximize the Confusion of an Exam</a></td><td>Med.</td><td>Sliding window on binary string with k flips</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<!-- ─── Prefix Sum & Subarrays ─── -->
+
+<h2 id="lc-prefix-sum-and-subarrays">Prefix Sum &amp; Subarrays</h2>
+
+<p><em>Pattern:</em> Precompute cumulative sums so any subarray sum becomes a single subtraction; combine with hash maps for target-sum queries.</p>
+
+<table>
+
+<thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Key Idea</th></tr></thead>
+
+<tbody>
+
+<tr><td>53</td><td><a href="https://leetcode.com/problems/maximum-subarray">Maximum Subarray</a></td><td>Med.</td><td>Kadane&rsquo;s algorithm: running max subarray sum</td></tr>
+
+<tr><td>152</td><td><a href="https://leetcode.com/problems/maximum-product-subarray">Maximum Product Subarray</a></td><td>Med.</td><td>Track both max and min products (negatives flip sign)</td></tr>
+
+<tr><td>523</td><td><a href="https://leetcode.com/problems/continuous-subarray-sum">Continuous Subarray Sum</a></td><td>Med.</td><td>Prefix sum mod k stored in hash map</td></tr>
+
+<tr><td>560</td><td><a href="https://leetcode.com/problems/subarray-sum-equals-k">Subarray Sum Equals K</a></td><td>Med.</td><td>Hash map of prefix sums for O(n) count</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<!-- ─── Stack ─── -->
+
+<h2 id="lc-stack">Stack</h2>
+
+<p><em>Pattern:</em> Use a stack to track state that needs last-in-first-out processing &mdash; matching brackets, nested structures, or monotonic sequences.</p>
+
+<table>
+
+<thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Key Idea</th></tr></thead>
+
+<tbody>
+
+<tr><td>20</td><td><a href="https://leetcode.com/problems/valid-parentheses">Valid Parentheses</a></td><td>Easy</td><td>Push openers; pop and match on closers</td></tr>
+
+<tr><td>22</td><td><a href="https://leetcode.com/problems/generate-parentheses">Generate Parentheses</a></td><td>Med.</td><td>Backtracking with open/close counts as constraints</td></tr>
+
+<tr><td>1047</td><td><a href="https://leetcode.com/problems/remove-all-adjacent-duplicates-in-string">Remove All Adjacent Duplicates In String</a></td><td>Easy</td><td>Stack pops when top matches current character</td></tr>
+
+<tr><td>1209</td><td><a href="https://leetcode.com/problems/remove-all-adjacent-duplicates-in-string-ii">Remove All Adjacent Duplicates in String II</a></td><td>Med.</td><td>Stack of (char, count) pairs; pop when count reaches k</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<!-- ─── Binary Search ─── -->
+
+<h2 id="lc-binary-search">Binary Search</h2>
+
+<p><em>Pattern:</em> Halve the search space each step. Works on sorted arrays, rotated arrays, and answer-space problems.</p>
+
+<table>
+
+<thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Key Idea</th></tr></thead>
+
+<tbody>
+
+<tr><td>33</td><td><a href="https://leetcode.com/problems/search-in-rotated-sorted-array">Search in Rotated Sorted Array</a></td><td>Med.</td><td>Determine which half is sorted, then narrow</td></tr>
+
+<tr><td>69</td><td><a href="https://leetcode.com/problems/sqrtx">Sqrt(x)</a></td><td>Easy</td><td>Binary search on answer space [0, x]</td></tr>
+
+<tr><td>162</td><td><a href="https://leetcode.com/problems/find-peak-element">Find Peak Element</a></td><td>Med.</td><td>Move toward the higher neighbour</td></tr>
+
+<tr><td>278</td><td><a href="https://leetcode.com/problems/first-bad-version">First Bad Version</a></td><td>Easy</td><td>Classic bisect-left on boolean predicate</td></tr>
+
+<tr><td>374</td><td><a href="https://leetcode.com/problems/guess-number-higher-or-lower">Guess Number Higher or Lower</a></td><td>Easy</td><td>Standard binary search with API call</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<!-- ─── Linked List ─── -->
+
+<h2 id="lc-linked-list">Linked List</h2>
+
+<p><em>Pattern:</em> Pointer manipulation &mdash; traverse, reverse, merge, or detect cycles using slow/fast pointers.</p>
+
+<table>
+
+<thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Key Idea</th></tr></thead>
+
+<tbody>
+
+<tr><td>2</td><td><a href="https://leetcode.com/problems/add-two-numbers">Add Two Numbers</a></td><td>Med.</td><td>Digit-by-digit addition with carry through linked nodes</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<!-- ─── Trees ─── -->
+
+<h2 id="lc-trees">Trees</h2>
+
+<p><em>Pattern:</em> Recursive DFS (pre/in/post-order) or iterative BFS (level-order) to traverse or search tree structures.</p>
+
+<table>
+
+<thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Key Idea</th></tr></thead>
+
+<tbody>
+
+<tr><td>94</td><td><a href="https://leetcode.com/problems/binary-tree-inorder-traversal">Binary Tree Inorder Traversal</a></td><td>Easy</td><td>Left &rarr; root &rarr; right (iterative with stack)</td></tr>
+
+<tr><td>100</td><td><a href="https://leetcode.com/problems/same-tree">Same Tree</a></td><td>Easy</td><td>Simultaneous recursive traversal of two trees</td></tr>
+
+<tr><td>102</td><td><a href="https://leetcode.com/problems/binary-tree-level-order-traversal">Binary Tree Level Order Traversal</a></td><td>Med.</td><td>BFS with a queue; group nodes by level</td></tr>
+
+<tr><td>103</td><td><a href="https://leetcode.com/problems/binary-tree-zigzag-level-order-traversal">Binary Tree Zigzag Level Order Traversal</a></td><td>Med.</td><td>Level-order BFS; reverse alternate levels</td></tr>
+
+<tr><td>112</td><td><a href="https://leetcode.com/problems/path-sum">Path Sum</a></td><td>Easy</td><td>DFS subtracting node values; check zero at leaf</td></tr>
+
+<tr><td>113</td><td><a href="https://leetcode.com/problems/path-sum-ii">Path Sum II</a></td><td>Med.</td><td>DFS with backtracking to collect all root-to-leaf paths</td></tr>
+
+<tr><td>144</td><td><a href="https://leetcode.com/problems/binary-tree-preorder-traversal">Binary Tree Preorder Traversal</a></td><td>Easy</td><td>Root &rarr; left &rarr; right</td></tr>
+
+<tr><td>145</td><td><a href="https://leetcode.com/problems/binary-tree-postorder-traversal">Binary Tree Postorder Traversal</a></td><td>Easy</td><td>Left &rarr; right &rarr; root</td></tr>
+
+<tr><td>257</td><td><a href="https://leetcode.com/problems/binary-tree-paths">Binary Tree Paths</a></td><td>Easy</td><td>DFS building path strings to each leaf</td></tr>
+
+<tr><td>543</td><td><a href="https://leetcode.com/problems/diameter-of-binary-tree">Diameter of Binary Tree</a></td><td>Easy</td><td>Max of (left depth + right depth) at every node</td></tr>
+
+<tr><td>700</td><td><a href="https://leetcode.com/problems/search-in-a-binary-search-tree">Search in a Binary Search Tree</a></td><td>Easy</td><td>BST property: go left if smaller, right if larger</td></tr>
+
+<tr><td>701</td><td><a href="https://leetcode.com/problems/insert-into-a-binary-search-tree">Insert into a Binary Search Tree</a></td><td>Med.</td><td>Recursive insert following BST ordering</td></tr>
+
+<tr><td>938</td><td><a href="https://leetcode.com/problems/range-sum-of-bst">Range Sum of BST</a></td><td>Easy</td><td>Prune branches outside [low, high] range</td></tr>
+
+<tr><td>2265</td><td><a href="https://leetcode.com/problems/count-nodes-equal-to-average-of-subtree">Count Nodes Equal to Average of Subtree</a></td><td>Med.</td><td>Post-order DFS returning (sum, count) per subtree</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<!-- ─── Graph / BFS / DFS ─── -->
+
+<h2 id="lc-graph-bfs-dfs">Graph / BFS / DFS</h2>
+
+<p><em>Pattern:</em> Explore connected components on grids or adjacency lists using DFS or BFS; track visited cells.</p>
+
+<table>
+
+<thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Key Idea</th></tr></thead>
+
+<tbody>
+
+<tr><td>200</td><td><a href="https://leetcode.com/problems/number-of-islands">Number of Islands</a></td><td>Med.</td><td>DFS/BFS flood-fill from each unvisited &lsquo;1&rsquo;</td></tr>
+
+<tr><td>695</td><td><a href="https://leetcode.com/problems/max-area-of-island">Max Area of Island</a></td><td>Med.</td><td>DFS counting cells per connected component</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<!-- ─── Dynamic Programming ─── -->
+
+<h2 id="lc-dynamic-programming">Dynamic Programming</h2>
+
+<p><em>Pattern:</em> Break a problem into overlapping subproblems; store results to avoid recomputation. Think &ldquo;what decision do I make at step i?&rdquo;</p>
+
+<table>
+
+<thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Key Idea</th></tr></thead>
+
+<tbody>
+
+<tr><td>5</td><td><a href="https://leetcode.com/problems/longest-palindromic-substring">Longest Palindromic Substring</a></td><td>Med.</td><td>Expand around center or DP on substring endpoints</td></tr>
+
+<tr><td>45</td><td><a href="https://leetcode.com/problems/jump-game-ii">Jump Game II</a></td><td>Med.</td><td>Greedy BFS: track farthest reachable per &ldquo;jump level&rdquo;</td></tr>
+
+<tr><td>55</td><td><a href="https://leetcode.com/problems/jump-game">Jump Game</a></td><td>Med.</td><td>Track max reachable index; fail if current &gt; max</td></tr>
+
+<tr><td>62</td><td><a href="https://leetcode.com/problems/unique-paths">Unique Paths</a></td><td>Med.</td><td>DP grid: paths(i,j) = paths(i-1,j) + paths(i,j-1)</td></tr>
+
+<tr><td>63</td><td><a href="https://leetcode.com/problems/unique-paths-ii">Unique Paths II</a></td><td>Med.</td><td>Same DP with obstacles zeroing blocked cells</td></tr>
+
+<tr><td>121</td><td><a href="https://leetcode.com/problems/best-time-to-buy-and-sell-stock">Best Time to Buy and Sell Stock</a></td><td>Easy</td><td>Track min price so far; max profit = price &minus; min</td></tr>
+
+<tr><td>139</td><td><a href="https://leetcode.com/problems/word-break">Word Break</a></td><td>Med.</td><td>DP[i] = can s[0.i] be segmented using the dictionary?</td></tr>
+
+<tr><td>198</td><td><a href="https://leetcode.com/problems/house-robber">House Robber</a></td><td>Med.</td><td>dp[i] = max(dp[i-1], dp[i-2] + nums[i])</td></tr>
+
+<tr><td>213</td><td><a href="https://leetcode.com/problems/house-robber-ii">House Robber II</a></td><td>Med.</td><td>Run House Robber twice: skip first or skip last house</td></tr>
+
+<tr><td>509</td><td><a href="https://leetcode.com/problems/fibonacci-number">Fibonacci Number</a></td><td>Easy</td><td>Classic DP / two-variable iteration</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<!-- ─── Greedy ─── -->
+
+<h2 id="lc-greedy">Greedy</h2>
+
+<p><em>Pattern:</em> Make the locally optimal choice at each step; prove (or trust) that local optima lead to a global optimum.</p>
+
+<table>
+
+<thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Key Idea</th></tr></thead>
+
+<tbody>
+
+<tr><td>435</td><td><a href="https://leetcode.com/problems/non-overlapping-intervals">Non-overlapping Intervals</a></td><td>Med.</td><td>Sort by end time; greedily keep non-overlapping intervals</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<!-- ─── Backtracking ─── -->
+
+<h2 id="lc-backtracking">Backtracking</h2>
+
+<p><em>Pattern:</em> Explore all candidates recursively; prune invalid branches early. Generate subsets, permutations, or combinations.</p>
+
+<table>
+
+<thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Key Idea</th></tr></thead>
+
+<tbody>
+
+<tr><td>78</td><td><a href="https://leetcode.com/problems/subsets">Subsets</a></td><td>Med.</td><td>Include-or-skip each element; 2<sup>n</sup> subsets</td></tr>
+
+<tr><td>90</td><td><a href="https://leetcode.com/problems/subsets-ii">Subsets II</a></td><td>Med.</td><td>Sort first; skip consecutive duplicates in recursion</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<!-- ─── Heap / Priority Queue ─── -->
+
+<h2 id="lc-heap-and-priority-queue">Heap / Priority Queue</h2>
+
+<p><em>Pattern:</em> Maintain the k largest/smallest elements efficiently. Min-heap or max-heap gives O(log k) insert and O(1) peek.</p>
+
+<table>
+
+<thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Key Idea</th></tr></thead>
+
+<tbody>
+
+<tr><td>215</td><td><a href="https://leetcode.com/problems/kth-largest-element-in-an-array">Kth Largest Element in an Array</a></td><td>Med.</td><td>Min-heap of size k or quickselect</td></tr>
+
+<tr><td>973</td><td><a href="https://leetcode.com/problems/k-closest-points-to-origin">K Closest Points to Origin</a></td><td>Med.</td><td>Max-heap of size k by distance</td></tr>
+
+<tr><td>2336</td><td><a href="https://leetcode.com/problems/smallest-number-in-infinite-set">Smallest Number in Infinite Set</a></td><td>Med.</td><td>Min-heap + set to track added-back numbers</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<!-- ─── Design ─── -->
+
+<h2 id="lc-design">Design</h2>
+
+<p><em>Pattern:</em> Combine data structures to meet specific time-complexity guarantees for multiple operations.</p>
+
+<table>
+
+<thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Key Idea</th></tr></thead>
+
+<tbody>
+
+<tr><td>146</td><td><a href="https://leetcode.com/problems/lru-cache">LRU Cache</a></td><td>Med.</td><td>Hash map + doubly linked list for O(1) get and put</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<!-- ─── Math & Number Theory ─── -->
+
+<h2 id="lc-math-and-number-theory">Math &amp; Number Theory</h2>
+
+<p><em>Pattern:</em> Exploit mathematical properties &mdash; digit manipulation, modular arithmetic, number-theoretic tricks.</p>
+
+<table>
+
+<thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Key Idea</th></tr></thead>
+
+<tbody>
+
+<tr><td>7</td><td><a href="https://leetcode.com/problems/reverse-integer">Reverse Integer</a></td><td>Med.</td><td>Build reversed number digit-by-digit; check overflow</td></tr>
+
+<tr><td>9</td><td><a href="https://leetcode.com/problems/palindrome-number">Palindrome Number</a></td><td>Easy</td><td>Reverse half the digits and compare</td></tr>
+
+<tr><td>13</td><td><a href="https://leetcode.com/problems/roman-to-integer">Roman to Integer</a></td><td>Easy</td><td>Subtract when a smaller numeral precedes a larger one</td></tr>
+
+<tr><td>50</td><td><a href="https://leetcode.com/problems/powx-n">Pow(x, n)</a></td><td>Med.</td><td>Fast exponentiation: x<sup>n</sup> = (x<sup>n/2</sup>)&sup2;</td></tr>
+
+<tr><td>118</td><td><a href="https://leetcode.com/problems/pascals-triangle">Pascal&rsquo;s Triangle</a></td><td>Easy</td><td>Each cell = sum of two cells above</td></tr>
+
+<tr><td>172</td><td><a href="https://leetcode.com/problems/factorial-trailing-zeroes">Factorial Trailing Zeroes</a></td><td>Med.</td><td>Count factors of 5 in n!</td></tr>
+
+<tr><td>202</td><td><a href="https://leetcode.com/problems/happy-number">Happy Number</a></td><td>Easy</td><td>Cycle detection (Floyd&rsquo;s or hash set) on digit-square sum</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<!-- ─── String ─── -->
+
+<h2 id="lc-string">String</h2>
+
+<p><em>Pattern:</em> Character-level processing &mdash; frequency maps, prefix checks, two-pointer comparisons, or transformation rules.</p>
+
+<table>
+
+<thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Key Idea</th></tr></thead>
+
+<tbody>
+
+<tr><td>14</td><td><a href="https://leetcode.com/problems/longest-common-prefix">Longest Common Prefix</a></td><td>Easy</td><td>Compare character-by-character across all strings</td></tr>
+
+<tr><td>1657</td><td><a href="https://leetcode.com/problems/determine-if-two-strings-are-close">Determine if Two Strings Are Close</a></td><td>Med.</td><td>Same character set + same sorted frequency multiset</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<!-- ─── Matrix ─── -->
+
+<h2 id="lc-matrix">Matrix</h2>
+
+<p><em>Pattern:</em> 2D traversal patterns &mdash; spiral order, layer-by-layer rotation, or diagonal/neighbour checks.</p>
+
+<table>
+
+<thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Key Idea</th></tr></thead>
+
+<tbody>
+
+<tr><td>48</td><td><a href="https://leetcode.com/problems/rotate-image">Rotate Image</a></td><td>Med.</td><td>Transpose then reverse each row (90&deg; clockwise)</td></tr>
+
+<tr><td>54</td><td><a href="https://leetcode.com/problems/spiral-matrix">Spiral Matrix</a></td><td>Med.</td><td>Shrink boundaries after traversing each edge</td></tr>
+
+<tr><td>766</td><td><a href="https://leetcode.com/problems/toeplitz-matrix">Toeplitz Matrix</a></td><td>Easy</td><td>Every cell equals its top-left neighbour</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<!-- ─── SQL ─── -->
+
+<h2 id="lc-sql">SQL</h2>
+
+<p><em>Pattern:</em> JOINs, subqueries, window functions, and aggregation &mdash; the same skills tested in data science interviews.</p>
+
+<table>
+
+<thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Key Idea</th></tr></thead>
+
+<tbody>
+
+<tr><td>175</td><td><a href="https://leetcode.com/problems/combine-two-tables">Combine Two Tables</a></td><td>Easy</td><td>LEFT JOIN to keep all rows from one table</td></tr>
+
+<tr><td>176</td><td><a href="https://leetcode.com/problems/second-highest-salary">Second Highest Salary</a></td><td>Med.</td><td>Subquery or DENSE_RANK() window function</td></tr>
+
+<tr><td>177</td><td><a href="https://leetcode.com/problems/nth-highest-salary">Nth Highest Salary</a></td><td>Med.</td><td>Parameterised query with LIMIT/OFFSET or DENSE_RANK</td></tr>
+
+<tr><td>181</td><td><a href="https://leetcode.com/problems/employees-earning-more-than-their-managers">Employees Earning More Than Their Managers</a></td><td>Easy</td><td>Self-join comparing employee salary to manager salary</td></tr>
+
+<tr><td>182</td><td><a href="https://leetcode.com/problems/duplicate-emails">Duplicate Emails</a></td><td>Easy</td><td>GROUP BY + HAVING COUNT &gt; 1</td></tr>
+
+<tr><td>595</td><td><a href="https://leetcode.com/problems/big-countries">Big Countries</a></td><td>Easy</td><td>Simple WHERE with OR / UNION</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<hr />
+
+
+<div class="chapter-nav">
+  <a href="conclusion.html">&larr; Conclusion: Your ML Journey From Here</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <span class="nav-disabled">Next &rarr;</span>
+</div>
+<div class="site-footer">
+  <p>&copy; 2026 Hariram Subramanian Gopal &middot; <a href="index.html">Data to Decisions</a></p>
+</div>
+</body>
+</html>

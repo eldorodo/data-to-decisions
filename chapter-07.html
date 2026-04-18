@@ -1,0 +1,2462 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Hariram Subramanian Gopal" />
+  <title>Chapter 07: Model Evaluation and Validation | Data to Decisions</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</head>
+<body>
+<div class="chapter-nav">
+  <a href="chapter-06.html">&larr; Chapter 06: Explainable AI (XAI) and Model Interpretability</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-08.html">Chapter 08: Unsupervised Learning &rarr;</a>
+</div>
+<h1 id="chapter-07-model-evaluation-and-validation">Chapter 07: Model
+
+Evaluation and Validation</h1>
+
+<h2 id="chapter-scope-5">7.0 Chapter Scope</h2>
+
+<p>Building a model is only half the job. Knowing whether it actually
+
+works — and on what — is the other half. This chapter covers the
+
+complete evaluation toolkit: proper train/val/test splits,
+
+classification and regression metrics, ranking metrics, NLP-specific
+
+evaluation, and LLM/agent evaluation.</p>
+
+<p><strong>What you will learn:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Section</th>
+
+<th>Topic</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>6.1</td>
+
+<td>Train/val/test splits and cross-validation</td>
+
+</tr>
+
+<tr>
+
+<td>6.2</td>
+
+<td>Classification metrics: precision, recall, F1, F&beta;, ROC-AUC, PR-AUC, multi-class averaging</td>
+
+</tr>
+
+<tr>
+
+<td>6.3</td>
+
+<td>Regression metrics: MAE, MSE, RMSE, MAPE, R&sup2;</td>
+
+</tr>
+
+<tr>
+
+<td>6.4</td>
+
+<td>Ranking metrics: Precision@k, MRR, MAP, NDCG</td>
+
+</tr>
+
+<tr>
+
+<td>6.5</td>
+
+<td>NLP evaluation: BLEU, ROUGE, BERTScore, human eval</td>
+
+</tr>
+
+<tr>
+
+<td>6.6</td>
+
+<td>LLM and agents evaluation: benchmarks, LLM-as-judge, RAG eval, agent eval</td>
+
+</tr>
+
+<tr>
+
+<td>6.7</td>
+
+<td>Model calibration and uncertainty: reliability diagrams, Platt scaling, conformal prediction</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Prerequisites:</strong> Chapters 1–5 (any supervised learning
+
+context).</p>
+
+<hr />
+
+<h2 id="trainvaltest-splits-and-cross-validation">7.1 Train/Val/Test
+
+Splits and Cross-Validation</h2>
+
+<h3 id="why-three-splits">7.1.1 Why Three Splits?</h3>
+
+<p>This is one of the most misunderstood parts of ML. Here’s the core
+
+problem:</p>
+
+<blockquote>
+
+<p>Every time you look at your test set and adjust anything — threshold,
+
+architecture, feature — you are leaking information from test into your
+
+decisions.</p>
+
+</blockquote>
+
+<p>The three-split solution:</p>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/06_model_evaluation_and_validation/train_val_test_split.svg" alt="Three-way split: train to learn weights, validation to tune decisions, test for one honest final evaluation">
+
+<figcaption>
+
+Three-way split: train to learn weights, validation to tune decisions, test for one honest final evaluation
+
+</figcaption>
+
+</figure>
+
+<p><strong>What each split is for:</strong></p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Split</th>
+
+<th>Used to</th>
+
+<th>Can you adjust model based on this?</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>Train</strong></td>
+
+<td>Learn model weights/parameters</td>
+
+<td>Yes — that’s what training does</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Validation</strong></td>
+
+<td>Choose hyperparameters, architecture, features</td>
+
+<td>Yes — that’s what it’s for</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Test</strong></td>
+
+<td>Report final performance to the world</td>
+
+<td>NO — look once, report, done</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>What leakage looks like:</strong></p>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="260" viewBox="0 0 760 260" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .lk-title { font: bold 14px system-ui, sans-serif; fill: #1e293b; }
+    .lk-head  { font: bold 12px system-ui, sans-serif; }
+    .lk-step  { font: 11px system-ui, sans-serif; fill: #334155; }
+    .lk-note  { font: italic 10px system-ui, sans-serif; fill: #64748b; }
+    .lk-label { font: bold 11px system-ui, sans-serif; }
+  </style>
+  <text x="380" y="22" text-anchor="middle" class="lk-title">Leakage Happens When Preprocessing Sees Future Splits</text>
+  <!-- Wrong side -->
+  <rect x="10" y="38" width="360" height="200" rx="10" fill="#fef2f2" stroke="#f87171" stroke-width="2"/>
+  <text x="30" y="60" class="lk-label" fill="#dc2626">Optimistic score</text>
+  <text x="30" y="82" class="lk-head" fill="#0f172a">Wrong: leakage</text>
+  <text x="30" y="104" class="lk-step">1. Split data</text>
+  <text x="30" y="122" class="lk-step">2. Fit scaler on full data</text>
+  <text x="30" y="140" class="lk-step">3. Transform all sets</text>
+  <text x="30" y="158" class="lk-step">4. Train model</text>
+  <text x="30" y="190" class="lk-note">Problem: preprocessing already saw</text>
+  <text x="30" y="204" class="lk-note">the test distribution.</text>
+  <!-- Right side -->
+  <rect x="390" y="38" width="360" height="200" rx="10" fill="#ecfdf5" stroke="#34d399" stroke-width="2"/>
+  <text x="410" y="60" class="lk-label" fill="#059669">Honest score</text>
+  <text x="410" y="82" class="lk-head" fill="#0f172a">Right: leakage-safe</text>
+  <text x="410" y="104" class="lk-step">1. Split data first</text>
+  <text x="410" y="122" class="lk-step">2. Fit scaler on TRAIN only</text>
+  <text x="410" y="140" class="lk-step">3. Transform val/test with train statistics</text>
+  <text x="410" y="158" class="lk-step">4. Train model</text>
+  <text x="410" y="190" class="lk-note">Result: test data stays truly unseen.</text>
+  <!-- Caption -->
+  <text x="380" y="256" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#64748b" font-style="italic">Data leakage: fitting the scaler on all data before splitting lets the model see future information — always fit on train only</text>
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> The golden rule — fit preprocessing on training
+
+data only, transform everything else with those fitted parameters.</p>
+
+</blockquote>
+
+<h2 id="classification-metrics">7.2 Classification Metrics</h2>
+
+<h3 id="the-confusion-matrix">7.2.1 The Confusion Matrix</h3>
+
+<p>Before any metric makes sense, you need to understand what the model
+
+actually predicted. The confusion matrix shows every combination of
+
+predicted vs actual class.</p>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/06_model_evaluation_and_validation/confusion_matrix.svg" alt="Confusion matrix with derived metrics: Precision (TP/(TP+FP)), Recall (TP/(TP+FN)), and Specificity (TN/(TN+FP))">
+
+<figcaption>
+
+Confusion matrix with derived metrics: Precision (TP/(TP+FP)), Recall (TP/(TP+FN)), and Specificity (TN/(TN+FP))
+
+</figcaption>
+
+</figure>
+
+<p><strong>Concrete example — spam filter:</strong></p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th></th>
+
+<th>Predicted Spam</th>
+
+<th>Predicted Not Spam</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>Actually Spam</strong></td>
+
+<td>TP = 90 (caught)</td>
+
+<td>FN = 10 (missed spam)</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Actually Not Spam</strong></td>
+
+<td>FP = 5 (wrongly blocked)</td>
+
+<td>TN = 895 (correctly passed)</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<ul>
+
+<li>Precision = 90 / (90+5) = <strong>94.7%</strong> — of emails flagged
+
+spam, how many actually were?</li>
+
+<li>Recall = 90 / (90+10) = <strong>90.0%</strong> — of all spam, how
+
+many did we catch?</li>
+
+<li>F1 = 2 × (0.947 × 0.900) / (0.947 + 0.900) =
+
+<strong>92.3%</strong></li>
+
+</ul>
+
+<h4 id="f1-beta">F1-β: Tuning the Precision–Recall Balance</h4>
+
+<p>The standard F1 score weights precision and recall equally. When one matters more than the other, use the generalised <strong>F<sub>β</sub> score</strong>:</p>
+
+<p><span class="math display">\[
+F_\beta = (1 + \beta^2) \cdot \frac{\text{Precision} \cdot \text{Recall}}{\beta^2 \cdot \text{Precision} + \text{Recall}}
+\]</span></p>
+
+<ul>
+<li><strong>β &lt; 1</strong> → weighs <strong>precision</strong> more (penalises false positives harder)</li>
+<li><strong>β = 1</strong> → standard F1 (equal weight)</li>
+<li><strong>β &gt; 1</strong> → weighs <strong>recall</strong> more (penalises false negatives harder)</li>
+</ul>
+
+<p><strong>Common variants:</strong></p>
+
+<table>
+<thead>
+<tr><th>Variant</th><th>β</th><th>Emphasis</th><th>Use when</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>F<sub>0.5</sub></strong></td><td>0.5</td><td>Precision 2× more than recall</td><td>Spam filters, content moderation — false alarms annoy users</td></tr>
+<tr><td><strong>F<sub>1</sub></strong></td><td>1</td><td>Equal weight</td><td>General default when no clear cost asymmetry</td></tr>
+<tr><td><strong>F<sub>2</sub></strong></td><td>2</td><td>Recall 4× more than precision</td><td>Cancer screening, fraud detection — missing a case is dangerous</td></tr>
+</tbody>
+</table>
+
+<p><strong>Practical examples — which metric to use:</strong></p>
+
+<table>
+<thead>
+<tr><th>Scenario</th><th>Best metric</th><th>Why</th></tr>
+</thead>
+<tbody>
+<tr><td>Email spam filter</td><td>F<sub>0.5</sub> / Precision</td><td>Blocking a legitimate email is very costly to the user</td></tr>
+<tr><td>Cancer screening</td><td>F<sub>2</sub> / Recall</td><td>Missing a cancer case can be fatal; false alarms just trigger follow-up tests</td></tr>
+<tr><td>Fraud detection (auto-block)</td><td>F<sub>0.5</sub> / Precision</td><td>Blocking a legitimate transaction harms customer trust</td></tr>
+<tr><td>Fraud detection (manual review)</td><td>F<sub>2</sub> / Recall</td><td>A flagged alert just goes to a reviewer; missed fraud costs real money</td></tr>
+<tr><td>Search relevance</td><td>F<sub>1</sub></td><td>Both missing relevant results and returning junk are equally bad</td></tr>
+<tr><td>Safety-critical defect detection</td><td>F<sub>2</sub> / Recall</td><td>One missed defect can cause equipment failure or injury</td></tr>
+<tr><td>Content moderation</td><td>F<sub>0.5</sub> / Precision</td><td>Over-removing benign content stifles legitimate speech</td></tr>
+</tbody>
+</table>
+
+<blockquote>
+<p><strong>Key:</strong> Ask "what hurts more — a false alarm or a missed case?" If false alarms hurt more, use F<sub>0.5</sub>. If missed cases hurt more, use F<sub>2</sub>. When unsure, default to F<sub>1</sub>.</p>
+</blockquote>
+
+
+<blockquote>
+
+<p><strong>Key:</strong> There is always a precision-recall tradeoff —
+
+raising the threshold increases precision but lowers recall. Choose the
+
+metric that matches the cost of each error type.</p>
+
+</blockquote>
+
+<h3 id="example-walkthrough-9">7.2.2 Example / Walkthrough</h3>
+
+<p>Spam classifier on 100 emails:</p>
+
+<ul>
+<li><span class="math inline">\(TP =  40\)</span></li>
+<li><span class="math inline">\(TN = 45\)</span></li>
+<li><span  class="math inline">\(FP = 5\)</span></li>
+<li><span class="math inline">\(FN =  10\)</span></li>
+</ul>
+
+<p><span class="math display">\[
+
+\text{Accuracy} = \frac{40 + 45}{40 + 45 + 5 + 10} = \frac{85}{100} =
+
+0.85
+
+\]</span></p>
+
+<p><span class="math display">\[
+
+\text{Precision} = \frac{40}{40 + 5} = \frac{40}{45} \approx 0.889
+
+\]</span></p>
+
+<p><span class="math display">\[
+
+\text{Recall} = \frac{40}{40 + 10} = \frac{40}{50} = 0.8
+
+\]</span></p>
+
+<p><span class="math display">\[
+
+F1 = 2 \cdot \frac{0.889 \cdot 0.8}{0.889 + 0.8} \approx 0.842
+
+\]</span></p>
+
+<p>Interpretation:</p>
+
+<ul>
+<li>precision strong, recall decent</li>
+<li>if false spam  flags hurt users, prioritize precision</li>
+<li>if missed spam hurts more,  lower threshold</li>
+</ul>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/06_model_evaluation_and_validation/threshold_tradeoff.svg" alt="Precision-Recall-F1 tradeoff: raising the classification threshold increases precision but reduces recall">
+
+<figcaption>
+
+Precision-Recall-F1 tradeoff: raising the classification threshold increases precision but reduces recall
+
+</figcaption>
+
+</figure>
+
+<h3 id="roc-curve-and-auc">7.2.3 ROC Curve and AUC</h3>
+
+<p>Most classifiers output a <strong>probability score</strong>, not just a hard label.
+The ROC curve shows how the <strong>True Positive Rate (Recall)</strong> and <strong>False Positive Rate</strong>
+trade off as you sweep the classification threshold from 1 → 0.</p>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="400" viewBox="0 0 440 400" style="display:block; margin:20px auto; max-width:100%;">
+  <defs>
+    <style>
+      .roc-ax{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;fill:#64748b}
+      .roc-lbl{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;font-weight:bold;fill:#1e293b}
+      .roc-note{font-family:'Segoe UI',Arial,sans-serif;font-size:10px;fill:#64748b;font-style:italic}
+      .roc-leg{font-family:'Segoe UI',Arial,sans-serif;font-size:10px;fill:#334155}
+    </style>
+  </defs>
+  <!-- Title -->
+  <text x="220" y="20" text-anchor="middle" class="roc-lbl" style="font-size:13px">ROC Curve — TPR vs FPR at every threshold</text>
+  <!-- Axes -->
+  <line x1="60" y1="40" x2="60" y2="340" stroke="#cbd5e1" stroke-width="1.2"/>
+  <line x1="60" y1="340" x2="420" y2="340" stroke="#cbd5e1" stroke-width="1.2"/>
+  <!-- Y axis labels -->
+  <text x="55" y="344" text-anchor="end" class="roc-ax">0.0</text>
+  <text x="55" y="284" text-anchor="end" class="roc-ax">0.2</text>
+  <text x="55" y="224" text-anchor="end" class="roc-ax">0.4</text>
+  <text x="55" y="164" text-anchor="end" class="roc-ax">0.6</text>
+  <text x="55" y="104" text-anchor="end" class="roc-ax">0.8</text>
+  <text x="55" y="44" text-anchor="end" class="roc-ax">1.0</text>
+  <!-- X axis labels -->
+  <text x="60" y="358" text-anchor="middle" class="roc-ax">0.0</text>
+  <text x="132" y="358" text-anchor="middle" class="roc-ax">0.2</text>
+  <text x="204" y="358" text-anchor="middle" class="roc-ax">0.4</text>
+  <text x="276" y="358" text-anchor="middle" class="roc-ax">0.6</text>
+  <text x="348" y="358" text-anchor="middle" class="roc-ax">0.8</text>
+  <text x="420" y="358" text-anchor="middle" class="roc-ax">1.0</text>
+  <!-- Axis titles -->
+  <text x="240" y="380" text-anchor="middle" class="roc-lbl" style="font-size:11px">False Positive Rate (FPR)</text>
+  <text x="18" y="192" text-anchor="middle" class="roc-lbl" style="font-size:11px" transform="rotate(-90 18 192)">True Positive Rate (TPR)</text>
+  <!-- Grid lines -->
+  <line x1="60" y1="284" x2="420" y2="284" stroke="#e2e8f0" stroke-width="0.5"/>
+  <line x1="60" y1="224" x2="420" y2="224" stroke="#e2e8f0" stroke-width="0.5"/>
+  <line x1="60" y1="164" x2="420" y2="164" stroke="#e2e8f0" stroke-width="0.5"/>
+  <line x1="60" y1="104" x2="420" y2="104" stroke="#e2e8f0" stroke-width="0.5"/>
+  <line x1="132" y1="40" x2="132" y2="340" stroke="#e2e8f0" stroke-width="0.5"/>
+  <line x1="204" y1="40" x2="204" y2="340" stroke="#e2e8f0" stroke-width="0.5"/>
+  <line x1="276" y1="40" x2="276" y2="340" stroke="#e2e8f0" stroke-width="0.5"/>
+  <line x1="348" y1="40" x2="348" y2="340" stroke="#e2e8f0" stroke-width="0.5"/>
+  <!-- Random baseline (diagonal) -->
+  <line x1="60" y1="340" x2="420" y2="40" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="6 4"/>
+  <!-- Good model curve (AUC ~ 0.92) -->
+  <path d="M60,340 Q60,100 100,80 Q140,62 180,55 Q240,46 300,44 Q360,42 420,40"
+        fill="none" stroke="#2563eb" stroke-width="2.5"/>
+  <!-- Shaded area under curve -->
+  <path d="M60,340 Q60,100 100,80 Q140,62 180,55 Q240,46 300,44 Q360,42 420,40 L420,340 Z"
+        fill="#3b82f6" opacity="0.1"/>
+  <!-- Mediocre model curve (AUC ~ 0.75) -->
+  <path d="M60,340 Q80,260 120,200 Q180,140 240,110 Q300,85 360,65 Q400,50 420,40"
+        fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="8 3"/>
+  <!-- Legend -->
+  <line x1="130" y1="392" x2="155" y2="392" stroke="#2563eb" stroke-width="2.5"/>
+  <text x="160" y="396" class="roc-leg">Good model (AUC ~ 0.92)</text>
+  <line x1="290" y1="392" x2="315" y2="392" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6 3"/>
+  <text x="320" y="396" class="roc-leg">Weaker (AUC ~ 0.75)</text>
+  <!-- Annotation -->
+  <text x="310" y="240" class="roc-note">AUC = area under</text>
+  <text x="310" y="254" class="roc-note">this curve</text>
+  <text x="280" y="320" class="roc-note">random = 0.5</text>
+</svg>
+
+<p><strong>How to read it:</strong></p>
+<ul>
+<li>Each point on the curve is one threshold setting.</li>
+<li><strong>Top-left corner</strong> = perfect classifier (TPR = 1, FPR = 0).</li>
+<li>The <strong>diagonal</strong> = random guessing (AUC = 0.5).</li>
+<li><strong>AUC</strong> (Area Under the Curve) summarises the curve in one number: the probability that
+the model ranks a random positive higher than a random negative. AUC = 1.0 is perfect; 0.5 is useless.</li>
+</ul>
+
+<p><strong>When to use ROC-AUC:</strong></p>
+<ul>
+<li>Comparing models across <strong>all thresholds</strong> without committing to one.</li>
+<li>Works well when classes are <strong>roughly balanced</strong>.</li>
+<li>Standard in competitions (Kaggle), medical diagnostics, and credit scoring.</li>
+</ul>
+
+<blockquote>
+<p><strong>Gotcha:</strong> On heavily imbalanced data (e.g. 99 % negative), ROC-AUC can look deceptively high because
+the denominator of FPR (all negatives) is huge. A model with many false positives still shows a low FPR.
+In these cases, use the <strong>PR curve</strong> instead.</p>
+</blockquote>
+
+<h3 id="pr-curve">7.2.4 Precision-Recall (PR) Curve</h3>
+
+<p>The PR curve plots <strong>Precision</strong> (y-axis) vs <strong>Recall</strong> (x-axis) as the threshold varies.
+It ignores true negatives entirely, focusing on <em>how well the model finds and
+ranks the positive class</em>.</p>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="400" viewBox="0 0 440 400" style="display:block; margin:20px auto; max-width:100%;">
+  <defs>
+    <style>
+      .pr-ax{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;fill:#64748b}
+      .pr-lbl{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;font-weight:bold;fill:#1e293b}
+      .pr-note{font-family:'Segoe UI',Arial,sans-serif;font-size:10px;fill:#64748b;font-style:italic}
+      .pr-leg{font-family:'Segoe UI',Arial,sans-serif;font-size:10px;fill:#334155}
+    </style>
+  </defs>
+  <!-- Title -->
+  <text x="220" y="20" text-anchor="middle" class="pr-lbl" style="font-size:13px">PR Curve — Precision vs Recall at every threshold</text>
+  <!-- Axes -->
+  <line x1="60" y1="40" x2="60" y2="340" stroke="#cbd5e1" stroke-width="1.2"/>
+  <line x1="60" y1="340" x2="420" y2="340" stroke="#cbd5e1" stroke-width="1.2"/>
+  <!-- Y axis labels -->
+  <text x="55" y="344" text-anchor="end" class="pr-ax">0.0</text>
+  <text x="55" y="284" text-anchor="end" class="pr-ax">0.2</text>
+  <text x="55" y="224" text-anchor="end" class="pr-ax">0.4</text>
+  <text x="55" y="164" text-anchor="end" class="pr-ax">0.6</text>
+  <text x="55" y="104" text-anchor="end" class="pr-ax">0.8</text>
+  <text x="55" y="44" text-anchor="end" class="pr-ax">1.0</text>
+  <!-- X axis labels -->
+  <text x="60" y="358" text-anchor="middle" class="pr-ax">0.0</text>
+  <text x="132" y="358" text-anchor="middle" class="pr-ax">0.2</text>
+  <text x="204" y="358" text-anchor="middle" class="pr-ax">0.4</text>
+  <text x="276" y="358" text-anchor="middle" class="pr-ax">0.6</text>
+  <text x="348" y="358" text-anchor="middle" class="pr-ax">0.8</text>
+  <text x="420" y="358" text-anchor="middle" class="pr-ax">1.0</text>
+  <!-- Axis titles -->
+  <text x="240" y="380" text-anchor="middle" class="pr-lbl" style="font-size:11px">Recall</text>
+  <text x="18" y="192" text-anchor="middle" class="pr-lbl" style="font-size:11px" transform="rotate(-90 18 192)">Precision</text>
+  <!-- Grid lines -->
+  <line x1="60" y1="284" x2="420" y2="284" stroke="#e2e8f0" stroke-width="0.5"/>
+  <line x1="60" y1="224" x2="420" y2="224" stroke="#e2e8f0" stroke-width="0.5"/>
+  <line x1="60" y1="164" x2="420" y2="164" stroke="#e2e8f0" stroke-width="0.5"/>
+  <line x1="60" y1="104" x2="420" y2="104" stroke="#e2e8f0" stroke-width="0.5"/>
+  <line x1="132" y1="40" x2="132" y2="340" stroke="#e2e8f0" stroke-width="0.5"/>
+  <line x1="204" y1="40" x2="204" y2="340" stroke="#e2e8f0" stroke-width="0.5"/>
+  <line x1="276" y1="40" x2="276" y2="340" stroke="#e2e8f0" stroke-width="0.5"/>
+  <line x1="348" y1="40" x2="348" y2="340" stroke="#e2e8f0" stroke-width="0.5"/>
+  <!-- Random baseline (horizontal, = prevalence ~ 10%) -->
+  <line x1="60" y1="310" x2="420" y2="310" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="6 4"/>
+  <text x="425" y="314" class="pr-note" text-anchor="start" style="font-size:9px">baseline</text>
+  <!-- Good model PR curve (AP ~ 0.88) -->
+  <path d="M60,46 Q100,48 150,52 Q200,58 250,70 Q300,95 340,140 Q370,200 400,280 Q410,310 420,340"
+        fill="none" stroke="#2563eb" stroke-width="2.5"/>
+  <!-- Shaded area -->
+  <path d="M60,46 Q100,48 150,52 Q200,58 250,70 Q300,95 340,140 Q370,200 400,280 Q410,310 420,340 L420,340 L60,340 Z"
+        fill="#3b82f6" opacity="0.08"/>
+  <!-- Mediocre model PR curve (AP ~ 0.55) -->
+  <path d="M60,50 Q100,80 150,130 Q200,190 250,240 Q300,280 350,305 Q400,330 420,340"
+        fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="8 3"/>
+  <!-- Legend -->
+  <line x1="130" y1="392" x2="155" y2="392" stroke="#2563eb" stroke-width="2.5"/>
+  <text x="160" y="396" class="pr-leg">Good model (AP ~ 0.88)</text>
+  <line x1="290" y1="392" x2="315" y2="392" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6 3"/>
+  <text x="320" y="396" class="pr-leg">Weaker model (AP ~ 0.55)</text>
+  <!-- Annotation -->
+  <text x="115" y="80" class="pr-note">Top-right = ideal</text>
+  <text x="115" y="94" class="pr-note">(high precision + high recall)</text>
+</svg>
+
+<p><strong>How to read it:</strong></p>
+<ul>
+<li><strong>Top-right corner</strong> = perfect (precision = 1, recall = 1).</li>
+<li>The curve typically falls as recall increases — capturing more positives means accepting more false positives.</li>
+<li><strong>AP</strong> (Average Precision) summarises the curve: the higher the better.</li>
+<li>The <strong>baseline</strong> (dashed line) = class prevalence. For 10 % positive class, a random model scores 0.10.</li>
+</ul>
+
+<p><strong>When to use PR curve over ROC:</strong></p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:100%; max-width:640px;">
+<thead><tr>
+  <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #6366f1; color:#4f46e5;">Situation</th>
+  <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #6366f1; color:#4f46e5;">Use</th>
+  <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #6366f1; color:#4f46e5;">Why</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0;">Balanced classes</td>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0;"><strong>ROC-AUC</strong></td>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0;">Both curves informative; ROC is the well-understood standard</td>
+</tr>
+<tr>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0;">Imbalanced (rare positive)</td>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0;"><strong>PR / AP</strong></td>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0;">ROC hides poor precision; PR exposes it directly</td>
+</tr>
+<tr>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0;">Care about finding positives</td>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0;"><strong>PR / AP</strong></td>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0;">Fraud, disease screening, information retrieval</td>
+</tr>
+<tr>
+  <td style="padding:8px 12px;">Care about both classes equally</td>
+  <td style="padding:8px 12px;"><strong>ROC-AUC</strong></td>
+  <td style="padding:8px 12px;">Credit scoring, medical diagnostics with balanced outcomes</td>
+</tr>
+</tbody>
+</table>
+
+<blockquote>
+<p><strong>Key:</strong> ROC-AUC answers "can this model rank positives above negatives?" PR-AUC answers
+"when it says positive, is it right, and does it find them all?" On imbalanced data, always check both.</p>
+</blockquote>
+
+<p>Interview classic:</p>
+
+<ul>
+<li>if 95% emails are non-spam, “predict all  non-spam” gives <strong>95% accuracy</strong></li>
+<li>therefore  <strong>accuracy alone misleads</strong></li>
+</ul>
+
+<h3 id="common-mistakes-checklist">7.2.5 Common mistakes / checklist</h3>
+
+<p>Before trusting a score:</p>
+
+<ul>
+<li>correct split strategy</li>
+<li>no leakage -  metric matches business cost</li>
+<li>class imbalance checked</li>
+<li>threshold  chosen on validation, not test</li>
+<li>final report on untouched test set</li>
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> Pick split first, metric second, tune on
+
+validation/CV, report once on test.</p>
+
+</blockquote>
+
+<h3 id="key-takeaways-12">7.2.6 Key Takeaways</h3>
+
+<ul>
+
+<li>Evaluate on <strong>unseen data</strong></li>
+
+<li>Metric must match <strong>error cost</strong></li>
+
+<li>Accuracy alone is weak on imbalance</li>
+
+<li>Use <strong>ROC/PR/calibration</strong> for score-based models</li>
+
+<li>Check <strong>overfitting/underfitting</strong> via train vs
+
+validation</li>
+
+<li>Use <strong>CV</strong> when data is limited</li>
+
+<li>Optimize for <strong>business behavior</strong>, not prettiest
+
+offline score</li>
+
+</ul>
+
+<h2 id="regression-metrics-1">7.3 Regression Metrics</h2>
+
+<p>Regression outputs a number. The question isn’t “right or wrong” but
+
+<strong>how far off</strong> the prediction is.</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> Choose your metric before training. Your loss
+
+function and your evaluation metric should match your business cost
+
+structure.</p>
+
+</blockquote>
+
+<h3 id="the-core-metrics">7.3.1 The Core Metrics</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 20%" />
+
+<col style="width: 20%" />
+
+<col style="width: 20%" />
+
+<col style="width: 20%" />
+
+<col style="width: 20%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Metric</th>
+
+<th>Formula</th>
+
+<th>Units</th>
+
+<th>Penalizes large errors?</th>
+
+<th>Outlier-robust?</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>MAE</strong> (Mean Absolute Error)</td>
+
+<td>mean |y − ŷ|</td>
+
+<td>same as target</td>
+
+<td>Equally</td>
+
+<td>Yes</td>
+
+</tr>
+
+<tr>
+
+<td><strong>MSE</strong> (Mean Squared Error)</td>
+
+<td>mean (y − ŷ)²</td>
+
+<td>target²</td>
+
+<td>Quadratically</td>
+
+<td>No</td>
+
+</tr>
+
+<tr>
+
+<td><strong>RMSE</strong> (Root Mean Squared Error)</td>
+
+<td>√(mean (y − ŷ)²)</td>
+
+<td>same as target</td>
+
+<td>Quadratically</td>
+
+<td>No</td>
+
+</tr>
+
+<tr>
+
+<td><strong>MAPE</strong> (Mean Absolute Percentage Error)</td>
+
+<td>mean |y − ŷ|/|y| × 100%</td>
+
+<td>%</td>
+
+<td>Equally</td>
+
+<td>No (breaks at y≈0)</td>
+
+</tr>
+
+<tr>
+
+<td><strong>R²</strong> (Coefficient of Determination)</td>
+
+<td>1 − SS_res/SS_tot</td>
+
+<td>unitless (−∞ to 1)</td>
+
+<td>—</td>
+
+<td>Moderate</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="formulas-1">7.3.2 Formulas</h3>
+
+<p>In all formulas below: <span class="math inline">\(y_i\)</span> = actual value, <span class="math inline">\(\hat{y}_i\)</span> = predicted value, <span class="math inline">\(\bar{y}\)</span> = mean of actual values, <span class="math inline">\(n\)</span> = number of observations.</p>
+
+<p><strong>Mean Absolute Error (MAE):</strong></p>
+
+<p><span class="math display">\[
+
+\text{MAE} = \frac{1}{n}\sum_{i=1}^{n} |y_i - \hat{y}_i|
+
+\]</span></p>
+
+<p><strong>Mean Squared Error (MSE):</strong></p>
+
+<p><span class="math display">\[
+
+\text{MSE} = \frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2
+
+\]</span></p>
+
+<p><strong>Root Mean Squared Error (RMSE):</strong></p>
+
+<p><span class="math display">\[
+
+\text{RMSE} = \sqrt{\frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2}
+
+\]</span></p>
+
+<p><strong>Mean Absolute Percentage Error (MAPE):</strong></p>
+
+<p><span class="math display">\[
+
+\text{MAPE} = \frac{100\%}{n}\sum_{i=1}^{n}\left|\frac{y_i -
+
+\hat{y}_i}{y_i}\right|
+
+\]</span></p>
+
+<p><strong>R-squared (coefficient of determination):</strong></p>
+
+<p><span class="math display">\[
+
+R^2 = 1 - \frac{\sum_{i=1}^{n}(y_i - \hat{y}_i)^2}{\sum_{i=1}^{n}(y_i -
+
+\bar{y})^2}
+
+\]</span></p>
+
+<h3 id="intuitions-and-when-to-use-each">7.3.3 Intuitions and When to Use
+
+Each</h3>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px;">Concrete example: predicting house prices (Ground truth: $500,000)</caption>
+<thead><tr>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Metric</th>
+  <th style="padding:8px 14px; text-align:right; border-bottom:2px solid #6366f1;">Model A ($490k)</th>
+  <th style="padding:8px 14px; text-align:right; border-bottom:2px solid #6366f1;">Model B ($300k)</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Takeaway</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">Error</td>
+    <td style="padding:6px 14px; text-align:right; font-family:'Consolas',monospace; border-bottom:1px solid rgba(0,0,0,0.06);">$10,000</td>
+    <td style="padding:6px 14px; text-align:right; font-family:'Consolas',monospace; border-bottom:1px solid rgba(0,0,0,0.06);">$200,000</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">20× difference</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">MAE</td>
+    <td style="padding:6px 14px; text-align:right; font-family:'Consolas',monospace; border-bottom:1px solid rgba(0,0,0,0.06);">10,000</td>
+    <td style="padding:6px 14px; text-align:right; font-family:'Consolas',monospace; border-bottom:1px solid rgba(0,0,0,0.06);">200,000</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Proportional</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">MSE</td>
+    <td style="padding:6px 14px; text-align:right; font-family:'Consolas',monospace; border-bottom:1px solid rgba(0,0,0,0.06);">1e8</td>
+    <td style="padding:6px 14px; text-align:right; font-family:'Consolas',monospace; border-bottom:1px solid rgba(0,0,0,0.06);">4e10</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">B is 400× worse, not 20×</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600;">RMSE</td>
+    <td style="padding:6px 14px; text-align:right; font-family:'Consolas',monospace;">10,000</td>
+    <td style="padding:6px 14px; text-align:right; font-family:'Consolas',monospace;">200,000</td>
+    <td style="padding:6px 14px;">Same units as MAE, squares errors</td></tr>
+</tbody>
+</table>
+<p style="font-style:italic; color:#64748b; font-size:0.9rem;">RMSE punishes Model B more for the huge miss. MAE treats both errors proportionally.</p>
+
+<p><strong>MAE — use when:</strong></p>
+
+<ul>
+<li>You want “average miss in original  units”</li>
+<li>Large errors are not disproportionately worse (e.g. delivery  time estimation)</li>
+<li>Outliers are common and you don’t want to  over-penalize them</li>
+</ul>
+
+<p><strong>RMSE — use when:</strong></p>
+
+<ul>
+<li>Large errors are significantly  worse (e.g. price prediction, financial risk)</li>
+<li>You’re training with MSE  loss (RMSE is interpretable version)</li>
+<li>Comparing to MSE-trained  baselines</li>
+</ul>
+
+<p><strong>MAPE — use when:</strong></p>
+
+<ul>
+<li>Relative errors matter more than  absolute (e.g. forecasting sales across SKUs with very different scales)</li>
+<li><strong>Avoid when:</strong> targets can be near zero (division by  small numbers → instability)</li>
+</ul>
+
+<p><strong>R² — use when:</strong></p>
+
+<ul>
+<li>Reporting model fit relative to a  mean baseline</li>
+<li>Comparing models across datasets with different  scales</li>
+</ul>
+
+<h3 id="what-r²-actually-means">7.3.4 What R² Actually Means</h3>
+
+<p><span class="math display">\[
+
+R^2 = 1 - \frac{\text{Model&#39;s SS residuals}}{\text{Mean
+
+baseline&#39;s SS residuals}}
+
+\]</span></p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">R² = 1.0</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Perfect fit — model explains all variance</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">R² = 0.7</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Model explains 70% of variance; 30% unexplained</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">R² = 0.0</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Model is no better than predicting the mean every time</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">R² &lt; 0</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Model is worse than always predicting the mean (!!)</td>
+</tr>
+</table>
+
+
+<blockquote>
+
+<p><strong>Key:</strong> R² near 0 doesn’t mean the model is useless —
+
+it means the task is hard or residual variance is irreducible.</p>
+
+</blockquote>
+
+<h3 id="choosing-between-mae-and-rmse">7.3.5 Choosing Between MAE and
+
+RMSE</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb256-1"><a href="#cb256-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb256-2"><a href="#cb256-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb256-3"><a href="#cb256-3" aria-hidden="true" tabindex="-1"></a>y_true <span class="op">=</span> np.array([<span class="dv">100</span>, <span class="dv">150</span>, <span class="dv">200</span>, <span class="dv">250</span>, <span class="dv">500</span>])  <span class="co"># 500 is an outlier</span></span>
+<span id="cb256-4"><a href="#cb256-4" aria-hidden="true" tabindex="-1"></a>y_pred <span class="op">=</span> np.array([<span class="dv">110</span>, <span class="dv">145</span>, <span class="dv">205</span>, <span class="dv">240</span>, <span class="dv">380</span>])  <span class="co"># underestimates outlier</span></span>
+<span id="cb256-5"><a href="#cb256-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb256-6"><a href="#cb256-6" aria-hidden="true" tabindex="-1"></a>mae  <span class="op">=</span> np.mean(np.<span class="bu">abs</span>(y_true <span class="op">-</span> y_pred))</span>
+<span id="cb256-7"><a href="#cb256-7" aria-hidden="true" tabindex="-1"></a>rmse <span class="op">=</span> np.sqrt(np.mean((y_true <span class="op">-</span> y_pred)<span class="op">**</span><span class="dv">2</span>))</span>
+<span id="cb256-8"><a href="#cb256-8" aria-hidden="true" tabindex="-1"></a>r2   <span class="op">=</span> <span class="dv">1</span> <span class="op">-</span> np.<span class="bu">sum</span>((y_true <span class="op">-</span> y_pred)<span class="op">**</span><span class="dv">2</span>) <span class="op">/</span> np.<span class="bu">sum</span>((y_true <span class="op">-</span> np.mean(y_true))<span class="op">**</span><span class="dv">2</span>)</span>
+<span id="cb256-9"><a href="#cb256-9" aria-hidden="true" tabindex="-1"></a>mape <span class="op">=</span> np.mean(np.<span class="bu">abs</span>((y_true <span class="op">-</span> y_pred) <span class="op">/</span> y_true)) <span class="op">*</span> <span class="dv">100</span></span>
+<span id="cb256-10"><a href="#cb256-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb256-11"><a href="#cb256-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;MAE:  </span><span class="sc">{</span>mae<span class="sc">:.1f}</span><span class="ss">&quot;</span>)    <span class="co"># 22.0  — straightforward average error</span></span>
+<span id="cb256-12"><a href="#cb256-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;RMSE: </span><span class="sc">{</span>rmse<span class="sc">:.1f}</span><span class="ss">&quot;</span>)   <span class="co"># 52.8  — outlier inflates this significantly</span></span>
+<span id="cb256-13"><a href="#cb256-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;R²:   </span><span class="sc">{</span>r2<span class="sc">:.3f}</span><span class="ss">&quot;</span>)</span>
+<span id="cb256-14"><a href="#cb256-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;MAPE: </span><span class="sc">{</span>mape<span class="sc">:.1f}</span><span class="ss">%&quot;</span>)</span></code></pre></div>
+
+<h3 id="sklearn-regression-metrics">7.3.6 Sklearn Regression Metrics</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb257-1"><a href="#cb257-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> (</span>
+<span id="cb257-2"><a href="#cb257-2" aria-hidden="true" tabindex="-1"></a>    mean_absolute_error,</span>
+<span id="cb257-3"><a href="#cb257-3" aria-hidden="true" tabindex="-1"></a>    mean_squared_error,</span>
+<span id="cb257-4"><a href="#cb257-4" aria-hidden="true" tabindex="-1"></a>    r2_score,</span>
+<span id="cb257-5"><a href="#cb257-5" aria-hidden="true" tabindex="-1"></a>    mean_absolute_percentage_error,</span>
+<span id="cb257-6"><a href="#cb257-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb257-7"><a href="#cb257-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb257-8"><a href="#cb257-8" aria-hidden="true" tabindex="-1"></a>mae  <span class="op">=</span> mean_absolute_error(y_true, y_pred)</span>
+<span id="cb257-9"><a href="#cb257-9" aria-hidden="true" tabindex="-1"></a>mse  <span class="op">=</span> mean_squared_error(y_true, y_pred)</span>
+<span id="cb257-10"><a href="#cb257-10" aria-hidden="true" tabindex="-1"></a>rmse <span class="op">=</span> mean_squared_error(y_true, y_pred, squared<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb257-11"><a href="#cb257-11" aria-hidden="true" tabindex="-1"></a>r2   <span class="op">=</span> r2_score(y_true, y_pred)</span>
+<span id="cb257-12"><a href="#cb257-12" aria-hidden="true" tabindex="-1"></a>mape <span class="op">=</span> mean_absolute_percentage_error(y_true, y_pred) <span class="op">*</span> <span class="dv">100</span>  <span class="co"># as %</span></span></code></pre></div>
+
+<h3 id="residual-diagnostics">7.3.7 Residual Diagnostics</h3>
+
+<p>Beyond a single metric, <strong>look at the residuals</strong>:</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb258-1"><a href="#cb258-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb258-2"><a href="#cb258-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb258-3"><a href="#cb258-3" aria-hidden="true" tabindex="-1"></a>residuals <span class="op">=</span> y_true <span class="op">-</span> y_pred</span>
+<span id="cb258-4"><a href="#cb258-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb258-5"><a href="#cb258-5" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="dv">4</span>))</span>
+<span id="cb258-6"><a href="#cb258-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb258-7"><a href="#cb258-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Residuals vs predicted</span></span>
+<span id="cb258-8"><a href="#cb258-8" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].scatter(y_pred, residuals, alpha<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb258-9"><a href="#cb258-9" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].axhline(<span class="dv">0</span>, color<span class="op">=</span><span class="st">&#39;red&#39;</span>, linestyle<span class="op">=</span><span class="st">&#39;--&#39;</span>)</span>
+<span id="cb258-10"><a href="#cb258-10" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].set_xlabel(<span class="st">&#39;Predicted&#39;</span>)</span>
+<span id="cb258-11"><a href="#cb258-11" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].set_ylabel(<span class="st">&#39;Residual&#39;</span>)</span>
+<span id="cb258-12"><a href="#cb258-12" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].set_title(<span class="st">&#39;Residuals vs Fitted&#39;</span>)</span>
+<span id="cb258-13"><a href="#cb258-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb258-14"><a href="#cb258-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Residual distribution</span></span>
+<span id="cb258-15"><a href="#cb258-15" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].hist(residuals, bins<span class="op">=</span><span class="dv">30</span>, edgecolor<span class="op">=</span><span class="st">&#39;white&#39;</span>)</span>
+<span id="cb258-16"><a href="#cb258-16" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].axvline(<span class="dv">0</span>, color<span class="op">=</span><span class="st">&#39;red&#39;</span>, linestyle<span class="op">=</span><span class="st">&#39;--&#39;</span>)</span>
+<span id="cb258-17"><a href="#cb258-17" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].set_title(<span class="st">&#39;Residual Distribution&#39;</span>)</span>
+<span id="cb258-18"><a href="#cb258-18" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb258-19"><a href="#cb258-19" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div>
+
+<p><strong>What to look for:</strong></p>
+
+<ul>
+<li><strong>Random scatter around  0</strong> → good</li>
+<li><strong>Fan shape (heteroscedasticity)</strong> →  variance grows with prediction magnitude; try log-transform target -  <strong>Curve pattern</strong> → missing nonlinear term; try polynomial  features or a different model</li>
+<li><strong>Heavy tails / big  outliers</strong> → investigate specific data points, consider robust  loss</li>
+</ul>
+
+<h3 id="common-pitfalls-16">7.3.8 Common Pitfalls</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 50%" />
+
+<col style="width: 50%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Mistake</th>
+
+<th>Why it matters</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Using MAPE with targets near zero</td>
+
+<td>Division blows up; use RMSE or MAE instead</td>
+
+</tr>
+
+<tr>
+
+<td>Reporting only R²</td>
+
+<td>R² can look great even with terrible predictions (if baseline
+
+variance is low)</td>
+
+</tr>
+
+<tr>
+
+<td>Not plotting residuals</td>
+
+<td>Metrics hide structure that plots reveal</td>
+
+</tr>
+
+<tr>
+
+<td>Optimizing RMSE but reporting MAE</td>
+
+<td>Metric mismatch; always optimize what you report</td>
+
+</tr>
+
+<tr>
+
+<td>Forgetting to check prediction range</td>
+
+<td>Model may systematically underpredict tails</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<hr />
+
+<h2 id="ranking-metrics-ndcg-map-mrr">7.4 Ranking Metrics (NDCG, MAP,
+
+MRR)</h2>
+
+<p>Ranking asks a different question: <strong>is the displayed order
+
+good?</strong></p>
+
+<blockquote>
+
+<p><strong>Key:</strong> In recommenders, judge the ranked list users
+
+see, not just raw scores.</p>
+
+</blockquote>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="60" viewBox="0 0 460 60" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .rk-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .rk-sub { font: 10px system-ui, sans-serif; fill: #64748b; }
+  </style>
+  <defs><marker id="rk-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <rect x="10" y="10" width="120" height="40" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="70" y="28" text-anchor="middle" class="rk-lbl">Popularity</text>
+  <text x="70" y="42" text-anchor="middle" class="rk-sub">Age + rules</text>
+  <line x1="130" y1="30" x2="172" y2="30" stroke="#6366f1" stroke-width="2" marker-end="url(#rk-a)"/>
+  <rect x="180" y="10" width="120" height="40" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="240" y="28" text-anchor="middle" class="rk-lbl">Ranking formula</text>
+  <text x="240" y="42" text-anchor="middle" class="rk-sub">score(item)</text>
+  <line x1="300" y1="30" x2="342" y2="30" stroke="#6366f1" stroke-width="2" marker-end="url(#rk-a)"/>
+  <rect x="350" y="10" width="100" height="40" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="400" y="28" text-anchor="middle" class="rk-lbl">Feed behavior</text>
+  <text x="400" y="42" text-anchor="middle" class="rk-sub">freshness/exposure</text>
+</svg>
+
+<h3 id="why-ranking-formulas-matter">7.4.1 Why ranking formulas matter</h3>
+
+<p>Ranking trades off:</p>
+
+<ul>
+<li>freshness</li>
+<li>new-item exposure</li>
+<li>stability /  churn</li>
+<li>engagement quality</li>
+</ul>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Design choice</th>
+
+<th>Effect</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Linear popularity</td>
+
+<td>runaway winners dominate</td>
+
+</tr>
+
+<tr>
+
+<td>Sublinear popularity</td>
+
+<td>compresses popularity gaps</td>
+
+</tr>
+
+<tr>
+
+<td>Weak age decay</td>
+
+<td>stale sticky feed</td>
+
+</tr>
+
+<tr>
+
+<td>Strong age decay</td>
+
+<td>fresher but more churn</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p>If popularity is <strong>power-law / long-tail</strong>, linear vote
+
+ranking usually fails.</p>
+
+<h3 id="key-concepts-and-formulas-9">7.4.2 Key Concepts and Formulas</h3>
+
+<p>General template:</p>
+
+<p><span class="math display">\[
+
+\frac{f(popularity)}{g(age)}
+
+\]</span></p>
+
+<ul>
+
+<li><span class="math inline">\(f(popularity)\)</span>: how engagement
+
+accumulates</li>
+
+<li><span class="math inline">\(g(age)\)</span>: recency decay</li>
+
+<li>interaction controls breakthrough chance for new items</li>
+
+</ul>
+
+
+
+<h3 id="standard-ranking-metrics">7.4.3 Standard Ranked-List Metrics</h3>
+
+<p>These metrics evaluate the <em>quality of a returned ranked list</em> against
+
+known ground-truth relevance labels. They are the core metrics for search,
+
+recommender systems, and information retrieval.</p>
+
+
+
+<h4>Precision@k and Recall@k</h4>
+
+<p>The simplest ranked-list metrics: only look at the top <em>k</em> results.</p>
+
+<p><span class="math display">\[
+
+\text{Precision@}k = \frac{\text{relevant items in top-}k}{k}
+
+\qquad
+
+\text{Recall@}k = \frac{\text{relevant items in top-}k}{\text{total relevant items}}
+
+\]</span></p>
+
+<p><strong>Example:</strong> 3 relevant items exist; model returns [R, NR, R, NR, R] at positions 1&ndash;5.</p>
+
+<ul>
+
+<li>P@3 = 2/3 = 0.67 (2 of the top-3 are relevant)</li>
+
+<li>R@3 = 2/3 = 0.67 (found 2 of the 3 total relevant)</li>
+
+<li>P@5 = 3/5 = 0.60, R@5 = 3/3 = 1.00</li>
+
+</ul>
+
+<p><strong>When to use:</strong> When only a fixed number of results are shown (e.g., top-10 recommendations). P@k is precision-focused; R@k tells you coverage.</p>
+
+
+
+<h4>Mean Reciprocal Rank (MRR)</h4>
+
+<p>Measures how quickly the first relevant result appears. Good for QA and search where one correct answer is all that matters.</p>
+
+<p><span class="math display">\[
+
+\text{MRR} = \frac{1}{|Q|} \sum_{i=1}^{|Q|} \frac{1}{\text{rank}_i}
+
+\]</span></p>
+
+<p>where rank<sub>i</sub> is the rank of the first relevant result for query <em>i</em>.</p>
+
+<p><strong>Example:</strong> Three queries; first relevant result at rank 1, 3, 2:</p>
+
+<p><span class="math display">\[
+
+\text{MRR} = \frac{1}{3}\left(\frac{1}{1} + \frac{1}{3} + \frac{1}{2}\right) = \frac{1}{3}(1 + 0.33 + 0.5) = 0.61
+
+\]</span></p>
+
+<p><strong>When to use:</strong> Single-answer retrieval &mdash; chatbot Q&amp;A, entity lookup, "find one relevant document."</p>
+
+
+
+<h4>Mean Average Precision (MAP)</h4>
+
+<p>Average Precision (AP) rewards finding relevant items early <em>and</em> finding all of them. MAP averages AP across queries.</p>
+
+<p><span class="math display">\[
+
+\text{AP} = \frac{1}{R} \sum_{k: \text{pos}_k \text{ relevant}} \text{P@}k
+
+\]</span></p>
+
+<p>where R = total relevant items and the sum is taken only at positions where a relevant item appears.</p>
+
+<p><strong>Example:</strong> 3 relevant items; retrieved at positions 1, 4, 8 out of 10:</p>
+
+<p><span class="math display">\[
+
+\text{AP} = \frac{1}{3}\left(\frac{1}{1} + \frac{2}{4} + \frac{3}{8}\right) = \frac{1}{3}(1.0 + 0.5 + 0.375) = 0.625
+
+\]</span></p>
+
+<p><strong>When to use:</strong> Binary relevance (relevant / not relevant), multiple relevant items per query, care about <em>all</em> relevant items being returned (not just first).</p>
+
+
+
+<h4>NDCG &mdash; Normalized Discounted Cumulative Gain</h4>
+
+<p>The most powerful ranking metric. Handles <strong>graded relevance</strong>
+
+(e.g., 0 = irrelevant, 1 = somewhat, 2 = highly relevant) and discounts
+
+lower-ranked positions logarithmically.</p>
+
+<p><span class="math display">\[
+
+\text{DCG@}k = \sum_{i=1}^{k} \frac{\text{rel}_i}{\log_2(i+1)}
+
+\]</span></p>
+
+<p><span class="math display">\[
+
+\text{NDCG@}k = \frac{\text{DCG@}k}{\text{IDCG@}k}
+
+\]</span></p>
+
+<p>where IDCG@k is the DCG of the ideal (perfect) ranking.</p>
+
+<p><strong>Step-by-step example</strong> (k=4, graded 0&ndash;2):</p>
+
+<table>
+
+<thead>
+
+<tr><th>Position</th><th>Relevance (model)</th><th>Relevance (ideal)</th><th>DCG gain</th><th>IDCG gain</th></tr>
+
+</thead>
+
+<tbody>
+
+<tr><td>1</td><td>2</td><td>2</td><td>2/log&#8322;(2) = 2.00</td><td>2.00</td></tr>
+
+<tr><td>2</td><td>1</td><td>2</td><td>1/log&#8322;(3) = 0.63</td><td>1.26</td></tr>
+
+<tr><td>3</td><td>0</td><td>1</td><td>0/log&#8322;(4) = 0.00</td><td>0.50</td></tr>
+
+<tr><td>4</td><td>2</td><td>0</td><td>2/log&#8322;(5) = 0.86</td><td>0.00</td></tr>
+
+</tbody>
+
+</table>
+
+<p>DCG@4 = 2.00 + 0.63 + 0.00 + 0.86 = <strong>3.49</strong></p>
+
+<p>IDCG@4 = 2.00 + 1.26 + 0.50 + 0.00 = <strong>3.76</strong></p>
+
+<p>NDCG@4 = 3.49 / 3.76 = <strong>0.928</strong></p>
+
+<p>The model scored 92.8% of the best possible ranking. The penalty came from putting a highly relevant item (rel=2) at position 4 instead of position 2.</p>
+
+
+
+<h4>Metric Comparison</h4>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Metric</th><th>Relevance type</th><th>Position sensitive?</th><th>Best for</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr><td>Precision@k</td><td>Binary</td><td>No (top-k only)</td><td>Fixed-length result pages</td></tr>
+
+<tr><td>Recall@k</td><td>Binary</td><td>No (top-k only)</td><td>Coverage at a given k</td></tr>
+
+<tr><td>MRR</td><td>Binary</td><td>Yes (first hit)</td><td>Single-answer retrieval, QA</td></tr>
+
+<tr><td>MAP</td><td>Binary</td><td>Yes (all relevant)</td><td>Document retrieval, full coverage</td></tr>
+
+<tr><td>NDCG@k</td><td>Graded</td><td>Yes (log discount)</td><td>Search, recsys with relevance grades</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<pre class="sourceCode python"><code class="sourceCode python"><span id="cb556-1"><a href="#cb556-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> ndcg_score</span>
+<span id="cb556-2"><a href="#cb556-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb556-3"><a href="#cb556-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="kw">as</span> np</span>
+<span id="cb556-4"><a href="#cb556-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb556-7"><a href="#cb556-7" aria-hidden="true" tabindex="-1"></a><span class="co"># y_true: relevance scores per query (higher = more relevant)</span></span>
+<span id="cb556-8"><a href="#cb556-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb556-9"><a href="#cb556-9" aria-hidden="true" tabindex="-1"></a>y_true <span class="op">=</span> np<span class="op">.</span>array([[<span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">2</span>]])   <span class="co"># ideal: [2, 2, 1, 0]</span></span>
+<span id="cb556-10"><a href="#cb556-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb556-11"><a href="#cb556-11" aria-hidden="true" tabindex="-1"></a>y_score <span class="op">=</span> np<span class="op">.</span>array([[<span class="fl">0.9</span>, <span class="fl">0.6</span>, <span class="fl">0.2</span>, <span class="fl">0.8</span>]])  <span class="co"># model scores</span></span>
+<span id="cb556-12"><a href="#cb556-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb556-15"><a href="#cb556-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">f</span><span class="st">&quot;</span><span class="st">NDCG@4: </span><span class="sc">{</span>ndcg_score(y_true, y_score, k<span class="op">=</span><span class="dv">4</span>)<span class="sc">:</span><span class="st">.4f</span><span class="sc">}</span><span class="st">&quot;</span>)</span></code></pre>
+
+
+
+<blockquote>
+
+<p><strong>Key:</strong> For production search and recommender systems, prefer
+
+NDCG@k. Use MRR for single-answer tasks. Use MAP when binary relevance covers
+
+all use cases. Always specify the <em>k</em> to match how many results users see.</p>
+
+</blockquote>
+
+
+
+<p><em>For a detailed walkthrough of feed ranking formulas (Hacker News scoring, gravity, sublinear growth, penalty), see section 9.6 in Chapter 9.</em></p>
+
+<hr />
+
+<h2 id="nlp-evaluation-metrics">7.5 NLP Evaluation Metrics</h2>
+
+<p>NLP covers a wide range of output types: predicted labels, extracted spans,
+
+generated sentences, ranked documents. Each needs a different evaluation
+
+framework.</p>
+
+
+
+<h3>7.5.1 Output Types and Metric Families</h3>
+
+<table>
+
+<thead>
+
+<tr><th>Task output</th><th>Examples</th><th>Key metrics</th></tr>
+
+</thead>
+
+<tbody>
+
+<tr><td>Predicted label</td><td>Text classification, intent detection</td><td>Accuracy, Precision, Recall, F1</td></tr>
+
+<tr><td>Predicted span</td><td>Named Entity Recognition (NER), slot filling</td><td>Token-level F1, Exact Match</td></tr>
+
+<tr><td>Ranked documents</td><td>Passage retrieval, QA</td><td>MRR, MAP, NDCG@k, Recall@k</td></tr>
+
+<tr><td>Generated text</td><td>Machine translation, summarization</td><td>BLEU, ROUGE, METEOR, BERTScore</td></tr>
+
+<tr><td>LLM generation</td><td>QA, instruction following, code</td><td>Exact Match, pass@k, LLM-as-judge</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<h3 id="ner-qa-metrics">7.5.2 NER and QA: Span-Level Metrics</h3>
+
+
+
+<h4>NER Entity F1</h4>
+
+<p>NER is evaluated by comparing predicted entity <em>spans</em> (type + start/end position)
+
+against ground truth. A span is only correct if both the type and the boundaries match exactly.</p>
+
+<p>Example: 10 true entities; model predicts 8, of which 7 are exact matches:</p>
+
+<ul>
+
+<li>Precision = 7/8 = 0.875</li>
+
+<li>Recall = 7/10 = 0.70</li>
+
+<li>Entity F1 = 2 &times; 0.875 &times; 0.70 / (0.875 + 0.70) = <strong>0.778</strong></li>
+
+</ul>
+
+
+
+<h4>Exact Match (EM) for QA</h4>
+
+<p>For extractive QA (e.g., SQuAD), the predicted answer must match the ground-truth string
+
+exactly after normalization (lowercasing, removing punctuation and articles).
+
+EM is strict &mdash; many datasets also report token-level F1 for partial credit.</p>
+
+
+
+<h3 id="bleu-score">7.5.3 BLEU Score (Machine Translation)</h3>
+
+<p><strong>BLEU</strong> (Bilingual Evaluation Understudy) measures n-gram <em>precision</em>
+between a hypothesis and one or more references. Standard BLEU-4 uses n-grams up to length 4,
+plus a Brevity Penalty for short outputs.</p>
+
+<p><strong>Intuition:</strong> Think of BLEU as a "spot-check" — it takes small
+chunks (1-word, 2-word, 3-word, 4-word phrases) from the model's output and asks:
+<em>"What fraction of these chunks also appear somewhere in the reference?"</em>
+If the model just copies the reference, every chunk matches and BLEU ≈ 1.
+If the model produces a perfect paraphrase using entirely different words,
+almost no chunks match and BLEU ≈ 0 — even though the meaning is correct.
+The Brevity Penalty prevents a degenerate strategy of outputting only high-confidence
+short phrases to game precision.</p>
+
+<p><span class="math display">\[
+\text{BLEU} = \text{BP} \cdot \exp\!\left(\sum_{n=1}^{4} \frac{1}{4} \log p_n\right)
+\]</span></p>
+
+<p>where <em>p<sub>n</sub></em> = clipped n-gram precision and BP penalizes hypotheses
+shorter than the reference.</p>
+
+<table>
+
+<thead><tr><th></th><th>Text</th></tr></thead>
+
+<tbody>
+
+<tr><td><strong>Reference</strong></td><td>&ldquo;The cat sat on the mat.&rdquo;</td></tr>
+
+<tr><td><strong>Hypothesis</strong></td><td>&ldquo;The cat sat on a mat.&rdquo;</td></tr>
+
+</tbody>
+
+</table>
+
+<ul>
+
+<li>1-gram: 5/6 match = 0.833</li>
+
+<li>2-gram: &ldquo;The cat&rdquo;, &ldquo;cat sat&rdquo;, &ldquo;sat on&rdquo; match (3 of 5) = 0.600</li>
+
+<li>Brevity penalty: 1.0 (lengths equal)</li>
+
+</ul>
+
+<p><strong>Why "clipped" precision matters:</strong> Without clipping, a
+hypothesis like &ldquo;the the the the the the&rdquo; would score 100% unigram precision
+against any reference containing &ldquo;the.&rdquo; Clipping caps each n-gram's count at
+its maximum occurrence in the reference, preventing this exploit.</p>
+
+<p><strong>Limitation:</strong> Measures surface overlap only &mdash; semantically equivalent
+paraphrases score near zero. &ldquo;The feline rested upon the rug&rdquo; and &ldquo;The cat sat on the mat&rdquo;
+mean the same thing but share almost no n-grams.</p>
+
+
+
+<h3 id="rouge-score">7.5.4 ROUGE Score (Summarization)</h3>
+
+<p><strong>ROUGE</strong> (Recall-Oriented Understudy for Gisting Evaluation) measures n-gram
+<em>recall</em> &mdash; how much of the reference content appears in the output.</p>
+
+<p><strong>Intuition:</strong> While BLEU asks <em>"how much of the output is correct?"</em>
+(precision), ROUGE flips the question: <em>"how much of the reference did the output cover?"</em>
+(recall). This makes sense for summarization — a good summary should <strong>capture</strong>
+the key information from the reference, even if it uses different wording for
+some parts. ROUGE-L uses the Longest Common Subsequence instead of fixed n-grams,
+so it rewards outputs that preserve the <strong>order</strong> of important words without
+requiring them to be adjacent — making it more forgiving of insertions and
+minor rephrasings.</p>
+
+<table>
+
+<thead><tr><th>Variant</th><th>What it measures</th><th>Best for</th></tr></thead>
+
+<tbody>
+
+<tr><td><strong>ROUGE-1</strong></td><td>Unigram recall</td><td>Overall word coverage</td></tr>
+
+<tr><td><strong>ROUGE-2</strong></td><td>Bigram recall</td><td>Phrasing accuracy</td></tr>
+
+<tr><td><strong>ROUGE-L</strong></td><td>Longest Common Subsequence</td><td>Sentence structure, order-sensitive</td></tr>
+
+</tbody>
+
+</table>
+
+<pre class="sourceCode python"><code class="sourceCode python"><span id="cb557-1"><a href="#cb557-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rouge_score <span class="im">import</span> rouge_scorer</span>
+<span id="cb557-2"><a href="#cb557-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb557-5"><a href="#cb557-5" aria-hidden="true" tabindex="-1"></a>scorer <span class="op">=</span> rouge_scorer<span class="op">.</span>RougeScorer([<span class="st">&quot;</span><span class="st">rouge1</span><span class="st">&quot;</span>, <span class="st">&quot;</span><span class="st">rouge2</span><span class="st">&quot;</span>, <span class="st">&quot;</span><span class="st">rougeL</span><span class="st">&quot;</span>], use_stemmer<span class="op">=</span><span class="kw">True</span>)</span>
+<span id="cb557-6"><a href="#cb557-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb557-7"><a href="#cb557-7" aria-hidden="true" tabindex="-1"></a>scores <span class="op">=</span> scorer<span class="op">.</span>score(</span>
+<span id="cb557-8"><a href="#cb557-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb557-9"><a href="#cb557-9" aria-hidden="true" tabindex="-1"></a>    target<span class="op">=</span><span class="st">&quot;</span><span class="st">The cat sat on the mat near the window.</span><span class="st">&quot;</span>,</span>
+<span id="cb557-10"><a href="#cb557-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb557-11"><a href="#cb557-11" aria-hidden="true" tabindex="-1"></a>    prediction<span class="op">=</span><span class="st">&quot;</span><span class="st">A cat sat on the mat.</span><span class="st">&quot;</span>,</span>
+<span id="cb557-12"><a href="#cb557-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb557-13"><a href="#cb557-13" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb557-14"><a href="#cb557-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb557-15"><a href="#cb557-15" aria-hidden="true" tabindex="-1"></a><span class="kw">for</span> k, v <span class="op">in</span> scores<span class="op">.</span>items():</span>
+<span id="cb557-16"><a href="#cb557-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb557-17"><a href="#cb557-17" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">f</span><span class="st">&quot;</span><span class="sc">{</span>k<span class="sc">}</span><span class="st">: P=</span><span class="sc">{</span>v<span class="op">.</span>precision<span class="sc">:</span><span class="st">.3f</span><span class="sc">}</span><span class="st">, R=</span><span class="sc">{</span>v<span class="op">.</span>recall<span class="sc">:</span><span class="st">.3f</span><span class="sc">}</span><span class="st">, F1=</span><span class="sc">{</span>v<span class="op">.</span>fmeasure<span class="sc">:</span><span class="st">.3f</span><span class="sc">}</span><span class="st">&quot;</span>)</span></code></pre>
+
+
+
+<h3 id="bertscore">7.5.5 BERTScore (Semantic Similarity)</h3>
+
+<p>BERTScore addresses the surface-overlap limitation by computing <em>contextual embedding
+similarity</em> using a pretrained BERT-family model. It matches each candidate token to
+the most similar reference token and computes Precision, Recall, F1 over those cosine similarities.</p>
+
+<p><strong>Intuition:</strong> BLEU and ROUGE are "bag of words" — they only
+check whether the <em>same exact words</em> appear. BERTScore instead converts
+each word into a rich vector that captures its <strong>meaning in context</strong>,
+then asks: <em>"for every word in the candidate, is there a word in the
+reference that means roughly the same thing?"</em> This is why
+&ldquo;The feline rested upon the rug&rdquo; scores high against
+&ldquo;The cat sat on the mat&rdquo; — BERT knows "feline" ≈ "cat" and
+"rested upon" ≈ "sat on." The matching is <strong>greedy one-to-one</strong>:
+each candidate token is paired with its best reference token (and vice versa),
+so duplicate or filler words are naturally penalised.</p>
+
+<p><strong>Advantage:</strong> Robust to paraphrasing; correlates better with human
+judgments than BLEU/ROUGE on most tasks.</p>
+
+<p><strong>Limitation:</strong> Slower, requires model inference; scores are not on a 0&ndash;1
+scale and are harder to interpret without a baseline.</p>
+
+<pre class="sourceCode python"><code class="sourceCode python"><span id="cb558-1"><a href="#cb558-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> bert_score <span class="im">import</span> score <span class="kw">as</span> bert_score</span>
+<span id="cb558-2"><a href="#cb558-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb558-5"><a href="#cb558-5" aria-hidden="true" tabindex="-1"></a>P, R, F1 <span class="op">=</span> bert_score(</span>
+<span id="cb558-6"><a href="#cb558-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb558-7"><a href="#cb558-7" aria-hidden="true" tabindex="-1"></a>    cands<span class="op">=</span>[<span class="st">&quot;</span><span class="st">The cat sat near the window.</span><span class="st">&quot;</span>],</span>
+<span id="cb558-8"><a href="#cb558-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb558-9"><a href="#cb558-9" aria-hidden="true" tabindex="-1"></a>    refs<span class="op">=</span>[<span class="st">&quot;</span><span class="st">A cat was sitting by the window.</span><span class="st">&quot;</span>],</span>
+<span id="cb558-10"><a href="#cb558-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb558-11"><a href="#cb558-11" aria-hidden="true" tabindex="-1"></a>    lang<span class="op">=</span><span class="st">&quot;</span><span class="st">en</span><span class="st">&quot;</span>,</span>
+<span id="cb558-12"><a href="#cb558-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb558-13"><a href="#cb558-13" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb558-14"><a href="#cb558-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb558-15"><a href="#cb558-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">f</span><span class="st">&quot;</span><span class="st">BERTScore F1: </span><span class="sc">{</span>F1<span class="op">.</span>mean()<span class="sc">:</span><span class="st">.4f</span><span class="sc">}</span><span class="st">&quot;</span>)</span></code></pre>
+
+
+
+<h3 id="human-evaluation-nlp">7.5.6 Human Evaluation</h3>
+
+<p>For generation tasks, automatic metrics often disagree with human judgement.
+
+Human evaluation remains the gold standard for assessing fluency, faithfulness, and helpfulness.</p>
+
+<table>
+
+<thead><tr><th>Method</th><th>How it works</th><th>Best for</th></tr></thead>
+
+<tbody>
+
+<tr><td>Pairwise preference (A/B)</td><td>Show two outputs; annotators choose which is better</td><td>Comparing two systems at scale</td></tr>
+
+<tr><td>Likert scale rating</td><td>Rate output 1&ndash;5 on specific dimensions (fluency, factuality)</td><td>Absolute quality assessment</td></tr>
+
+<tr><td>Direct Assessment (DA)</td><td>Score against reference on 0&ndash;100 scale</td><td>MT quality (WMT standard)</td></tr>
+
+<tr><td>Task-based eval</td><td>Did the user complete their task using the system?</td><td>Conversational agents, assistants</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<h3 id="nlp-metric-selection-guide">7.5.7 Metric Selection Guide</h3>
+
+<table>
+
+<thead><tr><th>NLP Task</th><th>Primary metric</th><th>Secondary</th></tr></thead>
+
+<tbody>
+
+<tr><td>Text classification</td><td>F1 (macro or weighted)</td><td>ROC-AUC</td></tr>
+
+<tr><td>Named Entity Recognition</td><td>Entity F1</td><td>Token F1</td></tr>
+
+<tr><td>Machine translation</td><td>BLEU-4</td><td>BERTScore-F1</td></tr>
+
+<tr><td>Summarization</td><td>ROUGE-L</td><td>BERTScore, human eval</td></tr>
+
+<tr><td>Extractive QA</td><td>Exact Match + Token F1</td><td>&mdash;</td></tr>
+
+<tr><td>Dialogue / chat</td><td>Human preference (pairwise)</td><td>ROUGE-L, BERTScore</td></tr>
+
+<tr><td>Information retrieval</td><td>NDCG@k or MAP</td><td>MRR, Recall@k</td></tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> BLEU/ROUGE measure surface-level overlap; BERTScore
+
+measures semantic similarity; human evaluation measures actual usefulness.
+
+For high-stakes NLP, run at least one human eval checkpoint before deploying.</p>
+
+</blockquote>
+
+
+
+<hr />
+
+<h2 id="llm-and-agents-evaluation">7.6 LLM and Agents Evaluation</h2>
+
+<p>Large language models and agentic systems present fundamentally new evaluation
+
+challenges: outputs are open-ended, there is often no single correct answer,
+
+and the model may be evaluating multi-step reasoning or tool use over many turns.</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> Traditional metrics assume a fixed ground truth. LLM evaluation
+
+requires a mix of automatic benchmarks, model-based judges, and human assessment.</p>
+
+</blockquote>
+
+
+
+<h3 id="llm-eval-challenges">7.6.1 Why LLM Evaluation Is Hard</h3>
+
+<table>
+
+<thead><tr><th>Challenge</th><th>Why it matters</th></tr></thead>
+
+<tbody>
+
+<tr><td>Open-ended outputs</td><td>Many valid phrasings of the same correct answer &mdash; surface metrics fail</td></tr>
+
+<tr><td>Multi-step reasoning</td><td>The final answer may be right for the wrong reasons</td></tr>
+
+<tr><td>Hallucination</td><td>Fluent, confident, but factually wrong responses</td></tr>
+
+<tr><td>Instruction following</td><td>Did the model do exactly what was asked?</td></tr>
+
+<tr><td>Safety and alignment</td><td>Harmful or biased outputs that metrics do not capture</td></tr>
+
+<tr><td>Context length</td><td>Performance degrades on long-context tasks in ways BLEU misses</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<h3 id="llm-benchmarks">7.6.2 Automatic LLM Benchmarks</h3>
+
+<p>Benchmarks evaluate a model across many tasks under controlled conditions.</p>
+
+<table>
+
+<thead>
+
+<tr><th>Benchmark</th><th>What it tests</th><th>Metric</th></tr>
+
+</thead>
+
+<tbody>
+
+<tr><td><strong>MMLU</strong></td><td>57-subject multiple-choice: STEM, law, medicine</td><td>Accuracy</td></tr>
+
+<tr><td><strong>HumanEval</strong></td><td>Python function generation from docstring</td><td>pass@k</td></tr>
+
+<tr><td><strong>GSM8K</strong></td><td>Grade-school math word problems with chain-of-thought</td><td>Accuracy (exact match)</td></tr>
+
+<tr><td><strong>HELM</strong></td><td>Multi-scenario leaderboard across 40+ tasks</td><td>Accuracy, calibration, robustness</td></tr>
+
+<tr><td><strong>MT-Bench</strong></td><td>Multi-turn conversational quality</td><td>LLM-as-judge 1&ndash;10 score</td></tr>
+
+<tr><td><strong>Chatbot Arena</strong></td><td>Head-to-head human preference at scale</td><td>Elo rating</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<h4>pass@k for Code Generation</h4>
+
+<p>The model generates <em>k</em> candidate solutions; credited if at least one passes all unit tests:</p>
+
+<p><span class="math display">\[
+
+\text{pass@}k = 1 - \frac{\binom{n-c}{k}}{\binom{n}{k}}
+
+\]</span></p>
+
+<p>where <em>n</em> = samples generated, <em>c</em> = solutions that pass.
+
+pass@1 measures reliability; pass@10 measures whether the model can ever find a solution.</p>
+
+
+
+<h3 id="llm-as-judge">7.6.3 LLM-as-Judge</h3>
+
+<p>Use a stronger model (e.g., GPT-4, Claude) to evaluate another model’s outputs
+
+on specific dimensions: helpfulness, factuality, coherence, safety, instruction-following.</p>
+
+<pre class="sourceCode python"><code class="sourceCode python"><span id="cb559-1"><a href="#cb559-1" aria-hidden="true" tabindex="-1"></a>eval_prompt <span class="op">=</span> <span class="st">&quot;&quot;&quot;</span></span>
+<span id="cb559-2"><a href="#cb559-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb559-3"><a href="#cb559-3" aria-hidden="true" tabindex="-1"></a><span class="st">You are an expert evaluator. Rate the following answer on:</span></span>
+<span id="cb559-4"><a href="#cb559-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb559-5"><a href="#cb559-5" aria-hidden="true" tabindex="-1"></a><span class="st">- Factual accuracy (1-5)</span></span>
+<span id="cb559-6"><a href="#cb559-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb559-7"><a href="#cb559-7" aria-hidden="true" tabindex="-1"></a><span class="st">- Helpfulness (1-5)</span></span>
+<span id="cb559-8"><a href="#cb559-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb559-9"><a href="#cb559-9" aria-hidden="true" tabindex="-1"></a><span class="st">- Conciseness (1-5)</span></span>
+<span id="cb559-10"><a href="#cb559-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb559-13"><a href="#cb559-13" aria-hidden="true" tabindex="-1"></a><span class="st">Question: </span><span class="sc">{question}</span></span>
+<span id="cb559-14"><a href="#cb559-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb559-15"><a href="#cb559-15" aria-hidden="true" tabindex="-1"></a><span class="st">Answer: </span><span class="sc">{answer}</span></span>
+<span id="cb559-16"><a href="#cb559-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb559-19"><a href="#cb559-19" aria-hidden="true" tabindex="-1"></a><span class="st">Return JSON: </span><span class="st">{</span><span class="st">&quot;</span><span class="st">factual</span><span class="st">&quot;</span><span class="st">: X, </span><span class="st">&quot;</span><span class="st">helpful</span><span class="st">&quot;</span><span class="st">: X, </span><span class="st">&quot;</span><span class="st">concise</span><span class="st">&quot;</span><span class="st">: X, </span><span class="st">&quot;</span><span class="st">reason</span><span class="st">&quot;</span><span class="st">: </span><span class="st">&quot;</span><span class="st">.</span><span class="st">&quot;</span><span class="st">}</span></span>
+<span id="cb559-20"><a href="#cb559-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb559-21"><a href="#cb559-21" aria-hidden="true" tabindex="-1"></a><span class="st">&quot;&quot;&quot;</span></span></code></pre>
+
+<p><strong>Strengths:</strong> Fast, scales to millions of examples, captures nuance that
+
+automatic metrics miss.</p>
+
+<p><strong>Limitations:</strong> Judge bias (prefers verbose/its-own-style answers), position bias
+
+in pairwise comparisons, self-preferencing.</p>
+
+<blockquote>
+
+<p><strong>Mitigation:</strong> Randomize response order, run A-vs-B and B-vs-A, average over
+
+multiple judge runs, and calibrate against human annotations.</p>
+
+</blockquote>
+
+
+
+<h3 id="rag-evaluation">7.6.4 RAG System Evaluation</h3>
+
+<p>RAG systems retrieve context before generating an answer.
+
+Evaluation covers both the retrieval step and the generation step.</p>
+
+<table>
+
+<thead>
+
+<tr><th>Dimension</th><th>Definition</th><th>How measured</th></tr>
+
+</thead>
+
+<tbody>
+
+<tr><td><strong>Context Precision</strong></td><td>How much retrieved context is relevant?</td><td>LLM judge or annotation</td></tr>
+
+<tr><td><strong>Context Recall</strong></td><td>Did retrieval surface all relevant context?</td><td>LLM judge vs ground truth</td></tr>
+
+<tr><td><strong>Faithfulness</strong></td><td>Is the answer grounded in context (no hallucination)?</td><td>LLM judge: entailment check</td></tr>
+
+<tr><td><strong>Answer Relevance</strong></td><td>Does the answer directly address the question?</td><td>Embedding similarity or LLM score</td></tr>
+
+</tbody>
+
+</table>
+
+<pre class="sourceCode python"><code class="sourceCode python"><span id="cb560-1"><a href="#cb560-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ragas <span class="im">import</span> evaluate</span>
+<span id="cb560-2"><a href="#cb560-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb560-3"><a href="#cb560-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ragas.metrics <span class="im">import</span> faithfulness, answer_relevancy, context_precision</span>
+<span id="cb560-4"><a href="#cb560-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb560-7"><a href="#cb560-7" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> evaluate(</span>
+<span id="cb560-8"><a href="#cb560-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb560-9"><a href="#cb560-9" aria-hidden="true" tabindex="-1"></a>    dataset<span class="op">=</span>eval_dataset,  <span class="co"># question / context / answer / ground_truth fields</span></span>
+<span id="cb560-10"><a href="#cb560-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb560-11"><a href="#cb560-11" aria-hidden="true" tabindex="-1"></a>    metrics<span class="op">=</span>[faithfulness, answer_relevancy, context_precision],</span>
+<span id="cb560-12"><a href="#cb560-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb560-13"><a href="#cb560-13" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb560-14"><a href="#cb560-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb560-15"><a href="#cb560-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(results<span class="op">.</span>to_pandas())</span></code></pre>
+
+
+
+<h3 id="agent-evaluation">7.6.5 Agent Evaluation</h3>
+
+<p>Agents take multi-step actions (tool calls, code execution) to complete tasks.
+
+Evaluation covers the final outcome and the process quality.</p>
+
+<table>
+
+<thead>
+
+<tr><th>Dimension</th><th>Definition</th><th>Example metric</th></tr>
+
+</thead>
+
+<tbody>
+
+<tr><td><strong>Task completion rate</strong></td><td>Did the agent finish the task correctly?</td><td>% tasks solved (pass/fail)</td></tr>
+
+<tr><td><strong>Tool use accuracy</strong></td><td>Were the right tools called with correct arguments?</td><td>Tool call F1 vs ground truth</td></tr>
+
+<tr><td><strong>Step efficiency</strong></td><td>Did the agent solve without unnecessary steps?</td><td>Steps used vs optimal plan length</td></tr>
+
+<tr><td><strong>Hallucination rate</strong></td><td>Did the agent invent tool outputs or facts?</td><td>LLM judge + human spot-check</td></tr>
+
+<tr><td><strong>Multi-turn coherence</strong></td><td>Does the agent stay on task over many turns?</td><td>Human eval / rubric-based judge</td></tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Key benchmarks:</strong> SWE-bench (software engineering), WebArena (web navigation),
+
+AgentBench (diverse agent tasks), GAIA (general assistant tasks).</p>
+
+
+
+<h3 id="llm-eval-best-practices">7.6.6 Evaluation Best Practices</h3>
+
+<ul>
+
+<li><strong>Define criteria before building</strong> &mdash; do not choose metrics post-hoc to justify the model.</li>
+
+<li><strong>Use multiple metrics</strong> &mdash; combine automatic benchmarks, LLM-as-judge, and human evaluation.</li>
+
+<li><strong>Keep a human calibration set</strong> &mdash; always validate automated judges against human annotations.</li>
+
+<li><strong>Test robustness</strong> &mdash; rephrase prompts, change order, test edge cases. LLMs are sensitive to phrasing.</li>
+
+<li><strong>Version your evals</strong> &mdash; treat benchmark suites like code; model updates should run against a frozen eval set.</li>
+
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> For LLMs and agents, treat evaluation as a first-class engineering problem.
+
+Automatic benchmarks reveal capability; human eval reveals whether users are actually helped.
+
+You need both.</p>
+
+</blockquote>
+
+
+
+<hr />
+
+<h2 id="model-calibration-and-uncertainty">7.7 Model Calibration and Uncertainty</h2>
+
+
+
+<p>A model predicts 0.90 probability for a positive class. Does that mean it's right 90% of the time
+
+when it says 0.90? For most models, <strong>no</strong>. Calibration measures how well predicted probabilities
+
+match actual frequencies — and it matters enormously in high-stakes decisions.</p>
+
+
+
+<h3 id="why-calibration-matters">7.7.1 Why Calibration Matters</h3>
+
+
+
+<table>
+
+<thead><tr><th>Scenario</th><th>What goes wrong without calibration</th></tr></thead>
+
+<tbody>
+
+<tr><td><strong>Medical diagnosis</strong></td><td>"95% confident it's benign" means nothing if the model says 95% for cases that are malignant 30% of the time</td></tr>
+
+<tr><td><strong>Fraud scoring</strong></td><td>Thresholds set on uncalibrated scores cause either too many false alerts or missed fraud</td></tr>
+
+<tr><td><strong>Insurance / lending</strong></td><td>Risk pricing is directly based on probabilities — miscalibration = mispricing</td></tr>
+
+<tr><td><strong>Ensemble stacking</strong></td><td>Combining model outputs requires calibrated probabilities; raw scores on different scales break stacking</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<blockquote>
+
+<p><strong>Key:</strong> Accuracy asks "did you get the label right?" Calibration asks "did you get the
+
+<em>confidence</em> right?" A model can have high accuracy but terrible calibration.</p>
+
+</blockquote>
+
+
+
+<h3 id="calibration-curves">7.7.2 Calibration Curves (Reliability Diagrams)</h3>
+
+
+
+<p>The gold-standard visualization: bin predictions by predicted probability (e.g., 0.0–0.1, 0.1–0.2, …),
+
+then plot the <em>actual</em> fraction of positives in each bin. A perfectly calibrated model lies on the diagonal.</p>
+
+
+
+<!-- Calibration curve SVG -->
+
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="340" viewBox="0 0 520 340" style="display:block; margin:16px auto;">
+
+  <defs>
+
+    <style>
+
+      .cal-h { font-family:'Segoe UI',Arial,sans-serif; font-size:14px; font-weight:bold; fill:#0f172a; }
+
+      .cal-s { font-family:'Segoe UI',Arial,sans-serif; font-size:11px; fill:#475569; }
+
+      .cal-a { font-family:'Segoe UI',Arial,sans-serif; font-size:11px; fill:#64748b; }
+
+    </style>
+
+    <marker id="cala" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+
+      <polygon points="0 0, 6 2, 0 4" fill="#64748b"/>
+
+    </marker>
+
+  </defs>
+
+  <text x="260" y="22" text-anchor="middle" class="cal-h">Calibration Curve (Reliability Diagram)</text>
+
+
+
+  <!-- Axes -->
+
+  <line x1="60" y1="290" x2="460" y2="290" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cala)"/>
+
+  <line x1="60" y1="290" x2="60" y2="40" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cala)"/>
+
+  <text x="260" y="320" text-anchor="middle" class="cal-a">Mean predicted probability</text>
+
+  <text x="20" y="165" text-anchor="middle" class="cal-a" transform="rotate(-90,20,165)">Fraction of positives</text>
+
+
+
+  <!-- Axis labels -->
+
+  <text x="60" y="306" text-anchor="middle" class="cal-s">0</text>
+
+  <text x="160" y="306" text-anchor="middle" class="cal-s">0.25</text>
+
+  <text x="260" y="306" text-anchor="middle" class="cal-s">0.50</text>
+
+  <text x="360" y="306" text-anchor="middle" class="cal-s">0.75</text>
+
+  <text x="460" y="306" text-anchor="middle" class="cal-s">1.0</text>
+
+  <text x="52" y="293" text-anchor="end" class="cal-s">0</text>
+
+  <text x="52" y="193" text-anchor="end" class="cal-s">0.5</text>
+
+  <text x="52" y="53" text-anchor="end" class="cal-s">1.0</text>
+
+
+
+  <!-- Perfect diagonal -->
+
+  <line x1="60" y1="290" x2="460" y2="50" stroke="#94a3b8" stroke-width="1" stroke-dasharray="6,4"/>
+
+  <text x="380" y="88" class="cal-s" fill="#94a3b8" font-style="italic">Perfect calibration</text>
+
+
+
+  <!-- Overconfident curve (below diagonal — model predicts higher prob than actual) -->
+
+  <path d="M 60 290 Q 160 250, 200 230 Q 280 190, 360 130 Q 420 80, 460 50" fill="none" stroke="#dc2626" stroke-width="2"/>
+
+  <text x="360" y="180" class="cal-s" fill="#dc2626" font-weight="bold">Overconfident</text>
+
+  <text x="360" y="194" class="cal-s" fill="#dc2626">(predicts higher</text>
+
+  <text x="360" y="208" class="cal-s" fill="#dc2626">than actual)</text>
+
+
+
+  <!-- Underconfident curve (above diagonal — actual positive rate exceeds predicted) -->
+
+  <path d="M 60 290 Q 140 270, 180 220 Q 220 170, 280 140 Q 350 100, 460 50" fill="none" stroke="#2563eb" stroke-width="2"/>
+
+  <text x="185" y="150" class="cal-s" fill="#2563eb" font-weight="bold">Underconfident</text>
+
+  <text x="185" y="164" class="cal-s" fill="#2563eb">(predicts lower</text>
+
+  <text x="185" y="178" class="cal-s" fill="#2563eb">than actual)</text>
+
+
+
+  <!-- Legend -->
+
+  <line x1="80" y1="330" x2="100" y2="330" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <text x="105" y="334" class="cal-s">Perfect</text>
+
+  <line x1="170" y1="330" x2="190" y2="330" stroke="#dc2626" stroke-width="2"/>
+
+  <text x="195" y="334" class="cal-s" fill="#dc2626">Overconfident</text>
+
+  <line x1="290" y1="330" x2="310" y2="330" stroke="#2563eb" stroke-width="2"/>
+
+  <text x="315" y="334" class="cal-s" fill="#2563eb">Underconfident</text>
+
+</svg>
+
+
+
+<h3 id="calibration-methods">7.7.3 Calibration Methods</h3>
+
+
+
+<table>
+
+<thead><tr><th>Method</th><th>How it works</th><th>When to use</th></tr></thead>
+
+<tbody>
+
+<tr><td><strong>Platt scaling</strong></td><td>Fit a logistic regression on model outputs vs. true labels (on validation set)</td><td>Default choice; works well for most classifiers; fast</td></tr>
+
+<tr><td><strong>Isotonic regression</strong></td><td>Fit a non-parametric monotonic function to map scores → calibrated probabilities</td><td>When relationship between scores and true probabilities is non-sigmoid; needs more data (~1000+ validation samples)</td></tr>
+
+<tr><td><strong>Temperature scaling</strong></td><td>Divide logits by a learned scalar T before softmax</td><td>Neural networks; single parameter; preserves ranking</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<p><strong>Critical rule:</strong> Always calibrate on a <em>held-out</em> validation set, never on training data.
+
+Calibrating on training data defeats the purpose — the model already fits those labels.</p>
+
+
+
+<h3 id="prediction-intervals">7.7.4 Prediction Intervals (Regression)</h3>
+
+
+
+<p>For regression, calibration means providing intervals, not just point predictions.
+
+"Revenue will be $2.1M" is less useful than "$2.1M ± $300K at 90% confidence."</p>
+
+
+
+<table>
+
+<thead><tr><th>Approach</th><th>How it works</th><th>Library</th></tr></thead>
+
+<tbody>
+
+<tr><td><strong>Quantile regression</strong></td><td>Train models for the 5th and 95th percentiles directly</td><td>LightGBM (<code>objective='quantile'</code>), scikit-learn</td></tr>
+
+<tr><td><strong>Conformal prediction</strong></td><td>Use a calibration set to compute non-parametric intervals with guaranteed coverage</td><td>MAPIE, crepes</td></tr>
+
+<tr><td><strong>Bayesian methods</strong></td><td>Posterior predictive distribution gives natural uncertainty</td><td>PyMC, GPyTorch</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<blockquote>
+
+<p><strong>Key:</strong> Conformal prediction is the most practical approach — it provides distribution-free
+
+coverage guarantees (if you want 90% intervals, they contain the true value at least 90% of the time)
+
+with minimal assumptions. It works as a wrapper around any model.</p>
+
+</blockquote>
+
+
+
+<h3 id="calibration-metrics">7.7.5 Measuring Calibration</h3>
+
+
+
+<table>
+
+<thead><tr><th>Metric</th><th>What it measures</th><th>Interpretation</th></tr></thead>
+
+<tbody>
+
+<tr><td><strong>Expected Calibration Error (ECE)</strong></td><td>Weighted average gap between predicted probability and actual frequency across bins</td><td>Lower is better; 0 = perfectly calibrated</td></tr>
+
+<tr><td><strong>Brier score</strong></td><td>Mean squared error of probability predictions: mean((p - y)²)</td><td>Captures both calibration and discrimination; lower is better</td></tr>
+
+<tr><td><strong>Log loss</strong></td><td>Cross-entropy between predictions and labels</td><td>Heavily penalizes confident wrong predictions; sensitive to calibration</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<div class="practical-example">
+
+<div class="pe-label">Real-World ML Use Case — Calibration</div>
+
+<strong>Medical risk scoring.</strong> A hospital deploys a model predicting 30-day readmission risk.
+
+Clinicians use the predicted probability directly to decide intervention intensity: &gt;0.7 gets a
+
+nurse home visit, 0.4–0.7 gets a phone check-in, &lt;0.4 gets standard discharge. Without calibration,
+
+the raw model scores cluster between 0.3–0.6 with poor probability meaning — patients scored 0.5
+
+are readmitted 35% of the time. After Platt scaling on a validation cohort, the calibrated model's
+
+0.5 prediction matches a true 50% readmission rate, and clinical decisions become evidence-based.
+
+ECE dropped from 0.12 to 0.03.
+
+</div>
+
+
+
+<hr />
+
+<h2 id="ch7-interview-qa">Chapter 7 Interview Q&amp;A</h2>
+
+<p>These are frequently asked in ML engineer and data scientist interviews.</p>
+
+
+
+<h3>Q1. Why is accuracy a misleading metric for imbalanced datasets?</h3>
+
+<p><strong>A.</strong> A model that always predicts the majority class achieves high accuracy while completely
+
+ignoring the minority class. For example, on a 95%/5% fraud dataset, predicting &ldquo;not fraud&rdquo; for
+
+every transaction gives 95% accuracy but catches zero fraud cases. On imbalanced data, always report
+
+<strong>precision, recall, F1</strong>, and ideally <strong>PR-AUC</strong> instead of accuracy.</p>
+
+
+
+<h3>Q2. What is data leakage, and how do you prevent it?</h3>
+
+<p><strong>A.</strong> Data leakage occurs when information from outside the training set influences
+
+the model, leading to optimistic evaluation that does not hold in production. Common forms:
+
+fitting a scaler/encoder on the full dataset before splitting, using target-derived features,
+
+or splitting time-series data randomly. Prevention: always fit all preprocessing inside the
+
+training fold only, use <code>sklearn.Pipeline</code>, and for time series use temporal splits.</p>
+
+
+
+<h3>Q3. When would you prefer PR-AUC over ROC-AUC?</h3>
+
+<p><strong>A.</strong> When the positive class is rare. ROC-AUC evaluates performance across all
+
+decision thresholds using both positives and negatives. With heavy class imbalance, a model can
+
+achieve high ROC-AUC even while doing poorly on the rare class, because the large number of
+
+true negatives inflates TPR and keeps FPR low. PR-AUC focuses entirely on the positive class
+
+and is therefore more informative for fraud detection, medical screening, and anomaly detection.</p>
+
+
+
+<h3>Q4. Explain the precision-recall tradeoff. How do you choose the classification threshold?</h3>
+
+<p><strong>A.</strong> Classifiers output a probability score; the threshold converts that to a label.
+
+Raising the threshold increases precision (fewer false positives) but lowers recall (more false negatives).
+
+Lowering the threshold does the opposite. Choose the threshold on the <em>validation set</em> by:</p>
+
+<ul>
+
+<li><strong>Business cost</strong>: if a missed fraud costs more than a false alarm, lower the threshold.</li>
+
+<li><strong>F-beta</strong>: maximize F<sub>&beta;</sub> with &beta; tuned to the cost ratio.</li>
+
+<li><strong>Operating point</strong>: pick the point on the PR curve that satisfies a recall floor
+
+(e.g., &ge;80% recall) while maximizing precision. Never choose the threshold on the test set.</li>
+
+</ul>
+
+
+
+<h3>Q5. What is k-fold cross-validation, and when should you use it instead of a held-out validation set?</h3>
+
+<p><strong>A.</strong> K-fold CV splits the training data into k folds, trains k models (each with a different
+
+fold as validation), and averages the scores. Use CV when: data is small (&lt;10k rows) so a single
+
+split is noisy, comparing models that need a stable performance estimate, or searching hyperparameters
+
+with a grid/random search. Always hold a separate test set outside CV and report final results on it.</p>
+
+
+
+<h3>Q6. What is NDCG and when should you use it over MAP?</h3>
+
+<p><strong>A.</strong> NDCG (Normalized Discounted Cumulative Gain) handles <em>graded relevance</em>
+
+(0/1/2 rather than binary) and applies a logarithmic discount to lower ranks. Use NDCG when:</p>
+
+<ul>
+
+<li>Items have varying levels of relevance (not just relevant/not).</li>
+
+<li>You care about <em>how early</em> highly relevant items appear.</li>
+
+</ul>
+
+<p>Use MAP when relevance is binary and you care about <em>all</em> relevant items being retrieved,
+
+not just the top positions. NDCG@k is the standard metric for production search and recommendation
+
+systems.</p>
+
+
+
+<h3>Q7. What is F-beta score? When would you set beta &gt; 1 vs beta &lt; 1?</h3>
+
+<p><strong>A.</strong> F<sub>&beta;</sub> = (1 + &beta;&sup2;) &times; (P &times; R) / (&beta;&sup2; &times; P + R).
+
+&beta; controls the relative weight of recall vs precision:</p>
+
+<ul>
+
+<li><strong>&beta; &gt; 1</strong> (e.g., &beta;=2): recall is more important. Use when missing a
+
+positive case is more costly &mdash; cancer screening, fugitive detection, safety-critical alerts.</li>
+
+<li><strong>&beta; &lt; 1</strong> (e.g., &beta;=0.5): precision is more important. Use when false
+
+alarms are more costly &mdash; spam filters, manual fraud review queues, content moderation.</li>
+
+</ul>
+
+
+
+<h3>Q8. What does an R&sup2; of 0.7 mean? Can R&sup2; be negative?</h3>
+
+<p><strong>A.</strong> R&sup2; = 0.7 means the model explains 70% of the variance in the target; 30%
+
+remains unexplained. Yes, R&sup2; can be negative: if the model is worse than simply predicting the
+
+mean for every sample, SS_residual &gt; SS_total and R&sup2; &lt; 0. This typically happens when the
+
+model is severely mis-specified or evaluated on a distribution shift.</p>
+
+
+
+<h3>Q9. How do BLEU and ROUGE differ? Which should you use for summarization?</h3>
+
+<p><strong>A.</strong> BLEU measures n-gram <em>precision</em> &mdash; how much of the generated text
+
+appears in the reference. ROUGE measures n-gram <em>recall</em> &mdash; how much of the reference
+
+appears in the generated text. For summarization, use <strong>ROUGE</strong> (especially ROUGE-L):
+
+summaries should <em>cover</em> the reference content, so recall orientation is more appropriate.
+
+BLEU is the standard for machine translation. For modern LLM outputs, supplement both with
+
+<strong>BERTScore</strong> to capture semantic equivalence.</p>
+
+
+
+<h3>Q10. How would you evaluate a RAG-based QA system in production?</h3>
+
+<p><strong>A.</strong> Evaluate both retrieval and generation:</p>
+
+<ul>
+
+<li><strong>Retrieval:</strong> Context Precision (is retrieved content relevant?) and Context Recall
+
+(does retrieval surface everything needed?). Measure against annotated golden contexts.</li>
+
+<li><strong>Generation:</strong> Faithfulness (no hallucination &mdash; answer is entailed by retrieved
+
+context) and Answer Relevance (directly addresses the question). Use an LLM judge for both.</li>
+
+<li><strong>End-to-end:</strong> Exact Match or Token F1 against reference answers where available;
+
+human evaluation for open-ended questions.</li>
+
+<li><strong>Production monitoring:</strong> Track thumbs-up/down rates, unanswered question rate,
+
+and latency. Alert on drops in user satisfaction signals.</li>
+
+</ul>
+
+
+
+<hr />
+
+
+<div class="chapter-nav">
+  <a href="chapter-06.html">&larr; Chapter 06: Explainable AI (XAI) and Model Interpretability</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-08.html">Chapter 08: Unsupervised Learning &rarr;</a>
+</div>
+<div class="site-footer">
+  <p>&copy; 2026 Hariram Subramanian Gopal &middot; <a href="index.html">Data to Decisions</a></p>
+</div>
+</body>
+</html>

@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Hariram Subramanian Gopal" />
+  <title>Chapter 08: Unsupervised Learning | Data to Decisions</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</head>
+<body>
+<div class="chapter-nav">
+  <a href="chapter-07.html">&larr; Chapter 07: Model Evaluation and Validation</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-09.html">Chapter 09: Recommendation Systems &rarr;</a>
+</div>
+<h1 id="chapter-08-unsupervised-learning">Chapter 08: Unsupervised
+
+Learning</h1>
+
+<h2 id="chapter-scope-6">8.0 Chapter Scope</h2>
+
+<p>Supervised learning needs labels. Unsupervised learning finds
+
+structure in raw data without them. This chapter covers the three main
+
+branches: clustering (grouping similar points), dimensionality reduction
+
+(compressing representations), and anomaly detection (finding the
+
+unusual).</p>
+
+<p>In practice, anomaly detection often grows into its own topic because
+
+it touches unsupervised learning, monitoring, fraud, security, and
+
+quality control. So this chapter keeps anomaly detection as a short
+
+orientation while going deeper on clustering and representation
+
+learning.</p>
+
+<p><strong>What you will learn:</strong></p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 20%" />
+
+<col style="width: 80%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Section</th>
+
+<th>Topic</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>7.1</td>
+
+<td>Clustering: K-Means, DBSCAN, hierarchical, GMM</td>
+
+</tr>
+
+<tr>
+
+<td>7.2</td>
+
+<td>Dimensionality reduction: PCA, t-SNE, UMAP</td>
+
+</tr>
+
+<tr>
+
+<td>7.3</td>
+
+<td>Anomaly detection: brief orientation and how it connects to
+
+unsupervised learning</td>
+
+</tr>
+
+<tr>
+
+<td>7.4</td>
+
+<td>Autoencoders and representation learning</td>
+
+</tr>
+
+<tr>
+
+<td>7.5</td>
+
+<td>Choosing the right method</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Prerequisites:</strong> Linear algebra (Chapter 2), model
+
+evaluation concepts (Chapter 7).</p>
+
+<hr />
+
+<figure class="rich-figure">
+
+<img src="figures/generated/07_unsupervised_learning/unsupervised_learning_map.svg" alt="Unsupervised learning: three families — clustering (group), dimensionality reduction (compress), anomaly detection (flag unusual)">
+
+<figcaption>
+
+Unsupervised learning: three families — clustering (group), dimensionality reduction (compress), anomaly detection (flag unusual)
+
+</figcaption>
+
+</figure>
+
+<blockquote>
+
+<p><strong>Key:</strong> Unsupervised learning is used for exploration,
+
+compression, preprocessing, and detecting what you didn’t know to look
+
+for.</p>
+
+</blockquote>
+
+<hr />
+
+<h2 id="clustering-finding-groups">8.1 Clustering — Finding Groups</h2>
+
+<h3 id="the-core-problem">8.1.1 The Core Problem</h3>
+
+<p>You have data points with no labels. You want to discover which
+
+points are similar and should be grouped together.</p>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/07_unsupervised_learning/kmeans_before_after.svg" alt="K-means clustering: unlabeled points are assigned to the nearest centroid (marked with X) and color-coded by cluster">
+
+<figcaption>
+
+K-means clustering: unlabeled points are assigned to the nearest centroid (marked with X) and color-coded by cluster
+
+</figcaption>
+
+</figure>
+
+<h3 id="k-means">8.1.2 K-Means</h3>
+
+<p>The default clustering baseline. Fast, simple, works well when
+
+clusters are roughly spherical and similar-sized.</p>
+
+<p><strong>Algorithm:</strong> 1. Pick k initial centroids (use
+
+k-means++ seeding: <code>init='k-means++'</code>) 2. Assign each point
+
+to nearest centroid 3. Recompute each centroid as mean of assigned
+
+points 4. Repeat 2–3 until assignments stop changing</p>
+
+<p>The objective is to minimize total within-cluster sum of squared
+
+distances (inertia):</p>
+
+<p><span class="math display">\[
+
+J = \sum_{k=1}^{K} \sum_{x_i \in C_k} \|x_i - \mu_k\|^2
+
+\]</span></p>
+
+<p><strong>Where:</strong> <span class="math inline">\(J\)</span> = inertia (within-cluster sum of squared distances), <span class="math inline">\(K\)</span> = number of clusters, <span class="math inline">\(C_k\)</span> = set of points in cluster <span class="math inline">\(k\)</span>, <span class="math inline">\(\mu_k\)</span> = centroid of cluster <span class="math inline">\(k\)</span>.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb263-1"><a href="#cb263-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.cluster <span class="im">import</span> KMeans</span>
+<span id="cb263-2"><a href="#cb263-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb263-3"><a href="#cb263-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb263-4"><a href="#cb263-4" aria-hidden="true" tabindex="-1"></a>kmeans <span class="op">=</span> KMeans(n_clusters<span class="op">=</span><span class="dv">4</span>, init<span class="op">=</span><span class="st">&#39;k-means++&#39;</span>, n_init<span class="op">=</span><span class="dv">10</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb263-5"><a href="#cb263-5" aria-hidden="true" tabindex="-1"></a>labels <span class="op">=</span> kmeans.fit_predict(X)</span>
+<span id="cb263-6"><a href="#cb263-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb263-7"><a href="#cb263-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Inertia: </span><span class="sc">{</span>kmeans<span class="sc">.</span>inertia_<span class="sc">:.1f}</span><span class="ss">&quot;</span>)         <span class="co"># within-cluster SSQ</span></span>
+<span id="cb263-8"><a href="#cb263-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Centers: </span><span class="sc">{</span>kmeans<span class="sc">.</span>cluster_centers_<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">&quot;</span>) <span class="co"># (k, n_features)</span></span></code></pre></div>
+
+<p><strong>Choosing k — the Elbow Method:</strong></p>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/07_unsupervised_learning/kmeans_elbow.svg" alt="Choosing k: inertia elbow method (drop flattens) and silhouette score peak both point to k=3">
+
+<figcaption>
+
+Choosing k: inertia elbow method (drop flattens) and silhouette score peak both point to k=3
+
+</figcaption>
+
+</figure>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb264-1"><a href="#cb264-1" aria-hidden="true" tabindex="-1"></a>inertias <span class="op">=</span> []</span>
+<span id="cb264-2"><a href="#cb264-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> k <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, <span class="dv">12</span>):</span>
+<span id="cb264-3"><a href="#cb264-3" aria-hidden="true" tabindex="-1"></a>    km <span class="op">=</span> KMeans(n_clusters<span class="op">=</span>k, n_init<span class="op">=</span><span class="dv">10</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb264-4"><a href="#cb264-4" aria-hidden="true" tabindex="-1"></a>    km.fit(X)</span>
+<span id="cb264-5"><a href="#cb264-5" aria-hidden="true" tabindex="-1"></a>    inertias.append(km.inertia_)</span>
+<span id="cb264-6"><a href="#cb264-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot inertias vs k, look for the elbow</span></span></code></pre></div>
+
+<p><strong>Silhouette Score</strong> — internal evaluation without
+
+ground truth labels:</p>
+
+<p><span class="math display">\[
+
+s(i) = \frac{b(i) - a(i)}{\max(a(i), b(i))}
+
+\]</span></p>
+
+<ul>
+
+<li>a(i) = mean distance to other points in same cluster (cohesion)</li>
+
+<li>b(i) = mean distance to points in nearest other cluster
+
+(separation)</li>
+
+<li>Range: -1 (wrong cluster) to +1 (tight, well-separated)</li>
+
+</ul>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb265-1"><a href="#cb265-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> silhouette_score</span>
+<span id="cb265-2"><a href="#cb265-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Try multiple k values, pick highest silhouette</span></span>
+<span id="cb265-3"><a href="#cb265-3" aria-hidden="true" tabindex="-1"></a>best_k, best_score <span class="op">=</span> <span class="dv">2</span>, <span class="op">-</span><span class="dv">1</span></span>
+<span id="cb265-4"><a href="#cb265-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> k <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">2</span>, <span class="dv">12</span>):</span>
+<span id="cb265-5"><a href="#cb265-5" aria-hidden="true" tabindex="-1"></a>    labels <span class="op">=</span> KMeans(n_clusters<span class="op">=</span>k, n_init<span class="op">=</span><span class="dv">10</span>, random_state<span class="op">=</span><span class="dv">42</span>).fit_predict(X)</span>
+<span id="cb265-6"><a href="#cb265-6" aria-hidden="true" tabindex="-1"></a>    score <span class="op">=</span> silhouette_score(X, labels)</span>
+<span id="cb265-7"><a href="#cb265-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> score <span class="op">&gt;</span> best_score:</span>
+<span id="cb265-8"><a href="#cb265-8" aria-hidden="true" tabindex="-1"></a>        best_k, best_score <span class="op">=</span> k, score</span>
+<span id="cb265-9"><a href="#cb265-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Best k=</span><span class="sc">{</span>best_k<span class="sc">}</span><span class="ss">, silhouette=</span><span class="sc">{</span>best_score<span class="sc">:.3f}</span><span class="ss">&quot;</span>)</span></code></pre></div>
+
+<p><strong>K-Means limitations:</strong> assumes spherical similar-sized
+
+clusters; sensitive to outliers; must specify k; can hit local optima
+
+(run with n_init=10+).</p>
+
+<div class="practical-example">
+
+<div class="pe-label">Real-World ML Use Case — K-Means Clustering</div>
+
+<strong>Customer segmentation for targeted marketing.</strong> A retail bank applies K-Means (k=5) to cluster customers based on RFM features: Recency (days since last transaction), Frequency (transactions per month), and Monetary value (average transaction amount). The resulting segments — high-value loyalists, at-risk churners, occasional spenders, new customers, and dormant accounts — each receive a tailored marketing campaign. K-Means is ideal here because the features are numeric, clusters are roughly spherical after standardisation, and the business needs interpretable, mutually exclusive segments. The elbow method with silhouette scoring identifies k=5 as the stable configuration.
+
+</div>
+
+<h3 id="dbscan-density-based-clustering">8.1.3 DBSCAN — Density-Based
+
+Clustering</h3>
+
+<p>Groups densely packed points, labels sparse points as noise. Does not
+
+require specifying k.</p>
+
+<p>Two parameters: <code>eps</code> (neighbourhood radius) and
+
+<code>min_samples</code> (minimum points to form a core point).</p>
+
+<p><strong>Three point types:</strong></p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:100%; max-width:600px;">
+<thead><tr>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1; color:#4f46e5; width:25%;">Point Type</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1; color:#4f46e5; width:75%;">Definition</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td style="padding:8px 14px; border-bottom:1px solid #e2e8f0; font-weight:600; color:#166534;">Core</td>
+  <td style="padding:8px 14px; border-bottom:1px solid #e2e8f0;">Has &ge; <code>min_samples</code> neighbours within <code>eps</code> radius. Forms the backbone of clusters.</td>
+</tr>
+<tr>
+  <td style="padding:8px 14px; border-bottom:1px solid #e2e8f0; font-weight:600; color:#1e40af;">Border</td>
+  <td style="padding:8px 14px; border-bottom:1px solid #e2e8f0;">Within <code>eps</code> of a core point, but does not itself have enough neighbours to be core. Belongs to a cluster but sits on its edge.</td>
+</tr>
+<tr>
+  <td style="padding:8px 14px; border-bottom:1px solid #e2e8f0; font-weight:600; color:#dc2626;">Noise</td>
+  <td style="padding:8px 14px; border-bottom:1px solid #e2e8f0;">Not within <code>eps</code> of any core point &mdash; gets label &minus;1. These are the outliers DBSCAN identifies.</td>
+</tr>
+</tbody>
+</table>
+
+
+<figure class="rich-figure">
+
+<img src="figures/generated/07_unsupervised_learning/dbscan_density_clusters.svg" alt="DBSCAN visual intuition: dense regions become clusters, border points attach to clusters, and isolated points are labeled as noise">
+
+<figcaption>
+
+DBSCAN visual intuition: dense regions become clusters, border points attach to clusters, and isolated points are labeled as noise
+
+</figcaption>
+
+</figure>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb267-1"><a href="#cb267-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.cluster <span class="im">import</span> DBSCAN</span>
+<span id="cb267-2"><a href="#cb267-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb267-3"><a href="#cb267-3" aria-hidden="true" tabindex="-1"></a>db <span class="op">=</span> DBSCAN(eps<span class="op">=</span><span class="fl">0.5</span>, min_samples<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb267-4"><a href="#cb267-4" aria-hidden="true" tabindex="-1"></a>labels <span class="op">=</span> db.fit_predict(X)</span>
+<span id="cb267-5"><a href="#cb267-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb267-6"><a href="#cb267-6" aria-hidden="true" tabindex="-1"></a>n_clusters <span class="op">=</span> <span class="bu">len</span>(<span class="bu">set</span>(labels)) <span class="op">-</span> (<span class="dv">1</span> <span class="cf">if</span> <span class="op">-</span><span class="dv">1</span> <span class="kw">in</span> labels <span class="cf">else</span> <span class="dv">0</span>)</span>
+<span id="cb267-7"><a href="#cb267-7" aria-hidden="true" tabindex="-1"></a>n_noise    <span class="op">=</span> (labels <span class="op">==</span> <span class="op">-</span><span class="dv">1</span>).<span class="bu">sum</span>()</span>
+<span id="cb267-8"><a href="#cb267-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Clusters: </span><span class="sc">{</span>n_clusters<span class="sc">}</span><span class="ss">, Noise: </span><span class="sc">{</span>n_noise<span class="sc">}</span><span class="ss">&quot;</span>)</span></code></pre></div>
+
+<p><strong>Choosing eps:</strong> plot sorted k-nearest-neighbour
+
+distances and find the “knee.”</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb268-1"><a href="#cb268-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.neighbors <span class="im">import</span> NearestNeighbors</span>
+<span id="cb268-2"><a href="#cb268-2" aria-hidden="true" tabindex="-1"></a>nbrs <span class="op">=</span> NearestNeighbors(n_neighbors<span class="op">=</span><span class="dv">5</span>).fit(X)</span>
+<span id="cb268-3"><a href="#cb268-3" aria-hidden="true" tabindex="-1"></a>distances, _ <span class="op">=</span> nbrs.kneighbors(X)</span>
+<span id="cb268-4"><a href="#cb268-4" aria-hidden="true" tabindex="-1"></a>knee_dist <span class="op">=</span> np.sort(distances[:, <span class="op">-</span><span class="dv">1</span>])</span>
+<span id="cb268-5"><a href="#cb268-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot knee_dist — the knee value is your eps</span></span></code></pre></div>
+
+<p>DBSCAN strengths: arbitrary cluster shapes, built-in outlier
+
+detection, no k required. DBSCAN weaknesses: eps and min_samples are
+
+sensitive; struggles when cluster densities vary.</p>
+
+<div class="practical-example">
+
+<div class="pe-label">Real-World ML Use Case — DBSCAN</div>
+
+<strong>Geospatial hotspot detection for ride-sharing.</strong> Uber and Lyft use DBSCAN to identify pickup and drop-off hotspots from GPS coordinate clusters. Unlike K-Means, DBSCAN naturally handles the irregular shapes of city zones (an airport terminal, a stadium, a downtown street grid) and flags isolated rides as noise rather than forcing them into a cluster. Setting eps ≈ 200 metres and min_samples ≈ 5 identifies dense pickup zones that become pre-positioned driver staging areas. The same DBSCAN approach is used in epidemiology to detect spatial disease clusters of irregular shape and in logistics to group delivery addresses into efficient zones.
+
+</div>
+
+<h3 id="hierarchical-clustering">8.1.4 Hierarchical Clustering</h3>
+
+<p>Builds a tree (dendrogram) of nested clusters. Cut the tree at any
+
+height to get any number of clusters — no need to commit to k
+
+upfront.</p>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/07_unsupervised_learning/hierarchical_dendrogram.svg" alt="Hierarchical clustering: nearby points merge first, a dendrogram records merge height, and a horizontal cut defines the final clusters">
+
+<figcaption>
+
+Hierarchical clustering: nearby points merge first, a dendrogram records merge height, and a horizontal cut defines the final clusters
+
+</figcaption>
+
+</figure>
+
+<!-- Inline dendrogram SVG removed — the generated figure above already illustrates the concept -->
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb270-1"><a href="#cb270-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> scipy.cluster.hierarchy <span class="im">import</span> dendrogram, linkage</span>
+<span id="cb270-2"><a href="#cb270-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb270-3"><a href="#cb270-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.cluster <span class="im">import</span> AgglomerativeClustering</span>
+<span id="cb270-4"><a href="#cb270-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb270-5"><a href="#cb270-5" aria-hidden="true" tabindex="-1"></a><span class="co"># View dendrogram to choose cut point</span></span>
+<span id="cb270-6"><a href="#cb270-6" aria-hidden="true" tabindex="-1"></a>Z <span class="op">=</span> linkage(X, method<span class="op">=</span><span class="st">&#39;ward&#39;</span>)</span>
+<span id="cb270-7"><a href="#cb270-7" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="dv">4</span>))</span>
+<span id="cb270-8"><a href="#cb270-8" aria-hidden="true" tabindex="-1"></a>dendrogram(Z, truncate_mode<span class="op">=</span><span class="st">&#39;level&#39;</span>, p<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb270-9"><a href="#cb270-9" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">&#39;Dendrogram — draw a horizontal line to choose k&#39;</span>)</span>
+<span id="cb270-10"><a href="#cb270-10" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb270-11"><a href="#cb270-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb270-12"><a href="#cb270-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Then cluster at chosen k</span></span>
+<span id="cb270-13"><a href="#cb270-13" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> AgglomerativeClustering(n_clusters<span class="op">=</span><span class="dv">4</span>, linkage<span class="op">=</span><span class="st">&#39;ward&#39;</span>)</span>
+<span id="cb270-14"><a href="#cb270-14" aria-hidden="true" tabindex="-1"></a>labels <span class="op">=</span> model.fit_predict(X)</span></code></pre></div>
+
+<p>Linkage methods: <strong>Ward</strong> (minimize within-cluster
+
+variance) is the default recommendation. Complete = max distance;
+
+Average = mean distance; Single = min distance (prone to chaining).</p>
+
+<h3 id="gaussian-mixture-models-gmm">8.1.5 Gaussian Mixture Models (GMM)</h3>
+
+<p>GMM is probabilistic clustering — each cluster is a Gaussian. Points
+
+get soft assignments: a probability of belonging to each cluster.</p>
+
+<p><span class="math display">\[
+
+p(x) = \sum_{k=1}^{K} \pi_k \cdot \mathcal{N}(x \mid \mu_k, \Sigma_k)
+
+\]</span></p>
+
+<p><strong>Where:</strong> <span class="math inline">\(K\)</span> = number of Gaussian components, <span class="math inline">\(\pi_k\)</span> = mixing weight (<span class="math inline">\(\sum \pi_k = 1\)</span>), <span class="math inline">\(\mu_k\)</span> = component mean, <span class="math inline">\(\Sigma_k\)</span> = component covariance matrix.</p>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/07_unsupervised_learning/gmm_soft_assignments.svg" alt="Gaussian Mixture Model intuition: overlapping elliptical clusters give soft cluster probabilities instead of hard boundaries">
+
+<figcaption>
+
+Gaussian Mixture Model intuition: overlapping elliptical clusters give soft cluster probabilities instead of hard boundaries
+
+</figcaption>
+
+</figure>
+
+<table style="border-collapse:collapse; margin:16px 0; font-size:0.92rem; width:100%; max-width:520px;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px; color:#1e293b;">K-Means vs GMM</caption>
+<thead><tr>
+<th style="text-align:left; padding:8px 12px; border-bottom:2px solid #6366f1; color:#4f46e5;">Property</th>
+<th style="text-align:left; padding:8px 12px; border-bottom:2px solid #6366f1; color:#4f46e5;">K-Means</th>
+<th style="text-align:left; padding:8px 12px; border-bottom:2px solid #6366f1; color:#4f46e5;">GMM</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0;">Assignment</td><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0;">Hard boundaries</td><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0;">Soft probabilities</td></tr>
+<tr><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0;">Cluster shape</td><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0;">Spherical only</td><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0;">Elliptical shapes OK</td></tr>
+</tbody>
+</table>
+
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb272-1"><a href="#cb272-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.mixture <span class="im">import</span> GaussianMixture</span>
+<span id="cb272-2"><a href="#cb272-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb272-3"><a href="#cb272-3" aria-hidden="true" tabindex="-1"></a>gmm <span class="op">=</span> GaussianMixture(n_components<span class="op">=</span><span class="dv">3</span>, covariance_type<span class="op">=</span><span class="st">&#39;full&#39;</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb272-4"><a href="#cb272-4" aria-hidden="true" tabindex="-1"></a>gmm.fit(X)</span>
+<span id="cb272-5"><a href="#cb272-5" aria-hidden="true" tabindex="-1"></a>labels <span class="op">=</span> gmm.predict(X)                   <span class="co"># hard assignments</span></span>
+<span id="cb272-6"><a href="#cb272-6" aria-hidden="true" tabindex="-1"></a>probs  <span class="op">=</span> gmm.predict_proba(X)             <span class="co"># shape (n, k) — soft assignments</span></span>
+<span id="cb272-7"><a href="#cb272-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb272-8"><a href="#cb272-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Choose n_components using BIC (lower = better balance of fit vs complexity)</span></span>
+<span id="cb272-9"><a href="#cb272-9" aria-hidden="true" tabindex="-1"></a>bics <span class="op">=</span> [GaussianMixture(n, random_state<span class="op">=</span><span class="dv">42</span>).fit(X).bic(X) <span class="cf">for</span> n <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, <span class="dv">10</span>)]</span>
+<span id="cb272-10"><a href="#cb272-10" aria-hidden="true" tabindex="-1"></a>best_n <span class="op">=</span> np.argmin(bics) <span class="op">+</span> <span class="dv">1</span></span></code></pre></div>
+
+<p>GMM uses EM (Expectation-Maximisation) internally. E-step: assign
+
+points to clusters probabilistically. M-step: update Gaussian parameters
+
+to maximize likelihood.</p>
+
+<h3 id="when-to-use-which-clustering-algorithm">8.1.6 When to Use Which
+
+Clustering Algorithm</h3>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/07_unsupervised_learning/clustering_method_guide.svg" alt="Clustering method guide: K-Means for fast spherical clusters, DBSCAN for arbitrary shapes and noise, hierarchical clustering for nested structure and dendrograms, and GMM for soft elliptical clusters">
+
+<figcaption>
+
+Clustering method guide: K-Means for fast spherical clusters, DBSCAN for arbitrary shapes and noise, hierarchical clustering for nested structure and dendrograms, and GMM for soft elliptical clusters
+
+</figcaption>
+
+</figure>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Method</th>
+
+<th>Best when</th>
+
+<th>Watch out for</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>K-Means</td>
+
+<td>You need a fast baseline and clusters are roughly round and similar in size</td>
+
+<td>Fails on non-spherical clusters and outliers</td>
+
+</tr>
+
+<tr>
+
+<td>DBSCAN</td>
+
+<td>You expect irregular cluster shapes and want noise detection built in</td>
+
+<td>Sensitive to <code>eps</code>; struggles with varying densities</td>
+
+</tr>
+
+<tr>
+
+<td>Hierarchical</td>
+
+<td>You want nested structure, a dendrogram, or flexible cut levels</td>
+
+<td>Can be expensive on large datasets</td>
+
+</tr>
+
+<tr>
+
+<td>GMM</td>
+
+<td>You want soft membership or elliptical clusters with overlap</td>
+
+<td>More parameters to tune; can overfit small datasets</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="clustering-evaluation">8.1.7 Clustering Evaluation</h3>
+
+<table style="border-collapse:collapse; margin:16px 0; width:100%; max-width:680px;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px; color:#1e293b;">Clustering Evaluation Metrics</caption>
+<thead><tr>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1; color:#4f46e5; width:50%;">WITH Ground Truth Labels</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1; color:#4f46e5; width:50%;">WITHOUT Ground Truth</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td style="padding:8px 14px; border-bottom:1px solid #e2e8f0;"><strong>Adjusted Rand Index (ARI)</strong> &mdash; chance-corrected agreement between true and predicted labels. Range: &minus;1 to +1, higher is better.</td>
+  <td style="padding:8px 14px; border-bottom:1px solid #e2e8f0;"><strong>Silhouette score</strong> &mdash; cohesion vs separation per point. Range: &minus;1 to +1, higher is better.</td>
+</tr>
+<tr>
+  <td style="padding:8px 14px; border-bottom:1px solid #e2e8f0;"><strong>Normalized Mutual Info (NMI)</strong> &mdash; information-theoretic overlap. Range: 0 to 1, higher is better.</td>
+  <td style="padding:8px 14px; border-bottom:1px solid #e2e8f0;"><strong>Davies-Bouldin index</strong> &mdash; ratio of within-cluster to between-cluster distances. <em>Lower</em> is better.</td>
+</tr>
+<tr>
+  <td style="padding:8px 14px; border-bottom:1px solid #e2e8f0;"><strong>Fowlkes-Mallows score</strong> &mdash; geometric mean of precision and recall of cluster pairs. Range: 0 to 1, higher is better.</td>
+  <td style="padding:8px 14px; border-bottom:1px solid #e2e8f0;"><strong>Calinski-Harabasz index</strong> &mdash; ratio of between-cluster to within-cluster variance. Higher is better, but favours convex clusters.</td>
+</tr>
+</tbody>
+</table>
+
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb274-1"><a href="#cb274-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> (</span>
+<span id="cb274-2"><a href="#cb274-2" aria-hidden="true" tabindex="-1"></a>    adjusted_rand_score, silhouette_score, davies_bouldin_score</span>
+<span id="cb274-3"><a href="#cb274-3" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb274-4"><a href="#cb274-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb274-5"><a href="#cb274-5" aria-hidden="true" tabindex="-1"></a>ari  <span class="op">=</span> adjusted_rand_score(true_labels, pred_labels)  <span class="co"># needs ground truth</span></span>
+<span id="cb274-6"><a href="#cb274-6" aria-hidden="true" tabindex="-1"></a>sil  <span class="op">=</span> silhouette_score(X, pred_labels)               <span class="co"># no ground truth needed</span></span>
+<span id="cb274-7"><a href="#cb274-7" aria-hidden="true" tabindex="-1"></a>db   <span class="op">=</span> davies_bouldin_score(X, pred_labels)           <span class="co"># lower is better</span></span></code></pre></div>
+
+<div class="practical-example">
+
+<div class="pe-label">Real-World ML Use Case — Hierarchical Clustering</div>
+
+<strong>Gene expression profiling and drug discovery.</strong> Pharmaceutical researchers apply hierarchical clustering (Ward linkage) to RNA-seq data from thousands of genes across hundreds of patient samples. The dendrogram reveals which genes co-regulate together and which patient sub-populations share similar expression patterns. Unlike K-Means, hierarchical clustering requires no pre-specified k — researchers can cut the dendrogram at different heights to explore coarse or fine-grained groupings. This has directly led to the discovery of breast cancer subtypes (Luminal A, Luminal B, HER2+, Triple Negative) that now guide treatment decisions globally.
+
+</div>
+
+<hr />
+
+<h2 id="dimensionality-reduction">8.2 Dimensionality Reduction</h2>
+
+<p>High-dimensional data has three problems: the curse of dimensionality
+
+(distances become meaningless), visualization is impossible, and models
+
+overfit.</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px;">Dimensionality reduction tool summary</caption>
+<thead><tr>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Method</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Type</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Use for</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">PCA</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Linear, fast</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Preprocessing and compression</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">t-SNE</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Nonlinear, slow</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">ONLY visualization</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600;">UMAP</td>
+    <td style="padding:6px 14px;">Nonlinear, faster</td>
+    <td style="padding:6px 14px;">Viz + some global structure preserved</td></tr>
+</tbody>
+</table>
+
+<h3 id="pca-principal-component-analysis-1">8.2.1 PCA — Principal Component
+
+Analysis</h3>
+
+<p>If Chapter 4.6 introduced these tools as preprocessing choices, this
+
+section reframes them from the unsupervised side: each method discovers a
+
+smaller representation of the same data, but the type of structure it
+
+preserves is different.</p>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/07_unsupervised_learning/dimensionality_reduction_toolmap.svg" alt="Dimensionality reduction tool map: PCA preserves linear variance for compression, t-SNE preserves local neighborhoods for visualization, and UMAP balances local structure with a more reusable embedding">
+
+<figcaption>
+
+Dimensionality reduction tool map: PCA preserves linear variance for compression, t-SNE preserves local neighborhoods for visualization, and UMAP balances local structure with a more reusable embedding
+
+</figcaption>
+
+</figure>
+
+<p>Finds the directions of maximum variance and projects your data onto them.
+Think of it as finding the best angle to cast a shadow of your data so that points stay as spread-apart as possible.</p>
+
+<!-- Fig 8.2a — The Shadow Analogy (3 panels) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 280" style="display:block; margin:20px auto; max-width:820px; width:100%;" role="img" aria-label="Shadow analogy: bad projection bunches points, PC1 projection spreads them maximally, PC2 is perpendicular">
+  <style>
+    .sh-title { font: bold 13px system-ui, sans-serif; }
+    .sh-label { font: 11px system-ui, sans-serif; }
+    .sh-note  { font: italic 10px system-ui, sans-serif; fill: #94a3b8; }
+  </style>
+  <rect width="820" height="280" rx="10" fill="#1e1e2e"/>
+  <text x="410" y="24" text-anchor="middle" class="sh-title" fill="#e2e8f0">Fig 8.2a &#x2014; The Shadow Analogy: Why Projection Direction Matters</text>
+
+  <!-- Panel 1 — Bad projection -->
+  <rect x="15" y="38" width="250" height="230" rx="8" fill="#252540"/>
+  <text x="140" y="58" text-anchor="middle" class="sh-label" fill="#f87171" font-weight="600">Bad Projection</text>
+  <!-- Data cloud (diagonal ellipse) -->
+  <circle cx="80" cy="110" r="4" fill="#94a3b8" opacity="0.7"/>
+  <circle cx="95" cy="120" r="4" fill="#94a3b8" opacity="0.7"/>
+  <circle cx="110" cy="100" r="4" fill="#94a3b8" opacity="0.7"/>
+  <circle cx="130" cy="130" r="4" fill="#94a3b8" opacity="0.7"/>
+  <circle cx="150" cy="140" r="4" fill="#94a3b8" opacity="0.7"/>
+  <circle cx="165" cy="125" r="4" fill="#94a3b8" opacity="0.7"/>
+  <circle cx="185" cy="155" r="4" fill="#94a3b8" opacity="0.7"/>
+  <circle cx="200" cy="150" r="4" fill="#94a3b8" opacity="0.7"/>
+  <!-- Vertical axis (bad) -->
+  <line x1="50" y1="85" x2="50" y2="200" stroke="#f87171" stroke-width="2"/>
+  <!-- Shadow lines to vertical axis -->
+  <line x1="80" y1="110" x2="50" y2="110" stroke="#f87171" stroke-width="0.8" stroke-dasharray="3,2" opacity="0.5"/>
+  <line x1="95" y1="120" x2="50" y2="120" stroke="#f87171" stroke-width="0.8" stroke-dasharray="3,2" opacity="0.5"/>
+  <line x1="110" y1="100" x2="50" y2="100" stroke="#f87171" stroke-width="0.8" stroke-dasharray="3,2" opacity="0.5"/>
+  <line x1="130" y1="130" x2="50" y2="130" stroke="#f87171" stroke-width="0.8" stroke-dasharray="3,2" opacity="0.5"/>
+  <line x1="150" y1="140" x2="50" y2="140" stroke="#f87171" stroke-width="0.8" stroke-dasharray="3,2" opacity="0.5"/>
+  <line x1="165" y1="125" x2="50" y2="125" stroke="#f87171" stroke-width="0.8" stroke-dasharray="3,2" opacity="0.5"/>
+  <line x1="185" y1="155" x2="50" y2="155" stroke="#f87171" stroke-width="0.8" stroke-dasharray="3,2" opacity="0.5"/>
+  <line x1="200" y1="150" x2="50" y2="150" stroke="#f87171" stroke-width="0.8" stroke-dasharray="3,2" opacity="0.5"/>
+  <!-- Red shadow dots (bunched) -->
+  <circle cx="50" cy="110" r="3.5" fill="#f87171"/>
+  <circle cx="50" cy="120" r="3.5" fill="#f87171"/>
+  <circle cx="50" cy="100" r="3.5" fill="#f87171"/>
+  <circle cx="50" cy="130" r="3.5" fill="#f87171"/>
+  <circle cx="50" cy="140" r="3.5" fill="#f87171"/>
+  <circle cx="50" cy="125" r="3.5" fill="#f87171"/>
+  <circle cx="50" cy="155" r="3.5" fill="#f87171"/>
+  <circle cx="50" cy="150" r="3.5" fill="#f87171"/>
+  <text x="140" y="215" text-anchor="middle" class="sh-note">Shadows bunched &#x2014; lost structure!</text>
+  <text x="140" y="250" text-anchor="middle" class="sh-label" fill="#f87171">&#x2717; Low variance kept</text>
+
+  <!-- Arrow panel 1 → 2 -->
+  <line x1="268" y1="150" x2="282" y2="150" stroke="#a78bfa" stroke-width="2"/>
+  <polygon points="282,150 275,145 275,155" fill="#a78bfa"/>
+
+  <!-- Panel 2 — PC1 (best) -->
+  <rect x="285" y="38" width="250" height="230" rx="8" fill="#252540"/>
+  <text x="410" y="58" text-anchor="middle" class="sh-label" fill="#facc15" font-weight="600">PC1 &#x2014; Best Direction</text>
+  <!-- Data cloud -->
+  <circle cx="330" cy="180" r="4" fill="#94a3b8" opacity="0.7"/>
+  <circle cx="350" cy="170" r="4" fill="#94a3b8" opacity="0.7"/>
+  <circle cx="365" cy="155" r="4" fill="#94a3b8" opacity="0.7"/>
+  <circle cx="385" cy="145" r="4" fill="#94a3b8" opacity="0.7"/>
+  <circle cx="400" cy="130" r="4" fill="#94a3b8" opacity="0.7"/>
+  <circle cx="420" cy="120" r="4" fill="#94a3b8" opacity="0.7"/>
+  <circle cx="440" cy="105" r="4" fill="#94a3b8" opacity="0.7"/>
+  <circle cx="460" cy="95" r="4" fill="#94a3b8" opacity="0.7"/>
+  <!-- PC1 diagonal line -->
+  <line x1="315" y1="195" x2="480" y2="80" stroke="#facc15" stroke-width="2"/>
+  <text x="485" y="78" class="sh-label" fill="#facc15" font-weight="600">PC1</text>
+  <!-- Shadow lines to PC1 -->
+  <line x1="330" y1="180" x2="335" y2="187" stroke="#facc15" stroke-width="0.8" stroke-dasharray="3,2" opacity="0.4"/>
+  <line x1="350" y1="170" x2="350" y2="173" stroke="#facc15" stroke-width="0.8" stroke-dasharray="3,2" opacity="0.4"/>
+  <line x1="400" y1="130" x2="402" y2="133" stroke="#facc15" stroke-width="0.8" stroke-dasharray="3,2" opacity="0.4"/>
+  <line x1="460" y1="95" x2="458" y2="92" stroke="#facc15" stroke-width="0.8" stroke-dasharray="3,2" opacity="0.4"/>
+  <!-- Gold shadow dots (well spread on diagonal) -->
+  <circle cx="335" cy="187" r="3.5" fill="#facc15"/>
+  <circle cx="350" cy="173" r="3.5" fill="#facc15"/>
+  <circle cx="365" cy="158" r="3.5" fill="#facc15"/>
+  <circle cx="385" cy="143" r="3.5" fill="#facc15"/>
+  <circle cx="402" cy="133" r="3.5" fill="#facc15"/>
+  <circle cx="420" cy="118" r="3.5" fill="#facc15"/>
+  <circle cx="440" cy="103" r="3.5" fill="#facc15"/>
+  <circle cx="458" cy="92" r="3.5" fill="#facc15"/>
+  <text x="410" y="215" text-anchor="middle" class="sh-note">Shadows maximally spread!</text>
+  <text x="410" y="250" text-anchor="middle" class="sh-label" fill="#4ade80">&#x2713; Maximum variance kept</text>
+
+  <!-- Arrow panel 2 → 3 -->
+  <line x1="538" y1="150" x2="552" y2="150" stroke="#a78bfa" stroke-width="2"/>
+  <polygon points="552,150 545,145 545,155" fill="#a78bfa"/>
+
+  <!-- Panel 3 — PC2 (perpendicular) -->
+  <rect x="555" y="38" width="250" height="230" rx="8" fill="#252540"/>
+  <text x="680" y="58" text-anchor="middle" class="sh-label" fill="#38bdf8" font-weight="600">PC2 &#x2014; Perpendicular to PC1</text>
+  <!-- Data cloud -->
+  <circle cx="620" cy="180" r="4" fill="#94a3b8" opacity="0.7"/>
+  <circle cx="635" cy="165" r="4" fill="#94a3b8" opacity="0.7"/>
+  <circle cx="650" cy="155" r="4" fill="#94a3b8" opacity="0.7"/>
+  <circle cx="670" cy="140" r="4" fill="#94a3b8" opacity="0.7"/>
+  <circle cx="690" cy="125" r="4" fill="#94a3b8" opacity="0.7"/>
+  <circle cx="705" cy="115" r="4" fill="#94a3b8" opacity="0.7"/>
+  <circle cx="720" cy="100" r="4" fill="#94a3b8" opacity="0.7"/>
+  <circle cx="740" cy="90" r="4" fill="#94a3b8" opacity="0.7"/>
+  <!-- PC1 line (faded) -->
+  <line x1="605" y1="195" x2="755" y2="75" stroke="#facc15" stroke-width="1" opacity="0.3"/>
+  <!-- PC2 line (perpendicular) -->
+  <line x1="630" y1="95" x2="730" y2="185" stroke="#38bdf8" stroke-width="2"/>
+  <text x="735" y="190" class="sh-label" fill="#38bdf8" font-weight="600">PC2</text>
+  <!-- 90-degree marker -->
+  <rect x="672" y="133" width="10" height="10" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="680" y="215" text-anchor="middle" class="sh-note">PC2 captures remaining variance</text>
+  <text x="680" y="250" text-anchor="middle" class="sh-label" fill="#38bdf8">Always 90&#xb0; to PC1</text>
+</svg>
+
+<p><strong>The key insight:</strong> PCA finds these best shadow directions automatically, using <em>eigenvectors</em> of the covariance matrix.
+Each eigenvector defines a principal component direction; its <em>eigenvalue</em> tells you how much variance that direction captures.</p>
+
+<!-- Fig 8.2b — Eigenvector vs Regular Vector -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 240" style="display:block; margin:20px auto; max-width:820px; width:100%;" role="img" aria-label="Eigenvector is only scaled by matrix multiplication, not rotated, unlike a regular vector">
+  <style>
+    .ev-title { font: bold 13px system-ui, sans-serif; }
+    .ev-label { font: 11px system-ui, sans-serif; }
+    .ev-math  { font: italic 12px system-ui, sans-serif; }
+  </style>
+  <rect width="820" height="240" rx="10" fill="#1e1e2e"/>
+  <text x="410" y="24" text-anchor="middle" class="ev-title" fill="#e2e8f0">Fig 8.2b &#x2014; What Makes Eigenvectors Special?</text>
+
+  <!-- Left panel — Regular vector -->
+  <rect x="15" y="38" width="385" height="190" rx="8" fill="#252540"/>
+  <text x="207" y="58" text-anchor="middle" class="ev-label" fill="#94a3b8" font-weight="600">Regular Vector: Av changes direction</text>
+  <!-- Axes -->
+  <line x1="100" y1="190" x2="100" y2="65" stroke="#475569" stroke-width="1"/>
+  <line x1="55" y1="170" x2="320" y2="170" stroke="#475569" stroke-width="1"/>
+  <!-- Original vector v (blue) -->
+  <line x1="100" y1="170" x2="220" y2="100" stroke="#38bdf8" stroke-width="2.5"/>
+  <polygon points="220,100 210,106 214,112" fill="#38bdf8"/>
+  <text x="175" y="92" class="ev-label" fill="#38bdf8" font-weight="600">v</text>
+  <!-- Transformed Av (red, different direction) -->
+  <line x1="100" y1="170" x2="280" y2="130" stroke="#f87171" stroke-width="2.5" stroke-dasharray="6,3"/>
+  <polygon points="280,130 269,129 272,137" fill="#f87171"/>
+  <text x="270" y="122" class="ev-label" fill="#f87171" font-weight="600">Av</text>
+  <!-- Rotation arc -->
+  <path d="M 190,115 A 40,40 0 0,1 230,135" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="225" y="110" class="ev-label" fill="#a78bfa">rotated!</text>
+
+  <!-- Right panel — Eigenvector -->
+  <rect x="420" y="38" width="385" height="190" rx="8" fill="#252540"/>
+  <text x="612" y="58" text-anchor="middle" class="ev-label" fill="#94a3b8" font-weight="600">Eigenvector: Ae = &#x3bb;e (only scaled!)</text>
+  <!-- Axes -->
+  <line x1="510" y1="190" x2="510" y2="65" stroke="#475569" stroke-width="1"/>
+  <line x1="460" y1="170" x2="730" y2="170" stroke="#475569" stroke-width="1"/>
+  <!-- Eigenvector e (gold) -->
+  <line x1="510" y1="170" x2="610" y2="110" stroke="#facc15" stroke-width="2.5"/>
+  <polygon points="610,110 600,113 603,120" fill="#facc15"/>
+  <text x="570" y="102" class="ev-label" fill="#facc15" font-weight="600">e</text>
+  <!-- Scaled Ae (green, same direction, longer) -->
+  <line x1="510" y1="170" x2="690" y2="62" stroke="#4ade80" stroke-width="2.5"/>
+  <polygon points="690,62 679,63 681,72" fill="#4ade80"/>
+  <text x="680" y="55" class="ev-label" fill="#4ade80" font-weight="600">Ae = &#x3bb;e</text>
+  <!-- "same direction" annotation -->
+  <text x="640" y="145" class="ev-label" fill="#4ade80">same direction!</text>
+  <!-- Formula box -->
+  <rect x="475" y="195" width="280" height="26" rx="5" fill="#1e1e2e" stroke="#a78bfa" stroke-width="1"/>
+  <text x="615" y="213" text-anchor="middle" class="ev-math" fill="#a78bfa">&#x3A3;v = &#x3bb;v &#x2192; v is eigenvector, &#x3bb; is eigenvalue</text>
+</svg>
+
+<!-- Fig 8.2c — Eigenvalue Importance -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 200" style="display:block; margin:20px auto; max-width:820px; width:100%;" role="img" aria-label="Eigenvalues show how much variance each principal component captures: PC1 much more than PC2">
+  <style>
+    .ei-title { font: bold 13px system-ui, sans-serif; }
+    .ei-label { font: 11px system-ui, sans-serif; }
+  </style>
+  <rect width="820" height="200" rx="10" fill="#1e1e2e"/>
+  <text x="410" y="22" text-anchor="middle" class="ei-title" fill="#e2e8f0">Fig 8.2c &#x2014; Eigenvalues = Variance Captured by Each PC</text>
+
+  <!-- Left panel — Data ellipse + PC arrows -->
+  <rect x="15" y="35" width="460" height="155" rx="8" fill="#252540"/>
+  <!-- Ellipse representing data cloud -->
+  <ellipse cx="245" cy="112" rx="180" ry="45" fill="none" stroke="#94a3b8" stroke-width="1.5" transform="rotate(-25,245,112)"/>
+  <!-- PC1 arrow (long, gold) -->
+  <line x1="110" y1="150" x2="380" y2="75" stroke="#facc15" stroke-width="3"/>
+  <polygon points="380,75 367,78 370,86" fill="#facc15"/>
+  <text x="385" y="72" class="ei-label" fill="#facc15" font-weight="700">PC1</text>
+  <text x="385" y="86" class="ei-label" fill="#facc15">&#x3bb;&#x2081; = 4.82</text>
+  <!-- PC2 arrow (short, cyan) -->
+  <line x1="220" y1="145" x2="270" y2="80" stroke="#38bdf8" stroke-width="3"/>
+  <polygon points="270,80 260,88 267,90" fill="#38bdf8"/>
+  <text x="275" y="75" class="ei-label" fill="#38bdf8" font-weight="700">PC2</text>
+  <text x="275" y="89" class="ei-label" fill="#38bdf8">&#x3bb;&#x2082; = 0.92</text>
+  <!-- Annotation -->
+  <text x="245" y="180" text-anchor="middle" class="ei-label" fill="#94a3b8">Longer arrow = more variance = larger eigenvalue</text>
+
+  <!-- Right panel — Bar chart -->
+  <rect x="495" y="35" width="310" height="155" rx="8" fill="#252540"/>
+  <text x="650" y="55" text-anchor="middle" class="ei-label" fill="#e2e8f0" font-weight="600">Explained Variance</text>
+  <!-- PC1 bar -->
+  <rect x="560" y="70" width="140" height="30" rx="4" fill="#facc15" opacity="0.85"/>
+  <text x="545" y="90" text-anchor="end" class="ei-label" fill="#facc15">PC1</text>
+  <text x="710" y="90" class="ei-label" fill="#facc15" font-weight="600">84%</text>
+  <!-- PC2 bar -->
+  <rect x="560" y="115" width="27" height="30" rx="4" fill="#38bdf8" opacity="0.85"/>
+  <text x="545" y="135" text-anchor="end" class="ei-label" fill="#38bdf8">PC2</text>
+  <text x="597" y="135" class="ei-label" fill="#38bdf8" font-weight="600">16%</text>
+  <!-- Total -->
+  <line x1="560" y1="158" x2="700" y2="158" stroke="#475569" stroke-width="1"/>
+  <text x="650" y="175" text-anchor="middle" class="ei-label" fill="#4ade80">Total = 100%</text>
+</svg>
+
+<h4>Numerical Walkthrough: PCA on Height &#x26; Weight</h4>
+
+<p>Let&#x2019;s walk through PCA end-to-end on a tiny dataset so every number is traceable.
+We have <strong>5 persons</strong> measured on <strong>2 features</strong>: Height (cm) and Weight (kg).</p>
+
+<p><strong>Step 1 &#x2014; Raw data</strong></p>
+
+<p><em>What:</em> Collect your original measurements.<br/>
+<em>Why:</em> This is your starting point &#x2014; PCA will find a compact representation of this table.</p>
+
+<table>
+<thead><tr><th>Person</th><th>Height (cm)</th><th>Weight (kg)</th></tr></thead>
+<tbody>
+<tr><td>A</td><td>170</td><td>65</td></tr>
+<tr><td>B</td><td>175</td><td>70</td></tr>
+<tr><td>C</td><td>180</td><td>75</td></tr>
+<tr><td>D</td><td>185</td><td>80</td></tr>
+<tr><td>E</td><td>190</td><td>85</td></tr>
+</tbody>
+</table>
+
+<p><strong>Step 2 &#x2014; Center the data</strong></p>
+
+<p><em>What:</em> Subtract each column’s mean so the data is centred at the origin (mean height μ<sub>h</sub>=180, mean weight μ<sub>w</sub>=75).<br/>
+<em>Why:</em> PCA looks for directions of maximum <em>variance</em>. If the data isn’t centred, the mean location dominates and the variance directions are misleading.
+This step makes the data “about the spread,” not about the absolute position.</p>
+
+<table>
+<thead><tr><th>Person</th><th>Height&#x2212;180</th><th>Weight&#x2212;75</th></tr></thead>
+<tbody>
+<tr><td>A</td><td>&#x2212;10</td><td>&#x2212;10</td></tr>
+<tr><td>B</td><td>&#x2212;5</td><td>&#x2212;5</td></tr>
+<tr><td>C</td><td>0</td><td>0</td></tr>
+<tr><td>D</td><td>+5</td><td>+5</td></tr>
+<tr><td>E</td><td>+10</td><td>+10</td></tr>
+</tbody>
+</table>
+
+<p><strong>Step 3 — Compute the covariance matrix</strong></p>
+
+<p><em>What:</em> Build a matrix Σ that measures how each pair of features varies together.
+For our 2-feature example, Σ is a <strong>2×2 matrix</strong> (one row and column per feature: Height, Weight).
+The formula is Σ = X<sup>T</sup>X / (n−1), where X is the centred data from Step 2 (5 rows × 2 columns).<br/>
+<em>Why:</em> The covariance matrix captures <em>all</em> the spread and correlation information.
+PCA’s next step (eigendecomposition) only needs this matrix — not the raw rows.</p>
+
+<pre><code>Σ = [[62.5, 62.5],
+     [62.5, 62.5]]</code></pre>
+
+<p>Reading this matrix: the diagonal (62.5, 62.5) gives the variance of Height and Weight respectively.
+The off-diagonals (62.5) give the covariance between them.
+Since all four values are equal, height and weight are <strong>perfectly correlated</strong> in this toy dataset — when one goes up by 5, so does the other.</p>
+
+<p><strong>Step 4 — Eigendecompose the covariance matrix</strong></p>
+
+<p><em>What:</em> Find the eigenvectors (directions) and eigenvalues (importance) of Σ.
+Each eigenvector points along a principal component; its eigenvalue tells you how much variance lies in that direction.<br/>
+<em>Why:</em> This is the core of PCA — the eigenvectors <em>are</em> the new axes, and the eigenvalues let you rank them and decide how many to keep.</p>
+<ul>
+<li><strong>&#x3bb;&#x2081; = 125</strong> with eigenvector <strong>v&#x2081; = [0.707, 0.707]</strong> &#x2192; the 45&#xb0; diagonal direction (equal parts height + weight)</li>
+<li><strong>&#x3bb;&#x2082; = 0</strong> with eigenvector <strong>v&#x2082; = [0.707, &#x2212;0.707]</strong> &#x2192; perpendicular direction (no variance at all!)</li>
+</ul>
+
+<p><strong>Step 5 — Project onto PC1</strong></p>
+
+<p><em>What:</em> Multiply each centred data row by the chosen eigenvector(s) to get new coordinates (scores).
+Here we keep only PC1, so each person gets one number: score = dot product of their centred [H, W] with v₁ = [0.707, 0.707].<br/>
+<em>Why:</em> This is the actual dimensionality reduction. The 2D table becomes a 1D list of scores — yet those scores capture the maximum possible variance.</p>
+
+<table>
+<thead><tr><th>Person</th><th>Centred [H, W]</th><th>PC1 Score</th></tr></thead>
+<tbody>
+<tr><td>A</td><td>[&#x2212;10, &#x2212;10]</td><td>&#x2212;14.14</td></tr>
+<tr><td>B</td><td>[&#x2212;5, &#x2212;5]</td><td>&#x2212;7.07</td></tr>
+<tr><td>C</td><td>[0, 0]</td><td>0.00</td></tr>
+<tr><td>D</td><td>[+5, +5]</td><td>+7.07</td></tr>
+<tr><td>E</td><td>[+10, +10]</td><td>+14.14</td></tr>
+</tbody>
+</table>
+
+<p>We reduced 2 features to 1 score while retaining <strong>100%</strong> of the variance (&#x3bb;&#x2081;/(&#x3bb;&#x2081;+&#x3bb;&#x2082;) = 125/125).</p>
+
+<!-- Fig 8.2d — Worked Example: Before & After -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 230" style="display:block; margin:20px auto; max-width:820px; width:100%;" role="img" aria-label="Before: 5 data points in 2D height-weight space with PC1 diagonal. After: same 5 points projected onto 1D PC1 axis.">
+  <style>
+    .we-title { font: bold 13px system-ui, sans-serif; }
+    .we-label { font: 11px system-ui, sans-serif; }
+    .we-note  { font: italic 10px system-ui, sans-serif; fill: #94a3b8; }
+    .we-pt    { font: bold 10px system-ui, sans-serif; }
+  </style>
+  <rect width="820" height="230" rx="10" fill="#1e1e2e"/>
+  <text x="410" y="22" text-anchor="middle" class="we-title" fill="#e2e8f0">Fig 8.2d &#x2014; Worked Example: 2D &#x2192; 1D via PCA</text>
+
+  <!-- Left panel — 2D scatter -->
+  <rect x="15" y="35" width="385" height="185" rx="8" fill="#252540"/>
+  <text x="207" y="55" text-anchor="middle" class="we-label" fill="#e2e8f0" font-weight="600">Before: 2D (Height &#xd7; Weight)</text>
+  <!-- Axes -->
+  <line x1="60" y1="195" x2="60" y2="55" stroke="#475569" stroke-width="1"/>
+  <line x1="45" y1="195" x2="370" y2="195" stroke="#475569" stroke-width="1"/>
+  <text x="55" y="50" class="we-label" fill="#94a3b8">Weight</text>
+  <text x="375" y="195" class="we-label" fill="#94a3b8">Height</text>
+  <!-- PC1 diagonal -->
+  <line x1="50" y1="200" x2="360" y2="60" stroke="#facc15" stroke-width="1.5" stroke-dasharray="6,3" opacity="0.6"/>
+  <text x="355" y="55" class="we-label" fill="#facc15" opacity="0.7">PC1</text>
+  <!-- 5 data points -->
+  <circle cx="110" cy="185" r="7" fill="#f87171" opacity="0.9"/>
+  <text x="110" y="188" text-anchor="middle" class="we-pt" fill="#1e1e2e">A</text>
+  <circle cx="160" cy="155" r="7" fill="#fb923c" opacity="0.9"/>
+  <text x="160" y="158" text-anchor="middle" class="we-pt" fill="#1e1e2e">B</text>
+  <circle cx="210" cy="130" r="7" fill="#facc15" opacity="0.9"/>
+  <text x="210" y="133" text-anchor="middle" class="we-pt" fill="#1e1e2e">C</text>
+  <circle cx="260" cy="105" r="7" fill="#4ade80" opacity="0.9"/>
+  <text x="260" y="108" text-anchor="middle" class="we-pt" fill="#1e1e2e">D</text>
+  <circle cx="310" cy="75" r="7" fill="#38bdf8" opacity="0.9"/>
+  <text x="310" y="78" text-anchor="middle" class="we-pt" fill="#1e1e2e">E</text>
+
+  <!-- Arrow between panels -->
+  <text x="413" y="130" text-anchor="middle" font-family="system-ui,sans-serif" font-size="26" fill="#a78bfa" font-weight="700">&#x2192;</text>
+
+  <!-- Right panel — 1D projection -->
+  <rect x="420" y="35" width="385" height="185" rx="8" fill="#252540"/>
+  <text x="612" y="55" text-anchor="middle" class="we-label" fill="#e2e8f0" font-weight="600">After: 1D (PC1 scores)</text>
+  <!-- PC1 axis -->
+  <line x1="460" y1="120" x2="770" y2="120" stroke="#facc15" stroke-width="2"/>
+  <text x="460" y="145" class="we-label" fill="#94a3b8">&#x2212;14.1</text>
+  <text x="605" y="145" text-anchor="middle" class="we-label" fill="#94a3b8">0</text>
+  <text x="750" y="145" text-anchor="end" class="we-label" fill="#94a3b8">+14.1</text>
+  <!-- Tick marks -->
+  <line x1="480" y1="115" x2="480" y2="125" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="555" y1="115" x2="555" y2="125" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="615" y1="115" x2="615" y2="125" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="675" y1="115" x2="675" y2="125" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="750" y1="115" x2="750" y2="125" stroke="#94a3b8" stroke-width="1"/>
+  <!-- Projected points -->
+  <circle cx="480" cy="120" r="7" fill="#f87171" opacity="0.9"/>
+  <text x="480" y="123" text-anchor="middle" class="we-pt" fill="#1e1e2e">A</text>
+  <circle cx="555" cy="120" r="7" fill="#fb923c" opacity="0.9"/>
+  <text x="555" y="123" text-anchor="middle" class="we-pt" fill="#1e1e2e">B</text>
+  <circle cx="615" cy="120" r="7" fill="#facc15" opacity="0.9"/>
+  <text x="615" y="123" text-anchor="middle" class="we-pt" fill="#1e1e2e">C</text>
+  <circle cx="675" cy="120" r="7" fill="#4ade80" opacity="0.9"/>
+  <text x="675" y="123" text-anchor="middle" class="we-pt" fill="#1e1e2e">D</text>
+  <circle cx="750" cy="120" r="7" fill="#38bdf8" opacity="0.9"/>
+  <text x="750" y="123" text-anchor="middle" class="we-pt" fill="#1e1e2e">E</text>
+  <!-- Summary box -->
+  <rect x="490" y="160" width="230" height="46" rx="5" fill="#1e1e2e" stroke="#4ade80" stroke-width="1"/>
+  <text x="605" y="178" text-anchor="middle" class="we-label" fill="#4ade80">&#x3bb;&#x2081; = 125 &#x2192; 100% variance kept</text>
+  <text x="605" y="196" text-anchor="middle" class="we-note">2 features &#x2192; 1 score, zero info lost</text>
+</svg>
+
+<p>The steps formalised:</p>
+<ol>
+<li><strong>Center</strong> the data: X ← X − mean(X) — <em>remove the mean so variance is all that remains</em></li>
+<li><strong>Compute covariance matrix:</strong> Σ = X<sup>T</sup>X / (n−1) — <em>summarise how features co-vary</em></li>
+<li><strong>Eigendecompose:</strong> Σ v<sub>k</sub> = λ<sub>k</sub> v<sub>k</sub> — <em>find the principal directions and their importance</em></li>
+<li><strong>Project</strong> onto top-k eigenvectors — <em>reduce dimensions while keeping maximum variance</em></li>
+</ol>
+
+<blockquote>
+
+<p><strong>Key:</strong> Always scale before PCA. Unscaled features
+
+dominate for the wrong reason.</p>
+
+</blockquote>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb277-1"><a href="#cb277-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> StandardScaler</span>
+<span id="cb277-2"><a href="#cb277-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.decomposition <span class="im">import</span> PCA</span>
+<span id="cb277-3"><a href="#cb277-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb277-4"><a href="#cb277-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb277-5"><a href="#cb277-5" aria-hidden="true" tabindex="-1"></a>scaler <span class="op">=</span> StandardScaler()</span>
+<span id="cb277-6"><a href="#cb277-6" aria-hidden="true" tabindex="-1"></a>X_scaled <span class="op">=</span> scaler.fit_transform(X)</span>
+<span id="cb277-7"><a href="#cb277-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb277-8"><a href="#cb277-8" aria-hidden="true" tabindex="-1"></a>pca <span class="op">=</span> PCA(n_components<span class="op">=</span><span class="fl">0.95</span>)    <span class="co"># keep 95% of variance</span></span>
+<span id="cb277-9"><a href="#cb277-9" aria-hidden="true" tabindex="-1"></a>X_pca <span class="op">=</span> pca.fit_transform(X_scaled)</span>
+<span id="cb277-10"><a href="#cb277-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb277-11"><a href="#cb277-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;</span><span class="sc">{</span>X_scaled<span class="sc">.</span>shape<span class="sc">}</span><span class="ss"> → </span><span class="sc">{</span>X_pca<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb277-12"><a href="#cb277-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Components needed: </span><span class="sc">{</span>pca<span class="sc">.</span>n_components_<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb277-13"><a href="#cb277-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb277-14"><a href="#cb277-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Scree plot — cumulative explained variance</span></span>
+<span id="cb277-15"><a href="#cb277-15" aria-hidden="true" tabindex="-1"></a>cumvar <span class="op">=</span> np.cumsum(pca.explained_variance_ratio_)</span>
+<span id="cb277-16"><a href="#cb277-16" aria-hidden="true" tabindex="-1"></a>plt.plot(<span class="bu">range</span>(<span class="dv">1</span>, <span class="bu">len</span>(cumvar)<span class="op">+</span><span class="dv">1</span>), cumvar, <span class="st">&#39;o-&#39;</span>)</span>
+<span id="cb277-17"><a href="#cb277-17" aria-hidden="true" tabindex="-1"></a>plt.axhline(<span class="fl">0.95</span>, ls<span class="op">=</span><span class="st">&#39;--&#39;</span>, color<span class="op">=</span><span class="st">&#39;r&#39;</span>, label<span class="op">=</span><span class="st">&#39;95% threshold&#39;</span>)</span>
+<span id="cb277-18"><a href="#cb277-18" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">&#39;Components&#39;</span>)<span class="op">;</span> plt.ylabel(<span class="st">&#39;Cumulative variance&#39;</span>)<span class="op">;</span> plt.legend()</span></code></pre></div>
+
+
+
+<figure class="rich-figure">
+
+<img src="figures/generated/07_unsupervised_learning/pca_explained_variance.svg"
+
+     alt="PCA scree plot and cumulative explained variance"
+
+     style="max-width:100%; height:auto;">
+
+<figcaption>Left: scree plot showing variance per principal component. Right: cumulative explained variance curve &mdash; pick the component count where the curve crosses the 95% threshold (the knee).</figcaption>
+
+</figure>
+
+
+
+<p><strong>How to choose the number of components:</strong></p>
+
+<ul>
+
+<li><strong>95% variance rule</strong> &mdash; pass <code>n_components=0.95</code> to keep components until 95% variance explained. Reliable default for preprocessing.</li>
+
+<li><strong>Elbow/scree method</strong> &mdash; the steep drop in the bar chart marks the natural cut; additional components add diminishing signal.</li>
+
+<li><strong>Downstream task metric</strong> &mdash; try 10, 50, 100 components and compare validation accuracy of the downstream model.</li>
+
+</ul>
+
+<p><strong>When PCA falls short:</strong> PCA captures only <em>linear</em> structure. For nonlinear manifolds (rings, spirals), use <strong>UMAP</strong> or <strong>t-SNE</strong> for visualization and <strong>kernel PCA</strong> for nonlinear compression.</p>
+
+
+
+<h3 id="t-sne-1">8.2.2 t-SNE</h3>
+
+<p>Preserves local neighbourhood structure. Use only for visualization —
+
+cannot transform new data.</p>
+
+<div style="border-left:4px solid #8b5cf6; padding:12px 16px; background:#faf5ff; border-radius:6px; margin:16px 0; font-size:0.9rem; line-height:1.8;">
+<strong>High-dim similarities → Low-dim arrangement</strong><br>
+(Gaussian kernel) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (t-distribution — heavier tails)<br><br>
+Minimise KL divergence between the two similarity distributions.<br>
+<strong>Nearby high-dim points → nearby low-dim points.</strong><br>
+<em>Inter-cluster distances in t-SNE are NOT meaningful.</em>
+</div>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb279-1"><a href="#cb279-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.manifold <span class="im">import</span> TSNE</span>
+<span id="cb279-2"><a href="#cb279-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb279-3"><a href="#cb279-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Run PCA first for speed on large datasets</span></span>
+<span id="cb279-4"><a href="#cb279-4" aria-hidden="true" tabindex="-1"></a>X_50 <span class="op">=</span> PCA(n_components<span class="op">=</span><span class="dv">50</span>).fit_transform(X_scaled)</span>
+<span id="cb279-5"><a href="#cb279-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb279-6"><a href="#cb279-6" aria-hidden="true" tabindex="-1"></a>tsne <span class="op">=</span> TSNE(n_components<span class="op">=</span><span class="dv">2</span>, perplexity<span class="op">=</span><span class="dv">30</span>, learning_rate<span class="op">=</span><span class="st">&#39;auto&#39;</span>,</span>
+<span id="cb279-7"><a href="#cb279-7" aria-hidden="true" tabindex="-1"></a>            init<span class="op">=</span><span class="st">&#39;pca&#39;</span>, random_state<span class="op">=</span><span class="dv">42</span>, n_jobs<span class="op">=-</span><span class="dv">1</span>)</span>
+<span id="cb279-8"><a href="#cb279-8" aria-hidden="true" tabindex="-1"></a>X_2d <span class="op">=</span> tsne.fit_transform(X_50)</span>
+<span id="cb279-9"><a href="#cb279-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb279-10"><a href="#cb279-10" aria-hidden="true" tabindex="-1"></a>plt.scatter(X_2d[:, <span class="dv">0</span>], X_2d[:, <span class="dv">1</span>], c<span class="op">=</span>labels, cmap<span class="op">=</span><span class="st">&#39;tab10&#39;</span>, s<span class="op">=</span><span class="dv">5</span>, alpha<span class="op">=</span><span class="fl">0.7</span>)</span>
+<span id="cb279-11"><a href="#cb279-11" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">&#39;t-SNE — 2D visualization&#39;</span>)</span></code></pre></div>
+
+<p>Perplexity (5–50): roughly how many neighbours to consider. Try
+
+several values.</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> t-SNE is for exploration, not production.
+
+Cluster distances are meaningless. Run multiple times with different
+
+random seeds to verify stability.</p>
+
+</blockquote>
+
+<h3 id="umap-1">8.2.3 UMAP</h3>
+
+<p>Faster than t-SNE, better global structure, and can transform new
+
+data.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb280-1"><a href="#cb280-1" aria-hidden="true" tabindex="-1"></a><span class="co"># pip install umap-learn</span></span>
+<span id="cb280-2"><a href="#cb280-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> umap</span>
+<span id="cb280-3"><a href="#cb280-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb280-4"><a href="#cb280-4" aria-hidden="true" tabindex="-1"></a>reducer <span class="op">=</span> umap.UMAP(n_components<span class="op">=</span><span class="dv">2</span>, n_neighbors<span class="op">=</span><span class="dv">15</span>, min_dist<span class="op">=</span><span class="fl">0.1</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb280-5"><a href="#cb280-5" aria-hidden="true" tabindex="-1"></a>X_umap <span class="op">=</span> reducer.fit_transform(X_scaled)</span>
+<span id="cb280-6"><a href="#cb280-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb280-7"><a href="#cb280-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Transform new data (t-SNE cannot do this)</span></span>
+<span id="cb280-8"><a href="#cb280-8" aria-hidden="true" tabindex="-1"></a>X_new_umap <span class="op">=</span> reducer.transform(X_new_scaled)</span></code></pre></div>
+
+<p>Parameters: <code>n_neighbors</code> (local vs global tradeoff),
+
+<code>min_dist</code> (cluster tightness).</p>
+
+<p><strong>When to use what:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Task</th>
+
+<th>Tool</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Preprocessing before ML model</td>
+
+<td>PCA</td>
+
+</tr>
+
+<tr>
+
+<td>Compress features (100→20)</td>
+
+<td>PCA</td>
+
+</tr>
+
+<tr>
+
+<td>Visualize clusters 2D/3D</td>
+
+<td>UMAP (fast) or t-SNE (thorough)</td>
+
+</tr>
+
+<tr>
+
+<td>Transform new data after dim reduction</td>
+
+<td>PCA or UMAP</td>
+
+</tr>
+
+<tr>
+
+<td>Find structure in embeddings</td>
+
+<td>UMAP then cluster</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<div class="practical-example">
+
+<div class="pe-label">Real-World ML Use Case — PCA / Dimensionality Reduction</div>
+
+<strong>Face recognition preprocessing and image compression.</strong> PCA (Eigenfaces) was the first scalable face recognition method: a 100×100 face image has 10,000 dimensions, but the top 50–150 principal components capture &gt;95% of variance. The compressed representation enables real-time comparison and storage. In modern ML pipelines, PCA is used as a preprocessing step before clustering (reducing noise) and in feature compression pipelines: a fraud model with 500 raw features might reduce to 50 PCA components before training, improving speed and reducing overfitting. UMAP is preferred for <em>visualization</em> of high-dimensional embeddings (e.g., plotting word2vec or BERT embeddings by topic), while PCA is preferred when linear structure and interpretability matter.
+
+</div>
+
+<hr />
+
+<h2 id="anomaly-detection">8.3 Anomaly Detection</h2>
+
+<p>Anomaly detection (also called outlier detection) finds data points that
+
+deviate significantly from the expected pattern &mdash; without needing labeled
+
+examples of what an anomaly looks like. It is used in fraud detection, network
+
+intrusion detection, predictive maintenance, and quality control.</p>
+
+<p><strong>Core idea:</strong> assign an anomaly score to every point; flag
+
+points whose score exceeds a threshold. The score definition varies by method.</p>
+
+<p><strong>Practical progression:</strong> start with z-score or IQR (fast,
+
+univariate baselines), move to Isolation Forest or LOF for multivariate tabular
+
+data, and reach for autoencoders when the data is high-dimensional, sequential,
+
+or image-based.</p>
+
+<svg viewBox="0 0 320 120" style="display:block; margin:16px auto; max-width:300px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Anomaly detection: normal data cloud vs scattered anomalies">
+<!-- Normal cluster -->
+<text x="30" y="16" font-family="system-ui" font-size="10" fill="#1e40af" font-weight="600">Normal data</text>
+<circle cx="80" cy="35" r="3" fill="#3b82f6"/><circle cx="95" cy="30" r="3" fill="#3b82f6"/><circle cx="110" cy="38" r="3" fill="#3b82f6"/><circle cx="90" cy="45" r="3" fill="#3b82f6"/>
+<circle cx="105" cy="50" r="3" fill="#3b82f6"/><circle cx="120" cy="42" r="3" fill="#3b82f6"/><circle cx="75" cy="50" r="3" fill="#3b82f6"/><circle cx="100" cy="55" r="3" fill="#3b82f6"/>
+<circle cx="115" cy="60" r="3" fill="#3b82f6"/><circle cx="85" cy="60" r="3" fill="#3b82f6"/><circle cx="95" cy="68" r="3" fill="#3b82f6"/><circle cx="108" cy="72" r="3" fill="#3b82f6"/>
+<!-- Anomalies -->
+<text x="200" y="30" font-family="system-ui" font-size="10" fill="#dc2626" font-weight="600">Anomalies</text>
+<text x="230" y="55" font-family="system-ui" font-size="16" fill="#ef4444" font-weight="700">×</text>
+<text x="260" y="75" font-family="system-ui" font-size="16" fill="#ef4444" font-weight="700">×</text>
+<text x="245" y="90" font-family="system-ui" font-size="16" fill="#ef4444" font-weight="700">×</text>
+<!-- Caption -->
+<text x="160" y="112" text-anchor="middle" font-family="system-ui" font-size="10" fill="#64748b" font-style="italic">Goal: score each point by how unusual it is</text>
+</svg>
+
+
+<h3 id="isolation-forest">8.3.1 Isolation Forest</h3>
+
+<p>The go-to method for tabular anomaly detection. Anomalies are
+
+isolated with fewer random splits.</p>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.92rem; line-height:1.8;">
+Build many random decision trees.<br>
+For each point, measure path length to isolate it.<br>
+<span style="color:#166534;"><strong>Normal point:</strong></span>&ensp;needs many splits — deeply buried<br>
+<span style="color:#dc2626;"><strong>Anomaly:</strong></span>&ensp;isolated quickly — it’s already alone<br>
+<strong>Score</strong> = average path length <em>(shorter = more anomalous)</em>
+</div>
+
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb283-1"><a href="#cb283-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.ensemble <span class="im">import</span> IsolationForest</span>
+<span id="cb283-2"><a href="#cb283-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb283-3"><a href="#cb283-3" aria-hidden="true" tabindex="-1"></a>iso <span class="op">=</span> IsolationForest(</span>
+<span id="cb283-4"><a href="#cb283-4" aria-hidden="true" tabindex="-1"></a>    contamination<span class="op">=</span><span class="fl">0.05</span>,    <span class="co"># expected fraction of anomalies</span></span>
+<span id="cb283-5"><a href="#cb283-5" aria-hidden="true" tabindex="-1"></a>    n_estimators<span class="op">=</span><span class="dv">100</span>,</span>
+<span id="cb283-6"><a href="#cb283-6" aria-hidden="true" tabindex="-1"></a>    random_state<span class="op">=</span><span class="dv">42</span></span>
+<span id="cb283-7"><a href="#cb283-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb283-8"><a href="#cb283-8" aria-hidden="true" tabindex="-1"></a>iso.fit(X_train)</span>
+<span id="cb283-9"><a href="#cb283-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb283-10"><a href="#cb283-10" aria-hidden="true" tabindex="-1"></a>scores  <span class="op">=</span> iso.decision_function(X)   <span class="co"># higher score = more normal</span></span>
+<span id="cb283-11"><a href="#cb283-11" aria-hidden="true" tabindex="-1"></a>labels  <span class="op">=</span> iso.predict(X)             <span class="co"># +1 = normal, -1 = anomaly</span></span>
+<span id="cb283-12"><a href="#cb283-12" aria-hidden="true" tabindex="-1"></a>n_anom  <span class="op">=</span> (labels <span class="op">==</span> <span class="op">-</span><span class="dv">1</span>).<span class="bu">sum</span>()</span>
+<span id="cb283-13"><a href="#cb283-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Anomalies: </span><span class="sc">{</span>n_anom<span class="sc">}</span><span class="ss"> (</span><span class="sc">{</span>n_anom<span class="op">/</span><span class="bu">len</span>(labels)<span class="sc">:.1%}</span><span class="ss">)&quot;</span>)</span></code></pre></div>
+
+
+
+<figure class="rich-figure">
+
+<img src="figures/generated/07_unsupervised_learning/isolation_forest_intuition.svg"
+
+     alt="Isolation Forest: normal points need many splits; anomalies are isolated quickly"
+
+     style="max-width:100%; height:auto;">
+
+<figcaption>Isolation Forest intuition: a normal point (left) is buried deep in the data and requires many random splits to isolate &mdash; long average path length = low anomaly score. An anomaly (right) stands apart and is isolated with just 2 splits &mdash; short path length = high anomaly score.</figcaption>
+
+</figure>
+
+
+
+<h3 id="local-outlier-factor-lof">8.3.2 Local Outlier Factor (LOF)</h3>
+
+<p>LOF compares the local density around a point to the density around its neighbours. If a point
+sits in a much sparser region than its neighbours, it receives a high LOF score and is flagged
+as an outlier. This makes LOF especially effective when clusters have varying density &mdash;
+a point that looks normal globally may be anomalous relative to its local neighbourhood.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb284-1"><a href="#cb284-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.neighbors <span class="im">import</span> LocalOutlierFactor</span>
+<span id="cb284-2"><a href="#cb284-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb284-3"><a href="#cb284-3" aria-hidden="true" tabindex="-1"></a>lof <span class="op">=</span> LocalOutlierFactor(n_neighbors<span class="op">=</span><span class="dv">20</span>, contamination<span class="op">=</span><span class="fl">0.05</span>)</span>
+<span id="cb284-4"><a href="#cb284-4" aria-hidden="true" tabindex="-1"></a>labels <span class="op">=</span> lof.fit_predict(X)      <span class="co"># +1 normal, -1 anomaly</span></span>
+<span id="cb284-5"><a href="#cb284-5" aria-hidden="true" tabindex="-1"></a>scores <span class="op">=</span> <span class="op">-</span>lof.negative_outlier_factor_   <span class="co"># higher = more anomalous</span></span></code></pre></div>
+
+<h3 id=”one-class-svm”>8.3.3 One-Class SVM</h3>
+
+<p>One-Class SVM fits a tight decision boundary (using an RBF kernel by default) around a training
+set that contains only normal examples. At test time, any point falling outside this boundary is
+classified as an anomaly. It works best when you have a clean, label-free training set of normal
+behaviour and the anomaly rate is roughly known (controlled by the <code>nu</code> parameter,
+which upper-bounds the fraction of outliers).</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb285-1"><a href="#cb285-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.svm <span class="im">import</span> OneClassSVM</span>
+<span id="cb285-2"><a href="#cb285-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb285-3"><a href="#cb285-3" aria-hidden="true" tabindex="-1"></a>oc_svm <span class="op">=</span> OneClassSVM(kernel<span class="op">=</span><span class="st">&#39;rbf&#39;</span>, nu<span class="op">=</span><span class="fl">0.05</span>)</span>
+<span id="cb285-4"><a href="#cb285-4" aria-hidden="true" tabindex="-1"></a>oc_svm.fit(X_train_normal_only)</span>
+<span id="cb285-5"><a href="#cb285-5" aria-hidden="true" tabindex="-1"></a>labels <span class="op">=</span> oc_svm.predict(X_test)   <span class="co"># +1 normal, -1 anomaly</span></span></code></pre></div>
+
+<h3 id="autoencoder-anomaly-detection">8.3.4 Autoencoder Anomaly
+
+Detection</h3>
+
+<p>Train on normal data. At test time, anomalies have high
+
+reconstruction error.</p>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="110" viewBox="0 0 500 110" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .ae-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .ae-step { font: 11px system-ui, sans-serif; fill: #334155; }
+  </style>
+  <defs><marker id="ae-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <!-- Train row -->
+  <text x="10" y="22" class="ae-lbl" fill="#22c55e">Train:</text>
+  <rect x="60" y="6" width="80" height="26" rx="5" fill="#dcfce7" stroke="#22c55e" stroke-width="1"/>
+  <text x="100" y="24" text-anchor="middle" class="ae-step">Normal</text>
+  <line x1="140" y1="19" x2="160" y2="19" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ae-a)"/>
+  <text x="186" y="24" text-anchor="middle" class="ae-step">encode</text>
+  <line x1="212" y1="19" x2="232" y2="19" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ae-a)"/>
+  <rect x="240" y="6" width="70" height="26" rx="5" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="275" y="24" text-anchor="middle" class="ae-step">bottleneck</text>
+  <line x1="310" y1="19" x2="330" y2="19" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ae-a)"/>
+  <text x="356" y="24" text-anchor="middle" class="ae-step">decode</text>
+  <line x1="382" y1="19" x2="402" y2="19" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ae-a)"/>
+  <text x="440" y="24" text-anchor="middle" class="ae-lbl" fill="#22c55e">low error</text>
+  <!-- Test row -->
+  <text x="10" y="62" class="ae-lbl" fill="#ef4444">Test:</text>
+  <rect x="60" y="46" width="80" height="26" rx="5" fill="#fef2f2" stroke="#ef4444" stroke-width="1"/>
+  <text x="100" y="64" text-anchor="middle" class="ae-step">Anomaly</text>
+  <line x1="140" y1="59" x2="160" y2="59" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ae-a)"/>
+  <text x="186" y="64" text-anchor="middle" class="ae-step">encode</text>
+  <line x1="212" y1="59" x2="232" y2="59" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ae-a)"/>
+  <rect x="240" y="46" width="70" height="26" rx="5" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="275" y="64" text-anchor="middle" class="ae-step">bottleneck</text>
+  <line x1="310" y1="59" x2="330" y2="59" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ae-a)"/>
+  <text x="356" y="64" text-anchor="middle" class="ae-step">decode</text>
+  <line x1="382" y1="59" x2="402" y2="59" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ae-a)"/>
+  <text x="442" y="64" text-anchor="middle" class="ae-lbl" fill="#ef4444">HIGH error</text>
+  <text x="250" y="100" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="600" fill="#6366f1">Threshold reconstruction error → flag anomalies above it</text>
+</svg>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb287-1"><a href="#cb287-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch, torch.nn <span class="im">as</span> nn, torch.nn.functional <span class="im">as</span> F</span>
+<span id="cb287-2"><a href="#cb287-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb287-3"><a href="#cb287-3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> AE(nn.Module):</span>
+<span id="cb287-4"><a href="#cb287-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, in_dim, z<span class="op">=</span><span class="dv">16</span>):</span>
+<span id="cb287-5"><a href="#cb287-5" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
+<span id="cb287-6"><a href="#cb287-6" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.enc <span class="op">=</span> nn.Sequential(nn.Linear(in_dim,<span class="dv">64</span>),nn.ReLU(),nn.Linear(<span class="dv">64</span>,z))</span>
+<span id="cb287-7"><a href="#cb287-7" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.dec <span class="op">=</span> nn.Sequential(nn.Linear(z,<span class="dv">64</span>),nn.ReLU(),nn.Linear(<span class="dv">64</span>,in_dim))</span>
+<span id="cb287-8"><a href="#cb287-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, x):</span>
+<span id="cb287-9"><a href="#cb287-9" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.dec(<span class="va">self</span>.enc(x))</span>
+<span id="cb287-10"><a href="#cb287-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb287-11"><a href="#cb287-11" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> AE(X.shape[<span class="dv">1</span>])</span>
+<span id="cb287-12"><a href="#cb287-12" aria-hidden="true" tabindex="-1"></a><span class="co"># . train on normal data .</span></span>
+<span id="cb287-13"><a href="#cb287-13" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.no_grad():</span>
+<span id="cb287-14"><a href="#cb287-14" aria-hidden="true" tabindex="-1"></a>    errors <span class="op">=</span> F.mse_loss(model(X_t), X_t, reduction<span class="op">=</span><span class="st">&#39;none&#39;</span>).mean(<span class="dv">1</span>)</span>
+<span id="cb287-15"><a href="#cb287-15" aria-hidden="true" tabindex="-1"></a>threshold <span class="op">=</span> errors.quantile(<span class="fl">0.95</span>)</span>
+<span id="cb287-16"><a href="#cb287-16" aria-hidden="true" tabindex="-1"></a>anomalies <span class="op">=</span> errors <span class="op">&gt;</span> threshold</span></code></pre></div>
+
+<h3 id="choosing-an-anomaly-detection-method">8.3.5 Choosing an Anomaly
+
+Detection Method</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Method</th>
+
+<th>Best for</th>
+
+<th>Speed</th>
+
+<th>Tuning</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>Isolation Forest</strong></td>
+
+<td>General tabular, large data</td>
+
+<td>Fast</td>
+
+<td>contamination</td>
+
+</tr>
+
+<tr>
+
+<td><strong>LOF</strong></td>
+
+<td>Varying-density clusters</td>
+
+<td>Moderate</td>
+
+<td>n_neighbors</td>
+
+</tr>
+
+<tr>
+
+<td><strong>One-Class SVM</strong></td>
+
+<td>Small clean normal dataset</td>
+
+<td>Slow</td>
+
+<td>nu, gamma</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Autoencoder</strong></td>
+
+<td>High-dim, images, sequences</td>
+
+<td>Slow (training)</td>
+
+<td>architecture</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Z-score / IQR</strong></td>
+
+<td>Quick baseline, univariate</td>
+
+<td>Very fast</td>
+
+<td>threshold</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<div class="practical-example">
+
+<div class="pe-label">Real-World ML Use Case — Anomaly Detection (Isolation Forest)</div>
+
+<strong>Manufacturing quality control — defect detection.</strong> A semiconductor fab applies Isolation Forest to sensor readings (temperature, pressure, vibration) from 50+ sensors on each wafer-processing step. Normal wafers produce tightly clustered sensor signatures; defective wafers produce anomalous combinations that are easy to isolate. Isolation Forest achieves this without labeled defect examples (unsupervised) — critical because defects are rare and labeling them requires expensive expert review. The model flags the top 1% anomaly scores for human inspection, reducing the defect escape rate by 40% compared to rule-based threshold systems. The same approach is used in predictive maintenance, network intrusion detection, and financial transaction screening.
+
+</div>
+
+<hr />
+
+<h2 id="autoencoders-and-representation-learning">8.4 Autoencoders and
+
+Representation Learning</h2>
+
+<p>An autoencoder learns to compress data into a small latent
+
+representation and reconstruct the original. The bottleneck forces the
+
+network to learn the most essential structure.</p>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="470" height="86" viewBox="0 0 470 86" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .enc-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .enc-sub { font: 10px 'Consolas', monospace; fill: #64748b; }
+  </style>
+  <defs><marker id="enc-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <rect x="10" y="10" width="120" height="46" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="70" y="30" text-anchor="middle" class="enc-lbl">Encoder</text>
+  <text x="70" y="46" text-anchor="middle" class="enc-sub">[128 dims]</text>
+  <line x1="130" y1="33" x2="172" y2="33" stroke="#6366f1" stroke-width="2" marker-end="url(#enc-a)"/>
+  <rect x="180" y="14" width="100" height="38" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="230" y="30" text-anchor="middle" class="enc-lbl">Bottleneck</text>
+  <text x="230" y="44" text-anchor="middle" class="enc-sub">[16 dims]</text>
+  <line x1="280" y1="33" x2="322" y2="33" stroke="#6366f1" stroke-width="2" marker-end="url(#enc-a)"/>
+  <rect x="330" y="10" width="120" height="46" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="390" y="30" text-anchor="middle" class="enc-lbl">Decoder</text>
+  <text x="390" y="46" text-anchor="middle" class="enc-sub">[128 dims]</text>
+  <text x="230" y="72" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#64748b">Loss = MSE between input and reconstruction</text>
+</svg>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/07_unsupervised_learning/autoencoder_representation.svg" alt="Autoencoder intuition: an encoder compresses inputs into a low-dimensional latent space, and a decoder reconstructs them; nearby inputs stay nearby in latent space">
+
+<figcaption>
+
+Autoencoder intuition: an encoder compresses inputs into a low-dimensional latent space, and a decoder reconstructs them; nearby inputs stay nearby in latent space
+
+</figcaption>
+
+</figure>
+
+<p>Uses: dimensionality reduction, anomaly detection, denoising,
+
+pretraining features.</p>
+
+<p><strong>Why the bottleneck matters:</strong> if the network could simply
+
+copy every input feature straight through, it would learn nothing useful.
+
+The narrow latent layer forces the model to keep only the structure that
+
+helps reconstruction.</p>
+
+<ul>
+
+<li>For images, that structure may be edges, textures, and shapes.</li>
+
+<li>For tabular data, it is often a compressed combination of correlated features.</li>
+
+<li>For sequences, it can be a compact summary of recent behavior.</li>
+
+</ul>
+
+<p>The latent vector <span class="math inline">\(z\)</span> is useful beyond
+
+reconstruction: you can cluster it, visualize it, feed it to a
+
+downstream model, or monitor it for drift over time.</p>
+
+<p><strong>Variational Autoencoder (VAE)</strong> adds a probabilistic
+
+bottleneck — instead of a fixed point z, the encoder predicts a
+
+distribution N(mu, sigma). This enables generating new samples by
+
+sampling z ~ N(0,I) and decoding.</p>
+
+<p><span class="math display">\[
+
+\mathcal{L}_{VAE} = \underbrace{\|x -
+
+\hat{x}\|^2}_{\text{reconstruction}} + \underbrace{D_{KL}(q(z|x) \|
+
+\mathcal{N}(0,I))}_{\text{regularization}}
+
+\]</span></p>
+
+<p><strong>Where:</strong> the first term measures reconstruction quality (how well the decoder recovers the input), and the KL term regularizes the latent space to be close to a standard normal <span class="math inline">\(\mathcal{N}(0, I)\)</span>.</p>
+
+<p>The KL term keeps the latent space smooth and regular — enabling
+
+interpolation between points.</p>
+
+<div class="practical-example">
+
+<div class="pe-label">Real-World ML Use Case — Autoencoders</div>
+
+<strong>Credit card fraud detection with reconstruction error.</strong> A bank trains an autoencoder exclusively on legitimate transactions (unlabeled). The encoder compresses a 30-feature transaction vector (amount, merchant type, time patterns, geographic data) into an 8-dimensional latent representation; the decoder reconstructs it. At inference, fraudulent transactions — which have unusual feature combinations — produce high reconstruction error because the autoencoder never saw such patterns during training. Transactions with reconstruction error above the 99th percentile are flagged for review. This unsupervised approach is especially powerful when fraud patterns evolve continuously, as the model only needs to learn "what is normal" rather than labeled fraud examples.
+
+</div>
+
+<hr />
+
+<h2 id="choosing-the-right-method">8.5 Choosing the Right Method</h2>
+
+<p>Use this guide to navigate the full unsupervised learning toolbox. Start with
+
+your goal, follow the branches, and land on the right method for your data.</p>
+
+
+
+<figure class="rich-figure">
+
+<img src="figures/generated/07_unsupervised_learning/unsupervised_selection_guide.svg"
+
+     alt="Full unsupervised learning selection guide across clustering, dimensionality reduction, anomaly detection, and representation learning"
+
+     style="max-width:100%; height:auto;">
+
+<figcaption>Full unsupervised learning selection guide. Four pathways: group similar items (K-Means / DBSCAN / Hierarchical / GMM), reduce dimensions (PCA / UMAP / t-SNE), detect anomalies (Isolation Forest / LOF / One-Class SVM), or learn a compact representation (Autoencoder / VAE). Bottom row summarizes how to evaluate each family without labels.</figcaption>
+
+</figure>
+
+<h3 id="common-pitfalls-18">8.5.1 Common Pitfalls</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 50%" />
+
+<col style="width: 50%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Mistake</th>
+
+<th>Fix</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Running PCA on unscaled features</td>
+
+<td>StandardScaler first, always</td>
+
+</tr>
+
+<tr>
+
+<td>Interpreting t-SNE inter-cluster distances</td>
+
+<td>Not meaningful — local structure only</td>
+
+</tr>
+
+<tr>
+
+<td>Using k-means on non-spherical clusters</td>
+
+<td>DBSCAN or GMM instead</td>
+
+</tr>
+
+<tr>
+
+<td>Setting contamination=0.05 without thinking</td>
+
+<td>Tune to match domain expectation of anomaly rate</td>
+
+</tr>
+
+<tr>
+
+<td>Only using one cluster metric</td>
+
+<td>Combine silhouette with domain sanity checks</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+
+
+<hr />
+
+<h2 id="ch8-interview-qa">Chapter 8 Interview Q&amp;A</h2>
+
+<p>Common unsupervised learning questions in ML interviews.</p>
+
+
+
+<h3>Q1. What is the difference between K-Means and GMM clustering?</h3>
+
+<p><strong>A.</strong> K-Means assigns each point to exactly one cluster (hard assignment) and assumes clusters are spherical and equal in size. It minimizes within-cluster sum of squared distances. GMM is probabilistic — each cluster is a Gaussian distribution, and every point receives a <em>soft membership probability</em> across all clusters. GMM can model elliptical clusters and overlapping distributions. K-Means is faster (especially with k-means++ init); GMM is more flexible but has more parameters. For cluster count selection, K-Means uses the elbow/silhouette method; GMM uses BIC/AIC.</p>
+
+
+
+<h3>Q2. How do you choose the number of clusters in K-Means?</h3>
+
+<p><strong>A.</strong> Two complementary methods:</p>
+
+<ul>
+
+<li><strong>Elbow method</strong> &mdash; plot inertia (within-cluster SSQ) vs k. The curve flattens after the optimal k; pick the elbow.</li>
+
+<li><strong>Silhouette score</strong> &mdash; for each point, s(i) = (b &minus; a) / max(a, b) where a = mean intra-cluster distance, b = mean distance to nearest other cluster. Range &minus;1 to +1. Pick k with the highest average silhouette. Always use both; neither is definitive alone. Domain knowledge is the final tiebreaker.</li>
+
+</ul>
+
+
+
+<h3>Q3. When would you use DBSCAN instead of K-Means?</h3>
+
+<p><strong>A.</strong> Use DBSCAN when: (a) cluster shapes are non-spherical (rings, crescents, arbitrary), (b) you expect noise/outliers and want them explicitly flagged (label &minus;1), (c) you don&apos;t know k in advance. DBSCAN requires tuning <code>eps</code> (neighbourhood radius) and <code>min_samples</code>. It struggles when clusters have very different densities. For datasets with widely varying densities, consider HDBSCAN (hierarchical DBSCAN) instead.</p>
+
+
+
+<h3>Q4. Explain PCA. What does &ldquo;explained variance&rdquo; mean?</h3>
+
+<p><strong>A.</strong> PCA finds the directions (principal components) of maximum variance in the data by computing the eigenvectors of the covariance matrix. Each eigenvector defines a new axis; the corresponding eigenvalue is the variance along that axis. Explained variance ratio = eigenvalue / sum of all eigenvalues. If PC1 has explained variance 0.38, it means projecting onto PC1 retains 38% of the total variance. Keeping enough components to explain 95% is a common heuristic. <strong>Always scale before PCA</strong> &mdash; features with larger magnitude dominate the covariance matrix.</p>
+
+
+
+<h3>Q5. What is the difference between t-SNE and UMAP?</h3>
+
+<p><strong>A.</strong> Both are nonlinear dimensionality reduction methods for visualization:</p>
+
+<table>
+
+<thead><tr><th>Property</th><th>t-SNE</th><th>UMAP</th></tr></thead>
+
+<tbody>
+
+<tr><td>Speed</td><td>Slow (O(n log n))</td><td>Much faster</td></tr>
+
+<tr><td>Global structure</td><td>Not preserved</td><td>Better preserved</td></tr>
+
+<tr><td>New data transform</td><td>Not supported</td><td>Supported (<code>transform()</code>)</td></tr>
+
+<tr><td>Cluster distances</td><td>Not meaningful</td><td>More meaningful</td></tr>
+
+<tr><td>Key parameter</td><td>perplexity (5&ndash;50)</td><td>n_neighbors, min_dist</td></tr>
+
+</tbody>
+
+</table>
+
+<p>Neither should be used for feature engineering in production models &mdash; only for exploration and visualization.</p>
+
+
+
+<h3>Q6. How does Isolation Forest detect anomalies?</h3>
+
+<p><strong>A.</strong> Isolation Forest builds many random decision trees. At each node, it picks a random feature and a random split value. The <strong>path length</strong> to isolate a point measures how unusual it is: normal points blend in with the data and require many splits; anomalies stand apart and are isolated with just a few random cuts. The anomaly score = average normalized path length across all trees. Shorter path = higher anomaly score. Key hyperparameter: <code>contamination</code> (expected fraction of anomalies, used to set the decision threshold). It is fast (O(n log n)), scales well, and handles high-dimensional data better than LOF.</p>
+
+
+
+<h3>Q7. How do you evaluate a clustering result when you have no ground-truth labels?</h3>
+
+<p><strong>A.</strong> Three internal metrics:</p>
+
+<ul>
+
+<li><strong>Silhouette score</strong> &mdash; measures cohesion vs separation. Range &minus;1 to +1; higher is better. Works for any clustering algorithm.</li>
+
+<li><strong>Davies-Bouldin index</strong> &mdash; ratio of within-cluster scatter to between-cluster separation. Lower is better.</li>
+
+<li><strong>Calinski-Harabasz index</strong> &mdash; ratio of between-cluster to within-cluster variance. Higher is better, but favors convex clusters.</li>
+
+</ul>
+
+<p>Always supplement metrics with domain sanity checks: do the clusters make business sense? Are cluster profiles interpretable?</p>
+
+
+
+<h3>Q8. What is an autoencoder and what is it used for?</h3>
+
+<p><strong>A.</strong> An autoencoder is a neural network trained to reconstruct its own input through a narrow <em>bottleneck layer</em>. The encoder compresses the input to a low-dimensional latent vector <em>z</em>; the decoder reconstructs the input from <em>z</em>. The bottleneck forces the model to learn only the most essential structure. Uses: (1) <strong>dimensionality reduction</strong> &mdash; use the latent vector as a compressed representation; (2) <strong>anomaly detection</strong> &mdash; anomalies have high reconstruction error; (3) <strong>denoising</strong> &mdash; train on noisy inputs with clean targets; (4) <strong>pretraining</strong> &mdash; use encoder weights to initialize a supervised model. VAE (Variational Autoencoder) adds a probabilistic bottleneck, enabling generation of new samples.</p>
+
+
+
+<h3>Q9. What is the curse of dimensionality and how does it affect unsupervised learning?</h3>
+
+<p><strong>A.</strong> As dimensionality increases, distances between points become increasingly similar (concentration phenomenon). In high dimensions: (1) K-Means and LOF struggle because Euclidean distance loses discriminative power; (2) density estimates become unreliable (all regions appear sparse); (3) visualization is impossible. Mitigations: (a) apply PCA before clustering to reduce noise dimensions; (b) use cosine similarity instead of Euclidean for text/embeddings; (c) feature selection to remove irrelevant features; (d) use UMAP/t-SNE for visualization.</p>
+
+
+
+<h3>Q10. You&rsquo;re given 10M transaction records and asked to find unusual spending patterns. Walk through your approach.</h3>
+
+<p><strong>A.</strong></p>
+
+<ol>
+
+<li><strong>Baseline</strong>: z-score or IQR on single features (transaction amount, frequency) to catch obvious extremes quickly. Fast, interpretable, useful for initial triage.</li>
+
+<li><strong>Multivariate</strong>: Apply Isolation Forest on a scaled feature matrix (amount, time-of-day, merchant category, velocity). Set <code>contamination=0.01</code>&ndash;<code>0.05</code> based on domain expectation.</li>
+
+<li><strong>Clustering context</strong>: K-Means to segment customers first, then detect anomalies within each segment (relative outliers are more meaningful than global outliers for behavioral data).</li>
+
+<li><strong>Evaluation</strong>: With no labels, use silhouette score + domain expert review of flagged cases. If labeled fraud data exists, measure precision@k (of the top-1000 flagged, how many are confirmed fraud?).</li>
+
+<li><strong>Production</strong>: Score transactions in near-real-time using the trained Isolation Forest. Log scores, monitor score distribution drift, retrain monthly.</li>
+
+</ol>
+
+
+
+<hr />
+
+
+<div class="chapter-nav">
+  <a href="chapter-07.html">&larr; Chapter 07: Model Evaluation and Validation</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-09.html">Chapter 09: Recommendation Systems &rarr;</a>
+</div>
+<div class="site-footer">
+  <p>&copy; 2026 Hariram Subramanian Gopal &middot; <a href="index.html">Data to Decisions</a></p>
+</div>
+</body>
+</html>

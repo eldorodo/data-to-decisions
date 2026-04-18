@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Hariram Subramanian Gopal" />
+  <title>Conclusion: Your ML Journey From Here | Data to Decisions</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</head>
+<body>
+<div class="chapter-nav">
+  <a href="chapter-18.html">&larr; Chapter 18: Interview Prep and Case Studies</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="bonus.html">Bonus: LeetCode Problem Index &rarr;</a>
+</div>
+<h1 id="conclusion-your-ml-journey-from-here">Conclusion: Your ML Journey From Here</h1>
+
+<p>You have covered the full breadth of modern machine learning &mdash; from the mathematical foundations
+
+that make every algorithm work, through classical ML, deep learning, NLP, reinforcement learning, time
+
+series, data engineering, MLOps, and responsible AI. This final chapter is a map for
+
+what to do with it.</p>
+
+
+
+<h2 id="what-you-now-know">What You Now Know</h2>
+
+<table>
+
+<thead><tr><th>Chapter</th><th>Core idea you can explain</th></tr></thead>
+
+<tbody>
+
+<tr><td>Ch 1&ndash;2: Math &amp; Stats</td><td>Why gradient descent converges, what a p-value actually means, how Bayes&rsquo; rule updates beliefs</td></tr>
+
+<tr><td>Ch 3&ndash;4: Python &amp; Features</td><td>The data manipulation vocabulary every DS team assumes; how raw signals become ML-ready features</td></tr>
+
+<tr><td>Ch 5: Supervised Learning</td><td>The bias-variance tradeoff; when to use trees vs. linear models vs. SVMs</td></tr>
+
+<tr><td>Ch 6: Explainable AI</td><td>SHAP, LIME, PDP, ICE; global vs local interpretability; regulatory compliance</td></tr>
+<tr><td>Ch 7: Evaluation</td><td>Why accuracy lies; precision/recall tradeoffs; the right metric for your business problem</td></tr>
+
+<tr><td>Ch 8: Unsupervised Learning</td><td>K-Means assumptions; when DBSCAN beats K-Means; what t-SNE is and isn&rsquo;t telling you</td></tr>
+
+<tr><td>Ch 9: Recommendations</td><td>Collaborative filtering cold start; content-based vs. hybrid; how Netflix-style systems actually work</td></tr>
+
+<tr><td>Ch 10: Deep Learning</td><td>Backprop intuition; CNNs for spatial data; LSTM/GRU for sequences; Transformers for everything else</td></tr>
+
+<tr><td>Ch 11: NLP &amp; LLMs</td><td>Tokenization, embeddings, attention; how to use a foundation model without training from scratch</td></tr>
+
+<tr><td>Ch 12: Reinforcement Learning</td><td>MDP framing; Q-learning; when RL applies and why most businesses don&rsquo;t need it yet</td></tr>
+
+<tr><td>Ch 13: Time Series</td><td>Stationarity; ACF/PACF diagnostics; ARIMA vs. ML approaches for forecasting</td></tr>
+
+<tr><td>Ch 14: Data &amp; SQL</td><td>Window functions; query execution plans; the joins that break things in production</td></tr>
+
+<tr><td>Ch 15: ML Systems &amp; MLOps</td><td>The full training-to-production lifecycle; drift detection; CI/CD for ML</td></tr>
+
+<tr><td>Ch 17: Responsible AI</td><td>Fairness metrics; privacy constraints; how to audit a model before it ships</td></tr>
+
+<tr><td>Ch 17: Interview Prep</td><td>How to structure ML case studies; the questions behind the questions</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<h2 id="the-mental-model-to-keep">The Mental Model to Keep</h2>
+
+<p>Every ML project follows the same shape regardless of domain:</p>
+
+<div style="border-left:4px solid #6366f1; background:#f8fafc; padding:12px 16px; border-radius:6px; margin:16px 0; font-family:system-ui, sans-serif; font-size:0.92em; line-height:2;">
+Define the problem clearly<br>
+<span style="color:#64748b;">&nbsp;&nbsp;&nbsp;&nbsp;↓</span><br>
+Get and understand the data<br>
+<span style="color:#64748b;">&nbsp;&nbsp;&nbsp;&nbsp;↓</span><br>
+Establish a baseline (the dumbest thing that could work)<br>
+<span style="color:#64748b;">&nbsp;&nbsp;&nbsp;&nbsp;↓</span><br>
+Iterate: features → model → evaluate → explain → deploy<br>
+<span style="color:#64748b;">&nbsp;&nbsp;&nbsp;&nbsp;↓</span><br>
+Monitor in production — the work does not end at launch
+</div>
+
+<p>The algorithms change. The frameworks evolve. The mental model doesn&rsquo;t.</p>
+
+
+
+<h2 id="building-your-portfolio">Building Your Portfolio</h2>
+
+<p>Portfolios beat certifications. Focus on projects that demonstrate the full lifecycle:</p>
+
+<ul>
+
+<li><strong>End-to-end:</strong> data collection &rarr; EDA &rarr; modeling &rarr; a deployed endpoint (even if it&rsquo;s just a HuggingFace Space or a Flask app on a free tier)</li>
+
+<li><strong>A real problem:</strong> something you actually care about, with data that has genuine messiness</li>
+
+<li><strong>A write-up:</strong> blog post or README that explains your decisions &mdash; why you chose this model, what didn&rsquo;t work, what you&rsquo;d do with more time</li>
+
+<li><strong>Reproducible code:</strong> a clean repo with a requirements file and instructions that actually work</li>
+
+</ul>
+
+<p>Three strong end-to-end projects outperform a repository of twenty Jupyter notebooks that each stop at model accuracy.</p>
+
+
+
+<h2 id="staying-current">Staying Current</h2>
+
+<p>The field publishes faster than anyone can read. Use filters:</p>
+
+<ul>
+
+<li><strong>Papers with Code</strong> (paperswithcode.com) &mdash; new research with code implementations; filter by task</li>
+
+<li><strong>Distill.pub</strong> &mdash; long-form visual explanations of core concepts (slower but deep)</li>
+
+<li><strong>Chip Huyen&rsquo;s newsletter</strong> &mdash; ML in production, system design, career</li>
+
+<li><strong>The Batch</strong> (deeplearning.ai) &mdash; curated weekly ML news</li>
+
+<li><strong>Twitter/X ML community</strong> &mdash; noisy but fastest signal on new model releases and techniques</li>
+
+</ul>
+
+<p>Read paper abstracts broadly; read full papers only when a technique is directly relevant to your work. Implement one non-trivial paper per quarter &mdash; understanding deepens dramatically when you go from reading to running.</p>
+
+
+
+<h2 id="final-thought">Final Thought</h2>
+
+<p>Machine learning is a craft that rewards practice more than memorisation. The goal of this book
+
+was never to be a reference you read once &mdash; it was to give you the vocabulary and the mental models
+
+to understand what you are doing and why. Now go build something, break something, figure out why it
+
+broke, and fix it. That loop, repeated, is how ML practitioners are actually made.</p>
+
+
+
+<blockquote>
+
+<p><em>&ldquo;All models are wrong, but some are useful.&rdquo; &mdash; George Box</em></p>
+
+<p><em>The useful ones get deployed, monitored, improved, and deployed again. That is the job.</em></p>
+
+</blockquote>
+
+
+
+<hr />
+
+
+
+
+<div class="chapter-nav">
+  <a href="chapter-18.html">&larr; Chapter 18: Interview Prep and Case Studies</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="bonus.html">Bonus: LeetCode Problem Index &rarr;</a>
+</div>
+<div class="site-footer">
+  <p>&copy; 2026 Hariram Subramanian Gopal &middot; <a href="index.html">Data to Decisions</a></p>
+</div>
+</body>
+</html>

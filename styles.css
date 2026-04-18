@@ -1,0 +1,592 @@
+body{
+
+  font-family:Georgia,serif;
+
+  font-size:11pt;
+
+  line-height:1.75;
+
+  color:#0f172a;
+
+  background:#fff;
+
+  max-width:920px;
+
+  margin:0 auto;
+
+  padding:36px 44px 72px;
+
+}
+
+h1,h2,h3,h4{
+
+  font-family:"Segoe UI",Arial,sans-serif;
+
+  color:#0f172a;
+
+}
+
+h1{
+
+  font-size:2.2em;
+
+  border-bottom:3px solid #1d4ed8;
+
+  padding-bottom:0.2em;
+
+  margin-top:2em;
+
+  page-break-before:always;
+
+}
+
+h2{font-size:1.55em;color:#1d4ed8;margin-top:1.8em}
+
+h3{font-size:1.2em;color:#0f766e;margin-top:1.4em}
+
+p{margin:0.8em 0}
+
+pre{
+
+  background:#0f172a;
+
+  color:#e2e8f0;
+
+  border-radius:10px;
+
+  padding:16px 18px;
+
+  overflow-x:auto;
+
+  border:1px solid #334155;
+
+}
+
+pre code{background:none;color:inherit}
+
+/* ── Pandoc syntax highlighting (One Dark theme) ── */
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { padding: 16px 18px; }
+code span.al { color: #e06c75; font-weight: bold; } /* Alert */
+code span.an { color: #7c8ca1; font-style: italic; } /* Annotation */
+code span.at { color: #d19a66; } /* Attribute */
+code span.bn { color: #d19a66; } /* BaseN */
+code span.bu { color: #e5c07b; } /* BuiltIn */
+code span.cf { color: #c678dd; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #98c379; } /* Char */
+code span.cn { color: #d19a66; } /* Constant */
+code span.co { color: #7c8ca1; font-style: italic; } /* Comment */
+code span.cv { color: #7c8ca1; font-style: italic; } /* CommentVar */
+code span.do { color: #7c8ca1; font-style: italic; } /* Documentation */
+code span.dt { color: #e5c07b; } /* DataType */
+code span.dv { color: #d19a66; } /* DecVal (numbers) */
+code span.er { color: #e06c75; font-weight: bold; text-decoration: underline; } /* Error */
+code span.ex { color: #61afef; } /* Extension */
+code span.fl { color: #d19a66; } /* Float */
+code span.fu { color: #61afef; } /* Function */
+code span.im { color: #c678dd; } /* Import */
+code span.in { color: #7c8ca1; font-style: italic; } /* Information */
+code span.kw { color: #c678dd; font-weight: bold; } /* Keyword */
+code span.op { color: #56b6c2; } /* Operator */
+code span.ot { color: #56b6c2; } /* Other */
+code span.pp { color: #c678dd; } /* Preprocessor */
+code span.sc { color: #d19a66; } /* SpecialChar */
+code span.ss { color: #98c379; } /* SpecialString */
+code span.st { color: #98c379; } /* String */
+code span.va { color: #e06c75; } /* Variable */
+code span.vs { color: #98c379; } /* VerbatimString */
+code span.wa { color: #e5c07b; font-weight: bold; } /* Warning */
+/* Line numbers (if present) */
+pre > code > span > a { color: #4b5563; text-decoration: none; }
+pre > code > span > a:hover { text-decoration: underline; }
+
+
+code{
+
+  background:#eff6ff;
+
+  color:#1d4ed8;
+
+  padding:1px 5px;
+
+  border-radius:4px;
+
+}
+
+blockquote{
+
+  border-left:4px solid #38bdf8;
+
+  background:#f0f9ff;
+
+  padding:12px 16px;
+
+  margin:1em 0;
+
+}
+
+table{
+
+  width:100%;
+
+  border-collapse:collapse;
+
+  margin:1em 0;
+
+}
+
+th,td{
+
+  border:1px solid #cbd5e1;
+
+  padding:8px 10px;
+
+  vertical-align:top;
+
+}
+
+th{
+
+  background:#e2e8f0;
+
+  text-align:left;
+
+}
+
+#TOC{
+
+  background:#f8fafc;
+
+  border:1px solid #cbd5e1;
+
+  border-radius:10px;
+
+  padding:20px 26px;
+
+  margin:1.5em 0 2.5em;
+
+}
+
+.review-banner{
+
+  background:linear-gradient(135deg,#eff6ff,#ecfeff);
+
+  border:1px solid #93c5fd;
+
+  border-radius:12px;
+
+  padding:16px 18px;
+
+  margin:0 0 2em;
+
+  font-family:"Segoe UI",Arial,sans-serif;
+
+}
+
+.review-banner strong{color:#1d4ed8}
+
+.rich-figure{
+
+  margin:1.5em 0 2em;
+
+  padding:16px;
+
+  border:1px solid #cbd5e1;
+
+  border-radius:14px;
+
+  background:#fff;
+
+  box-shadow:0 10px 25px rgba(15,23,42,0.05);
+
+}
+
+.rich-figure img{
+
+  display:block;
+
+  max-width:100%;
+
+  height:auto;
+
+  margin:0 auto;
+
+}
+
+.rich-figure figcaption{
+
+  margin-top:0.85em;
+
+  color:#475569;
+
+  font-size:0.95em;
+
+  font-family:"Segoe UI",Arial,sans-serif;
+
+  text-align:center;
+
+}
+
+.practical-example{
+
+  background:linear-gradient(135deg,#f0fdf4,#ecfdf5);
+
+  border-left:4px solid #22c55e;
+
+  border-radius:0 8px 8px 0;
+
+  padding:12px 16px;
+
+  margin:1em 0 1.5em;
+
+  font-family:"Segoe UI",Arial,sans-serif;
+
+  font-size:0.97em;
+
+}
+
+.practical-example .pe-label{
+
+  font-weight:700;
+
+  color:#15803d;
+
+  text-transform:uppercase;
+
+  font-size:0.82em;
+
+  letter-spacing:0.05em;
+
+  margin-bottom:4px;
+
+}
+
+.intuition-note{
+
+  background:linear-gradient(135deg,#fff7ed,#fffbeb);
+
+  border-left:4px solid #f59e0b;
+
+  border-radius:0 8px 8px 0;
+
+  padding:12px 16px;
+
+  margin:1em 0 1.5em;
+
+  font-family:"Segoe UI",Arial,sans-serif;
+
+  font-size:0.97em;
+
+}
+
+.intuition-note .in-label{
+
+  font-weight:700;
+
+  color:#b45309;
+
+  text-transform:uppercase;
+
+  font-size:0.82em;
+
+  letter-spacing:0.05em;
+
+  margin-bottom:4px;
+
+}
+
+.did-you-know{
+
+  background:linear-gradient(135deg,#ecfeff,#f0f9ff);
+
+  border-left:4px solid #06b6d4;
+
+  border-radius:0 8px 8px 0;
+
+  padding:12px 16px;
+
+  margin:1em 0 1.5em;
+
+  font-family:"Segoe UI",Arial,sans-serif;
+
+  font-size:0.97em;
+
+}
+
+.did-you-know .dyk-label{
+
+  font-weight:700;
+
+  color:#0f766e;
+
+  text-transform:uppercase;
+
+  font-size:0.82em;
+
+  letter-spacing:0.05em;
+
+  margin-bottom:4px;
+
+}
+
+
+/* ── OR Chapter: Algorithm Cards ── */
+.algo-card{border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;margin:40px 0;box-shadow:0 2px 20px rgba(0,0,0,.06)}
+.algo-card-header{padding:20px 28px;display:flex;align-items:center;gap:16px}
+.algo-card-header.orange{background:linear-gradient(135deg,#c8441a,#e8622a)}
+.algo-card-header.blue{background:linear-gradient(135deg,#1a6bc8,#2a8be8)}
+.algo-card-header.green{background:linear-gradient(135deg,#1a7a4a,#2aaa6a)}
+.algo-card-header.purple{background:linear-gradient(135deg,#6b1acc,#9b44ee)}
+.algo-icon{font-size:36px}
+.algo-card-title h3{font-size:22px;color:#fff;margin:0;font-family:'Segoe UI',Arial,sans-serif}
+.algo-card-title p{color:rgba(255,255,255,.85);font-size:13px;margin:4px 0 0}
+.algo-card-body{padding:28px}
+
+/* ── OR Chapter: Steps ── */
+.steps{margin:24px 0}
+.step{display:flex;gap:16px;margin-bottom:18px;align-items:flex-start}
+.step-num{min-width:32px;height:32px;border-radius:50%;background:#c8441a;color:#fff;font-family:monospace;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.step-num.blue{background:#1d4ed8}
+.step-num.green{background:#0f766e}
+.step-num.purple{background:#6b1acc}
+.step-body{font-size:15px;line-height:1.7}
+
+/* ── OR Chapter: Metrics ── */
+.metrics-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px;margin:28px 0}
+.metric-box{background:#f0f9ff;border:1px solid #e2e8f0;border-radius:10px;padding:18px 16px;text-align:center}
+.metric-val{font-family:monospace;font-size:28px;font-weight:500;color:#c8441a;margin-bottom:4px}
+.metric-val.blue{color:#1d4ed8}
+.metric-val.green{color:#0f766e}
+.metric-val.purple{color:#6b1acc}
+.metric-label{font-family:'Segoe UI',Arial,sans-serif;font-size:11.5px;text-transform:uppercase;letter-spacing:.1em;color:#64748b}
+
+/* ── OR Chapter: Takeaways ── */
+.takeaway-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:28px 0}
+.takeaway-item{background:#f0f9ff;border-radius:10px;padding:20px;border:1px solid #e2e8f0;font-size:14.5px;line-height:1.65}
+.takeaway-item .t-icon{font-size:24px;margin-bottom:10px}
+.takeaway-item strong{display:block;font-family:'Segoe UI',Arial,sans-serif;font-size:14px;margin-bottom:6px}
+
+/* ── OR Chapter: Complexity Grid ── */
+.complexity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:24px 0}
+.complexity-box{border-radius:10px;padding:16px;text-align:center}
+.complexity-box .c-class{font-family:monospace;font-size:24px;font-weight:700;margin-bottom:4px}
+.complexity-box .c-name{font-weight:600;font-size:13px;margin-bottom:6px}
+.complexity-box .c-desc{font-size:12.5px;line-height:1.5;color:#475569}
+.cb-p{background:#dcfce7;border:1px solid #86efac}
+.cb-np{background:#e0f2fe;border:1px solid #7dd3fc}
+.cb-nph{background:#fef3c7;border:1px solid #fcd34d}
+.cb-npc{background:#fee2e2;border:1px solid #fca5a5}
+
+/* ── OR Chapter: References ── */
+.ref{font-size:12px;color:#64748b;font-style:italic;margin-top:8px}
+
+@media print{
+
+  body{max-width:none;padding:0;font-size:10pt}
+
+  h1{page-break-before:always}
+
+  h2,h3{page-break-after:avoid}
+
+  pre,table,.rich-figure{page-break-inside:avoid}
+
+}
+
+
+/* ── Print / PDF ───────────────────────────────────────────────── */
+@page{
+  size:A4;
+  margin:2.5cm 2cm;
+}
+@media print{
+  body{ max-width:none; padding:0; font-size:10.5pt; }
+  .book-cover{ margin:0; break-after:page; min-height:auto; display:block; padding:48px 48px 40px; }
+  .front-page{ break-after:page; }
+  h1{ break-before:page; }
+  pre,table,svg,figure,.callout-box{ break-inside:avoid; }
+  nav#TOC{ break-after:page; }
+}
+
+/* ── Front Matter ──────────────────────────────────────────────── */
+.book-cover{
+  background:#f5f0e8;
+  background-image:
+    radial-gradient(ellipse at 25% 85%, rgba(184,58,30,0.04) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 15%, rgba(184,58,30,0.025) 0%, transparent 50%);
+  margin:-36px -44px 48px;
+  position:relative;
+  overflow:hidden;
+  page-break-after:always;
+  min-height:94vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  padding:60px 56px 48px;
+  box-sizing:border-box;
+}
+.book-cover .spine{
+  position:absolute; left:0; top:0; width:10px; height:100%;
+  background:linear-gradient(180deg, #c4451e, #b83a1e 40%, #962f18);
+}
+.book-cover::after{
+  content:'';
+  position:absolute;
+  top:18px; right:18px; bottom:18px; left:26px;
+  border:1px solid rgba(184,58,30,0.12);
+  pointer-events:none;
+}
+.book-cover .category{
+  font-family:"Segoe UI",Arial,sans-serif; font-size:10.5px; font-weight:600;
+  letter-spacing:0.28em; text-transform:uppercase; color:#b83a1e;
+  margin-bottom:6px;
+}
+.book-cover .category-rule{
+  width:200px; height:1.5px;
+  background:linear-gradient(90deg, transparent, #b83a1e, transparent);
+  opacity:0.4; margin:0 auto 36px;
+}
+.book-cover .cover-chart{
+  display:flex; justify-content:center; margin:0 auto 28px;
+}
+.book-cover .cover-title{
+  font-family:Georgia,serif; font-weight:bold; font-size:54px;
+  line-height:1.0; color:#1a1208; margin:0;
+  letter-spacing:-0.01em;
+}
+.book-cover .cover-title-accent{
+  font-family:Georgia,serif; font-weight:bold; font-style:italic;
+  font-size:46px; color:#b83a1e; margin:2px 0 22px;
+  letter-spacing:-0.01em;
+}
+.book-cover .cover-subtitle{
+  font-family:"Segoe UI",Arial,sans-serif; font-size:14px; font-weight:300;
+  color:#7a6040; letter-spacing:0.06em; margin-bottom:3px;
+}
+.book-cover .cover-subtitle-big{
+  font-family:Georgia,serif; font-weight:bold; font-size:26px;
+  color:#1a1208; margin-top:3px;
+}
+.book-cover .cover-ornament{
+  color:#b83a1e; opacity:0.3; font-size:8px; letter-spacing:8px;
+  margin-top:32px;
+}
+.book-cover .cover-topics{
+  font-family:"Segoe UI",Arial,sans-serif; font-size:10.5px; font-weight:400;
+  color:#8a7050; letter-spacing:0.14em; text-transform:uppercase;
+  margin-top:12px; line-height:2.1;
+}
+.book-cover .cover-author{
+  font-family:Georgia,serif; font-weight:bold; font-size:16px;
+  color:#1a1208; margin-top:48px; padding-top:18px;
+  border-top:1.5px solid rgba(184,58,30,0.3);
+  display:inline-block;
+  padding-left:32px; padding-right:32px;
+}
+
+.front-page{
+  page-break-after:always; margin:48px 0; padding:48px 0;
+  border-bottom:1px solid #e2e8f0;
+}
+.front-page h2{
+  font-family:"Segoe UI",Arial,sans-serif; color:#1d4ed8;
+  font-size:20px; margin-bottom:20px;
+}
+.copyright-block{
+  font-size:10pt; color:#64748b; line-height:1.8;
+}
+.copyright-block strong{ color:#0f172a; }
+.about-author p{ margin-bottom:12px; }
+.community-block a{ color:#1d4ed8; text-decoration:none; border-bottom:1px solid #93c5fd; }
+.community-block a:hover{ color:#1e40af; }
+
+
+/* ── GitHub Pages Navigation ── */
+.chapter-nav{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:16px 0;
+  border-top:1px solid #e2e8f0;
+  border-bottom:1px solid #e2e8f0;
+  margin:24px 0;
+  font-family:"Segoe UI",Arial,sans-serif;
+  font-size:14px;
+}
+.chapter-nav a{
+  color:#1d4ed8;
+  text-decoration:none;
+  padding:8px 16px;
+  border-radius:6px;
+  transition:background 0.2s;
+}
+.chapter-nav a:hover{
+  background:#eff6ff;
+}
+.chapter-nav .nav-home{
+  font-weight:600;
+}
+.chapter-nav .nav-disabled{
+  color:#94a3b8;
+  pointer-events:none;
+}
+
+/* ── TOC page styles ── */
+.toc-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));
+  gap:16px;
+  margin:32px 0;
+}
+.toc-card{
+  border:1px solid #e2e8f0;
+  border-radius:12px;
+  padding:20px 24px;
+  transition:box-shadow 0.2s, border-color 0.2s;
+  text-decoration:none;
+  color:inherit;
+  display:block;
+}
+.toc-card:hover{
+  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+  border-color:#93c5fd;
+}
+.toc-card .ch-num{
+  font-family:monospace;
+  font-size:12px;
+  color:#64748b;
+  text-transform:uppercase;
+  letter-spacing:0.1em;
+}
+.toc-card .ch-title{
+  font-family:"Segoe UI",Arial,sans-serif;
+  font-size:17px;
+  font-weight:600;
+  color:#0f172a;
+  margin:4px 0 0;
+}
+
+/* Override cover for web display */
+.book-cover{
+  margin:0 !important;
+  min-height:70vh !important;
+  border-radius:0 0 20px 20px;
+}
+
+.site-footer{
+  text-align:center;
+  padding:32px 0;
+  margin-top:48px;
+  border-top:1px solid #e2e8f0;
+  font-family:"Segoe UI",Arial,sans-serif;
+  font-size:13px;
+  color:#94a3b8;
+}
+.site-footer a{ color:#1d4ed8; text-decoration:none; }
+
+/* Remove print-only page breaks for web */
+@media screen {
+  h1 { page-break-before: auto !important; break-before: auto !important; }
+  .front-page { page-break-after: auto !important; break-after: auto !important; }
+}

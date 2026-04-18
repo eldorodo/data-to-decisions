@@ -1,0 +1,2421 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Hariram Subramanian Gopal" />
+  <title>Chapter 02: Math Foundations | Data to Decisions</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</head>
+<body>
+<div class="chapter-nav">
+  <a href="chapter-01.html">&larr; Chapter 01: Statistics and Probability</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-03.html">Chapter 03: Python for Data Science &rarr;</a>
+</div>
+<h1 id="chapter-02-math-foundations">Chapter 02: Math Foundations</h1>
+
+<h2 id="chapter-scope">2.0 Chapter Scope</h2>
+
+<p>ML is built on four areas of mathematics: linear algebra (the
+
+geometry of data), statistics and probability (uncertainty and
+
+inference), information theory (measuring surprise and divergence), and
+
+optimization (finding minima of loss functions). This chapter covers the
+
+essentials of each.</p>
+
+<p><strong>What you will learn:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Section</th>
+
+<th>Topic</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>2.1</td>
+
+<td>Linear algebra: vectors, matrices, eigenvalues</td>
+
+</tr>
+
+<tr>
+
+<td>2.2</td>
+
+<td>Statistics foundations (connecting to PCA)</td>
+
+</tr>
+
+<tr>
+
+<td>2.3</td>
+
+<td>Entropy, cross-entropy, and KL divergence</td>
+
+</tr>
+
+<tr>
+
+<td>2.4</td>
+
+<td>Optimization basics: gradients, chain rule</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>How to use this chapter:</strong> These foundations are
+
+referenced throughout the book. Read for understanding; return as a
+
+reference when you encounter the math in context.</p>
+
+<hr />
+
+<figure class="rich-figure">
+
+<img src="figures/generated/01_math_foundations/math_foundations_map.svg" alt="The four math areas used throughout ML: linear algebra, statistics, information theory, and optimization">
+
+<figcaption>
+
+The four math areas used throughout ML: linear algebra, statistics, information theory, and optimization
+
+</figcaption>
+
+</figure>
+
+<h2 id="linear-algebra-essentials">2.1 Linear Algebra Essentials</h2>
+
+<p>Before you can understand PCA, gradient descent, or most of ML’s
+
+geometry, you need two ideas from linear algebra: <em>determinants</em>
+
+and <em>eigenvalues</em>.</p>
+
+<p>Think of a matrix as a transformation — it takes vectors and
+
+stretches, rotates, or squishes them. The <strong>determinant</strong>
+
+tells you whether the transformation is reversible (non-zero) or
+
+collapses space (zero). The <strong>eigenvectors</strong> are the
+
+special directions that only stretch — they don’t rotate. How much they
+
+stretch is the <strong>eigenvalue</strong>.</p>
+
+<p>In PCA, the covariance matrix’s eigenvectors become your principal
+
+components, and the eigenvalues tell you how much variance each
+
+direction captures.</p>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="300" viewBox="0 0 500 300" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .pca-lbl { font: bold 13px system-ui, sans-serif; fill: #1e293b; }
+    .pca-sub { font: 12px system-ui, sans-serif; fill: #64748b; }
+    .pca-step { font: italic 12px system-ui, sans-serif; fill: #6366f1; }
+  </style>
+  <defs><marker id="pca-a" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#6366f1"/></marker></defs>
+  <!-- Data matrix -->
+  <rect x="170" y="10" width="160" height="40" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="250" y="36" text-anchor="middle" class="pca-lbl">n×p Data matrix X</text>
+  <!-- Arrow + step 1 -->
+  <line x1="250" y1="50" x2="250" y2="90" stroke="#6366f1" stroke-width="2" marker-end="url(#pca-a)"/>
+  <text x="340" y="75" class="pca-step">step 1: center, compute XᵀX / n</text>
+  <!-- Covariance matrix -->
+  <rect x="150" y="96" width="200" height="40" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="250" y="122" text-anchor="middle" class="pca-lbl">p×p Covariance Σ</text>
+  <!-- Arrow + step 2 -->
+  <line x1="250" y1="136" x2="250" y2="176" stroke="#6366f1" stroke-width="2" marker-end="url(#pca-a)"/>
+  <text x="370" y="161" class="pca-step">step 2: Σ = VΛVᵀ</text>
+  <!-- Result box -->
+  <rect x="60" y="182" width="380" height="100" rx="10" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="250" y="210" text-anchor="middle" class="pca-lbl">V = eigenvectors → principal directions</text>
+  <text x="250" y="234" text-anchor="middle" class="pca-lbl">Λ = eigenvalues → variance explained</text>
+  <line x1="100" y1="248" x2="400" y2="248" stroke="#22c55e" stroke-width="0.5"/>
+  <text x="250" y="270" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="bold" fill="#166534">Keep top-k columns of V → k-dim projection</text>
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> Determinant = invertibility/volume scaling;
+
+eigenpairs = preserved directions + stretch.</p>
+
+</blockquote>
+
+<h3 id="what-it-is">2.1.1 What It Is</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 50%" />
+
+<col style="width: 50%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Term</th>
+
+<th>Meaning</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>Determinant</strong></td>
+
+<td>Scalar for a square matrix; tests invertibility and volume
+
+scaling.</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Eigenvector</strong></td>
+
+<td>Nonzero vector whose direction is unchanged by <span
+
+class="math inline">\(A\)</span>.</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Eigenvalue</strong></td>
+
+<td>Scale factor <span class="math inline">\(\lambda\)</span> in <span
+
+class="math inline">\(Ax=\lambda x\)</span>.</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Identity matrix</strong></td>
+
+<td><span class="math inline">\(I\)</span>: ones on diagonal, zeros
+
+elsewhere.</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Characteristic equation</strong></td>
+
+<td><span class="math inline">\(\det(A-\lambda I)=0\)</span>; roots are
+
+eigenvalues.</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Non-trivial solution</strong></td>
+
+<td>Any solution other than <span
+
+class="math inline">\(x=0\)</span>.</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<ul>
+
+<li>If <span class="math inline">\(\det(A)=0\)</span>, the transform
+
+<strong>collapses</strong> space to lower dimension.</li>
+
+<li>In 2D determinant scales area; in 3D volume; higher-D
+
+hyper-volume.</li>
+
+</ul>
+
+<p><span class="math display">\[
+
+\det(A) \neq 0 \iff A \text{ is invertible}
+
+\]</span></p>
+
+<p><span class="math display">\[
+
+Ax = \lambda x, \qquad x \neq 0
+
+\]</span></p>
+
+<h3 id="optimization-aside-quadratic-forms">2.1.2 Optimization aside:
+
+quadratic forms</h3>
+
+<p>For quadratic objectives:</p>
+
+<p><span class="math display">\[
+
+\nabla_x(x^T A x) = (A + A^T)x
+
+\]</span></p>
+
+<p>Only if <span class="math inline">\(A\)</span> is symmetric:</p>
+
+<p><span class="math display">\[
+
+\nabla_x(x^T A x)=2Ax
+
+\]</span></p>
+
+<p>Scalar analogy:</p>
+
+<p><span class="math display">\[
+
+\frac{d}{dx}(kx^2)=2kx
+
+\]</span></p>
+
+<blockquote>
+
+<p><strong>Key:</strong> Use <span class="math inline">\(2Ax\)</span>
+
+only when <span class="math inline">\(A=A^T\)</span>.</p>
+
+</blockquote>
+
+<h3 id="key-concepts-and-formulas">2.1.3 Key Concepts and Formulas</h3>
+
+<h4 id="determinant-notation">Determinant notation</h4>
+
+<p><span class="math display">\[
+
+|A|
+
+\]</span></p>
+
+<ul>
+
+<li>Means determinant of matrix <span
+
+class="math inline">\(A\)</span>.</li>
+
+<li>Same bars as absolute value; use context.</li>
+
+</ul>
+
+<h4 id="determinant-formulas">Determinant formulas</h4>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Matrix size</th>
+
+<th>Formula</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>2×2</td>
+
+<td>det([a b; c d]) = ad−bc</td>
+
+</tr>
+
+<tr>
+
+<td>3×3</td>
+
+<td>a(ei−fh) − b(di−fg) + c(dh−eg)</td>
+
+</tr>
+
+<tr>
+
+<td>4×4</td>
+
+<td>Cofactor expansion; alternating signs + − + −</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><span class="math display">\[
+
+A = \begin{bmatrix}a&amp;b\\c&amp;d\end{bmatrix}
+
+\quad \Rightarrow \quad
+
+\det(A) = ad - bc
+
+\]</span></p>
+
+<p><span class="math display">\[
+
+|A| = a(ei - fh) - b(di - fg) + c(dh - eg)
+
+\]</span></p>
+
+<p>For <span class="math inline">\(4\times4\)</span>, first-row cofactor
+
+expansion:</p>
+
+<p><span class="math display">\[
+
+\left|A\right| = a\begin{vmatrix} f &amp; g &amp; h \\ j &amp; k &amp; l
+
+\\ n &amp; o &amp; p \end{vmatrix}
+
+- b\begin{vmatrix} e &amp; g &amp; h \\ i &amp; k &amp; l \\ m &amp; o
+
+&amp; p \end{vmatrix}
+
++ c\begin{vmatrix} e &amp; f &amp; h \\ i &amp; j &amp; l \\ m &amp; n
+
+&amp; p \end{vmatrix}
+
+- d\begin{vmatrix} e &amp; f &amp; g \\ i &amp; j &amp; k \\ m &amp; n
+
+&amp; o \end{vmatrix}
+
+\]</span></p>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="110" viewBox="0 0 480 110" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .dt-q { font: bold 14px system-ui, sans-serif; fill: #1e293b; }
+    .dt-ans { font: bold 12px system-ui, sans-serif; }
+    .dt-desc { font: 11px system-ui, sans-serif; fill: #64748b; }
+  </style>
+  <defs><marker id="dt-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <!-- Question -->
+  <rect x="120" y="6" width="160" height="34" rx="17" fill="#f1f5f9" stroke="#6366f1" stroke-width="1.5"/>
+  <text x="200" y="28" text-anchor="middle" class="dt-q">det(A) = 0?</text>
+  <!-- YES branch -->
+  <line x1="200" y1="40" x2="100" y2="70" stroke="#ef4444" stroke-width="2" marker-end="url(#dt-a)"/>
+  <text x="135" y="55" class="dt-ans" fill="#ef4444">YES</text>
+  <rect x="10" y="72" width="180" height="32" rx="6" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="100" y="86" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="bold" fill="#dc2626">Singular</text>
+  <text x="100" y="100" text-anchor="middle" class="dt-desc">no inverse, space collapses</text>
+  <!-- NO branch -->
+  <line x1="200" y1="40" x2="320" y2="70" stroke="#22c55e" stroke-width="2" marker-end="url(#dt-a)"/>
+  <text x="270" y="55" class="dt-ans" fill="#22c55e">NO</text>
+  <rect x="240" y="72" width="200" height="32" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="340" y="86" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="bold" fill="#166534">Invertible</text>
+  <text x="340" y="100" text-anchor="middle" class="dt-desc">A⁻¹ exists, full-rank</text>
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> <span class="math inline">\(\det(A)=0\)</span>
+
+means singular, non-invertible, dimension collapse.</p>
+
+</blockquote>
+
+<h4 id="eigenvalues-and-eigenvectors">Eigenvalues and Eigenvectors</h4>
+
+<p>The core equation <span class="math inline">\(Ax = \lambda x\)</span>
+
+says: vector <span class="math inline">\(x\)</span> only scales (doesn’t
+
+rotate) under <span class="math inline">\(A\)</span>.</p>
+
+<p>Rearranging to find <span class="math inline">\(\lambda\)</span>:</p>
+
+<p><span class="math display">\[
+
+(A - \lambda I)x = 0 \quad \Rightarrow \quad \det(A - \lambda I) = 0
+
+\]</span></p>
+
+<p>This <strong>characteristic equation</strong> is a polynomial in
+
+<span class="math inline">\(\lambda\)</span>. Its roots are the
+
+eigenvalues; plug each back in to find the corresponding
+
+eigenvector.</p>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="340" viewBox="0 0 440 340" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .eig-lbl { font: bold 13px system-ui, sans-serif; fill: #1e293b; }
+    .eig-note { font: italic 12px system-ui, sans-serif; fill: #64748b; }
+    .eig-step { font: 11px system-ui, sans-serif; fill: #6366f1; }
+  </style>
+  <defs><marker id="eig-a" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#6366f1"/></marker></defs>
+  <!-- Step 1: Ax = λx -->
+  <rect x="110" y="8" width="220" height="36" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="220" y="32" text-anchor="middle" class="eig-lbl">Ax = λx</text>
+  <text x="350" y="32" class="eig-note">eigenvector equation</text>
+  <line x1="220" y1="44" x2="220" y2="66" stroke="#6366f1" stroke-width="2" marker-end="url(#eig-a)"/>
+  <text x="254" y="59" class="eig-step">rearrange</text>
+  <!-- Step 2: (A-λI)x = 0 -->
+  <rect x="110" y="72" width="220" height="36" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="220" y="96" text-anchor="middle" class="eig-lbl">(A − λI)x = 0</text>
+  <text x="350" y="96" class="eig-note">homogeneous system</text>
+  <line x1="220" y1="108" x2="220" y2="130" stroke="#6366f1" stroke-width="2" marker-end="url(#eig-a)"/>
+  <text x="254" y="123" class="eig-step">must be singular</text>
+  <!-- Step 3: det = 0 -->
+  <rect x="100" y="136" width="240" height="36" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="220" y="160" text-anchor="middle" class="eig-lbl">det(A − λI) = 0</text>
+  <text x="355" y="160" class="eig-note">characteristic eq.</text>
+  <line x1="220" y1="172" x2="220" y2="194" stroke="#6366f1" stroke-width="2" marker-end="url(#eig-a)"/>
+  <text x="254" y="187" class="eig-step">solve polynomial</text>
+  <!-- Step 4: eigenvalues -->
+  <rect x="120" y="200" width="200" height="36" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="220" y="224" text-anchor="middle" class="eig-lbl">λ₁, λ₂, …</text>
+  <text x="340" y="224" class="eig-note">eigenvalues</text>
+  <line x1="220" y1="236" x2="220" y2="258" stroke="#6366f1" stroke-width="2" marker-end="url(#eig-a)"/>
+  <text x="254" y="251" class="eig-step">solve (A−λI)x=0</text>
+  <!-- Step 5: eigenvectors -->
+  <rect x="120" y="264" width="200" height="36" rx="8" fill="#6366f1"/>
+  <text x="220" y="288" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="bold" fill="#fff">x₁, x₂, … eigenvectors</text>
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> Set <span class="math inline">\(\det(A-\lambda
+
+I)=0\)</span> so <span class="math inline">\((A-\lambda I)x=0\)</span>
+
+has a nonzero solution.</p>
+
+</blockquote>
+
+<h3 id="example-walkthrough">2.1.4 Example / Walkthrough</h3>
+
+<h4 id="example-1-determinant">Example 1: determinant</h4>
+
+<p><span class="math display">\[
+
+A = \begin{bmatrix}
+
+2 &amp; 3 \\
+
+1 &amp; 4
+
+\end{bmatrix}
+
+\]</span></p>
+
+<p><span class="math display">\[
+
+|A| = (2)(4) - (3)(1) = 8 - 3 = 5
+
+\]</span></p>
+
+<ul>
+
+<li><span class="math inline">\(|A|=5\neq0\)</span> → invertible.</li>
+
+</ul>
+
+<h4 id="example-2-eigenvalueseigenvectors">Example 2:
+
+eigenvalues/eigenvectors</h4>
+
+<p>Let</p>
+
+<p><span class="math display">\[
+
+A = \begin{bmatrix}
+
+2 &amp; 1 \\
+
+1 &amp; 2
+
+\end{bmatrix}
+
+\]</span></p>
+
+<p>Characteristic equation:</p>
+
+<p><span class="math display">\[
+
+\det(A - \lambda I) = 0
+
+\]</span></p>
+
+<p><span class="math display">\[
+
+A - \lambda I =
+
+\begin{bmatrix}
+
+2 - \lambda &amp; 1 \\
+
+1 &amp; 2 - \lambda
+
+\end{bmatrix}
+
+\]</span></p>
+
+<p><span class="math display">\[
+
+\det(A - \lambda I) = (2 - \lambda)^2 - 1
+
+\]</span></p>
+
+<p><span class="math display">\[
+
+(2 - \lambda)^2 - 1 = 0
+
+\]</span></p>
+
+<p>So:</p>
+
+<p><span class="math display">\[
+
+\lambda = 1,\; 3
+
+\]</span></p>
+
+<p>For <span class="math inline">\(\lambda=3\)</span>:</p>
+
+<p><span class="math display">\[
+
+(A - 3I)x = 0
+
+\]</span></p>
+
+<p><span class="math display">\[
+
+\begin{bmatrix}
+
+-1 &amp; 1 \\
+
+1 &amp; -1
+
+\end{bmatrix}
+
+\begin{bmatrix}
+
+x_1 \\ x_2
+
+\end{bmatrix}
+
+=
+
+\begin{bmatrix}
+
+0 \\ 0
+
+\end{bmatrix}
+
+\]</span></p>
+
+<p><span class="math display">\[
+
+x_1=x_2
+
+\]</span></p>
+
+<p>One eigenvector:</p>
+
+<p><span class="math display">\[
+
+\begin{bmatrix}
+
+1 \\ 1
+
+\end{bmatrix}
+
+\]</span></p>
+
+<p>For <span class="math inline">\(\lambda=1\)</span>:</p>
+
+<p><span class="math display">\[
+
+(A - I)x = 0
+
+\]</span></p>
+
+<p><span class="math display">\[
+
+\begin{bmatrix}
+
+1 &amp; 1 \\
+
+1 &amp; 1
+
+\end{bmatrix}
+
+\begin{bmatrix}
+
+x_1 \\ x_2
+
+\end{bmatrix}
+
+=
+
+\begin{bmatrix}
+
+0 \\ 0
+
+\end{bmatrix}
+
+\]</span></p>
+
+<p><span class="math display">\[
+
+x_1=-x_2
+
+\]</span></p>
+
+<p>One eigenvector:</p>
+
+<p><span class="math display">\[
+
+\begin{bmatrix}
+
+1 \\ -1
+
+\end{bmatrix}
+
+\]</span></p>
+
+<ul>
+
+<li>Larger eigenvalue (<span class="math inline">\(3\)</span>) =
+
+stronger stretch.</li>
+
+<li>In PCA, larger eigenvalue usually = more variance.</li>
+
+</ul>
+
+<h3 id="key-takeaways">2.1.5 Key Takeaways</h3>
+
+<ul>
+
+<li>Determinant <span class="math inline">\(|A|\)</span> checks
+
+invertibility and volume scaling.</li>
+
+<li><span class="math inline">\(2\times2\)</span> determinant: <span
+
+class="math inline">\(ad-bc\)</span>.</li>
+
+<li>Cofactor expansion uses alternating signs.</li>
+
+<li>Eigenpairs satisfy <span class="math inline">\(Ax=\lambda
+
+x\)</span>.</li>
+
+<li>Eigenvalues come from <span class="math inline">\(\det(A-\lambda
+
+I)=0\)</span>.</li>
+
+<li>In PCA, eigenvectors = directions; eigenvalues = variance.</li>
+
+<li><span class="math inline">\(\nabla_x(x^TAx)=2Ax\)</span> only for
+
+symmetric <span class="math inline">\(A\)</span>.</li>
+
+</ul>
+
+<h3 id="common-pitfalls">2.1.6 Common Pitfalls</h3>
+
+<ul>
+
+<li>Confusing <span class="math inline">\(|A|\)</span> with absolute
+
+value.</li>
+
+<li>Writing <span class="math inline">\(bc-ad\)</span> instead of <span
+
+class="math inline">\(ad-bc\)</span>.</li>
+
+<li>Forgetting cofactor sign alternation.</li>
+
+<li>Removing wrong row/column for minors.</li>
+
+<li>Forgetting eigenvectors must be nonzero.</li>
+
+<li>Assuming any <span class="math inline">\(\lambda\)</span> gives
+
+nontrivial <span class="math inline">\((A-\lambda I)x=0\)</span>.</li>
+
+<li>Using <span class="math inline">\(2Ax\)</span> when <span
+
+class="math inline">\(A\)</span> is not symmetric.</li>
+
+</ul>
+
+<hr />
+
+<h2 id="probability-and-statistics-foundations">2.2 Statistics Foundations (Connecting to PCA)</h2>
+
+<p>Statistics and linear algebra don't live in separate boxes — they meet constantly in ML. Mean, variance, and covariance describe data; the covariance matrix is then processed with eigendecomposition (from linear algebra) to find the most important directions. This section gives you the core statistical quantities you'll need alongside the linear algebra from section 2.1.</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> Statistics summarizes variation; linear algebra extracts dominant directions. PCA is the clearest example of both working together — but the full statistics toolkit is in Chapter 01.</p>
+
+</blockquote>
+
+<h3 id="core-definitions">2.2.1 Core Definitions</h3>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Statistic / LA term</th>
+
+<th>Meaning</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>Mean</strong></td>
+
+<td>Center of values.</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Std. deviation</strong></td>
+
+<td>Spread around mean.</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Covariance</strong></td>
+
+<td>Joint movement of two variables.</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Correlation</strong></td>
+
+<td>Scale-free covariance in <span
+
+class="math inline">\([-1,1]\)</span>.</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Covariance matrix</strong></td>
+
+<td>Pairwise covariances across features.</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="statistics-formulas">2.2.2 Statistics Formulas</h3>
+
+<p><span class="math display">\[
+
+\bar{x}=\frac{1}{n}\sum_{i=1}^{n}x_i
+
+\]</span></p>
+
+<p><span class="math display">\[
+
+\sigma_x=\sqrt{\frac{1}{n}\sum_{i=1}^{n}(x_i-\bar{x})^2}
+
+\]</span></p>
+
+<p><span class="math display">\[
+
+s_x=\sqrt{\frac{1}{n-1}\sum_{i=1}^{n}(x_i-\bar{x})^2}
+
+\]</span></p>
+
+<p><span class="math display">\[
+
+\mathrm{Cov}(x,y)=\frac{1}{n}\sum_{i=1}^{n}(x_i-\bar{x})(y_i-\bar{y})
+
+\]</span></p>
+
+<p><span class="math display">\[
+
+\mathrm{Cov}(x,y)=\frac{1}{n-1}\sum_{i=1}^{n}(x_i-\bar{x})(y_i-\bar{y})
+
+\]</span></p>
+
+<p><span class="math display">\[
+
+\mathrm{Corr}(x,y)=\frac{\mathrm{Cov}(x,y)}{\sigma_x\sigma_y}
+
+\]</span></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Quantity</th>
+
+<th>Interpretation</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Mean</td>
+
+<td>center</td>
+
+</tr>
+
+<tr>
+
+<td>Std. dev.</td>
+
+<td>spread</td>
+
+</tr>
+
+<tr>
+
+<td>Covariance</td>
+
+<td>co-movement, scale-dependent</td>
+
+</tr>
+
+<tr>
+
+<td>Correlation</td>
+
+<td>co-movement, normalized</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Use correlation for scale-free comparison;
+
+covariance keeps units.</p>
+
+</blockquote>
+
+<h3 id="example-walkthrough-1">2.2.3 Example / Walkthrough</h3>
+
+<h4 id="worked-statistics-summary">1) Worked statistics summary</h4>
+
+<p>Reported values:</p>
+
+<ul>
+
+<li><span class="math inline">\(x\)</span> mean <span
+
+class="math inline">\(= 33.1176\)</span></li>
+
+<li><span class="math inline">\(y\)</span> mean <span
+
+class="math inline">\(= 34.0588\)</span></li>
+
+<li><span class="math inline">\(\sigma_x = 5.4002\)</span></li>
+
+<li><span class="math inline">\(\sigma_y = 5.5885\)</span></li>
+
+<li><span class="math inline">\(\mathrm{Cov}(x,y)=6.3460\)</span></li>
+
+<li><span class="math inline">\(\mathrm{Corr}(x,y)=0.2103\)</span></li>
+
+</ul>
+
+<p>Interpretation:</p>
+
+<ul>
+
+<li>similar means</li>
+
+<li>moderate spread</li>
+
+<li>positive covariance</li>
+
+<li>weak positive correlation (<span class="math inline">\(\approx
+
+0.21\)</span>)</li>
+
+</ul>
+
+<h3 id="key-takeaways-1">2.2.4 Key Takeaways</h3>
+
+<ul>
+
+<li>Mean/std summarize center and spread.</li>
+
+<li>Covariance = joint movement; correlation = normalized
+
+covariance.</li>
+
+<li>Correlation <span class="math inline">\(\approx 0.21\)</span> is
+
+weak positive, not strong.</li>
+
+<li>Covariance matrices connect statistics to PCA.</li>
+
+<li>These quantities underpin PCA, regression solvers, and matrix
+
+factorization.</li>
+
+</ul>
+
+<h3 id="common-pitfalls-1">2.2.5 Common Pitfalls</h3>
+
+<ul>
+
+<li>Confusing covariance with correlation.</li>
+
+<li>Treating <span class="math inline">\(0.21\)</span> correlation as
+
+strong.</li>
+
+<li>Assuming correlation implies causation.</li>
+
+<li>Arithmetic mistakes in covariance tables.</li>
+
+</ul>
+
+<h2 id="entropy-cross-entropy-and-kl-divergence">2.3 Entropy,
+
+Cross-Entropy and KL Divergence</h2>
+
+<p>Entropy, cross-entropy, and KL divergence are the
+
+information-theoretic foundation behind most classification training
+
+objectives. If you’ve used <code>categorical_crossentropy</code> as a
+
+loss function — which you almost certainly have — you’ve already been
+
+using these concepts.</p>
+
+<p>Here’s the intuition before the formulas:</p>
+
+<ul>
+<li><strong>Entropy</strong>  measures how uncertain (or <em>spread out</em>) a distribution is -  <strong>Cross-entropy</strong> measures how good your model’s  distribution is for describing the true distribution</li>
+<li><strong>KL  divergence</strong> measures <em>how much extra</em> cost you pay for  using the wrong model</li>
+</ul>
+
+<p><strong>Convention:</strong> <span
+
+class="math inline">\(q(y)\)</span> = true/data distribution · <span
+
+class="math inline">\(p(y)\)</span> = model/predicted distribution ·
+
+<span class="math inline">\(\log\)</span> = natural log (nats) in ML</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">H(q)</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Entropy</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">uncertainty in true distribution q</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">H(q,p)</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Cross-Entropy  H(q) + extra bits from using model p</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">D_KL(q||p)  KL Divergence  H(q,p) − H(q)  ← mismatch penalty only</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">Minimize H(q,p)  ≡  Minimize D_KL(q||p)</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">(since H(q) is fixed)</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+</tr>
+</table>
+
+
+<blockquote>
+
+<p><strong>Key:</strong> For fixed <span
+
+class="math inline">\(q\)</span>, minimizing cross-entropy = minimizing
+
+D_KL(q||p).</p>
+
+</blockquote>
+
+<h3 id="what-it-is-2">2.3.1 What It Is</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Quantity</th>
+
+<th>Uses</th>
+
+<th>Meaning</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Entropy <span class="math inline">\(H(q)\)</span></td>
+
+<td>1 distribution</td>
+
+<td>uncertainty in truth</td>
+
+</tr>
+
+<tr>
+
+<td>Cross-Entropy <span class="math inline">\(H(q,p)\)</span></td>
+
+<td>2 distributions</td>
+
+<td>loss of using <span class="math inline">\(p\)</span> for data from
+
+<span class="math inline">\(q\)</span></td>
+
+</tr>
+
+<tr>
+
+<td>KL divergence D_KL(q</td>
+
+<td></td>
+
+<td>p)</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<ul>
+
+<li>Entropy: intrinsic uncertainty</li>
+
+<li>Cross-entropy: what training usually minimizes</li>
+
+<li>KL: cross-entropy minus unavoidable uncertainty</li>
+
+</ul>
+
+<p>Cross-entropy is standard for classification, LM, next-token
+
+prediction.</p>
+
+<hr />
+
+<h3 id="key-concepts-and-formulas-1">2.3.2 Key Concepts and Formulas</h3>
+
+<h4 id="entropy">Entropy</h4>
+
+<p><span class="math display">\[
+
+H(q) = -\sum_i q_i \log(q_i)
+
+\]</span></p>
+
+<p>General class form:</p>
+
+<p><span class="math display">\[
+
+H(q) = -\sum_{c=1}^{C} q(y_c) \cdot \log(q(y_c))
+
+\]</span></p>
+
+<p>Binary max-uncertainty case:</p>
+
+<p><span class="math display">\[
+
+H(q) = \log(2)
+
+\]</span></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Distribution</th>
+
+<th style="text-align: right;">Entropy</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><span class="math inline">\([0.99, 0.01]\)</span></td>
+
+<td style="text-align: right;">Low</td>
+
+</tr>
+
+<tr>
+
+<td><span class="math inline">\([0.9, 0.1]\)</span></td>
+
+<td style="text-align: right;">Low</td>
+
+</tr>
+
+<tr>
+
+<td><span class="math inline">\([0.5, 0.5]\)</span></td>
+
+<td style="text-align: right;">Max (binary)</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<ul>
+
+<li>higher entropy <span class="math inline">\(\Rightarrow\)</span> more
+
+uncertainty</li>
+
+<li>near-uniform <span class="math inline">\(\Rightarrow\)</span> high
+
+entropy</li>
+
+<li>depends only on <span class="math inline">\(q\)</span></li>
+
+</ul>
+
+<p>Examples:</p>
+
+<p><span class="math display">\[
+
+H([0.9,0.1]) = -[0.9\log(0.9)+0.1\log(0.1)] \approx 0.3251
+
+\]</span></p>
+
+<p><span class="math display">\[
+
+H([0.5,0.5]) = \log(2) \approx 0.6931
+
+\]</span></p>
+
+<blockquote>
+
+<p><strong>Key:</strong> Binary entropy is maximized at <span
+
+class="math inline">\(p=0.5\)</span>.</p>
+
+</blockquote>
+
+<h4 id="cross-entropy">Cross-Entropy</h4>
+
+<p><span class="math display">\[
+
+H(q,p) = -\sum_i q_i \log p_i
+
+\]</span></p>
+
+<p><span class="math display">\[
+
+-\sum_{c=1}^C q(y_c)\log p(y_c)
+
+\]</span></p>
+
+<p>For one-hot labels:</p>
+
+<p><span class="math display">\[
+
+H(q,p) = -\log p(y_{\text{true}})
+
+\]</span></p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<thead><tr>
+  <th style="padding:8px 14px; border-bottom:2px solid #6366f1; text-align:center;">p(correct class)</th>
+  <th style="padding:8px 14px; border-bottom:2px solid #6366f1; text-align:center;">0.99</th>
+  <th style="padding:8px 14px; border-bottom:2px solid #6366f1; text-align:center;">0.9</th>
+  <th style="padding:8px 14px; border-bottom:2px solid #6366f1; text-align:center;">0.5</th>
+  <th style="padding:8px 14px; border-bottom:2px solid #6366f1; text-align:center;">0.1</th>
+  <th style="padding:8px 14px; border-bottom:2px solid #6366f1; text-align:center;">0.01</th>
+</tr></thead>
+<tbody><tr>
+  <td style="padding:8px 14px; font-weight:600;">loss = −log(p)</td>
+  <td style="padding:8px 14px; text-align:center; color:#22c55e;">0.01</td>
+  <td style="padding:8px 14px; text-align:center; color:#22c55e;">0.11</td>
+  <td style="padding:8px 14px; text-align:center; color:#f59e0b;">0.69</td>
+  <td style="padding:8px 14px; text-align:center; color:#ef4444;">2.30</td>
+  <td style="padding:8px 14px; text-align:center; color:#ef4444; font-weight:700;">4.61</td>
+</tr></tbody>
+</table>
+<p style="font-style:italic; color:#64748b; margin-top:4px;">The model is heavily penalized for being confidently wrong.</p>
+
+<p>Examples:</p>
+
+<ul>
+<li><span class="math inline">\(p(y_{\text{true}})=0.9  \Rightarrow -\log(0.9)\approx 0.105\)</span></li>
+<li><span  class="math inline">\(p(y_{\text{true}})=0.01 \Rightarrow  -\log(0.01)\approx 4.605\)</span></li>
+</ul>
+
+<ul>
+
+<li>confident correct <span class="math inline">\(\Rightarrow\)</span>
+
+small loss</li>
+
+<li>confident wrong <span class="math inline">\(\Rightarrow\)</span>
+
+very large loss</li>
+
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> Cross-entropy rewards calibrated confidence and
+
+punishes tiny probability on the true class.</p>
+
+</blockquote>
+
+<h4 id="kl-divergence">KL Divergence</h4>
+
+<p><span class="math display">\[
+
+D_{KL}(q\|p)=\sum_i q_i \log \frac{q_i}{p_i}
+
+\]</span></p>
+
+<p><span class="math display">\[
+
+D_{KL}(q\|p)=H(q,p)-H(q)
+
+\]</span></p>
+
+<div style="border-left:4px solid #6366f1; padding:8px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.95rem;">
+<strong>H(q, p) = H(q) + D<sub>KL</sub>(q ∥ p)</strong>
+</div>
+
+
+<p>Properties:</p>
+
+<ul>
+<li><span class="math inline">\(D_{KL}(q\|p) \ge 0\)</span></li>
+<li><span class="math inline">\(D_{KL}(q\|p)=0\)</span> iff <span  class="math inline">\(p=q\)</span></li>
+<li>not symmetric: <span  class="math inline">\(D_{KL}(q\|p)\ne D_{KL}(p\|q)\)</span></li>
+</ul>
+
+<p>Mental model: - <strong>Entropy</strong> = unavoidable uncertainty -
+
+<strong>KL</strong> = avoidable waste from bad predictions</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> KL is not a true distance.</p>
+
+</blockquote>
+
+<hr />
+
+<h3 id="classification-loss-connection">2.3.3 Classification Loss
+
+Connection</h3>
+
+<p>For one-hot multiclass:</p>
+
+<p><span class="math display">\[
+
+L = -\log p(y_{\text{true}})
+
+\]</span></p>
+
+<p>Binary classification:</p>
+
+<p><span class="math display">\[
+
+-[y\log \hat p + (1-y)\log(1-\hat p)]
+
+\]</span></p>
+
+<p>Dataset BCE:</p>
+
+<p><span class="math display">\[
+
+\text{BCE} = -\frac{1}{N} \sum_{i=1}^{N} \left[ y_i \log(\hat{p}_i) +
+
+(1-y_i)\log(1-\hat{p}_i) \right]
+
+\]</span></p>
+
+<p>Case-wise:</p>
+
+<ul>
+<li><span class="math inline">\(y=1 \Rightarrow -\log(\hat  p)\)</span></li>
+<li><span class="math inline">\(y=0 \Rightarrow -\log(1-\hat  p)\)</span></li>
+</ul>
+
+<p>Why not accuracy?</p>
+
+<ul>
+<li>non-smooth for optimization</li>
+<li>ignores probability  quality/calibration</li>
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> BCE/log loss is the probabilistic training
+
+objective; accuracy is mainly an eval metric.</p>
+
+</blockquote>
+
+<hr />
+
+<h3 id="softmax">2.3.4 Softmax</h3>
+
+<p>Softmax converts logits to probabilities:</p>
+
+<p><span class="math display">\[
+
+\text{softmax}(z_i) = \frac{\exp(z_i)}{\sum_j \exp(z_j)}
+
+\]</span></p>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="120" viewBox="0 0 520 120" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .sm-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .sm-val { font: 12px 'Consolas', monospace; fill: #334155; }
+    .sm-note { font: 11px system-ui, sans-serif; fill: #64748b; }
+  </style>
+  <defs><marker id="sm-a" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#6366f1"/></marker></defs>
+  <!-- Logits box -->
+  <rect x="10" y="14" width="160" height="50" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="90" y="34" text-anchor="middle" class="sm-lbl">Raw scores (logits)</text>
+  <text x="90" y="52" text-anchor="middle" class="sm-val">z = [3.0, 1.0, 0.0]</text>
+  <!-- Arrow -->
+  <line x1="170" y1="39" x2="260" y2="39" stroke="#6366f1" stroke-width="2" marker-end="url(#sm-a)"/>
+  <text x="215" y="30" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#6366f1">eᶻ / Σeᶻ</text>
+  <!-- Probabilities box -->
+  <rect x="270" y="14" width="190" height="50" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="365" y="34" text-anchor="middle" class="sm-lbl">Probabilities</text>
+  <text x="365" y="52" text-anchor="middle" class="sm-val">p = [0.84, 0.11, 0.04]</text>
+  <!-- Note -->
+  <text x="260" y="90" text-anchor="middle" class="sm-note">Always sums to 1.00. Larger score → larger probability.</text>
+  <text x="260" y="108" text-anchor="middle" class="sm-note">Temperature scaling can sharpen or soften the distribution.</text>
+</svg>
+
+<ul>
+
+<li>outputs <span class="math inline">\(\ge 0\)</span></li>
+
+<li>outputs sum to 1</li>
+
+<li>used with multiclass cross-entropy</li>
+
+<li>depends on relative logit differences</li>
+
+</ul>
+
+<hr />
+
+<h3 id="worked-example">2.3.5 Worked Example</h3>
+
+<p>Let:</p>
+
+<p><span class="math display">\[
+
+q = [0.8, 0.2], \qquad p = [0.6, 0.4]
+
+\]</span></p>
+
+<p>Entropy:</p>
+
+<p><span class="math display">\[
+
+H(q) = -[0.8\log(0.8) + 0.2\log(0.2)] \approx 0.5004
+
+\]</span></p>
+
+<p>Cross-entropy:</p>
+
+<p><span class="math display">\[
+
+H(q,p) = -[0.8\log(0.6) + 0.2\log(0.4)] \approx 0.5919
+
+\]</span></p>
+
+<p>KL:</p>
+
+<p><span class="math display">\[
+
+D_{KL}(q\|p) = 0.8\log\frac{0.8}{0.6} + 0.2\log\frac{0.2}{0.4} \approx
+
+0.0915
+
+\]</span></p>
+
+<p>Check:</p>
+
+<p><span class="math display">\[
+
+H(q) + D_{KL}(q\|p) \approx 0.5004 + 0.0915 = 0.5919 = H(q,p)
+
+\]</span></p>
+
+<hr />
+
+<h3 id="common-pitfalls-notes">2.3.6 Common Pitfalls / Notes</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 50%" />
+
+<col style="width: 50%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Pitfall</th>
+
+<th>Fix</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Mixing up <span class="math inline">\(q\)</span> and <span
+
+class="math inline">\(p\)</span></td>
+
+<td><span class="math inline">\(q\)</span> = true, <span
+
+class="math inline">\(p\)</span> = predicted</td>
+
+</tr>
+
+<tr>
+
+<td>Treating entropy = cross-entropy</td>
+
+<td>Entropy uses 1 distribution; cross-entropy uses 2</td>
+
+</tr>
+
+<tr>
+
+<td>Forgetting log base</td>
+
+<td>base-2 = bits, natural log = nats</td>
+
+</tr>
+
+<tr>
+
+<td>Assuming KL is a distance</td>
+
+<td>not symmetric</td>
+
+</tr>
+
+<tr>
+
+<td>Using <span class="math inline">\(p_i=0\)</span> where <span
+
+class="math inline">\(q_i&gt;0\)</span></td>
+
+<td>CE/KL blow up</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p>Also:</p>
+
+<ul>
+<li><span class="math inline">\(0\log 0 := 0\)</span> by limit  convention</li>
+<li>exact <span class="math inline">\(0/1\)</span>  probabilities can cause numerical issues; use stable library losses</li>
+</ul>
+
+<hr />
+
+<h3 id="standard-deviation">2.3.7 Standard Deviation</h3>
+
+<p>Standard deviation = spread around mean.</p>
+
+<p><span class="math display">\[
+
+\sigma = \sqrt{\mathbb{E}[(X-\mu)^2]}
+
+\]</span></p>
+
+<p>For a sample:</p>
+
+<p><span class="math display">\[
+
+s = \sqrt{\frac{1}{n-1}\sum_{i=1}^{n}(x_i-\bar{x})^2}
+
+\]</span></p>
+
+<ul>
+
+<li>low std <span class="math inline">\(\Rightarrow\)</span> more
+
+consistent</li>
+
+<li>high std <span class="math inline">\(\Rightarrow\)</span> more
+
+spread</li>
+
+</ul>
+
+<hr />
+
+<h3 id="expectation">2.3.8 Expectation</h3>
+
+<p>Expectation = probability-weighted average.</p>
+
+<p>For discrete:</p>
+
+<p><span class="math display">\[
+
+\mathbb{E}[X] = \sum_x x \, p(x)
+
+\]</span></p>
+
+<p>For continuous:</p>
+
+<p><span class="math display">\[
+
+\mathbb{E}[X] = \int x f(x)\,dx
+
+\]</span></p>
+
+<p>Training minimizes <strong>expected</strong> loss over the data
+
+distribution.</p>
+
+<hr />
+
+<h3 id="key-takeaways-2">2.3.9 Key Takeaways</h3>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<tbody>
+<tr><td style="padding:6px 14px; font-weight:600; color:#3b82f6;">Entropy</td>
+    <td style="padding:6px 14px;">uncertainty in q</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600; color:#8b5cf6;">Cross-Entropy</td>
+    <td style="padding:6px 14px;">fit of p to q</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600; color:#ef4444;">KL Divergence</td>
+    <td style="padding:6px 14px;">mismatch = Cross-Entropy − Entropy</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600; color:#22c55e;">Softmax</td>
+    <td style="padding:6px 14px;">logits → probabilities</td></tr>
+</tbody>
+</table>
+
+<ul>
+
+<li>Entropy = uncertainty in true distribution</li>
+
+<li>Cross-entropy = training loss for predicted probabilities</li>
+
+<li>KL = mismatch penalty</li>
+
+<li>Softmax + CE = standard multiclass setup</li>
+
+<li>minimizing CE pushes <span class="math inline">\(p \to
+
+q\)</span></li>
+
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> In supervised classification, the practical
+
+loss is usually just “negative log-probability of the true class.”</p>
+
+</blockquote>
+
+<h3 id="common-pitfalls-2">2.3.10 Common Pitfalls</h3>
+
+<ul>
+
+<li>“Ebtropy” → typo; should be <strong>Entropy</strong></li>
+
+<li>Cross-entropy = entropy only if <span
+
+class="math inline">\(p=q\)</span></li>
+
+<li>BCE has <strong>both</strong> positive and negative terms</li>
+
+<li><span class="math inline">\(\log_2\)</span> vs <span
+
+class="math inline">\(\log\)</span> changes units, not optimization
+
+behavior</li>
+
+<li>exact <span class="math inline">\(0\)</span> or <span
+
+class="math inline">\(1\)</span> probabilities can break naive logs</li>
+
+</ul>
+
+<h2 id="optimization-basics">2.4 Optimization Basics</h2>
+
+<p>Training a model means finding parameters that minimize a loss
+
+function. Optimization is the engine that does this.</p>
+
+<!-- Loss surface SVG -->
+
+<svg xmlns="http://www.w3.org/2000/svg" width="620" height="280" viewBox="0 0 620 280" style="display:block; margin:16px auto;">
+
+  <defs>
+
+    <style>
+
+      .ls-t { font-family:'Segoe UI',Arial,sans-serif; font-size:14px; font-weight:bold; fill:#0f172a; }
+
+      .ls-s { font-family:'Segoe UI',Arial,sans-serif; font-size:11.5px; fill:#475569; }
+
+      .ls-a { font-family:'Segoe UI',Arial,sans-serif; font-size:12px; fill:#64748b; }
+
+    </style>
+
+    <marker id="lsa" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+
+      <polygon points="0 0, 7 2.5, 0 5" fill="#64748b"/>
+
+    </marker>
+
+    <linearGradient id="lsg" x1="0" y1="0" x2="0" y2="1">
+
+      <stop offset="0%" stop-color="#fecaca"/>
+
+      <stop offset="100%" stop-color="#bbf7d0"/>
+
+    </linearGradient>
+
+  </defs>
+
+  <text x="310" y="22" text-anchor="middle" class="ls-t">Loss Surface: Find the Lowest Valley</text>
+
+  <!-- Axes -->
+
+  <line x1="70" y1="240" x2="580" y2="240" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#lsa)"/>
+
+  <line x1="70" y1="240" x2="70" y2="40" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#lsa)"/>
+
+  <text x="330" y="266" text-anchor="middle" class="ls-a">Parameter θ</text>
+
+  <text x="30" y="140" text-anchor="middle" class="ls-a" transform="rotate(-90,30,140)">Loss L(θ)</text>
+
+  <!-- Loss curve -->
+
+  <path d="M 90 80 Q 160 60, 200 100 Q 240 140, 280 130 Q 320 120, 360 190 Q 400 230, 440 210 Q 470 195, 500 200 Q 530 205, 550 210" fill="none" stroke="#3b82f6" stroke-width="2.5"/>
+
+  <!-- Gradient fill hint -->
+
+  <rect x="72" y="42" width="8" height="196" rx="3" fill="url(#lsg)" opacity="0.5"/>
+
+  <text x="56" y="58" text-anchor="end" class="ls-s" fill="#ef4444">High</text>
+
+  <text x="56" y="234" text-anchor="end" class="ls-s" fill="#16a34a">Low</text>
+
+  <!-- Points on curve -->
+
+  <circle cx="130" cy="70" r="6" fill="#ef4444"/>
+
+  <text x="140" y="58" class="ls-s" fill="#ef4444">Bad params (high loss)</text>
+
+  <circle cx="280" cy="130" r="6" fill="#f59e0b"/>
+
+  <text x="290" y="122" class="ls-s" fill="#b45309">Getting better</text>
+
+  <circle cx="420" cy="222" r="6" fill="#16a34a"/>
+
+  <text x="432" y="216" class="ls-s" fill="#16a34a">Near minimum ✓</text>
+
+  <!-- Descent arrows -->
+
+  <line x1="135" y1="76" x2="190" y2="96" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#lsa)"/>
+
+  <line x1="285" y1="134" x2="345" y2="180" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#lsa)"/>
+
+  <line x1="385" y1="212" x2="414" y2="220" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#lsa)"/>
+
+  <!-- Local minimum label -->
+
+  <text x="500" y="185" class="ls-s" fill="#7c3aed" font-style="italic">Local minimum</text>
+
+  <line x1="490" y1="190" x2="440" y2="208" stroke="#7c3aed" stroke-width="1" stroke-dasharray="3,2"/>
+
+</svg>
+
+<h3 id="gradient-descent">2.4.1 Gradient Descent</h3>
+
+<p>The core update rule for nearly all ML training:</p>
+
+<p><span class="math display">\[
+
+\theta \leftarrow \theta - \eta \cdot \nabla_{\theta} L(\theta)
+
+\]</span></p>
+
+<ul>
+
+<li><strong>theta</strong>: model parameters (weights)</li>
+
+<li><strong>eta</strong>: learning rate — how big a step to take</li>
+
+<li><strong>gradient</strong>: direction of steepest ascent; we subtract
+
+it to go downhill</li>
+
+</ul>
+
+<!-- Learning rate comparison SVG -->
+
+<svg xmlns="http://www.w3.org/2000/svg" width="750" height="220" viewBox="0 0 750 220" style="display:block; margin:16px auto;">
+
+  <defs>
+
+    <style>
+
+      .lr-h { font-family:'Segoe UI',Arial,sans-serif; font-size:13px; font-weight:bold; }
+
+      .lr-s { font-family:'Segoe UI',Arial,sans-serif; font-size:11px; fill:#475569; }
+
+      .lr-t { font-family:'Segoe UI',Arial,sans-serif; font-size:11px; font-style:italic; }
+
+    </style>
+
+  </defs>
+
+  <!-- Panel 1: Too High -->
+
+  <rect x="10" y="10" width="230" height="200" rx="12" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.3"/>
+
+  <text x="125" y="32" text-anchor="middle" class="lr-h" fill="#dc2626">η too HIGH</text>
+
+  <line x1="40" y1="190" x2="220" y2="190" stroke="#94a3b8" stroke-width="1"/>
+
+  <line x1="40" y1="190" x2="40" y2="44" stroke="#94a3b8" stroke-width="1"/>
+
+  <text x="130" y="205" text-anchor="middle" class="lr-s">Epochs</text>
+
+  <text x="28" y="115" text-anchor="middle" class="lr-s" transform="rotate(-90,28,115)">Loss</text>
+
+  <!-- Oscillating path -->
+
+  <polyline points="50,70 80,160 110,60 140,170 170,55 200,165" fill="none" stroke="#dc2626" stroke-width="2.2"/>
+
+  <circle cx="50" cy="70" r="3" fill="#dc2626"/>
+
+  <circle cx="200" cy="165" r="3" fill="#dc2626"/>
+
+  <text x="125" y="54" text-anchor="middle" class="lr-t" fill="#dc2626">Oscillates / diverges</text>
+
+
+
+  <!-- Panel 2: Just Right -->
+
+  <rect x="260" y="10" width="230" height="200" rx="12" fill="#f0fdf4" stroke="#86efac" stroke-width="1.3"/>
+
+  <text x="375" y="32" text-anchor="middle" class="lr-h" fill="#16a34a">η just right</text>
+
+  <line x1="290" y1="190" x2="470" y2="190" stroke="#94a3b8" stroke-width="1"/>
+
+  <line x1="290" y1="190" x2="290" y2="44" stroke="#94a3b8" stroke-width="1"/>
+
+  <text x="380" y="205" text-anchor="middle" class="lr-s">Epochs</text>
+
+  <!-- Smooth convergence -->
+
+  <path d="M 300 70 Q 330 100, 350 140 Q 370 165, 400 175 Q 430 182, 460 184" fill="none" stroke="#16a34a" stroke-width="2.2"/>
+
+  <circle cx="300" cy="70" r="3" fill="#16a34a"/>
+
+  <circle cx="460" cy="184" r="3" fill="#16a34a"/>
+
+  <text x="375" y="54" text-anchor="middle" class="lr-t" fill="#16a34a">Converges smoothly ✓</text>
+
+
+
+  <!-- Panel 3: Too Low -->
+
+  <rect x="510" y="10" width="230" height="200" rx="12" fill="#fefce8" stroke="#fde047" stroke-width="1.3"/>
+
+  <text x="625" y="32" text-anchor="middle" class="lr-h" fill="#b45309">η too LOW</text>
+
+  <line x1="540" y1="190" x2="720" y2="190" stroke="#94a3b8" stroke-width="1"/>
+
+  <line x1="540" y1="190" x2="540" y2="44" stroke="#94a3b8" stroke-width="1"/>
+
+  <text x="630" y="205" text-anchor="middle" class="lr-s">Epochs</text>
+
+  <!-- Very slow descent -->
+
+  <path d="M 550 70 Q 580 75, 600 82 Q 630 92, 660 100 Q 690 106, 710 110" fill="none" stroke="#b45309" stroke-width="2.2"/>
+
+  <circle cx="550" cy="70" r="3" fill="#b45309"/>
+
+  <circle cx="710" cy="110" r="3" fill="#b45309"/>
+
+  <text x="625" y="54" text-anchor="middle" class="lr-t" fill="#b45309">Barely moves — stalls</text>
+
+  <!-- Dotted line showing where it should reach -->
+
+  <line x1="540" y1="180" x2="720" y2="180" stroke="#b45309" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>
+
+  <text x="710" y="175" text-anchor="end" class="lr-s" fill="#b45309" opacity="0.6">target</text>
+
+</svg>
+
+<h3 id="three-variants">2.4.2 Three Variants</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Variant</th>
+
+<th>Update frequency</th>
+
+<th>Pros</th>
+
+<th>Cons</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>Batch GD</strong></td>
+
+<td>Once per full dataset</td>
+
+<td>Stable, smooth</td>
+
+<td>Slow on large data</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Stochastic GD (SGD)</strong></td>
+
+<td>Once per single example</td>
+
+<td>Fast, noisy updates escape local minima</td>
+
+<td>Noisy, needs tuning</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Mini-batch GD</strong></td>
+
+<td>Once per batch (e.g. 32–256)</td>
+
+<td>Best of both — most used in practice</td>
+
+<td>Batch size is a hyperparameter</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Mini-batch gradient descent is the default in
+
+virtually all deep learning frameworks.</p>
+
+</blockquote>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">Variant</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Batch size</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Speed/epoch</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Noise</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Typical use</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">Batch GD</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">All data</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Slow</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Low</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Small datasets</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">Stochastic GD</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">1 sample</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Fast</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">High</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Online learning</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">Mini-batch GD</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">32-512</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Balanced</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Medium</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">★ Production default</td>
+</tr>
+</table>
+
+
+<h3 id="momentum">2.4.3 Momentum</h3>
+
+<p>Plain gradient descent can oscillate in narrow valleys. Momentum adds
+
+a velocity term that accumulates past gradients:</p>
+
+<p><span class="math display">\[
+
+v \leftarrow \beta v + \nabla L, \qquad \theta \leftarrow \theta - \eta
+
+v
+
+\]</span></p>
+
+<p><strong>Where:</strong> <span class="math inline">\(v\)</span> = velocity (accumulated gradient), <span class="math inline">\(\beta\)</span> = momentum coefficient (typically 0.9), <span class="math inline">\(\nabla L\)</span> = gradient of loss, <span class="math inline">\(\eta\)</span> = learning rate.</p>
+
+<p>Think of it as a ball rolling downhill — it builds up speed in
+
+consistent directions and dampens oscillation.</p>
+
+<h3 id="adam-adaptive-moment-estimation">2.4.4 Adam (Adaptive Moment
+
+Estimation)</h3>
+
+<p>Adam is the most widely-used optimizer. It combines momentum with
+
+adaptive learning rates per parameter:</p>
+
+<p><span class="math display">\[
+
+m_t = \beta_1 m_{t-1} + (1 - \beta_1) g_t \qquad \text{(first moment)}
+
+\]</span> <span class="math display">\[
+
+v_t = \beta_2 v_{t-1} + (1 - \beta_2) g_t^2 \qquad \text{(second
+
+moment)}
+
+\]</span> <span class="math display">\[
+
+\theta \leftarrow \theta - \frac{\eta}{\sqrt{\hat{v}_t} + \epsilon}
+
+\hat{m}_t
+
+\]</span></p>
+
+<p><strong>Where:</strong> <span class="math inline">\(g_t\)</span> = gradient at step <span class="math inline">\(t\)</span>, <span class="math inline">\(m_t\)</span> = first moment estimate (momentum), <span class="math inline">\(v_t\)</span> = second moment estimate (adaptive scaling), <span class="math inline">\(\hat{m}_t, \hat{v}_t\)</span> = bias-corrected estimates, <span class="math inline">\(\beta_1, \beta_2\)</span> = exponential decay rates (typically 0.9, 0.999), <span class="math inline">\(\eta\)</span> = learning rate, <span class="math inline">\(\epsilon\)</span> = small constant for numerical stability.</p>
+
+<p>In practice: <strong>start with Adam, defaults usually work</strong>
+
+(lr=0.001, beta1=0.9, beta2=0.999).</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px;">Adam default hyperparameters</caption>
+<thead><tr>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Parameter</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Value</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Role</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 14px; font-family:'Consolas',monospace; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">lr</td>
+    <td style="padding:6px 14px; font-family:'Consolas',monospace; border-bottom:1px solid rgba(0,0,0,0.06);">0.001</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">learning rate (step size)</td></tr>
+<tr><td style="padding:6px 14px; font-family:'Consolas',monospace; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">b1</td>
+    <td style="padding:6px 14px; font-family:'Consolas',monospace; border-bottom:1px solid rgba(0,0,0,0.06);">0.9</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">momentum decay (first moment)</td></tr>
+<tr><td style="padding:6px 14px; font-family:'Consolas',monospace; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">b2</td>
+    <td style="padding:6px 14px; font-family:'Consolas',monospace; border-bottom:1px solid rgba(0,0,0,0.06);">0.999</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">RMS decay (second moment)</td></tr>
+<tr><td style="padding:6px 14px; font-family:'Consolas',monospace; font-weight:600;">eps</td>
+    <td style="padding:6px 14px; font-family:'Consolas',monospace;">1e-8</td>
+    <td style="padding:6px 14px;">numerical stability term</td></tr>
+</tbody>
+</table>
+<p style="font-style:italic; color:#64748b; font-size:0.9rem;">Bias correction: m̂ = m/(1−b1ᵗ), v̂ = v/(1−b2ᵗ) — important in early steps when m, v are near zero.</p>
+
+<h3 id="learning-rate-schedules">2.4.5 Learning Rate Schedules</h3>
+
+<p>A fixed learning rate is rarely optimal. Common schedules:</p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Schedule</th>
+
+<th>Behavior</th>
+
+<th>When to use</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>Step decay</strong></td>
+
+<td>Divide lr by factor every N epochs</td>
+
+<td>Simple, effective</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Cosine annealing</strong></td>
+
+<td>Smooth decay following cosine curve</td>
+
+<td>Long training runs</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Warmup + decay</strong></td>
+
+<td>Start small, ramp up, then decay</td>
+
+<td>Transformers, large models</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<!-- Learning Rate Schedule Comparison SVG -->
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="200" viewBox="0 0 780 200" style="display:block; margin:16px auto;">
+  <defs>
+    <style>
+      .sc-t { font-family:'Segoe UI',Arial,sans-serif; font-size:15px; font-weight:bold; fill:#0f172a; }
+      .sc-h { font-family:'Segoe UI',Arial,sans-serif; font-size:12px; font-weight:bold; }
+      .sc-s { font-family:'Segoe UI',Arial,sans-serif; font-size:10px; fill:#64748b; }
+      .sc-a { font-family:'Segoe UI',Arial,sans-serif; font-size:9px; fill:#94a3b8; }
+    </style>
+  </defs>
+
+  <text x="390" y="18" text-anchor="middle" class="sc-t">Learning Rate Schedules</text>
+
+  <!-- ═══ Panel 1: Constant ═══ -->
+  <rect x="8" y="30" width="182" height="160" rx="10" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+  <text x="99" y="50" text-anchor="middle" class="sc-h" fill="#2563eb">Constant</text>
+  <line x1="32" y1="160" x2="172" y2="160" stroke="#cbd5e1" stroke-width="1"/>
+  <line x1="32" y1="160" x2="32" y2="60" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="102" y="175" text-anchor="middle" class="sc-a">steps</text>
+  <text x="26" y="68" text-anchor="end" class="sc-a">η</text>
+  <line x1="36" y1="80" x2="168" y2="80" stroke="#2563eb" stroke-width="2.5"/>
+  <text x="99" y="185" text-anchor="middle" class="sc-s">Same rate throughout</text>
+
+  <!-- ═══ Panel 2: Step Decay ═══ -->
+  <rect x="202" y="30" width="182" height="160" rx="10" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1"/>
+  <text x="293" y="50" text-anchor="middle" class="sc-h" fill="#059669">Step Decay</text>
+  <line x1="226" y1="160" x2="366" y2="160" stroke="#cbd5e1" stroke-width="1"/>
+  <line x1="226" y1="160" x2="226" y2="60" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="296" y="175" text-anchor="middle" class="sc-a">steps</text>
+  <text x="220" y="68" text-anchor="end" class="sc-a">η</text>
+  <polyline points="230,78 280,78 280,105 330,105 330,132 366,132" fill="none" stroke="#059669" stroke-width="2.5"/>
+  <circle cx="280" cy="105" r="2.5" fill="#059669"/>
+  <circle cx="330" cy="132" r="2.5" fill="#059669"/>
+  <text x="293" y="185" text-anchor="middle" class="sc-s">Drop at fixed epochs</text>
+
+  <!-- ═══ Panel 3: Cosine Annealing ═══ -->
+  <rect x="396" y="30" width="182" height="160" rx="10" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1"/>
+  <text x="487" y="50" text-anchor="middle" class="sc-h" fill="#7c3aed">Cosine Annealing</text>
+  <line x1="420" y1="160" x2="560" y2="160" stroke="#cbd5e1" stroke-width="1"/>
+  <line x1="420" y1="160" x2="420" y2="60" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="490" y="175" text-anchor="middle" class="sc-a">steps</text>
+  <text x="414" y="68" text-anchor="end" class="sc-a">η</text>
+  <path d="M 424 78 C 440 78, 460 80, 475 95 C 495 118, 520 148, 556 152" fill="none" stroke="#7c3aed" stroke-width="2.5"/>
+  <text x="487" y="185" text-anchor="middle" class="sc-s">Smooth decay to near zero</text>
+
+  <!-- ═══ Panel 4: Warmup + Decay ═══ -->
+  <rect x="590" y="30" width="182" height="160" rx="10" fill="#fef2f2" stroke="#fecaca" stroke-width="1"/>
+  <text x="681" y="50" text-anchor="middle" class="sc-h" fill="#dc2626">Warmup + Decay</text>
+  <line x1="614" y1="160" x2="754" y2="160" stroke="#cbd5e1" stroke-width="1"/>
+  <line x1="614" y1="160" x2="614" y2="60" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="684" y="175" text-anchor="middle" class="sc-a">steps</text>
+  <text x="608" y="68" text-anchor="end" class="sc-a">η</text>
+  <line x1="618" y1="152" x2="660" y2="78" stroke="#dc2626" stroke-width="2.5"/>
+  <path d="M 660 78 C 676 78, 700 110, 720 135 C 735 148, 745 152, 750 152" fill="none" stroke="#dc2626" stroke-width="2.5"/>
+  <line x1="618" y1="155" x2="618" y2="162" stroke="#94a3b8" stroke-width="0.8"/>
+  <line x1="660" y1="155" x2="660" y2="162" stroke="#94a3b8" stroke-width="0.8"/>
+  <text x="639" y="170" text-anchor="middle" class="sc-a" font-style="italic">warm</text>
+  <text x="707" y="170" text-anchor="middle" class="sc-a" font-style="italic">decay</text>
+  <text x="681" y="185" text-anchor="middle" class="sc-s">Ramp up, then anneal</text>
+</svg>
+
+<div class="line-block"><strong>Reduce on plateau</strong> | Cut lr when
+
+validation stops improving | Easy automatic tuning |</div>
+
+<h3 id="convexity-and-local-minima">2.4.6 Convexity and Local Minima</h3>
+
+<ul>
+
+<li><strong>Convex</strong> loss (e.g. linear/logistic regression): one
+
+global minimum — gradient descent always finds it.</li>
+
+<li><strong>Non-convex</strong> loss (e.g. neural networks): many local
+
+minima — in practice, most local minima are good enough because they
+
+have similar loss values in high-dimensional space.</li>
+
+</ul>
+
+<!-- Convex vs Non-Convex SVG -->
+
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="220" viewBox="0 0 680 220" style="display:block; margin:16px auto;">
+
+  <defs>
+
+    <style>
+
+      .cv-h { font-family:'Segoe UI',Arial,sans-serif; font-size:13px; font-weight:bold; fill:#0f172a; }
+
+      .cv-s { font-family:'Segoe UI',Arial,sans-serif; font-size:11px; fill:#475569; }
+
+      .cv-i { font-family:'Segoe UI',Arial,sans-serif; font-size:11px; fill:#059669; font-style:italic; }
+
+    </style>
+
+    <marker id="cva" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+
+      <polygon points="0 0, 6 2, 0 4" fill="#94a3b8"/>
+
+    </marker>
+
+  </defs>
+
+  <!-- Panel 1: Convex -->
+
+  <rect x="10" y="8" width="310" height="200" rx="12" fill="#f0fdf4" stroke="#86efac" stroke-width="1.2"/>
+
+  <text x="165" y="30" text-anchor="middle" class="cv-h" fill="#16a34a">Convex (Linear / Logistic Regression)</text>
+
+  <line x1="40" y1="180" x2="290" y2="180" stroke="#94a3b8" stroke-width="1" marker-end="url(#cva)"/>
+
+  <line x1="40" y1="180" x2="40" y2="40" stroke="#94a3b8" stroke-width="1" marker-end="url(#cva)"/>
+
+  <!-- U-shape curve -->
+
+  <path d="M 60 60 Q 100 40, 165 160 Q 230 40, 270 60" fill="none" stroke="#16a34a" stroke-width="2.5"/>
+
+  <!-- Minimum point -->
+
+  <circle cx="165" cy="160" r="5" fill="#16a34a"/>
+
+  <text x="165" y="175" text-anchor="middle" class="cv-i">Single global minimum</text>
+
+  <text x="165" y="195" text-anchor="middle" class="cv-s">GD always finds it ✓</text>
+
+
+
+  <!-- Panel 2: Non-Convex -->
+
+  <rect x="360" y="8" width="310" height="200" rx="12" fill="#fef9c3" stroke="#fde047" stroke-width="1.2"/>
+
+  <text x="515" y="30" text-anchor="middle" class="cv-h" fill="#b45309">Non-Convex (Neural Networks)</text>
+
+  <line x1="390" y1="180" x2="640" y2="180" stroke="#94a3b8" stroke-width="1" marker-end="url(#cva)"/>
+
+  <line x1="390" y1="180" x2="390" y2="40" stroke="#94a3b8" stroke-width="1" marker-end="url(#cva)"/>
+
+  <!-- Bumpy curve -->
+
+  <path d="M 405 70 Q 430 50, 445 90 Q 460 130, 480 100 Q 495 75, 515 110 Q 535 150, 555 120 Q 570 95, 585 155 Q 600 170, 625 130" fill="none" stroke="#b45309" stroke-width="2.5"/>
+
+  <!-- Local and global minimum markers -->
+
+  <circle cx="465" cy="128" r="4" fill="#b45309" opacity="0.6"/>
+
+  <circle cx="585" cy="155" r="5" fill="#b45309"/>
+
+  <circle cx="530" cy="148" r="4" fill="#b45309" opacity="0.6"/>
+
+  <text x="465" y="146" text-anchor="middle" class="cv-s" fill="#b45309">local</text>
+
+  <text x="530" y="166" text-anchor="middle" class="cv-s" fill="#b45309">local</text>
+
+  <text x="585" y="172" text-anchor="middle" class="cv-i" fill="#b45309">global</text>
+
+  <text x="515" y="195" text-anchor="middle" class="cv-s">Usually fine — local minima have similar loss in high-D</text>
+
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> For neural networks, worry about learning rate
+
+and convergence speed more than local minima — they rarely cause real
+
+problems in high dimensions.</p>
+
+</blockquote>
+
+<h3 id="common-pitfalls-3">2.4.7 Common Pitfalls</h3>
+
+<ul>
+
+<li>Using a learning rate that’s too high → loss explodes or
+
+oscillates</li>
+
+<li>Using a learning rate that’s too low → training never finishes</li>
+
+<li>Not using a schedule → stuck in suboptimal solution late in
+
+training</li>
+
+<li>Forgetting to zero gradients between batches (PyTorch:
+
+<code>optimizer.zero_grad()</code>)</li>
+
+</ul>
+
+<hr />
+
+
+<div class="chapter-nav">
+  <a href="chapter-01.html">&larr; Chapter 01: Statistics and Probability</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-03.html">Chapter 03: Python for Data Science &rarr;</a>
+</div>
+<div class="site-footer">
+  <p>&copy; 2026 Hariram Subramanian Gopal &middot; <a href="index.html">Data to Decisions</a></p>
+</div>
+</body>
+</html>

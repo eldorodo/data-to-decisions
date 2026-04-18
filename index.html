@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Hariram Subramanian Gopal" />
+  <title>Home | Data to Decisions</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</head>
+<body>
+
+<div class="book-cover">
+<div class="spine"></div>
+
+<!-- Category strip -->
+<div class="category">Data Science &nbsp;&middot;&nbsp; Machine Learning &nbsp;&middot;&nbsp; AI</div>
+<div class="category-rule"></div>
+
+<!-- Distribution chart art -->
+<div class="cover-chart">
+<svg width="340" height="160" viewBox="0 0 420 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Histogram bars behind curve -->
+  <rect x="100" y="155" width="8" height="30" fill="#B83A1E" opacity="0.06" rx="1"/>
+  <rect x="120" y="135" width="8" height="50" fill="#B83A1E" opacity="0.06" rx="1"/>
+  <rect x="140" y="115" width="8" height="70" fill="#B83A1E" opacity="0.06" rx="1"/>
+  <rect x="160" y="98"  width="8" height="87" fill="#B83A1E" opacity="0.06" rx="1"/>
+  <rect x="180" y="78"  width="8" height="107" fill="#B83A1E" opacity="0.06" rx="1"/>
+  <rect x="200" y="64"  width="8" height="121" fill="#B83A1E" opacity="0.08" rx="1"/>
+  <rect x="220" y="70"  width="8" height="115" fill="#B83A1E" opacity="0.06" rx="1"/>
+  <rect x="240" y="86"  width="8" height="99" fill="#B83A1E" opacity="0.06" rx="1"/>
+  <rect x="260" y="104" width="8" height="81" fill="#B83A1E" opacity="0.06" rx="1"/>
+  <rect x="280" y="122" width="8" height="63" fill="#B83A1E" opacity="0.06" rx="1"/>
+  <rect x="300" y="140" width="8" height="45" fill="#B83A1E" opacity="0.06" rx="1"/>
+  <rect x="320" y="158" width="8" height="27" fill="#B83A1E" opacity="0.06" rx="1"/>
+  <!-- Gradient fill under curve -->
+  <path d="M36 185 L36 170 Q80 160 120 120 Q160 80 210 60 Q260 40 300 70 Q340 100 370 140 Q390 160 410 165 L410 185 Z"
+        fill="url(#curveFill)" opacity="0.06"/>
+  <defs><linearGradient id="curveFill" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#B83A1E"/><stop offset="100%" stop-color="#B83A1E" stop-opacity="0"/>
+  </linearGradient></defs>
+  <!-- Bell curve -->
+  <path d="M36 170 Q80 160 120 120 Q160 80 210 60 Q260 40 300 70 Q340 100 370 140 Q390 160 410 165"
+        fill="none" stroke="#B83A1E" stroke-width="1.5" opacity="0.35"/>
+  <!-- Echo curve -->
+  <path d="M36 180 Q80 172 120 138 Q160 104 210 86 Q260 68 300 94 Q340 120 370 155 Q390 170 410 176"
+        fill="none" stroke="#B83A1E" stroke-width="0.5" opacity="0.18"/>
+  <!-- Axes -->
+  <line x1="36" y1="40" x2="36" y2="185" stroke="#C4451E" stroke-width="0.5" opacity="0.2"/>
+  <line x1="36" y1="185" x2="400" y2="185" stroke="#C4451E" stroke-width="0.5" opacity="0.2"/>
+  <!-- Data node dots on curve -->
+  <circle cx="120" cy="120" r="3.5" fill="#B83A1E" opacity="0.5"/>
+  <circle cx="210" cy="60" r="4.5" fill="#B83A1E" opacity="0.7"/>
+  <circle cx="300" cy="70" r="3.5" fill="#B83A1E" opacity="0.5"/>
+  <!-- Dashed vertical from peak to axis -->
+  <line x1="210" y1="60" x2="210" y2="185" stroke="#B83A1E" stroke-width="0.5" stroke-dasharray="3,4" opacity="0.2"/>
+  <!-- Labels -->
+  <text x="214" y="178" font-family="Georgia,serif" font-style="italic" font-size="11" fill="#B83A1E" opacity="0.45">&mu;</text>
+  <text x="355" y="58" font-family="Georgia,serif" font-style="italic" font-size="22" fill="#B83A1E" opacity="0.12">&sigma;&sup2;</text>
+</svg>
+</div>
+
+<!-- Title block -->
+<div class="cover-title">Data</div>
+<div class="cover-title-accent">to Decisions</div>
+<div class="cover-subtitle">The Practitioner&rsquo;s Guide to</div>
+<div class="cover-subtitle-big">Machine Learning &amp; AI</div>
+
+<div class="cover-ornament">&#x2022; &nbsp; &#x2022; &nbsp; &#x2022;</div>
+
+<div class="cover-topics">Statistics &nbsp;&middot;&nbsp; ML &nbsp;&middot;&nbsp; Deep Learning &nbsp;&middot;&nbsp; LLMs &nbsp;&middot;&nbsp; MLOps<br/>System Design &nbsp;&middot;&nbsp; Interview Prep</div>
+
+<div class="cover-author">Hariram Subramanian Gopal</div>
+</div>
+
+<div class="front-page">
+
+<h2 style="font-size:28px; color:#0f172a; font-family:Georgia,serif; border:none; margin-bottom:4px;">Data to Decisions</h2>
+<p style="font-size:16px; color:#64748b; font-family:'Segoe UI',Arial,sans-serif; margin-bottom:32px;">The Practitioner&rsquo;s Guide to Machine Learning &amp; AI</p>
+
+<div class="copyright-block">
+<p><strong>Data to Decisions: The Practitioner&rsquo;s Guide to Machine Learning &amp; AI</strong></p>
+<p>All rights reserved. This book or any portion thereof may not be reproduced or used in any manner whatsoever without the express written permission of the author, except for the use of brief quotations in a book review.</p>
+<p>First Edition &mdash; 2026</p>
+<p>&copy; 2026 Hariram Subramanian Gopal</p>
+<p style="margin-top:24px;"><strong>About the author:</strong></p>
+<p class="about-author">Hariram Subramanian Gopal is a data scientist and ML practitioner who came to the field entirely self-taught &mdash; across years of books, courses, projects, and the generosity of people who knew more than him. He wrote this book to build the single resource he wished had existed: one place that covers the full landscape of data science and machine learning with both depth and practical clarity. He believes Data Science is not just a technical toolkit but a way of thinking &mdash; one that reshapes how you approach problems, evaluate claims, and make decisions under uncertainty.</p>
+<p style="margin-top:16px;">For feedback, errata, or to connect:<br/>
+<strong>Email:</strong> haridada07@gmail.com<br/>
+<strong>LinkedIn:</strong> https://www.linkedin.com/in/hariramg/</p>
+</div>
+</div>
+
+<div class="front-page community-block" style="text-align:center; padding:60px 48px;">
+
+<h2 style="color:#0f172a; font-size:20px; margin-bottom:8px;">Stay Updated</h2>
+<p style="color:#64748b; margin-bottom:24px;">Get notified when new chapters, updates, or companion resources are released.</p>
+<p><a href="https://aspicioasperiores663108.substack.com/" style="font-size:14px; font-weight:500;">Subscribe to the newsletter &rarr;</a></p>
+
+</div>
+
+<div class="front-page">
+
+<h2 id="foreword" style="color:#0f172a; font-size:24px;">Foreword</h2>
+
+<p>Mathematics was my favourite subject growing up. I loved the proofs, the theorems, the elegance of it all &mdash; and above everything, the satisfaction of LHS = RHS. Everything falls in place. Who didn&rsquo;t love that?</p>
+
+<p>Then I stepped into the world of probability and statistics. And everything got beautifully complicated.</p>
+
+<p>Here was mathematics itself admitting: we do not always know. We can only say how likely. Statistics gave that uncertainty a structure &mdash; a way to measure it, summarise it, reason about it. There is no clean equals sign at the end &mdash; just a distribution of possibilities, each with its own weight. It felt less certain, yes. But it felt so much more honest. Because this is actually how the world works.</p>
+
+<p>Businesses do not fail or succeed along a straight line. Diseases do not spread according to a formula. People do not behave like variables. Life is uncertain &mdash; and probability and statistics were the first things I studied that finally said: yes, we know. And here is how we deal with it anyway.</p>
+
+<p>When I went deeper into Data Science, something shifted permanently in how I see things. I started looking at decisions as distributions, not answers. I started asking not &ldquo;what will happen?&rdquo; but &ldquo;what is the shape of what might happen, and what does that mean for how we act?&rdquo; That lens &mdash; once you put it on &mdash; you cannot take it off.</p>
+
+<p>And this is what excites me most about this field. Data Science is not just a technical toolkit. It is a way of thinking. It reshapes how you approach a business problem, how you evaluate a claim, how you build a product, how you manage risk. It takes the rigour of mathematics and points it squarely at the messy, uncertain, human world &mdash; and says: let us understand this, as best we can.</p>
+
+<p>I came to all of this entirely on my own &mdash; self-taught across years of books, online courses, projects, failures, and the generosity of people who knew more than me. There was never one place I could go. This book is my attempt to build that place.</p>
+
+<p>I have written it for the person who wants to understand Data Science and Machine Learning deeply &mdash; to genuinely see the world differently (and also to ace that interview). The theory is here. The intuition behind the theory is here. Real-world examples are here. And a thorough interview preparation section too, because this field rewards both knowing and being able to explain what you know.</p>
+
+<p>Uncertainty is not going away. The world will remain as unpredictable as it has always been. But your ability to reason through it, model it, and make better decisions inside of it &mdash; that is absolutely something you can build.</p>
+
+<p>I hope this book helps you build it.</p>
+
+<p style="margin-top:32px;"><em>With warmth, and a healthy respect for the unknown,</em><br/>
+<strong>Hariram Subramanian Gopal</strong></p>
+
+</div>
+
+
+
+
+<h2 id="preface-why-this-book-exists">Preface: Why This Book Exists</h2>
+
+<p>I wanted a book that explains the <em>why</em> behind every technique. Not just how to call <code>model.fit()</code>, but why the algorithm works, what assumptions it rests on, where the intuition comes from, and when it breaks. A book that helps you reason about data — and therefore make better decisions.</p>
+
+<p>The resources I found were either too academic (800 pages of proofs with no connection to practice) or too shallow (blog posts that walk through sklearn syntax but never explain what the model is actually doing under the hood). Neither helped me build the kind of thinking I needed.</p>
+
+<p>So I wrote the book I wish I’d had — a comprehensive, intuition-first guide that covers the full landscape of data science and machine learning, from foundational statistics to production systems, with real-world examples woven into every algorithm and concept.</p>
+
+<p><strong>Who this is for:</strong></p>
+
+<ul>
+
+<li>Aspiring data scientists who understand Python and want to go from tutorials to deep, production-level understanding</li>
+
+<li>Working DS/ML engineers who need a structured reference they can open mid-project</li>
+
+<li>Anyone preparing for data science interviews at tech companies</li>
+
+</ul>
+
+<p><strong>What makes this different:</strong></p>
+
+<ul>
+
+<li>Every concept follows the same rhythm: <em>Intuition → Formulas → Examples → Pitfalls → Interview Q&amp;A</em></li>
+
+<li>Diagrams explain the <em>mechanics</em>, not just the outputs — you see what is happening inside each algorithm</li>
+
+<li>Real-world examples in every chapter show how concepts connect to actual ML systems and business problems</li>
+
+<li>Eighteen chapters covering statistics, classical ML, deep learning, NLP, LLMs, reinforcement learning, time series, operational research, data systems, MLOps, responsible AI, and interview preparation — all in one place</li>
+
+</ul>
+
+<p><strong>What this is not:</strong></p>
+
+<ul>
+
+<li>A machine learning research text (no proofs, no theorems — rigour without the formality)</li>
+
+<li>A Python tutorial (we assume basic Python comfort)</li>
+
+<li>A surface-level overview (every topic is covered with enough depth to use it in practice)</li>
+
+</ul>
+
+<p><strong>A note on the structure:</strong></p>
+
+<table style="width:100%; border-collapse:collapse; margin:12px 0 20px; font-size:10.5pt;">
+<thead>
+<tr style="border-bottom:2px solid #e2e8f0; text-align:left;">
+<th style="padding:8px 12px; color:#64748b; font-weight:600;">Chapters</th>
+<th style="padding:8px 12px; color:#64748b; font-weight:600;">Theme</th>
+<th style="padding:8px 12px; color:#64748b; font-weight:600;">What you’ll learn</th>
+</tr>
+</thead>
+<tbody>
+<tr style="border-bottom:1px solid #f1f5f9;">
+<td style="padding:8px 12px; font-weight:600;">1 – 3</td>
+<td style="padding:8px 12px;">Foundations</td>
+<td style="padding:8px 12px;">Statistics &amp; probability, math for ML, Python for data science</td>
+</tr>
+<tr style="border-bottom:1px solid #f1f5f9;">
+<td style="padding:8px 12px; font-weight:600;">4 – 7</td>
+<td style="padding:8px 12px;">Core ML</td>
+<td style="padding:8px 12px;">Feature engineering, supervised learning, explainability, model evaluation</td>
+</tr>
+<tr style="border-bottom:1px solid #f1f5f9;">
+<td style="padding:8px 12px; font-weight:600;">8 – 14</td>
+<td style="padding:8px 12px;">Domains &amp; Methods</td>
+<td style="padding:8px 12px;">Unsupervised, recommenders, deep learning, NLP/LLMs, RL, time series, operational research</td>
+</tr>
+<tr style="border-bottom:1px solid #f1f5f9;">
+<td style="padding:8px 12px; font-weight:600;">15 – 17</td>
+<td style="padding:8px 12px;">Systems &amp; Practice</td>
+<td style="padding:8px 12px;">Data engineering &amp; SQL, MLOps &amp; system design, responsible AI &amp; ethics</td>
+</tr>
+<tr>
+<td style="padding:8px 12px; font-weight:600;">18</td>
+<td style="padding:8px 12px;">Interview Prep</td>
+<td style="padding:8px 12px;">Case studies, mock interviews, LeetCode index</td>
+</tr>
+</tbody>
+</table>
+
+<p>You don’t need to read linearly — pick the reading path that matches your goal:</p>
+
+
+
+<h3 id="reading-paths">Reading Paths</h3>
+
+
+
+<!-- Reading Paths SVG -->
+
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="390" viewBox="0 0 800 390" style="display:block; margin:16px auto;">
+
+  <defs>
+
+    <style>
+
+      .rp-h { font-family:’Segoe UI’,Arial,sans-serif; font-size:15px; font-weight:bold; fill:#0f172a; }
+
+      .rp-g { font-family:’Segoe UI’,Arial,sans-serif; font-size:13px; font-weight:bold; }
+
+      .rp-c { font-family:’Segoe UI’,Arial,sans-serif; font-size:11.5px; fill:#475569; }
+
+      .rp-n { font-family:’Segoe UI’,Arial,sans-serif; font-size:11px; font-weight:bold; fill:#fff; }
+
+    </style>
+
+  </defs>
+
+  <text x="400" y="24" text-anchor="middle" class="rp-h">Choose Your Reading Path</text>
+
+
+
+  <!-- Path 1: New to ML -->
+
+  <rect x="15" y="44" width="770" height="60" rx="10" fill="#dbeafe" stroke="#60a5fa" stroke-width="1.5"/>
+
+  <text x="30" y="68" class="rp-g" fill="#2563eb">New to ML — Start from the foundations</text>
+
+  <g>
+
+    <rect x="30" y="78" width="32" height="18" rx="4" fill="#2563eb"/><text x="46" y="92" text-anchor="middle" class="rp-n">Ch1</text>
+
+    <text x="68" y="92" class="rp-c">→</text>
+
+    <rect x="78" y="78" width="32" height="18" rx="4" fill="#2563eb"/><text x="94" y="92" text-anchor="middle" class="rp-n">Ch2</text>
+
+    <text x="116" y="92" class="rp-c">→</text>
+
+    <rect x="126" y="78" width="32" height="18" rx="4" fill="#2563eb"/><text x="142" y="92" text-anchor="middle" class="rp-n">Ch3</text>
+
+    <text x="164" y="92" class="rp-c">→</text>
+
+    <rect x="174" y="78" width="32" height="18" rx="4" fill="#2563eb"/><text x="190" y="92" text-anchor="middle" class="rp-n">Ch4</text>
+
+    <text x="212" y="92" class="rp-c">→</text>
+
+    <rect x="222" y="78" width="32" height="18" rx="4" fill="#2563eb"/><text x="238" y="92" text-anchor="middle" class="rp-n">Ch5</text>
+
+    <text x="260" y="92" class="rp-c">→</text>
+
+    <rect x="270" y="78" width="32" height="18" rx="4" fill="#2563eb"/><text x="286" y="92" text-anchor="middle" class="rp-n">Ch7</text>
+
+    <text x="308" y="92" class="rp-c">→  then branch into any domain chapter</text>
+
+  </g>
+
+
+
+  <!-- Path 2: Interview Prep -->
+
+  <rect x="15" y="114" width="770" height="60" rx="10" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.5"/>
+
+  <text x="30" y="138" class="rp-g" fill="#059669">Interview Prep — Focused track</text>
+
+  <g>
+
+    <rect x="30" y="148" width="32" height="18" rx="4" fill="#059669"/><text x="46" y="162" text-anchor="middle" class="rp-n">Ch1</text>
+
+    <text x="68" y="162" class="rp-c">→</text>
+
+    <rect x="78" y="148" width="32" height="18" rx="4" fill="#059669"/><text x="94" y="162" text-anchor="middle" class="rp-n">Ch5</text>
+
+    <text x="116" y="162" class="rp-c">→</text>
+
+    <rect x="126" y="148" width="32" height="18" rx="4" fill="#059669"/><text x="142" y="162" text-anchor="middle" class="rp-n">Ch6</text>
+
+    <text x="164" y="162" class="rp-c">→</text>
+
+    <rect x="174" y="148" width="32" height="18" rx="4" fill="#059669"/><text x="190" y="162" text-anchor="middle" class="rp-n">Ch10</text>
+
+    <text x="212" y="162" class="rp-c">→</text>
+
+    <rect x="222" y="148" width="32" height="18" rx="4" fill="#059669"/><text x="238" y="162" text-anchor="middle" class="rp-n">Ch11</text>
+
+    <text x="258" y="162" class="rp-c">→</text>
+
+    <rect x="268" y="148" width="32" height="18" rx="4" fill="#059669"/><text x="284" y="162" text-anchor="middle" class="rp-n">Ch18</text>
+
+    <text x="308" y="162" class="rp-c">  Use the Interview Q&amp;A section at each chapter end</text>
+
+  </g>
+
+
+
+  <!-- Path 3: Production ML -->
+
+  <rect x="15" y="184" width="770" height="60" rx="10" fill="#f3e8ff" stroke="#c084fc" stroke-width="1.5"/>
+
+  <text x="30" y="208" class="rp-g" fill="#7c3aed">Production ML Systems</text>
+
+  <g>
+
+    <rect x="30" y="218" width="32" height="18" rx="4" fill="#7c3aed"/><text x="46" y="232" text-anchor="middle" class="rp-n">Ch4</text>
+
+    <text x="68" y="232" class="rp-c">→</text>
+
+    <rect x="78" y="218" width="32" height="18" rx="4" fill="#7c3aed"/><text x="94" y="232" text-anchor="middle" class="rp-n">Ch5</text>
+
+    <text x="116" y="232" class="rp-c">→</text>
+
+    <rect x="126" y="218" width="32" height="18" rx="4" fill="#7c3aed"/><text x="142" y="232" text-anchor="middle" class="rp-n">Ch7</text>
+
+    <text x="164" y="232" class="rp-c">→</text>
+
+    <rect x="174" y="218" width="32" height="18" rx="4" fill="#7c3aed"/><text x="190" y="232" text-anchor="middle" class="rp-n">Ch15</text>
+
+    <text x="212" y="232" class="rp-c">→</text>
+
+    <rect x="222" y="218" width="32" height="18" rx="4" fill="#7c3aed"/><text x="238" y="232" text-anchor="middle" class="rp-n">Ch16</text>
+
+    <text x="258" y="232" class="rp-c">→</text>
+
+    <rect x="268" y="218" width="32" height="18" rx="4" fill="#7c3aed"/><text x="284" y="232" text-anchor="middle" class="rp-n">Ch17</text>
+
+    <text x="308" y="232" class="rp-c">  Data systems, MLOps, monitoring, responsible deployment</text>
+
+  </g>
+
+
+
+  <!-- Path 4: LLMs & AI -->
+
+  <rect x="15" y="254" width="770" height="60" rx="10" fill="#fef9c3" stroke="#facc15" stroke-width="1.5"/>
+
+  <text x="30" y="278" class="rp-g" fill="#b45309">LLMs &amp; Modern AI</text>
+
+  <g>
+
+    <rect x="30" y="288" width="32" height="18" rx="4" fill="#b45309"/><text x="46" y="302" text-anchor="middle" class="rp-n">Ch2</text>
+
+    <text x="68" y="302" class="rp-c">→</text>
+
+    <rect x="78" y="288" width="32" height="18" rx="4" fill="#b45309"/><text x="94" y="302" text-anchor="middle" class="rp-n">Ch10</text>
+
+    <text x="116" y="302" class="rp-c">→</text>
+
+    <rect x="126" y="288" width="32" height="18" rx="4" fill="#b45309"/><text x="142" y="302" text-anchor="middle" class="rp-n">Ch11</text>
+
+    <text x="164" y="302" class="rp-c">→</text>
+
+    <rect x="174" y="288" width="32" height="18" rx="4" fill="#b45309"/><text x="190" y="302" text-anchor="middle" class="rp-n">Ch12</text>
+
+    <text x="212" y="302" class="rp-c">→</text>
+
+    <rect x="222" y="288" width="32" height="18" rx="4" fill="#b45309"/><text x="238" y="302" text-anchor="middle" class="rp-n">Ch16</text>
+
+    <text x="258" y="302" class="rp-c">  Attention, transformers, RAG, agents, RL, deployment</text>
+
+  </g>
+
+
+
+  <!-- Path 5: Quick Reference -->
+
+  <rect x="15" y="324" width="770" height="46" rx="10" fill="#ecfeff" stroke="#22d3ee" stroke-width="1.5"/>
+
+  <text x="30" y="348" class="rp-g" fill="#0891b2">Reference / Dip In</text>
+
+  <text x="190" y="348" class="rp-c">Jump to any chapter — each stands alone. Start with the scope table (X.0) for a quick orientation.</text>
+
+</svg>
+
+
+
+<p><em>— Hariram Subramanian Gopal, April 2026</em></p>
+
+<hr />
+
+<h2 style="font-family:'Segoe UI',Arial,sans-serif; color:#1d4ed8; margin-top:48px; text-align:center;">Chapters</h2>
+<div class="toc-grid">
+<a class="toc-card" href="chapter-01.html"><div class="ch-num">Chapter 01</div><div class="ch-title">Statistics and Probability</div></a>
+<a class="toc-card" href="chapter-02.html"><div class="ch-num">Chapter 02</div><div class="ch-title">Math Foundations</div></a>
+<a class="toc-card" href="chapter-03.html"><div class="ch-num">Chapter 03</div><div class="ch-title">Python for Data Science</div></a>
+<a class="toc-card" href="chapter-04.html"><div class="ch-num">Chapter 04</div><div class="ch-title">Feature Engineering and EDA</div></a>
+<a class="toc-card" href="chapter-05.html"><div class="ch-num">Chapter 05</div><div class="ch-title">Supervised Learning</div></a>
+<a class="toc-card" href="chapter-06.html"><div class="ch-num">Chapter 06</div><div class="ch-title">Explainable AI (XAI) and Model Interpretability</div></a>
+<a class="toc-card" href="chapter-07.html"><div class="ch-num">Chapter 07</div><div class="ch-title">Model Evaluation and Validation</div></a>
+<a class="toc-card" href="chapter-08.html"><div class="ch-num">Chapter 08</div><div class="ch-title">Unsupervised Learning</div></a>
+<a class="toc-card" href="chapter-09.html"><div class="ch-num">Chapter 09</div><div class="ch-title">Recommendation Systems</div></a>
+<a class="toc-card" href="chapter-10.html"><div class="ch-num">Chapter 10</div><div class="ch-title">Deep Learning</div></a>
+<a class="toc-card" href="chapter-11.html"><div class="ch-num">Chapter 11</div><div class="ch-title">NLP and LLMs</div></a>
+<a class="toc-card" href="chapter-12.html"><div class="ch-num">Chapter 12</div><div class="ch-title">Reinforcement Learning</div></a>
+<a class="toc-card" href="chapter-13.html"><div class="ch-num">Chapter 13</div><div class="ch-title">Time Series and Forecasting</div></a>
+<a class="toc-card" href="chapter-14.html"><div class="ch-num">Chapter 14</div><div class="ch-title">Operational Research</div></a>
+<a class="toc-card" href="chapter-15.html"><div class="ch-num">Chapter 15</div><div class="ch-title">Data and SQL</div></a>
+<a class="toc-card" href="chapter-16.html"><div class="ch-num">Chapter 16</div><div class="ch-title">ML Systems and MLOps</div></a>
+<a class="toc-card" href="chapter-17.html"><div class="ch-num">Chapter 17</div><div class="ch-title">Responsible AI and Ethics</div></a>
+<a class="toc-card" href="chapter-18.html"><div class="ch-num">Chapter 18</div><div class="ch-title">Interview Prep and Case Studies</div></a>
+<a class="toc-card" href="conclusion.html"><div class="ch-num">Closing</div><div class="ch-title">Conclusion: Your ML Journey From Here</div></a>
+<a class="toc-card" href="bonus.html"><div class="ch-num">Bonus</div><div class="ch-title">Bonus: LeetCode Problem Index</div></a>
+</div>
+
+
+<div class="site-footer">
+  <p>&copy; 2026 Hariram Subramanian Gopal &middot; <a href="index.html">Data to Decisions</a></p>
+</div>
+</body>
+</html>

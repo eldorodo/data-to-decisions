@@ -1,0 +1,2925 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Hariram Subramanian Gopal" />
+  <title>Chapter 17: Responsible AI and Ethics | Data to Decisions</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</head>
+<body>
+<div class="chapter-nav">
+  <a href="chapter-16.html">&larr; Chapter 16: ML Systems and MLOps</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-18.html">Chapter 18: Interview Prep and Case Studies &rarr;</a>
+</div>
+<h1 id="chapter-17-responsible-ai-and-ethics">Chapter 17: Responsible AI
+
+and Ethics</h1>
+
+<h2 id="chapter-scope-11">17.0 Chapter Scope</h2>
+
+<p>Accurate models can still be unfair, opaque, insecure, or ungoverned.
+
+This chapter covers the responsible AI disciplines that sit alongside
+
+model performance: bias identification, fairness measurement,
+
+explainability tools, adversarial security, documentation standards, and
+
+organizational governance.</p>
+
+<p><strong>What you will learn:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Section</th>
+
+<th>Topic</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>17.1</td>
+
+<td>Bias: sources, types, and mitigation</td>
+
+</tr>
+
+<tr>
+
+<td>17.2</td>
+
+<td>Fairness metrics and auditing</td>
+
+</tr>
+
+<tr>
+
+<td>17.3</td>
+
+<td>Explainability: SHAP, LIME, counterfactuals</td>
+
+</tr>
+
+<tr>
+
+<td>17.4</td>
+
+<td>Adversarial ML and model security</td>
+
+</tr>
+
+<tr>
+
+<td>17.5</td>
+
+<td>Model cards and documentation</td>
+
+</tr>
+
+<tr>
+
+<td>17.6</td>
+
+<td>Governance and compliance</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Prerequisites:</strong> Basic model evaluation (Chapter 7),
+
+production deployment concepts (Chapter 16).</p>
+
+<hr />
+
+<p>Accuracy alone is insufficient: models can be <strong>unfair, opaque,
+
+fragile, or insecure</strong>.<br />
+
+Responsible AI = embed <strong>fairness, transparency, security,
+
+documentation, governance</strong> from the start.</p>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/17_responsible_ai_and_ethics/responsible_ai_lifecycle.svg" alt="Responsible AI is a cross-cutting constraint at every lifecycle stage: data, modeling, evaluation, deployment, and monitoring">
+
+<figcaption>
+
+Responsible AI is a cross-cutting constraint at every lifecycle stage: data, modeling, evaluation, deployment, and monitoring
+
+</figcaption>
+
+</figure>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Area</th>
+
+<th>Core question</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Bias</td>
+
+<td>Who is harmed or underrepresented?</td>
+
+</tr>
+
+<tr>
+
+<td>Fairness</td>
+
+<td>Are outcomes equitable across groups?</td>
+
+</tr>
+
+<tr>
+
+<td>Explainability</td>
+
+<td>Can humans understand decisions?</td>
+
+</tr>
+
+<tr>
+
+<td>Security</td>
+
+<td>Can the system be attacked or manipulated?</td>
+
+</tr>
+
+<tr>
+
+<td>Documentation</td>
+
+<td>Are assumptions, limits, and risks recorded?</td>
+
+</tr>
+
+<tr>
+
+<td>Governance</td>
+
+<td>Who reviews, approves, and monitors use?</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<svg viewBox="0 0 380 180" style="display:block; margin:20px auto; max-width:360px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Core risks: Bias, Fairness, Explainability, Security, Documentation">
+<defs><marker id="cr-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+<rect x="10" y="5" width="140" height="32" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+<text x="80" y="26" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="700" fill="#991b1b">Core risks</text>
+<line x1="80" y1="37" x2="80" y2="50" stroke="#6366f1" stroke-width="1.5"/>
+<line x1="80" y1="50" x2="80" y2="170" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="0"/>
+<line x1="80" y1="50" x2="130" y2="50" stroke="#6366f1" stroke-width="1.5" marker-end="url(#cr-a)"/>
+<rect x="140" y="38" width="120" height="24" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
+<text x="200" y="54" text-anchor="middle" font-family="system-ui" font-size="11" fill="#92400e">Bias</text>
+<line x1="80" y1="80" x2="130" y2="80" stroke="#6366f1" stroke-width="1.5" marker-end="url(#cr-a)"/>
+<rect x="140" y="68" width="220" height="24" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+<text x="250" y="84" text-anchor="middle" font-family="system-ui" font-size="11" fill="#1e40af">Fairness metrics + auditing</text>
+<line x1="80" y1="110" x2="130" y2="110" stroke="#6366f1" stroke-width="1.5" marker-end="url(#cr-a)"/>
+<rect x="140" y="98" width="150" height="24" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1"/>
+<text x="215" y="114" text-anchor="middle" font-family="system-ui" font-size="11" fill="#5b21b6">Explainability</text>
+<line x1="80" y1="140" x2="130" y2="140" stroke="#6366f1" stroke-width="1.5" marker-end="url(#cr-a)"/>
+<rect x="140" y="128" width="120" height="24" rx="6" fill="#fce7f3" stroke="#ec4899" stroke-width="1"/>
+<text x="200" y="144" text-anchor="middle" font-family="system-ui" font-size="11" fill="#9d174d">Security</text>
+<line x1="80" y1="170" x2="130" y2="170" stroke="#6366f1" stroke-width="1.5" marker-end="url(#cr-a)"/>
+<rect x="140" y="158" width="230" height="24" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1"/>
+<text x="255" y="174" text-anchor="middle" font-family="system-ui" font-size="11" fill="#166534">Documentation + governance</text>
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> Responsible AI is engineering practice across
+
+the full ML lifecycle, not an add-on.</p>
+
+</blockquote>
+
+<h2 id="bias-in-ml-systems">17.1 Bias in ML Systems</h2>
+
+<p>Bias in ML = <strong>systematic error</strong> that
+
+disproportionately harms some people/groups. It can enter at <strong>any
+
+stage</strong>.</p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Type</th>
+
+<th>Meaning</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Statistical bias</td>
+
+<td>Estimator’s expected value differs from truth</td>
+
+</tr>
+
+<tr>
+
+<td>Societal / fairness bias</td>
+
+<td>Unequal or unfair outcomes across groups</td>
+
+</tr>
+
+<tr>
+
+<td>Inductive bias</td>
+
+<td>Assumptions enabling generalization</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Here, “bias” = <strong>unfair
+
+disparities</strong>, not estimator bias.</p>
+
+</blockquote>
+
+<h3 id="sources-of-bias">17.1.1 Sources of bias</h3>
+
+<p>Usually <strong>many small misalignments</strong>, not one bug.</p>
+
+<!-- Sources of Bias Pipeline SVG -->
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="58" viewBox="0 0 760 58" style="display:block; margin:16px auto;">
+  <defs>
+    <style>
+      .sb-t { font-family:'Segoe UI',Arial,sans-serif; font-size:10.5px; font-weight:bold; fill:#fff; }
+    </style>
+    <marker id="sba" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+      <polygon points="0 0, 7 2.5, 0 5" fill="#94a3b8"/>
+    </marker>
+  </defs>
+  <rect x="0" y="10" width="82" height="34" rx="8" fill="#991b1b"/>
+  <text x="41" y="32" text-anchor="middle" class="sb-t">Historical</text>
+  <line x1="86" y1="27" x2="98" y2="27" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#sba)"/>
+  <rect x="102" y="10" width="78" height="34" rx="8" fill="#b45309"/>
+  <text x="141" y="32" text-anchor="middle" class="sb-t">Sampling</text>
+  <line x1="184" y1="27" x2="196" y2="27" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#sba)"/>
+  <rect x="200" y="10" width="94" height="34" rx="8" fill="#a16207"/>
+  <text x="247" y="32" text-anchor="middle" class="sb-t">Measurement</text>
+  <line x1="298" y1="27" x2="310" y2="27" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#sba)"/>
+  <rect x="314" y="10" width="64" height="34" rx="8" fill="#4d7c0f"/>
+  <text x="346" y="32" text-anchor="middle" class="sb-t">Labels</text>
+  <line x1="382" y1="27" x2="394" y2="27" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#sba)"/>
+  <rect x="398" y="10" width="108" height="34" rx="8" fill="#0e7490"/>
+  <text x="452" y="32" text-anchor="middle" class="sb-t">Representation</text>
+  <line x1="510" y1="27" x2="522" y2="27" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#sba)"/>
+  <rect x="526" y="10" width="92" height="34" rx="8" fill="#6d28d9"/>
+  <text x="572" y="32" text-anchor="middle" class="sb-t">Aggregation</text>
+  <line x1="622" y1="27" x2="634" y2="27" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#sba)"/>
+  <rect x="638" y="10" width="118" height="34" rx="8" fill="#475569"/>
+  <text x="697" y="32" text-anchor="middle" class="sb-t">Deploy &amp; Feedback</text>
+</svg>
+
+<table style=”border-collapse:collapse; margin:16px 0; width:100%;”>
+<thead><tr>
+  <th style=”padding:8px 12px; text-align:left; border-bottom:2px solid #6366f1; color:#4f46e5; width:18%;”>Source</th>
+  <th style=”padding:8px 12px; text-align:left; border-bottom:2px solid #6366f1; color:#4f46e5; width:35%;”>What goes wrong</th>
+  <th style=”padding:8px 12px; text-align:left; border-bottom:2px solid #6366f1; color:#4f46e5; width:47%;”>Real-world example</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td style=”padding:8px 12px; border-bottom:1px solid #e2e8f0; font-weight:600;”>Historical bias</td>
+  <td style=”padding:8px 12px; border-bottom:1px solid #e2e8f0;”>Even perfectly recorded data encodes past inequity — the model learns to <strong>repeat history</strong>.</td>
+  <td style=”padding:8px 12px; border-bottom:1px solid #e2e8f0;”>Hiring models trained on decade-old decisions penalise women; lending models reflect redlining-era patterns.</td>
+</tr>
+<tr>
+  <td style=”padding:8px 12px; border-bottom:1px solid #e2e8f0; font-weight:600;”>Sampling bias</td>
+  <td style=”padding:8px 12px; border-bottom:1px solid #e2e8f0;”>Training distribution ≠ deployment population. Under-represented groups get <strong>worse accuracy and worse fairness</strong>.</td>
+  <td style=”padding:8px 12px; border-bottom:1px solid #e2e8f0;”>Facial-recognition failures on darker skin tones; voice assistants trained mostly on one accent.</td>
+</tr>
+<tr>
+  <td style=”padding:8px 12px; border-bottom:1px solid #e2e8f0; font-weight:600;”>Measurement bias</td>
+  <td style=”padding:8px 12px; border-bottom:1px solid #e2e8f0;”>Proxy ≠ true construct. Dangerous when proxies behave <strong>differently across groups</strong>.</td>
+  <td style=”padding:8px 12px; border-bottom:1px solid #e2e8f0;”>Using healthcare spending as a proxy for illness severity under-estimates need in populations that spend less due to access barriers.</td>
+</tr>
+<tr>
+  <td style=”padding:8px 12px; border-bottom:1px solid #e2e8f0; font-weight:600;”>Label bias</td>
+  <td style=”padding:8px 12px; border-bottom:1px solid #e2e8f0;”>”Ground truth” is subjective or biased. Supervised learning can <strong>scale human bias</strong> to millions.</td>
+  <td style=”padding:8px 12px; border-bottom:1px solid #e2e8f0;”>Content-moderation labels inconsistent across annotator demographics; medical diagnoses varying by patient race.</td>
+</tr>
+<tr>
+  <td style=”padding:8px 12px; border-bottom:1px solid #e2e8f0; font-weight:600;”>Feature / representation</td>
+  <td style=”padding:8px 12px; border-bottom:1px solid #e2e8f0;”>Correlated features leak protected info — protected traits can be inferred from seemingly neutral variables.</td>
+  <td style=”padding:8px 12px; border-bottom:1px solid #e2e8f0;”>ZIP code, purchase history, or school name can proxy for race or income.</td>
+</tr>
+<tr>
+  <td style=”padding:8px 12px; border-bottom:1px solid #e2e8f0; font-weight:600;”>Aggregation bias</td>
+  <td style=”padding:8px 12px; border-bottom:1px solid #e2e8f0;”>One global model misses subgroup patterns. Requires <strong>stratified evaluation</strong> or subgroup-aware models.</td>
+  <td style=”padding:8px 12px; border-bottom:1px solid #e2e8f0;”>Health-risk model performs well overall but fails on specific ethnic subgroups with different risk profiles.</td>
+</tr>
+<tr>
+  <td style=”padding:8px 12px; font-weight:600;”>Deploy / feedback-loop</td>
+  <td style=”padding:8px 12px;”>Model changes environment after launch. Offline metrics miss harms caused by <strong>behavioural change</strong> post-deploy.</td>
+  <td style=”padding:8px 12px;”>Predictive policing sends more officers → more arrests → “validates” biased model; recommendation loops narrow content diversity.</td>
+</tr>
+</tbody>
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Removing protected attributes alone rarely
+
+removes bias; proxies often remain.</p>
+
+</blockquote>
+
+<h3 id="protected-attributes-and-sensitive-contexts">17.1.2 Protected
+
+attributes and sensitive contexts</h3>
+
+<p>Common sensitive attributes:</p>
+
+<ul>
+<li>Race / ethnicity</li>
+<li>Gender</li>
+<li>Age -  Disability status</li>
+<li>Religion</li>
+<li>Nationality</li>
+<li>Sexual orientation</li>
+</ul>
+
+<p>Also often relevant: socioeconomic status, geography, language,
+
+combinations.</p>
+
+<p><strong>Intersectionality:</strong> fairness can look fine overall
+
+but fail on slices like <strong>older women</strong> or <strong>women
+
+from one ethnic group</strong>.</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> Always check intersections, not just single
+
+attributes.</p>
+
+</blockquote>
+
+<h3 id="why-bias-matters">17.1.3 Why bias matters</h3>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Harm type</th>
+
+<th>Example</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Individual harm</td>
+
+<td>Denied service/opportunity</td>
+
+</tr>
+
+<tr>
+
+<td>Group harm</td>
+
+<td>Systematic disadvantage</td>
+
+</tr>
+
+<tr>
+
+<td>Allocative harm</td>
+
+<td>Unequal access to benefits/burdens</td>
+
+</tr>
+
+<tr>
+
+<td>Representational harm</td>
+
+<td>Stereotyping, erasure</td>
+
+</tr>
+
+<tr>
+
+<td>Legal risk</td>
+
+<td>Anti-discrimination violations</td>
+
+</tr>
+
+<tr>
+
+<td>Business risk</td>
+
+<td>Trust/adoption loss</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p>Highest-stakes domains: <strong>hiring, lending, healthcare,
+
+education, insurance, criminal justice</strong>.</p>
+
+<h3 id="diagnosing-bias-in-practice">17.1.4 Diagnosing bias in practice</h3>
+
+<p>Start with the <strong>decision</strong>, not the metric.</p>
+
+<!-- Diagnosing Bias Pipeline SVG -->
+<svg xmlns="http://www.w3.org/2000/svg" width="740" height="58" viewBox="0 0 740 58" style="display:block; margin:16px auto;">
+  <defs>
+    <style>.db-t{font-family:'Segoe UI',Arial,sans-serif;font-size:10.5px;font-weight:bold;fill:#fff;}</style>
+    <marker id="dba" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#94a3b8"/></marker>
+  </defs>
+  <rect x="0" y="10" width="78" height="34" rx="8" fill="#1e40af"/>
+  <text x="39" y="32" text-anchor="middle" class="db-t">Decision</text>
+  <line x1="82" y1="27" x2="94" y2="27" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#dba)"/>
+  <rect x="98" y="10" width="98" height="34" rx="8" fill="#7c3aed"/>
+  <text x="147" y="32" text-anchor="middle" class="db-t">Affected people</text>
+  <line x1="200" y1="27" x2="212" y2="27" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#dba)"/>
+  <rect x="216" y="10" width="100" height="34" rx="8" fill="#0e7490"/>
+  <text x="266" y="32" text-anchor="middle" class="db-t">Groups / slices</text>
+  <line x1="320" y1="27" x2="332" y2="27" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#dba)"/>
+  <rect x="336" y="10" width="114" height="34" rx="8" fill="#b45309"/>
+  <text x="393" y="32" text-anchor="middle" class="db-t">Data / proxy check</text>
+  <line x1="454" y1="27" x2="466" y2="27" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#dba)"/>
+  <rect x="470" y="10" width="108" height="34" rx="8" fill="#dc2626"/>
+  <text x="524" y="32" text-anchor="middle" class="db-t">Subgroup eval</text>
+  <line x1="582" y1="27" x2="594" y2="27" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#dba)"/>
+  <rect x="598" y="10" width="110" height="34" rx="8" fill="#475569"/>
+  <text x="653" y="32" text-anchor="middle" class="db-t">Feedback risk</text>
+</svg>
+
+<p>Practical review: 1. What decision is influenced? 2. Who is affected
+
+directly/indirectly? 3. Which protected/vulnerable groups matter? 4.
+
+Does train data match deployment? 5. Are labels/features valid proxies?
+
+6. Are subgroup performance gaps present? 7. Could deployment create
+
+feedback loops or gaming?</p>
+
+<p>Useful diagnostics:</p>
+
+<ul>
+<li>Group-wise error analysis</li>
+<li>Confusion matrices  by subgroup</li>
+<li>Calibration plots by subgroup</li>
+<li>Slice-based analysis -  Missing-data analysis</li>
+<li>Data lineage review</li>
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> Never trust a single aggregate fairness
+
+number.</p>
+
+</blockquote>
+
+<h3 id="mitigation-strategies">17.1.5 Mitigation strategies</h3>
+
+<p>Intervene at the stage where bias enters.</p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Stage</th>
+
+<th>Typical methods</th>
+
+<th>Best when…</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Pre-processing</td>
+
+<td>Reweighting, resampling, better labels/data, fair
+
+representations</td>
+
+<td>Problem starts in data</td>
+
+</tr>
+
+<tr>
+
+<td>In-processing</td>
+
+<td>Fairness constraints, adversarial debiasing, group-aware
+
+regularization, cost-sensitive training</td>
+
+<td>Fairness must enter objective</td>
+
+</tr>
+
+<tr>
+
+<td>Post-processing</td>
+
+<td>Group thresholds, calibration adjustment, human review</td>
+
+<td>Existing model must be adapted</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p>Trade-offs: <strong>accuracy, complexity, interpretability, legal
+
+acceptability</strong>.</p>
+
+<h3 id="bias-is-context-dependent">17.1.6 Bias is context-dependent</h3>
+
+<p>Bias is not judged in the abstract; it depends on:</p>
+
+<ul>
+<li>decision -  stakes</li>
+<li>recourse</li>
+<li>error asymmetry</li>
+<li>legal constraints</li>
+</ul>
+
+<p>Same disparity can be acceptable in one context and harmful in
+
+another.</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> Fairness is application-specific, not a
+
+universal scalar score.</p>
+
+</blockquote>
+
+<p><strong>Further Reading</strong> - NIST AI Risk Management Framework:
+
+https://www.nist.gov/itl/ai-risk-management-framework - “Datasheets for
+
+Datasets”: https://arxiv.org/abs/1803.09010</p>
+
+<hr />
+
+<h2 id="fairness-metrics-auditing">17.2 Fairness Metrics &amp;
+
+Auditing</h2>
+
+<p>Bias = likely <strong>source</strong> of problems. Fairness metrics =
+
+<strong>observed disparity</strong>. Auditing = measurement +
+
+assumptions + trade-offs + actions.</p>
+
+<h3 id="group-fairness-vs.-individual-fairness">17.2.1 Group fairness
+
+vs. individual fairness</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Idea</th>
+
+<th>Core question</th>
+
+<th>Strength</th>
+
+<th>Main challenge</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Group fairness</td>
+
+<td>Are outcomes similar across groups?</td>
+
+<td>Measurable, monitorable</td>
+
+<td>Misses individual harms</td>
+
+</tr>
+
+<tr>
+
+<td>Individual fairness</td>
+
+<td>Are similar people treated similarly?</td>
+
+<td>Intuitive</td>
+
+<td>Needs valid similarity metric</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Group fairness is operational; individual
+
+fairness is conceptually appealing but hard to define.</p>
+
+</blockquote>
+
+<h3 id="common-fairness-metrics">17.2.2 Common fairness metrics</h3>
+
+<p>Assume binary classification with prediction <span class="math inline">\(\hat{Y}\)</span>,
+true label <span class="math inline">\(Y\)</span>, and protected attribute <span class="math inline">\(A\)</span>.
+There is no single best fairness score — each metric encodes a different value judgement and they can conflict with each other.</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:100%;">
+<thead><tr>
+  <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #6366f1; color:#4f46e5; width:16%;">Metric</th>
+  <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #6366f1; color:#4f46e5; width:30%;">Plain-English Question</th>
+  <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #6366f1; color:#4f46e5; width:28%;">When to use it</th>
+  <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #6366f1; color:#4f46e5; width:26%;">Watch out for</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0; font-weight:600;">Demographic parity</td>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0;">Are Groups A and B approved/selected at the <strong>same rate</strong>, regardless of who actually qualifies?</td>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0;">Equal <strong>access</strong> matters most — e.g. job-ad visibility, loan application invitations.</td>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0;">Ignores true labels entirely. Can force approving unqualified applicants or rejecting qualified ones.</td>
+</tr>
+<tr>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0; font-weight:600;">Equalized odds</td>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0;">Among people who <em>actually qualify</em> (and those who don't), does each group get the <strong>same TPR and FPR</strong>?</td>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0;">Both false positives and false negatives have real costs — e.g. criminal-justice risk scores, medical triage.</td>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0;">Hard to satisfy simultaneously with calibration. Inherits any label bias in the ground truth.</td>
+</tr>
+<tr>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0; font-weight:600;">Equal opportunity</td>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0;">Among truly qualified people, does each group get <strong>approved at the same rate</strong> (same TPR)?</td>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0;">Missing a true positive is the main harm — e.g. hiring, scholarships, cancer screening.</td>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0;">Ignores FPR disparity. One group may receive far more false positives than another.</td>
+</tr>
+<tr>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0; font-weight:600;">Predictive parity</td>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0;">When the model says "yes", is that prediction <strong>equally reliable</strong> for both groups?</td>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0;">Positive predictions trigger costly action — e.g. fraud investigation, child-welfare visits.</td>
+  <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0;">Mathematically conflicts with equalized odds when base rates differ between groups.</td>
+</tr>
+<tr>
+  <td style="padding:8px 12px; font-weight:600;">Calibration</td>
+  <td style="padding:8px 12px;">If the model says "70 % risk", does that mean <strong>70 % of those people actually default/reoffend/etc.</strong>, regardless of group?</td>
+  <td style="padding:8px 12px;">Risk scoring in finance, healthcare, insurance, criminal justice.</td>
+  <td style="padding:8px 12px;">Often conflicts with error-rate parity — you may not be able to have both calibration and equalized odds.</td>
+</tr>
+</tbody>
+</table>
+
+<blockquote>
+<p><strong>Key:</strong> When base rates differ across groups (e.g. one group has a higher true-positive rate in the population), calibration, equalized odds, and predictive parity <strong>cannot all hold simultaneously</strong>. Choosing a metric is a policy decision, not just a technical one.</p>
+</blockquote>
+
+<h3 id="trade-offs-and-impossibility-results">17.2.3 Trade-offs and
+
+impossibility results</h3>
+
+<p>When base rates differ, many fairness goals cannot all hold
+
+simultaneously.</p>
+
+<svg viewBox="0 0 400 220" style="display:block; margin:20px auto; max-width:380px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Fairness impossibility: differing base rates create conflicts between Calibration, Equalized odds, and Predictive parity">
+<defs>
+<marker id="br-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker>
+<marker id="br-b" markerWidth="8" markerHeight="6" refX="0" refY="3" orient="auto"><polygon points="8 0,0 3,8 6" fill="#ef4444"/></marker>
+</defs>
+<rect x="110" y="5" width="180" height="28" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="200" y="24" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#92400e">differing base rates</text>
+<line x1="200" y1="33" x2="200" y2="55" stroke="#6366f1" stroke-width="1.5" marker-end="url(#br-a)"/>
+<rect x="20" y="60" width="140" height="32" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="90" y="81" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#1e40af">Calibration</text>
+<rect x="240" y="60" width="140" height="32" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="310" y="81" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#5b21b6">Equalized odds</text>
+<line x1="163" y1="76" x2="237" y2="76" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="5,3"/>
+<text x="200" y="70" text-anchor="middle" font-family="system-ui" font-size="9" fill="#ef4444" font-weight="600">conflicts</text>
+<rect x="120" y="160" width="160" height="40" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="200" y="178" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#166534">Predictive</text>
+<text x="200" y="192" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#166534">parity</text>
+<line x1="90" y1="92" x2="170" y2="156" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="5,3"/>
+<line x1="310" y1="92" x2="230" y2="156" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="5,3"/>
+<text x="110" y="132" font-family="system-ui" font-size="9" fill="#ef4444" font-weight="600">conflicts</text>
+<text x="270" y="132" font-family="system-ui" font-size="9" fill="#ef4444" font-weight="600">conflicts</text>
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> Fairness metric choice is both a technical and
+
+policy decision.</p>
+
+</blockquote>
+
+<h3 id="auditing-workflow">17.2.4 Auditing workflow</h3>
+
+<!-- Auditing Workflow Pipeline SVG -->
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="48" viewBox="0 0 760 48" style="display:block; margin:16px auto;">
+  <defs>
+    <style>.aw-t{font-family:'Segoe UI',Arial,sans-serif;font-size:10.5px;font-weight:bold;fill:#fff;}</style>
+    <marker id="awa" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#94a3b8"/></marker>
+  </defs>
+  <rect x="0" y="7" width="100" height="34" rx="8" fill="#1e40af"/>
+  <text x="50" y="29" text-anchor="middle" class="aw-t">Define context</text>
+  <line x1="104" y1="24" x2="112" y2="24" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#awa)"/>
+  <rect x="116" y="7" width="100" height="34" rx="8" fill="#7c3aed"/>
+  <text x="166" y="29" text-anchor="middle" class="aw-t">Identify groups</text>
+  <line x1="220" y1="24" x2="228" y2="24" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#awa)"/>
+  <rect x="232" y="7" width="86" height="34" rx="8" fill="#0e7490"/>
+  <text x="275" y="29" text-anchor="middle" class="aw-t">Review data</text>
+  <line x1="322" y1="24" x2="330" y2="24" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#awa)"/>
+  <rect x="334" y="7" width="98" height="34" rx="8" fill="#059669"/>
+  <text x="383" y="29" text-anchor="middle" class="aw-t">Subgroup eval</text>
+  <line x1="436" y1="24" x2="444" y2="24" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#awa)"/>
+  <rect x="448" y="7" width="98" height="34" rx="8" fill="#b45309"/>
+  <text x="497" y="29" text-anchor="middle" class="aw-t">Fairness stats</text>
+  <line x1="550" y1="24" x2="558" y2="24" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#awa)"/>
+  <rect x="562" y="7" width="86" height="34" rx="8" fill="#dc2626"/>
+  <text x="605" y="29" text-anchor="middle" class="aw-t">Stress-test</text>
+  <line x1="652" y1="24" x2="660" y2="24" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#awa)"/>
+  <rect x="664" y="7" width="86" height="34" rx="8" fill="#475569"/>
+  <text x="707" y="29" text-anchor="middle" class="aw-t">Document</text>
+</svg>
+
+<table>
+
+<colgroup>
+
+<col style="width: 50%" />
+
+<col style="width: 50%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Step</th>
+
+<th>What to check</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Define context</td>
+
+<td>Decision type; automated vs assistive; FP/FN harms</td>
+
+</tr>
+
+<tr>
+
+<td>Identify groups</td>
+
+<td>Protected groups, vulnerable groups, intersections</td>
+
+</tr>
+
+<tr>
+
+<td>Review data</td>
+
+<td>Coverage, label validity, missingness, shift risk</td>
+
+</tr>
+
+<tr>
+
+<td>Subgroup performance</td>
+
+<td>Accuracy, precision/recall, ROC-AUC/PR-AUC, confusion matrix,
+
+calibration</td>
+
+</tr>
+
+<tr>
+
+<td>Fairness metrics</td>
+
+<td>DP diff/ratio, TPR/FPR gaps, calibration gaps, error
+
+disparities</td>
+
+</tr>
+
+<tr>
+
+<td>Stress-test</td>
+
+<td>Sensitivity/counterfactuals, threshold robustness, edge-case
+
+review</td>
+
+</tr>
+
+<tr>
+
+<td>Document</td>
+
+<td>Why metrics fit, accepted trade-offs, mitigations, residual
+
+risk</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> A fairness audit is broader than computing one
+
+metric.</p>
+
+</blockquote>
+
+<h3 id=”practical-challenges-in-fairness-auditing”>17.2.5 Practical challenges
+
+in fairness auditing</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Challenge</th>
+
+<th>Why it matters</th>
+
+<th>Typical response</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Missing protected-attribute data</td>
+
+<td>Cannot compare unknown groups</td>
+
+<td>Privacy-aware collection, governance</td>
+
+</tr>
+
+<tr>
+
+<td>Small subgroup sizes</td>
+
+<td>Unstable estimates</td>
+
+<td>CIs, Bayesian methods, more data</td>
+
+</tr>
+
+<tr>
+
+<td>Label bias</td>
+
+<td>Fairness on biased labels can still be unfair</td>
+
+<td>Audit label generation</td>
+
+</tr>
+
+<tr>
+
+<td>Distribution shift</td>
+
+<td>Offline fairness may fail in production</td>
+
+<td>Ongoing monitoring</td>
+
+</tr>
+
+<tr>
+
+<td>Multiple stakeholders</td>
+
+<td>Fairness depends on perspective</td>
+
+<td>Multidisciplinary review</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="a-compact-example">17.2.6 A compact example</h3>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Group</th>
+
+<th style="text-align: right;">TPR</th>
+
+<th style="text-align: right;">FPR</th>
+
+<th style="text-align: right;">Positive Rate</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>A</td>
+
+<td style="text-align: right;">0.82</td>
+
+<td style="text-align: right;">0.10</td>
+
+<td style="text-align: right;">0.35</td>
+
+</tr>
+
+<tr>
+
+<td>B</td>
+
+<td style="text-align: right;">0.68</td>
+
+<td style="text-align: right;">0.09</td>
+
+<td style="text-align: right;">0.25</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p>Interpretation:</p>
+
+<ul>
+<li>FPR: similar</li>
+<li>TPR: much lower for B</li>
+<li>Positive  rate: lower for B</li>
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> This suggests an <strong>equal
+
+opportunity</strong> issue: qualified applicants in Group B are less
+
+likely to be approved.</p>
+
+</blockquote>
+
+<h3 id="tooling-and-process">17.2.7 Tooling and process</h3>
+
+<p>Fairness belongs in the ML lifecycle, not one-time compliance.</p>
+
+<svg viewBox="0 0 500 60" style="display:block; margin:20px auto; max-width:480px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Fairness tooling: eval pipeline, monitoring dashboards, escalation/expert review">
+<defs><marker id="ep-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+<rect x="5" y="10" width="145" height="40" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="77" y="28" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#1e40af">Eval pipeline</text>
+<text x="77" y="42" text-anchor="middle" font-family="system-ui" font-size="10" fill="#3b82f6">fairness chk</text>
+<line x1="150" y1="30" x2="170" y2="30" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ep-a)"/>
+<rect x="180" y="10" width="145" height="40" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="252" y="28" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#5b21b6">Monitoring</text>
+<text x="252" y="42" text-anchor="middle" font-family="system-ui" font-size="10" fill="#8b5cf6">dashboards</text>
+<line x1="325" y1="30" x2="345" y2="30" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ep-a)"/>
+<rect x="355" y="10" width="140" height="40" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="425" y="28" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#166534">Escalation /</text>
+<text x="425" y="42" text-anchor="middle" font-family="system-ui" font-size="10" fill="#22c55e">expert review</text>
+</svg>
+
+<p>Typical practices:</p>
+
+<ul>
+<li>fairness checks in eval pipelines</li>
+<li>periodic  post-deployment audits</li>
+<li>subgroup dashboards</li>
+<li>escalation paths for  serious findings</li>
+<li>review with legal/policy/domain experts</li>
+</ul>
+
+<p>Fairness audits often lead to explainability work: once disparity is
+
+found, you need to identify drivers.</p>
+
+<p><strong>Further Reading</strong></p>
+
+<ul>
+<li>Fairlearn documentation:  https://fairlearn.org/</li>
+<li>Google Responsible AI Practices:  https://ai.google/responsibility/responsible-ai-practices/</li>
+</ul>
+
+<hr />
+
+<h2 id="explainability-shap-lime-revisited">17.3 Explainability (SHAP
+
+&amp; LIME Revisited)</h2>
+
+<p>After finding a disparity, ask <strong>why</strong> the model behaves
+
+that way. Explainability helps with debugging, validation,
+
+communication, and case review — but is <strong>not</strong> fairness,
+
+causality, or justification.</p>
+
+<h3 id="why-explainability-matters-1">17.3.1 Why explainability matters</h3>
+
+<ul>
+
+<li><strong>Debugging</strong>: spurious features, leakage</li>
+
+<li><strong>Validation</strong>: plausible vs. implausible signals</li>
+
+<li><strong>Communication</strong>: users, reviewers, regulators</li>
+
+<li><strong>Error analysis</strong>: subgroup failures</li>
+
+<li><strong>Recourse</strong>: what influenced the outcome</li>
+
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> Explanations are audience-specific and answer
+
+different questions than fairness.</p>
+
+</blockquote>
+
+<h3 id="global-vs.-local-explanations">17.3.2 Global vs. local
+
+explanations</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Type</th>
+
+<th>Goal</th>
+
+<th>Examples</th>
+
+<th>Best for</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Global</td>
+
+<td>Understand model overall</td>
+
+<td>Feature importance, PDPs, global surrogates</td>
+
+<td>Audits, model review</td>
+
+</tr>
+
+<tr>
+
+<td>Local</td>
+
+<td>Explain one prediction</td>
+
+<td>SHAP (instance), LIME, counterfactuals</td>
+
+<td>Complaints, edge cases, human review</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/17_responsible_ai_and_ethics/global_vs_local_explainability.svg" alt="Global explainability (what features matter overall) vs local explainability (why this specific prediction)">
+
+<figcaption>
+
+Global explainability (what features matter overall) vs local explainability (why this specific prediction)
+
+</figcaption>
+
+</figure>
+
+<h3 id="shap-revisited">17.3.3 SHAP revisited</h3>
+
+<p>SHAP (<strong>SHapley Additive exPlanations</strong>) assigns each
+
+feature a contribution to a prediction:</p>
+
+<p><span class="math display">\[
+
+f(x) = \phi_0 + \sum_{i=1}^{d} \phi_i
+
+\]</span></p>
+
+<ul>
+
+<li><span class="math inline">\(\phi_0\)</span>: baseline
+
+prediction</li>
+
+<li><span class="math inline">\(\phi_i\)</span>: contribution of feature
+
+<span class="math inline">\(i\)</span></li>
+
+<li><span class="math inline">\(d\)</span>: number of features</li>
+
+</ul>
+
+<h4 id="strengths-of-shap">Strengths of SHAP</h4>
+
+<ul>
+
+<li>Additive, consistent framework</li>
+
+<li>Local + global summaries</li>
+
+<li>Strong visuals: summary, dependence, force plots</li>
+
+<li>Efficient tree variants</li>
+
+</ul>
+
+<h4 id="limitations-of-shap">Limitations of SHAP</h4>
+
+<ul>
+
+<li>Correlated features blur attribution</li>
+
+<li>Background dataset matters</li>
+
+<li>Can appear overly precise</li>
+
+<li>Expensive for some models</li>
+
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> SHAP explains associations in the model, not
+
+causal effects.</p>
+
+</blockquote>
+
+<h3 id="lime-revisited">17.3.4 LIME revisited</h3>
+
+<p>LIME (<strong>Local Interpretable Model-agnostic
+
+Explanations</strong>) fits a simple surrogate near one instance.</p>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/17_responsible_ai_and_ethics/lime_local_surrogate.svg" alt="LIME (Local Interpretable Model-agnostic Explanations): fit a simple linear surrogate around one prediction to explain it">
+
+<figcaption>
+
+LIME (Local Interpretable Model-agnostic Explanations): fit a simple linear surrogate around one prediction to explain it
+
+</figcaption>
+
+</figure>
+
+<p>Basic steps: 1. Perturb around the target instance 2. Query black-box
+
+model 3. Weight nearby samples more 4. Fit interpretable surrogate 5.
+
+Use surrogate as local explanation</p>
+
+<h4 id="strengths-of-lime">Strengths of LIME</h4>
+
+<ul>
+
+<li>Model-agnostic</li>
+
+<li>Intuitive local approximation</li>
+
+<li>Works for text, tabular, images</li>
+
+</ul>
+
+<h4 id="limitations-of-lime">Limitations of LIME</h4>
+
+<ul>
+
+<li>Sensitive to perturbation design</li>
+
+<li>Unstable across runs</li>
+
+<li>Surrogate may poorly match true model</li>
+
+<li>Hard in correlated feature spaces</li>
+
+</ul>
+
+<h3 id="counterfactual-explanations">17.3.5 Counterfactual explanations</h3>
+
+<p>A counterfactual says what must change for a different
+
+prediction.</p>
+
+<p>Example: - “Loan would be approved if income were $8,000 higher and
+
+credit utilization 12% lower.”</p>
+
+<p>Desired properties:</p>
+
+<ul>
+<li><strong>Actionable</strong> -  <strong>Feasible</strong></li>
+<li><strong>Sparse</strong> -  <strong>Plausible</strong></li>
+</ul>
+
+<p>Often more useful to end users than raw attributions, but must avoid
+
+unrealistic/uncontrollable changes.</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> Counterfactuals are best for recourse when
+
+changes are realistic and controllable.</p>
+
+</blockquote>
+
+<h3 id="explainability-in-fairness-analysis">17.3.6 Explainability in fairness
+
+analysis</h3>
+
+<p>Explainability can reveal:</p>
+
+<ul>
+<li>proxies for protected attributes -  subgroup-specific explanation differences</li>
+<li>unstable/inappropriate  feature reliance</li>
+<li>patterns in contested decisions</li>
+</ul>
+
+<p>But it does <strong>not</strong> prove fairness.</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> A clean SHAP plot is not evidence that a model
+
+is fair.</p>
+
+</blockquote>
+
+<h3 id="correlation-is-not-causation">17.3.7 Correlation is not causation</h3>
+
+<p>Feature attribution is usually <strong>associational</strong>, not
+
+causal.</p>
+
+<p>A high SHAP value does <strong>not</strong> imply:</p>
+
+<ul>
+<li>changing the  feature would change the outcome similarly</li>
+<li>the feature is ethically  appropriate</li>
+<li>the model is justified in using it</li>
+</ul>
+
+<p>High-stakes systems often also need:</p>
+
+<ul>
+<li>causal reasoning</li>
+<li>policy  analysis</li>
+<li>domain expertise</li>
+</ul>
+
+<h3 id="explanation-pitfalls">17.3.8 Explanation pitfalls</h3>
+
+<ul>
+
+<li><strong>Overtrust</strong>: explanation treated as proof</li>
+
+<li><strong>Instability</strong>: small input changes alter local
+
+explanations</li>
+
+<li><strong>Proxy blindness</strong>: benign feature stands in for
+
+sensitive one</li>
+
+<li><strong>Audience mismatch</strong>: different stakeholders need
+
+different formats</li>
+
+<li><strong>Faithfulness vs. simplicity</strong>: simpler ≠ truer</li>
+
+</ul>
+
+<h3 id="practical-guidance-1">17.3.9 Practical guidance</h3>
+
+<p>Use a <strong>toolkit</strong>, not one method:</p>
+
+<ul>
+
+<li>global feature analysis</li>
+
+<li>local explanations for errors/complaints</li>
+
+<li>subgroup explanation comparisons</li>
+
+<li>counterfactuals for recourse</li>
+
+<li>document limits clearly</li>
+
+</ul>
+
+<svg viewBox="0 0 500 72" style="display:block; margin:20px auto; max-width:480px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Explainability toolkit: Global SHAP/PDP, Local SHAP/LIME, Counterfactual recourse, all leading to domain expert review">
+<defs><marker id="xt-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+<rect x="5" y="5" width="130" height="40" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="70" y="22" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#1e40af">Global</text>
+<text x="70" y="36" text-anchor="middle" font-family="system-ui" font-size="10" fill="#3b82f6">SHAP / PDP</text>
+<line x1="135" y1="25" x2="152" y2="25" stroke="#6366f1" stroke-width="1.2" marker-end="url(#xt-a)"/>
+<rect x="162" y="5" width="130" height="40" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="227" y="22" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#5b21b6">Local cases</text>
+<text x="227" y="36" text-anchor="middle" font-family="system-ui" font-size="10" fill="#8b5cf6">SHAP / LIME</text>
+<line x1="292" y1="25" x2="309" y2="25" stroke="#6366f1" stroke-width="1.2" marker-end="url(#xt-a)"/>
+<rect x="319" y="5" width="140" height="40" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="389" y="22" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#166534">Counterfactual</text>
+<text x="389" y="36" text-anchor="middle" font-family="system-ui" font-size="10" fill="#22c55e">recourse</text>
+<line x1="70" y1="45" x2="70" y2="54" stroke="#6366f1" stroke-width="1"/>
+<line x1="227" y1="45" x2="227" y2="54" stroke="#6366f1" stroke-width="1"/>
+<line x1="389" y1="45" x2="389" y2="54" stroke="#6366f1" stroke-width="1"/>
+<line x1="70" y1="54" x2="389" y2="54" stroke="#6366f1" stroke-width="1"/>
+<text x="230" y="67" text-anchor="middle" font-family="system-ui" font-size="10" fill="#6366f1" font-weight="600">domain expert review</text>
+</svg>
+
+<p>Example workflow:</p>
+
+<ul>
+<li>SHAP summary plots → global drivers</li>
+<li>Local  SHAP/LIME → specific cases</li>
+<li>Counterfactuals → actionable recourse -  Domain experts → sanity check</li>
+</ul>
+
+<p>Also note: exposing explanations can reveal sensitive model
+
+behavior.</p>
+
+<p><strong>Further Reading</strong></p>
+
+<ul>
+<li>SHAP documentation:  https://shap.readthedocs.io/</li>
+<li>Interpretable Machine Learning book:  https://christophm.github.io/interpretable-ml-book/</li>
+</ul>
+
+<hr />
+
+<h2 id="adversarial-ml-model-security">17.4 Adversarial ML &amp; Model
+
+Security</h2>
+
+<p>Responsible AI includes <strong>misuse resistance</strong>:
+
+fair/documented models can still be exploitable.</p>
+
+<h3 id="why-ml-security-is-different">17.4.1 Why ML security is different</h3>
+
+<p>Standard security still applies, but ML adds
+
+<strong>data-/model-driven attack surfaces</strong>.</p>
+
+<ul>
+
+<li><strong>Training-time:</strong> poisoning, backdoors</li>
+
+<li><strong>Inference-time:</strong> evasion, extraction, privacy
+
+leakage</li>
+
+<li><strong>Policy manipulation:</strong> learned behavior can be
+
+steered</li>
+
+</ul>
+
+<svg viewBox="0 0 420 100" style="display:block; margin:20px auto; max-width:400px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ML attack surfaces: training time leads to poisoning/backdoors; inference time leads to evasion/extraction/leak">
+<defs><marker id="as-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+<rect x="5" y="10" width="130" height="30" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="70" y="30" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#92400e">Training time</text>
+<line x1="135" y1="25" x2="165" y2="25" stroke="#6366f1" stroke-width="1.5" marker-end="url(#as-a)"/>
+<rect x="175" y="10" width="240" height="30" rx="6" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+<text x="295" y="30" text-anchor="middle" font-family="system-ui" font-size="11" fill="#991b1b">poisoning / backdoors</text>
+<rect x="5" y="60" width="130" height="30" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="70" y="80" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#1e40af">Inference time</text>
+<line x1="135" y1="75" x2="165" y2="75" stroke="#6366f1" stroke-width="1.5" marker-end="url(#as-a)"/>
+<rect x="175" y="60" width="240" height="30" rx="6" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+<text x="295" y="80" text-anchor="middle" font-family="system-ui" font-size="11" fill="#991b1b">evasion / extraction / leak</text>
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> ML security differs because attackers can
+
+target both the learned model and the data that shapes it.</p>
+
+</blockquote>
+
+<h3 id="threat-models">17.4.2 Threat models</h3>
+
+<p>Define attacker assumptions first.</p>
+
+<ul>
+
+<li><strong>Goal:</strong> what do they want?</li>
+
+<li><strong>Access:</strong> data, weights, API, confidence scores?</li>
+
+<li><strong>Targeting:</strong> targeted vs untargeted</li>
+
+<li><strong>Stage:</strong> training vs inference</li>
+
+<li><strong>Constraints:</strong> query budget, perturbation limits,
+
+realism</li>
+
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> No clear threat model ⇒ vague defense.</p>
+
+</blockquote>
+
+<h3 id="evasion-attacks">17.4.3 Evasion attacks</h3>
+
+<p>Modify inputs at <strong>inference time</strong> to cause
+
+misprediction.</p>
+
+<p>Examples:</p>
+
+<ul>
+<li>tiny image perturbations</li>
+<li>spam text edited to bypass  filters</li>
+<li>fraud crafted to evade detection</li>
+</ul>
+
+<p>For classifier <span class="math inline">\(f(x)\)</span>, adversarial
+
+example:</p>
+
+<p><span class="math display">\[
+
+\text{find } \delta \text{ such that } f(x+\delta) \neq f(x), \quad
+
+\|\delta\|_p \leq \epsilon
+
+\]</span></p>
+
+<p><strong>Where:</strong> <span class="math inline">\(\delta\)</span> = adversarial perturbation, <span class="math inline">\(\epsilon\)</span> = maximum perturbation budget, <span class="math inline">\(\|\cdot\|_p\)</span> = <span class="math inline">\(L_p\)</span> norm (commonly <span class="math inline">\(L_2\)</span> or <span class="math inline">\(L_\infty\)</span>).</p>
+
+<p>where <span class="math inline">\(x&#39; = x + \delta\)</span> looks
+
+similar to <span class="math inline">\(x\)</span> under a
+
+constraint.</p>
+
+<svg viewBox="0 0 440 80" style="display:block; margin:20px auto; max-width:420px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Adversarial evasion: clean x plus small delta produces wrong label">
+<defs><marker id="ev-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+<rect x="5" y="15" width="100" height="40" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="55" y="40" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#1e40af">clean x</text>
+<text x="140" y="40" text-anchor="middle" font-family="system-ui" font-size="14" font-weight="700" fill="#f59e0b">+ δ</text>
+<line x1="160" y1="35" x2="180" y2="35" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ev-a)"/>
+<rect x="190" y="15" width="140" height="40" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="260" y="40" text-anchor="middle" font-family="Consolas, monospace" font-size="11" fill="#92400e">x' = x + δ</text>
+<line x1="330" y1="35" x2="350" y2="35" stroke="#ef4444" stroke-width="1.5" marker-end="url(#ev-a)"/>
+<rect x="360" y="15" width="75" height="40" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+<text x="397" y="35" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#991b1b">wrong</text>
+<text x="397" y="48" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#991b1b">label</text>
+<text x="220" y="72" text-anchor="middle" font-family="system-ui" font-size="10" fill="#64748b">‖δ‖ small, prediction changes</text>
+</svg>
+
+<h3 id="poisoning-attacks">17.4.4 Poisoning attacks</h3>
+
+<p>Corrupt <strong>training data</strong> so the learned model
+
+fails.</p>
+
+<p>Examples:</p>
+
+<ul>
+<li>malicious labels in online learning</li>
+<li>manipulated  recommender feedback</li>
+<li>contaminated retraining from user data</li>
+</ul>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Type</th>
+
+<th>Effect</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Availability</td>
+
+<td>Degrade overall performance</td>
+
+</tr>
+
+<tr>
+
+<td>Targeted poisoning</td>
+
+<td>Break specific cases</td>
+
+</tr>
+
+<tr>
+
+<td>Backdoor</td>
+
+<td>Hidden trigger causes attacker-chosen output</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="backdoor-attacks">17.4.5 Backdoor attacks</h3>
+
+<p>Implant a hidden <strong>if-trigger-then-behavior</strong> rule
+
+during training.</p>
+
+<p>Example: - vision model behaves normally, but a specific patch forces
+
+a target class</p>
+
+<p>High-risk sources:</p>
+
+<ul>
+<li>third-party datasets</li>
+<li>external pretrained  models</li>
+<li>outsourced annotation</li>
+<li>supply-chain dependencies</li>
+</ul>
+
+<svg viewBox="0 0 420 120" style="display:block; margin:20px auto; max-width:400px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Data poisoning: clean training pipeline plus poisoned data produces backdoored model with attacker-triggered output">
+<defs><marker id="dp-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+<rect x="5" y="10" width="140" height="40" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="75" y="28" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#1e40af">clean train</text>
+<text x="75" y="42" text-anchor="middle" font-family="system-ui" font-size="10" fill="#3b82f6">pipeline</text>
+<text x="210" y="20" text-anchor="middle" font-family="system-ui" font-size="10" fill="#ef4444" font-weight="600">poisoned data</text>
+<line x1="145" y1="30" x2="260" y2="30" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#dp-a)"/>
+<rect x="270" y="10" width="140" height="40" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+<text x="340" y="28" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#991b1b">backdoored</text>
+<text x="340" y="42" text-anchor="middle" font-family="system-ui" font-size="10" fill="#ef4444">model</text>
+<line x1="340" y1="50" x2="340" y2="75" stroke="#ef4444" stroke-width="1.5" marker-end="url(#dp-a)"/>
+<text x="355" y="66" font-family="system-ui" font-size="9" fill="#ef4444">trigger</text>
+<rect x="280" y="80" width="120" height="28" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
+<text x="340" y="98" text-anchor="middle" font-family="system-ui" font-size="10" fill="#92400e">attacker output</text>
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> Backdoors are dangerous because normal behavior
+
+can hide attack behavior until the trigger appears.</p>
+
+</blockquote>
+
+<h3 id="model-extraction-and-model-stealing">17.4.6 Model extraction and model
+
+stealing</h3>
+
+<p>Repeated API queries can approximate the model.</p>
+
+<p>Risks:</p>
+
+<ul>
+<li>IP loss</li>
+<li>easier evasion/attack planning</li>
+<li>boundary  discovery</li>
+</ul>
+
+<p>Extraction is easier with:</p>
+
+<ul>
+<li>exact probabilities</li>
+<li>unlimited queries</li>
+<li>rich feedback</li>
+</ul>
+
+<h3 id="membership-inference-and-privacy-leakage">17.4.7 Membership inference
+
+and privacy leakage</h3>
+
+<p>Attacker infers whether a sample was in training data.</p>
+
+<p>Sensitive domains:</p>
+
+<ul>
+<li>medical</li>
+<li>financial</li>
+<li>personal text/images</li>
+</ul>
+
+<p>Leakage sources:</p>
+
+<ul>
+<li>overfitting</li>
+<li>memorization</li>
+<li>verbose outputs -  generative models reproducing training content</li>
+</ul>
+
+<h3 id="defenses">17.4.8 Defenses</h3>
+
+<p>No perfect defense; combine controls.</p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 50%" />
+
+<col style="width: 50%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Risk</th>
+
+<th>Common defenses</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Evasion</td>
+
+<td>Adversarial training, preprocessing, anomaly detection, ensembles,
+
+abstention</td>
+
+</tr>
+
+<tr>
+
+<td>Poisoning / backdoors</td>
+
+<td>Data provenance, robust filtering, secure retraining,
+
+outlier/influence analysis, supply-chain review</td>
+
+</tr>
+
+<tr>
+
+<td>Extraction / privacy</td>
+
+<td>Rate limiting, auth, output restriction, confidence clipping,
+
+watermarking, differential privacy</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p>Simple high-value controls:</p>
+
+<ul>
+<li>restrict outputs</li>
+<li>limit queries -  secure retraining pipeline</li>
+</ul>
+
+<h3 id="security-evaluation">17.4.9 Security evaluation</h3>
+
+<p>Test security <strong>explicitly</strong>, not implicitly.</p>
+
+<ul>
+
+<li>red teaming</li>
+
+<li>robustness benchmarks</li>
+
+<li>realistic attack simulation</li>
+
+<li>anomaly logging/monitoring</li>
+
+<li>incident response plans</li>
+
+</ul>
+
+<p>For generative AI, also test:</p>
+
+<ul>
+<li>prompt injection</li>
+<li>jailbreaks</li>
+<li>tool  abuse</li>
+<li>sensitive data exfiltration</li>
+<li>unsafe agent behavior</li>
+</ul>
+
+<svg viewBox="0 0 460 70" style="display:block; margin:20px auto; max-width:440px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Security evaluation pipeline: threat model, attack tests, monitoring, with incident response feedback loop">
+<defs><marker id="se-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+<rect x="5" y="8" width="120" height="36" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="65" y="30" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#92400e">Threat mdl</text>
+<line x1="125" y1="26" x2="145" y2="26" stroke="#6366f1" stroke-width="1.5" marker-end="url(#se-a)"/>
+<rect x="155" y="8" width="120" height="36" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+<text x="215" y="30" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#991b1b">Attack tests</text>
+<line x1="275" y1="26" x2="295" y2="26" stroke="#6366f1" stroke-width="1.5" marker-end="url(#se-a)"/>
+<rect x="305" y="8" width="120" height="36" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="365" y="30" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#1e40af">Monitoring</text>
+<path d="M65 44 L65 56 Q65 62 71 62 L359 62 Q365 62 365 56 L365 44" stroke="#22c55e" stroke-width="1.2" fill="none" stroke-dasharray="4,3"/>
+<text x="215" y="59" text-anchor="middle" font-family="system-ui" font-size="9" fill="#22c55e" font-weight="600">Incident response</text>
+</svg>
+
+<h3 id="security-safety-and-responsible-deployment">17.4.10 Security, safety,
+
+and responsible deployment</h3>
+
+<p>Security ≠ safety ≠ fairness, but they overlap.</p>
+
+<p>Responsible deployment should integrate:</p>
+
+<ul>
+<li>security</li>
+<li>fairness -  explainability</li>
+<li>governance</li>
+</ul>
+
+<p>Documentation should capture:</p>
+
+<ul>
+<li>assumptions</li>
+<li>failure modes -  intended use</li>
+<li>evaluation limits</li>
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> A secure system can still be unfair; a fair
+
+system can still be exploitable.</p>
+
+</blockquote>
+
+<p><strong>Further Reading</strong></p>
+
+<ul>
+<li>MITRE ATLAS:  https://atlas.mitre.org/</li>
+<li>Adversarial Robustness Toolbox:  https://adversarial-robustness-toolbox.readthedocs.io/</li>
+</ul>
+
+<hr />
+
+<h2 id="model-cards-documentation">17.5 Model Cards &amp;
+
+Documentation</h2>
+
+<p>Documentation makes assumptions, metrics, risks, and limits
+
+reviewable.</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> Unwritten assumptions get forgotten, then
+
+misused.</p>
+
+</blockquote>
+
+<h3 id="why-documentation-matters">17.5.1 Why documentation matters</h3>
+
+<ul>
+
+<li>intended use + non-use</li>
+
+<li>data sources + limitations</li>
+
+<li>overall + subgroup evaluation</li>
+
+<li>fairness, privacy, security risks</li>
+
+<li>auditability</li>
+
+<li>handoffs across eng/product/legal/policy</li>
+
+</ul>
+
+<svg viewBox="0 0 440 120" style="display:block; margin:20px auto; max-width:420px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Documentation flow: Assumptions to Documentation to Review/Audit, with branches to safer deployment and better handoffs">
+<defs><marker id="dd-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+<rect x="5" y="10" width="110" height="36" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="60" y="32" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#92400e">Assumptions</text>
+<line x1="115" y1="28" x2="142" y2="28" stroke="#6366f1" stroke-width="1.5" marker-end="url(#dd-a)"/>
+<rect x="152" y="10" width="130" height="36" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="217" y="32" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#1e40af">Documentation</text>
+<line x1="282" y1="28" x2="309" y2="28" stroke="#6366f1" stroke-width="1.5" marker-end="url(#dd-a)"/>
+<rect x="319" y="10" width="120" height="36" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="379" y="32" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#166534">Review / Audit</text>
+<line x1="217" y1="46" x2="217" y2="60" stroke="#6366f1" stroke-width="1.2"/>
+<line x1="217" y1="60" x2="140" y2="80" stroke="#6366f1" stroke-width="1.2" marker-end="url(#dd-a)"/>
+<line x1="217" y1="60" x2="294" y2="80" stroke="#6366f1" stroke-width="1.2" marker-end="url(#dd-a)"/>
+<rect x="60" y="82" width="150" height="26" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1"/>
+<text x="135" y="99" text-anchor="middle" font-family="system-ui" font-size="10" fill="#166534">safer deployment</text>
+<rect x="230" y="82" width="150" height="26" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1"/>
+<text x="305" y="99" text-anchor="middle" font-family="system-ui" font-size="10" fill="#5b21b6">better handoffs</text>
+</svg>
+
+<h3 id="model-cards">17.5.2 Model cards</h3>
+
+<p>A <strong>model card</strong> = structured summary of a trained
+
+model: <strong>what it is, who it is for, where it works, where it
+
+should not be used</strong>.</p>
+
+<h4 id="common-sections">Common sections</h4>
+
+<table>
+
+<colgroup>
+
+<col style="width: 50%" />
+
+<col style="width: 50%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Section</th>
+
+<th>Include</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Model details</td>
+
+<td>name/version, owner, date, architecture/family, training
+
+objective</td>
+
+</tr>
+
+<tr>
+
+<td>Intended use</td>
+
+<td>primary use cases, intended users, deployment environment, supported
+
+populations</td>
+
+</tr>
+
+<tr>
+
+<td>Out-of-scope use</td>
+
+<td>prohibited/discouraged uses, unverified settings, high-risk
+
+decisions needing extra review</td>
+
+</tr>
+
+<tr>
+
+<td>Data</td>
+
+<td>train/val/test sources, collection, preprocessing, labeling, known
+
+gaps/representation limits</td>
+
+</tr>
+
+<tr>
+
+<td>Evaluation</td>
+
+<td>overall metrics, subgroup metrics, calibration/robustness, stress
+
+tests, version comparisons</td>
+
+</tr>
+
+<tr>
+
+<td>Ethical considerations &amp; risks</td>
+
+<td>fairness, privacy, security limits, failure modes, human
+
+oversight</td>
+
+</tr>
+
+<tr>
+
+<td>Caveats &amp; recommendations</td>
+
+<td>threshold guidance, monitoring, retraining assumptions, unresolved
+
+issues</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<div style="border-left:4px solid #6366f1; background:#f8fafc; padding:12px 16px; border-radius:6px; margin:12px 0; font-family:system-ui, sans-serif;">
+<p style="font-weight:700; margin:0 0 6px; font-size:0.95em; color:#334155;">Model Card</p>
+<ol style="margin:4px 0; padding-left:22px; font-size:0.88em; line-height:1.8; color:#475569;">
+<li>Model details</li>
+<li>Intended use</li>
+<li>Out-of-scope use</li>
+<li>Data</li>
+<li>Evaluation</li>
+<li>Risks / ethics</li>
+<li>Caveats / recommendations</li>
+</ol>
+</div>
+
+<h3 id="related-artifacts">17.5.3 Related artifacts</h3>
+
+<p>Model cards are one artifact in a larger documentation stack.</p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 50%" />
+
+<col style="width: 50%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Artifact</th>
+
+<th>Focus</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Datasheets for datasets</td>
+
+<td>motivation, composition, collection, preprocessing, uses,
+
+limitations</td>
+
+</tr>
+
+<tr>
+
+<td>Data cards</td>
+
+<td>dataset quality, provenance, usage boundaries</td>
+
+</tr>
+
+<tr>
+
+<td>System cards</td>
+
+<td>full sociotechnical system, not just the model</td>
+
+</tr>
+
+<tr>
+
+<td>Decision logs / risk assessments</td>
+
+<td>trade-offs, approvals, exceptions, mitigations over time</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Model card = model-level summary; system/data
+
+artifacts cover adjacent risks.</p>
+
+</blockquote>
+
+<h3 id="example-model-card-template">17.5.4 Example model card template</h3>
+
+<div style="border:1px solid #e2e8f0; border-radius:8px; padding:16px 20px; margin:16px 0; background:#f8fafc; font-family:system-ui, sans-serif; font-size:0.88em; line-height:1.7;">
+<p style="font-weight:700; font-size:1.05em; margin:0 0 8px; color:#334155;">Model Card: Loan Approval Classifier v3.2</p>
+<p style="margin:4px 0; color:#475569;"><strong>Overview:</strong> Binary classifier predicting likelihood of repayment within 24 months.</p>
+<p style="margin:4px 0; color:#475569;"><strong>Intended Use:</strong> Assist loan officers in prioritizing manual review for consumer loan applications. Not intended for fully automated denial decisions.</p>
+<p style="margin:4px 0; color:#475569;"><strong>Out-of-Scope Use:</strong></p>
+<ul style="margin:2px 0 8px; padding-left:20px; color:#64748b;">
+<li>Not validated for small-business lending or applicants &lt; 21</li>
+<li>Do not use without human review where adverse action notices apply</li>
+</ul>
+<p style="margin:4px 0; color:#475569;"><strong>Training Data:</strong> Applications from 2022–2024 across three regions. Known underrepresentation of first-time borrowers.</p>
+<p style="margin:8px 0 4px; color:#475569;"><strong>Evaluation:</strong></p>
+<table style="border-collapse:collapse; width:auto; font-size:0.92em; margin:4px 0 8px;">
+<thead><tr><th style="padding:3px 14px; border-bottom:2px solid #6366f1; text-align:left;">Overall</th><th style="padding:3px 14px; border-bottom:2px solid #6366f1; text-align:left;">Subgroups</th></tr></thead>
+<tbody>
+<tr><td style="padding:2px 14px; border-bottom:1px solid #e2e8f0;">AUC: 0.81</td><td style="padding:2px 14px; border-bottom:1px solid #e2e8f0;">A: TPR 0.82</td></tr>
+<tr><td style="padding:2px 14px; border-bottom:1px solid #e2e8f0;">Cal: 0.03</td><td style="padding:2px 14px; border-bottom:1px solid #e2e8f0;">B: TPR 0.68</td></tr>
+<tr><td style="padding:2px 14px; border-bottom:1px solid #e2e8f0;"></td><td style="padding:2px 14px; border-bottom:1px solid #e2e8f0;">A: FPR 0.10</td></tr>
+<tr><td style="padding:2px 14px;"></td><td style="padding:2px 14px;">B: FPR 0.09</td></tr>
+</tbody></table>
+<p style="margin:4px 0; color:#475569;"><strong>Risks:</strong> TPR disparity may disadvantage qualified applicants in Group B. Income stability feature may be unreliable for gig workers.</p>
+<p style="margin:4px 0; color:#475569;"><strong>Monitoring:</strong></p>
+<ul style="margin:2px 0 0; padding-left:20px; color:#64748b;">
+<li>Quarterly fairness audit</li>
+<li>Monthly calibration check</li>
+<li>Geography drift alerts</li>
+</ul>
+</div>
+
+<blockquote>
+
+<p><strong>Key:</strong> Overall performance is solid, but TPR differs
+
+notably across groups (0.82 vs 0.68).</p>
+
+</blockquote>
+
+<blockquote>
+
+<p><strong>Key:</strong> Monitoring is part of the product.</p>
+
+</blockquote>
+
+<svg viewBox="0 0 480 60" style="display:block; margin:20px auto; max-width:460px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Model deployment stages: offline eval, deployed model, alert/audit plus mitigation">
+<defs><marker id="ds-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+<rect x="5" y="10" width="120" height="40" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="65" y="28" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#1e40af">Offline</text>
+<text x="65" y="42" text-anchor="middle" font-family="system-ui" font-size="10" fill="#3b82f6">eval</text>
+<text x="155" y="24" text-anchor="middle" font-family="system-ui" font-size="9" fill="#6366f1">launch</text>
+<line x1="125" y1="30" x2="165" y2="30" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ds-a)"/>
+<rect x="175" y="10" width="120" height="40" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="235" y="28" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#166534">Deployed</text>
+<text x="235" y="42" text-anchor="middle" font-family="system-ui" font-size="10" fill="#22c55e">model</text>
+<text x="325" y="24" text-anchor="middle" font-family="system-ui" font-size="9" fill="#ef4444">drift</text>
+<line x1="295" y1="30" x2="335" y2="30" stroke="#ef4444" stroke-width="1.5" marker-end="url(#ds-a)"/>
+<rect x="345" y="10" width="130" height="40" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="410" y="28" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#92400e">Alert / Audit</text>
+<text x="410" y="42" text-anchor="middle" font-family="system-ui" font-size="10" fill="#f59e0b">+ mitigation</text>
+</svg>
+
+<p>Track concrete checks:</p>
+
+<ul>
+<li>quarterly fairness audit</li>
+<li>monthly  calibration check</li>
+<li>geography drift alerts</li>
+</ul>
+
+<h3 id="documentation-best-practices">17.5.5 Documentation best practices</h3>
+
+<p>Documentation = system memory: decisions, thresholds, failures,
+
+limits.</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> Docs should be specific, versioned,
+
+audience-aware, honest, and maintained.</p>
+
+</blockquote>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Good practice</th>
+
+<th>Failure mode</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Specific claims</td>
+
+<td>“Works well across demographics”</td>
+
+</tr>
+
+<tr>
+
+<td>Test population recorded</td>
+
+<td>Missing evaluation population</td>
+
+</tr>
+
+<tr>
+
+<td>Thresholds/settings logged</td>
+
+<td>No deployment config record</td>
+
+</tr>
+
+<tr>
+
+<td>Updated after retraining</td>
+
+<td>Stale docs</td>
+
+</tr>
+
+<tr>
+
+<td>Human overrides documented</td>
+
+<td>Undocumented exceptions</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="documentation-as-a-lifecycle-artifact">17.5.6 Documentation as a
+
+lifecycle artifact</h3>
+
+<p>Not end-of-project paperwork; evolves with the system.</p>
+
+<svg viewBox="0 0 580 130" style="display:block; margin:20px auto; max-width:560px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Documentation lifecycle: Problem, Data/Exp, Validation, Deployment, Monitoring, Incidents">
+<defs><marker id="lc-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+<rect x="5" y="5" width="120" height="30" rx="7" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="65" y="24" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#1e40af">Problem</text>
+<line x1="125" y1="20" x2="140" y2="20" stroke="#6366f1" stroke-width="1.2" marker-end="url(#lc-a)"/>
+<rect x="150" y="5" width="120" height="30" rx="7" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="210" y="24" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#5b21b6">Data / Exp</text>
+<line x1="270" y1="20" x2="285" y2="20" stroke="#6366f1" stroke-width="1.2" marker-end="url(#lc-a)"/>
+<rect x="295" y="5" width="120" height="30" rx="7" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="355" y="24" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#166534">Validation</text>
+<line x1="415" y1="20" x2="430" y2="20" stroke="#6366f1" stroke-width="1.2" marker-end="url(#lc-a)"/>
+<rect x="440" y="5" width="120" height="30" rx="7" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="500" y="24" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#92400e">Deployment</text>
+<text x="65" y="50" text-anchor="middle" font-family="system-ui" font-size="8" fill="#64748b">intended use</text>
+<text x="210" y="50" text-anchor="middle" font-family="system-ui" font-size="8" fill="#64748b">decisions log</text>
+<text x="355" y="50" text-anchor="middle" font-family="system-ui" font-size="8" fill="#64748b">metrics / tests</text>
+<text x="500" y="50" text-anchor="middle" font-family="system-ui" font-size="8" fill="#64748b">settings / runbook</text>
+<line x1="65" y1="35" x2="65" y2="42" stroke="#94a3b8" stroke-width="0.8"/>
+<line x1="210" y1="35" x2="210" y2="42" stroke="#94a3b8" stroke-width="0.8"/>
+<line x1="355" y1="35" x2="355" y2="42" stroke="#94a3b8" stroke-width="0.8"/>
+<line x1="500" y1="35" x2="500" y2="42" stroke="#94a3b8" stroke-width="0.8"/>
+<rect x="295" y="70" width="120" height="30" rx="7" fill="#fce7f3" stroke="#ec4899" stroke-width="1.5"/>
+<text x="355" y="89" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#9d174d">Monitoring</text>
+<line x1="415" y1="85" x2="430" y2="85" stroke="#6366f1" stroke-width="1.2" marker-end="url(#lc-a)"/>
+<rect x="440" y="70" width="120" height="30" rx="7" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+<text x="500" y="89" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#991b1b">Incidents</text>
+<text x="355" y="112" text-anchor="middle" font-family="system-ui" font-size="8" fill="#64748b">drift / history</text>
+<text x="500" y="112" text-anchor="middle" font-family="system-ui" font-size="8" fill="#64748b">mitigations</text>
+<line x1="355" y1="100" x2="355" y2="105" stroke="#94a3b8" stroke-width="0.8"/>
+<line x1="500" y1="100" x2="500" y2="105" stroke="#94a3b8" stroke-width="0.8"/>
+</svg>
+
+<p>Lifecycle additions:</p>
+
+<ul>
+<li>early: intended use, foreseeable harms -  pre-release: metrics, test conditions</li>
+<li>post-deploy: incident history,  mitigations</li>
+</ul>
+
+<p>Also supports governance/compliance: what the model is, how it was
+
+evaluated, where not to use it.</p>
+
+<p><strong>Further Reading</strong></p>
+
+<ul>
+<li>Model Cards for Model Reporting:  https://arxiv.org/abs/1810.03993</li>
+<li>Hugging Face Model Cards:  https://huggingface.co/docs/hub/model-cards</li>
+</ul>
+
+<h2 id="governance-and-compliance">17.6 Governance and Compliance</h2>
+
+<p>Technical safeguards alone are insufficient; governance defines
+
+allowed use, approvals, and failure handling.</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> The model predicts; governance decides whether
+
+predictions may matter.</p>
+
+</blockquote>
+
+<h3 id="what-governance-means">17.6.1 What governance means</h3>
+
+<p>AI governance = organizational processes to:</p>
+
+<ul>
+<li>define acceptable use</li>
+<li>assess/mitigate risk</li>
+<li>assign accountability</li>
+<li>monitor deployed  systems</li>
+<li>respond to incidents</li>
+<li>comply with policy/regulation</li>
+</ul>
+
+<h3 id="key-governance-components">17.6.2 Key governance components</h3>
+
+<h4 id="risk-tiering">Risk tiering</h4>
+
+<p>Match controls to stakes.</p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Risk level</th>
+
+<th>Example</th>
+
+<th>Typical controls</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Low</td>
+
+<td>content personalization</td>
+
+<td>light review</td>
+
+</tr>
+
+<tr>
+
+<td>Medium</td>
+
+<td>demand forecasting</td>
+
+<td>standard review, monitoring</td>
+
+</tr>
+
+<tr>
+
+<td>High</td>
+
+<td>hiring, lending, diagnosis support, fraud blocking, identity
+
+verification</td>
+
+<td>formal review, subgroup analysis, approvals, escalation</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p>High-risk systems usually need:</p>
+
+<ul>
+<li>formal review</li>
+<li>stronger docs -  subgroup analysis</li>
+<li>approval gates</li>
+<li>tighter monitoring</li>
+<li>incident  escalation</li>
+</ul>
+
+<h4 id="roles-and-accountability">Roles and accountability</h4>
+
+<blockquote>
+
+<p><strong>Key:</strong> Clear ownership prevents gaps.</p>
+
+</blockquote>
+
+<p>Typical roles:</p>
+
+<ul>
+<li>model owner</li>
+<li>product owner</li>
+<li>data steward -  security reviewer</li>
+<li>legal/compliance reviewer</li>
+<li>human decision-maker</li>
+</ul>
+
+<svg viewBox="0 0 360 170" style="display:block; margin:20px auto; max-width:340px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Roles: Model owner connects to product owner, data steward, security, legal/compliance, human reviewer">
+<defs><marker id="mo-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+<rect x="5" y="5" width="130" height="30" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="70" y="24" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="700" fill="#1e40af">Model owner</text>
+<line x1="70" y1="35" x2="70" y2="160" stroke="#6366f1" stroke-width="1.2"/>
+<line x1="70" y1="50" x2="130" y2="50" stroke="#6366f1" stroke-width="1.2" marker-end="url(#mo-a)"/>
+<text x="215" y="54" text-anchor="middle" font-family="system-ui" font-size="10" fill="#334155">Product owner</text>
+<line x1="70" y1="78" x2="130" y2="78" stroke="#6366f1" stroke-width="1.2" marker-end="url(#mo-a)"/>
+<text x="205" y="82" text-anchor="middle" font-family="system-ui" font-size="10" fill="#334155">Data steward</text>
+<line x1="70" y1="106" x2="130" y2="106" stroke="#6366f1" stroke-width="1.2" marker-end="url(#mo-a)"/>
+<text x="193" y="110" text-anchor="middle" font-family="system-ui" font-size="10" fill="#334155">Security</text>
+<line x1="70" y1="134" x2="130" y2="134" stroke="#6366f1" stroke-width="1.2" marker-end="url(#mo-a)"/>
+<text x="225" y="138" text-anchor="middle" font-family="system-ui" font-size="10" fill="#334155">Legal / compliance</text>
+<line x1="70" y1="160" x2="130" y2="160" stroke="#6366f1" stroke-width="1.2" marker-end="url(#mo-a)"/>
+<text x="218" y="164" text-anchor="middle" font-family="system-ui" font-size="10" fill="#334155">Human reviewer</text>
+</svg>
+
+<h4 id="approval-and-review-processes">Approval and review
+
+processes</h4>
+
+<p>Common checkpoints:</p>
+
+<ul>
+<li>data-use approval</li>
+<li>privacy impact assessment -  fairness review</li>
+<li>security review</li>
+<li>launch approval</li>
+<li>periodic  re-certification</li>
+</ul>
+
+<h4 id="monitoring-and-incident-management">Monitoring and incident
+
+management</h4>
+
+<p>Governance should define:</p>
+
+<ul>
+<li>monitored metrics</li>
+<li>escalation thresholds</li>
+<li>incident responders</li>
+<li>rollback/disable procedures</li>
+<li>notification  requirements</li>
+</ul>
+
+<svg viewBox="0 0 680 36" style="display:block; margin:16px auto; max-width:100%;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Incident response pipeline: breach to alert to investigate to rollback to document">
+<defs><marker id="ir-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6366f1"/></marker></defs>
+<rect x="5" y="4" width="95" height="28" rx="6" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+<text x="52" y="23" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#991b1b">Metric breach</text>
+<line x1="105" y1="18" x2="120" y2="18" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ir-a)"/>
+<rect x="125" y="4" width="60" height="28" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="155" y="23" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#92400e">Alert</text>
+<line x1="190" y1="18" x2="205" y2="18" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ir-a)"/>
+<rect x="210" y="4" width="100" height="28" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="260" y="23" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#1e40af">Owner paged</text>
+<line x1="315" y1="18" x2="330" y2="18" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ir-a)"/>
+<rect x="335" y="4" width="90" height="28" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="380" y="23" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#5b21b6">Investigate</text>
+<line x1="430" y1="18" x2="445" y2="18" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ir-a)"/>
+<rect x="450" y="4" width="95" height="28" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="497" y="23" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#166534">Roll back</text>
+<line x1="550" y1="18" x2="565" y2="18" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ir-a)"/>
+<rect x="570" y="4" width="100" height="28" rx="6" fill="#f8fafc" stroke="#334155" stroke-width="1.5"/>
+<text x="620" y="23" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#334155">Document</text>
+</svg>
+
+
+<h3 id="compliance-and-regulatory-themes">17.6.3 Compliance and regulatory
+
+themes</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 50%" />
+
+<col style="width: 50%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Theme</th>
+
+<th>Practical question</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Non-discrimination</td>
+
+<td>Does performance differ across protected groups?</td>
+
+</tr>
+
+<tr>
+
+<td>Transparency</td>
+
+<td>Can affected users understand and contest decisions?</td>
+
+</tr>
+
+<tr>
+
+<td>Privacy</td>
+
+<td>Are permissions, retention, deletion handled correctly?</td>
+
+</tr>
+
+<tr>
+
+<td>Human oversight</td>
+
+<td>Can a human actually intervene?</td>
+
+</tr>
+
+<tr>
+
+<td>Auditability</td>
+
+<td>Can you reconstruct what changed and why?</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p>Recurring requirements:</p>
+
+<ul>
+<li><strong>Non-discrimination:</strong> avoid  unlawful disadvantage</li>
+<li><strong>Transparency:</strong> notice,  explanation, review paths</li>
+<li><strong>Privacy/data protection:</strong>  proper collection, storage, processing, retention, deletion -  <strong>Human oversight:</strong> meaningful review, not rubber-stamping</li>
+<li><strong>Recordkeeping/auditability:</strong> docs, logs, eval records,  change history</li>
+</ul>
+
+<h3 id="examples-of-relevant-frameworks">17.6.4 Examples of relevant
+
+frameworks</h3>
+
+<ul>
+
+<li>NIST AI RMF</li>
+
+<li>OECD AI Principles</li>
+
+<li>ISO/IEC AI management standards</li>
+
+<li>EU AI Act</li>
+
+<li>GDPR</li>
+
+<li>sector-specific rules in healthcare, finance, employment, consumer
+
+protection</li>
+
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> Frameworks orient; legal/compliance teams
+
+interpret for regulated use.</p>
+
+</blockquote>
+
+<h3 id="governance-in-the-ml-lifecycle">17.6.5 Governance in the ML
+
+lifecycle</h3>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-family:system-ui, sans-serif; line-height:1.8; font-size:0.9em;">
+<strong style="color:#334155;">Before dev</strong> <span style="color:#64748b;">→</span> <strong style="color:#334155;">During dev</strong> <span style="color:#64748b;">→</span> <strong style="color:#334155;">Before deploy</strong> <span style="color:#64748b;">→</span> <strong style="color:#334155;">After deploy</strong><br>
+<span style="color:#3b82f6; font-size:0.9em;">&nbsp;&nbsp;risk</span>
+<span style="color:#8b5cf6; font-size:0.9em;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;evidence</span>
+<span style="color:#22c55e; font-size:0.9em;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;approvals</span>
+<span style="color:#f59e0b; font-size:0.9em;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;oversight</span>
+</div>
+
+<h4 id="before-development">Before development</h4>
+
+<ul>
+
+<li>define intended use</li>
+
+<li>assess whether ML is appropriate</li>
+
+<li>identify affected stakeholders</li>
+
+<li>initial risk assessment</li>
+
+</ul>
+
+<h4 id="during-development">During development</h4>
+
+<ul>
+
+<li>review data provenance/permissions</li>
+
+<li>track experiments/decisions</li>
+
+<li>evaluate fairness, robustness, privacy, performance</li>
+
+<li>document limitations</li>
+
+</ul>
+
+<h4 id="before-deployment">Before deployment</h4>
+
+<ul>
+
+<li>confirm approvals</li>
+
+<li>validate documentation completeness</li>
+
+<li>establish monitoring/fallbacks</li>
+
+<li>train operators/human reviewers</li>
+
+</ul>
+
+<h4 id="after-deployment">After deployment</h4>
+
+<ul>
+
+<li>monitor drift, fairness, incidents</li>
+
+<li>reassess after retraining/scope changes</li>
+
+<li>maintain docs and audit trails</li>
+
+<li>retire unsupported/unjustified systems</li>
+
+</ul>
+
+<h3 id="a-practical-governance-checklist">17.6.6 A practical governance
+
+checklist</h3>
+
+<p>Before shipping a high-impact model, answer:</p>
+
+<ul>
+<li>intended use?  disallowed uses?</li>
+<li>what data was used? limitations?</li>
+<li>subgroup  performance?</li>
+<li>fairness metrics used, and why?</li>
+<li>explanation tools for  review/recourse?</li>
+<li>known security/privacy risks?</li>
+<li>what human oversight  exists?</li>
+<li>monitoring, escalation, rollback plans?</li>
+<li>who is accountable  post-deployment?</li>
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> Unclear answers = governance failure, not just
+
+documentation failure.</p>
+
+</blockquote>
+
+<h3 id="responsible-ai-as-a-sociotechnical-discipline">17.6.7 Responsible AI as
+
+a sociotechnical discipline</h3>
+
+<p>Responsible AI is not one metric/tool/checklist; it is
+
+sociotechnical.</p>
+
+<p>Strong practice combines:</p>
+
+<ul>
+<li>rigorous measurement</li>
+<li>careful  documentation</li>
+<li>secure engineering</li>
+<li>stakeholder review</li>
+<li>ongoing  governance</li>
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> Models operate inside organizations, laws,
+
+workflows, and human judgment.</p>
+
+</blockquote>
+
+<p><strong>Further Reading</strong></p>
+
+<ul>
+<li>NIST AI Risk Management Framework  Playbook: https://airc.nist.gov/AI_RMF_Knowledge_Base/AI_RMF</li>
+<li>OECD AI  Principles: https://oecd.ai/en/ai-principles</li>
+</ul>
+
+<hr />
+
+<h2 id="chapter-summary-1">Chapter Summary</h2>
+
+<ul>
+
+<li>Bias enters via data collection, labeling, proxy features,
+
+aggregation, deployment feedback loops.</li>
+
+<li>Fairness is multi-dimensional; metrics like demographic parity,
+
+equalized odds, equal opportunity, predictive parity, and calibration
+
+often conflict.</li>
+
+<li>Fairness auditing = context definition + subgroup evaluation +
+
+stress testing + documentation.</li>
+
+<li>SHAP, LIME, counterfactuals help diagnose behavior; they do not
+
+prove fairness or causality.</li>
+
+<li>Responsible AI also includes robustness, privacy leakage prevention,
+
+and security vs extraction, poisoning, misuse.</li>
+
+<li>Model cards/docs make assumptions, limits, and eval results
+
+explicit.</li>
+
+<li>Governance/compliance provide organizational risk controls across
+
+the ML lifecycle.</li>
+
+<li>Responsible AI is sociotechnical: technical rigor + domain context +
+
+stakeholder input + continuous monitoring.</li>
+
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> Responsible AI spans the full pipeline: problem
+
+framing → data → training → evaluation → deployment → long-term
+
+oversight.</p>
+
+</blockquote>
+
+<h2 id="key-takeaways-17">Key Takeaways</h2>
+
+<ul>
+
+<li>Fairness is not a single metric &mdash; demographic parity, equalized odds, and individual fairness can all be correct depending on the use case, and they cannot all be satisfied simultaneously when base rates differ.</li>
+
+<li>Bias enters at every stage: biased training data, biased labels, proxy features that encode protected attributes, biased evaluation sets. Auditing at deployment is too late.</li>
+
+<li>Explainability techniques (SHAP, LIME, attention weights) help communicate decisions but are not the same as interpretability: a post-hoc explanation can be misleading.</li>
+
+<li>Adversarial threats (evasion, poisoning, model extraction) require security-aware design: restrict outputs, limit query access, monitor for anomalous usage, and document threat models in model cards.</li>
+
+<li>Responsible AI requires human judgment at decision points &mdash; a model should rarely be the sole decision-maker in high-stakes settings (credit, hiring, criminal justice, healthcare).</li>
+
+<li>Documentation (Model Cards, Datasheets for Datasets) is not busywork: it is the mechanism by which downstream users learn what a model can and cannot safely do.</li>
+
+</ul>
+
+
+
+<h2 id="common-pitfalls-17">Common Pitfalls</h2>
+
+<table>
+
+<thead><tr><th>Mistake</th><th>What goes wrong</th><th>Fix</th></tr></thead>
+
+<tbody>
+
+<tr><td>Optimizing aggregate accuracy and ignoring subgroups</td><td>High overall accuracy masks poor performance on minority groups</td><td>Always disaggregate metrics by protected group before deployment</td></tr>
+
+<tr><td>Treating fairness as a post-training patch</td><td>Bias in data cannot be fully corrected by reweighting alone</td><td>Audit training data; consider data collection and labeling process</td></tr>
+
+<tr><td>Using a proxy feature instead of a protected attribute</td><td>ZIP code encodes race; model discriminates without explicitly using race</td><td>Audit all features for correlation with protected attributes; consider removal or fairness constraints</td></tr>
+
+<tr><td>Confusing model accuracy with model correctness</td><td>A model can be accurate on historical data that itself encoded historical discrimination</td><td>Ask: what outcome are we actually optimizing for, and is that the right outcome?</td></tr>
+
+<tr><td>Shipping without a model card</td><td>Users don&rsquo;t know intended use cases, limitations, or evaluation populations</td><td>Write a one-page model card before release; include performance breakdowns by subgroup</td></tr>
+
+</tbody>
+
+</table>
+
+<hr />
+
+
+<div class="chapter-nav">
+  <a href="chapter-16.html">&larr; Chapter 16: ML Systems and MLOps</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-18.html">Chapter 18: Interview Prep and Case Studies &rarr;</a>
+</div>
+<div class="site-footer">
+  <p>&copy; 2026 Hariram Subramanian Gopal &middot; <a href="index.html">Data to Decisions</a></p>
+</div>
+</body>
+</html>

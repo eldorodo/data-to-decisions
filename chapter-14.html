@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Hariram Subramanian Gopal" />
+  <title>Chapter 14: Operational Research | Data to Decisions</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</head>
+<body>
+<div class="chapter-nav">
+  <a href="chapter-13.html">&larr; Chapter 13: Time Series and Forecasting</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-15.html">Chapter 15: Data and SQL &rarr;</a>
+</div>
+<h1 id="chapter-14-operational-research">Chapter 14: Operational Research</h1>
+
+<h2 id="chapter-scope-or">14.0 Chapter Scope</h2>
+
+<p>Operational Research (OR) is the science of making better decisions under constraints. Born in World War II — where Allied scientists used mathematics to optimize radar placement and supply chains — OR today underpins some of the most economically consequential systems on the planet.</p>
+
+<p>What makes OR so compelling is the gap between the apparent simplicity of the problem statement and the staggering difficulty of solving it well. "Get all vans back before 6pm" sounds simple. But factor in 500 stops, vehicle capacities, time windows, driver breaks, and traffic — and you are staring at a combinatorial space larger than the number of atoms in the observable universe. The same structure appears in workforce scheduling, inventory control across warehouse networks, chip floorplanning, and power grid dispatch. The thrill is that with the right algorithm and a good intuition for problem structure, you can navigate that space and find solutions that are breathtakingly good.</p>
+
+<blockquote>
+<p><strong>Where OR Lives in the Real World:</strong> <strong>FedEx & UPS</strong> — routing millions of parcels daily across global networks. <strong>Google Maps</strong> — real-time route optimization across billions of edges. <strong>Airlines</strong> — crew scheduling, gate assignments, aircraft routing (saving each major carrier ~$100M/year). <strong>Hospitals</strong> — ICU bed assignment and surgical scheduling. <strong>Energy grids</strong> — optimal power dispatch. <strong>Financial markets</strong> — portfolio optimization and algorithmic trading.</p>
+</blockquote>
+
+<div class="metrics-row">
+  <div class="metric-box"><div class="metric-val">$50B+</div><div class="metric-label">Annual value from airline OR systems*</div></div>
+  <div class="metric-box"><div class="metric-val blue">10⁸⁰</div><div class="metric-label">Search space of a TSP with 60 cities*</div></div>
+  <div class="metric-box"><div class="metric-val green">~1ms</div><div class="metric-label">Time OR solver routes a delivery van*</div></div>
+  <div class="metric-box"><div class="metric-val purple">3</div><div class="metric-label">Nobel Prizes linked to OR methods*</div></div>
+</div>
+<p class="ref">* Sources: Airline OR value — Cook et al., "Airline Schedule Planning," <em>Interfaces</em> 47(5) (2017); TSP complexity — Applegate et al., <em>The Traveling Salesman Problem</em>, Princeton UP (2006), still the definitive reference; Solver routing speed — Google OR-Tools routing benchmarks (2024); Nobel Prizes — Koopmans (1975, activity analysis), Nash (1994, game theory), Heckman (2000, econometrics) — all rooted in OR methods.</p>
+
+<p>The common thread in every OR problem: you have <strong>variables</strong> (decisions to make), <strong>constraints</strong> (limits on those decisions), and an <strong>objective</strong> (a value to maximize or minimize). The challenge is navigating a decision space that is — more often than not — astronomically large.</p>
+
+
+<p><strong>What you will learn:</strong></p>
+
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Topic</th>
+</tr>
+</thead>
+<tbody>
+<tr><td>14.1</td><td>Complexity classes, NP-hardness, and the approximation bargain</td></tr>
+<tr><td>14.2</td><td>The landscape of OR methods: exact, heuristic, and metaheuristic families</td></tr>
+<tr><td>14.3</td><td>OR solvers (Gurobi, OR-Tools): formulation, branch &amp; bound, when to use</td></tr>
+<tr><td>14.4</td><td>Genetic algorithms: encoding, crossover, mutation, real-world scheduling</td></tr>
+<tr><td>14.5</td><td>Ant colony optimization: pheromone-guided search for graph problems</td></tr>
+<tr><td>14.6</td><td>Multi-objective optimization: Pareto fronts and NSGA-II</td></tr>
+</tbody>
+</table>
+
+
+<h2 id="complexity-hardness-approximation">14.1 Complexity, Hardness & Approximation</h2>
+
+<p>Before we choose an algorithm, we must understand <em>what kind of hard</em> our problem is. Complexity theory gives us the language.</p>
+
+<div class="complexity-grid">
+  <div class="complexity-box cb-p">
+    <div class="c-class">P</div>
+    <div class="c-name">Polynomial</div>
+    <div class="c-desc">Solvable in poly time. Sorting, shortest path, max flow. Fast and exact.</div>
+  </div>
+  <div class="complexity-box cb-np">
+    <div class="c-class">NP</div>
+    <div class="c-name">Non-det Poly</div>
+    <div class="c-desc">Solution verifiable in poly time. Hard to find, easy to check. TSP, Knapsack.</div>
+  </div>
+  <div class="complexity-box cb-nph">
+    <div class="c-class">NP-Hard</div>
+    <div class="c-name">At least as Hard</div>
+    <div class="c-desc">At least as hard as the hardest NP problems. No known poly-time solution.</div>
+  </div>
+  <div class="complexity-box cb-npc">
+    <div class="c-class">NP-C</div>
+    <div class="c-name">NP-Complete</div>
+    <div class="c-desc">Both NP and NP-Hard. Solving one solves all. 3-SAT, Graph Coloring.</div>
+  </div>
+</div>
+
+
+<figure class="rich-figure">
+<svg viewBox="0 0 740 360" xmlns="http://www.w3.org/2000/svg" width="100%" font-family="Segoe UI, Arial, sans-serif">
+    
+    <ellipse cx="370" cy="185" rx="340" ry="160" fill="#ffe4dc" stroke="#c8441a" stroke-width="1.5" opacity=".5"/>
+    <ellipse cx="370" cy="185" rx="255" ry="118" fill="#fff0cc" stroke="#c8941a" stroke-width="1.5" opacity=".6"/>
+    <ellipse cx="370" cy="185" rx="165" ry="78" fill="#d4f5e4" stroke="#2a9c5e" stroke-width="1.5" opacity=".7"/>
+
+    
+    <text x="370" y="178" text-anchor="middle" font-size="17" font-weight="700" fill="#1a7a4a">P</text>
+    <text x="370" y="196" text-anchor="middle" font-size="10" fill="#1a7a4a">Shortest Path · Sorting · Max Flow</text>
+
+    <text x="540" y="145" text-anchor="middle" font-size="14" font-weight="700" fill="#9a6a00">NP</text>
+    <text x="540" y="160" text-anchor="middle" font-size="9.5" fill="#9a6a00">TSP · Knapsack</text>
+    <text x="540" y="174" text-anchor="middle" font-size="9.5" fill="#9a6a00">Job Scheduling</text>
+
+    <text x="174" y="145" text-anchor="middle" font-size="12" font-weight="700" fill="#9a6a00">NP-Complete</text>
+    <text x="174" y="160" text-anchor="middle" font-size="9.5" fill="#9a6a00">3-SAT · Vertex Cover</text>
+    <text x="174" y="174" text-anchor="middle" font-size="9.5" fill="#9a6a00">Graph Coloring</text>
+
+    <text x="370" y="310" text-anchor="middle" font-size="13" font-weight="700" fill="#c8441a">NP-Hard</text>
+    <text x="370" y="327" text-anchor="middle" font-size="9.5" fill="#c8441a">Halting Problem variants · QSAT · Some OR scheduling problems</text>
+
+    
+    <text x="680" y="58" text-anchor="end" font-size="10" fill="#888">If P = NP...</text>
+    <text x="680" y="72" text-anchor="end" font-size="10" fill="#888">all collapse into P</text>
+    <line x1="590" y1="68" x2="555" y2="110" stroke="#bbb" stroke-width="1" stroke-dasharray="4,3"/>
+  </svg>
+<figcaption>Complexity Classes & Real OR Problems</figcaption>
+</figure>
+
+<h3 id="the-approximation-bargain">The Approximation Bargain</h3>
+
+<p>Since most interesting OR problems are NP-Hard, we rarely seek a provably <em>optimal</em> solution for large instances. Instead, we make a bargain: trade a little optimality for a lot of speed. This is formalized as an <strong>approximation algorithm</strong> — one with a guaranteed worst-case ratio to the true optimum.</p>
+
+
+<figure class="rich-figure">
+<svg viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg" width="100%">
+    
+    <line x1="70" y1="240" x2="630" y2="240" stroke="#ccc" stroke-width="1.5"/>
+    <line x1="70" y1="240" x2="70" y2="30" stroke="#ccc" stroke-width="1.5"/>
+    <text x="350" y="274" text-anchor="middle" font-size="12" fill="#888" font-family="Segoe UI, Arial, sans-serif">Computation Time →</text>
+    <text x="22" y="140" text-anchor="middle" font-size="12" fill="#888" font-family="Segoe UI, Arial, sans-serif" transform="rotate(-90,22,140)">Solution Quality →</text>
+
+    
+    <line x1="70" y1="50" x2="630" y2="50" stroke="#2a9c5e" stroke-width="1.5" stroke-dasharray="8,4"/>
+    <text x="636" y="54" font-size="11" fill="#2a9c5e" font-family="Segoe UI, Arial, sans-serif">Optimal</text>
+
+    
+    <line x1="70" y1="75" x2="630" y2="75" stroke="#c8941a" stroke-width="1" stroke-dasharray="5,4"/>
+    <text x="636" y="79" font-size="10" fill="#c8941a" font-family="Segoe UI, Arial, sans-serif">95%</text>
+
+    
+    <line x1="70" y1="115" x2="630" y2="115" stroke="#c8441a" stroke-width="1" stroke-dasharray="5,4"/>
+    <text x="636" y="119" font-size="10" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif">80%</text>
+
+    
+    
+    <path d="M 70,230 C 120,220 200,180 300,80 350,55 400,51 630,50" stroke="#1a6bc8" stroke-width="2.5" fill="none"/>
+    
+    <path d="M 70,230 C 100,215 150,160 230,100 280,82 340,76 630,75" stroke="#c8941a" stroke-width="2.5" fill="none"/>
+    
+    <path d="M 70,230 C 90,200 110,155 160,128 200,118 300,116 630,115" stroke="#c8441a" stroke-width="2.5" fill="none"/>
+
+    
+    <circle cx="300" cy="80" r="5" fill="#1a6bc8"/>
+    <text x="305" y="96" font-size="10" fill="#1a6bc8" font-family="Segoe UI, Arial, sans-serif">Exact Solver</text>
+    <circle cx="240" cy="98" r="5" fill="#c8941a"/>
+    <text x="245" y="88" font-size="10" fill="#c8941a" font-family="Segoe UI, Arial, sans-serif">Metaheuristic (GA/ACO)</text>
+    <circle cx="160" cy="128" r="5" fill="#c8441a"/>
+    <text x="165" y="122" font-size="10" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif">Greedy Heuristic</text>
+
+    
+    <rect x="70" y="200" width="140" height="40" fill="#f0f8e8" opacity=".5" rx="4"/>
+    <text x="140" y="226" text-anchor="middle" font-size="10" fill="#2a9c5e" font-family="Segoe UI, Arial, sans-serif">Fast &amp; cheap zone</text>
+  </svg>
+<figcaption>Solution Quality vs. Computation Time Trade-off</figcaption>
+</figure>
+
+<div class="intuition-note">
+<div class="in-label">Mental Model</div>
+Think of it like searching a labyrinth. An <strong>exact solver</strong> maps every corridor — guaranteed to find the exit but slow. A <strong>metaheuristic</strong> follows promising scents — usually finds a great exit quickly. A <strong>greedy heuristic</strong> always turns toward whatever looks best right now — fast, but may dead-end.
+</div>
+
+
+<h2 id="the-landscape-of-methods">14.2 The Landscape of Methods</h2>
+
+<p>The OR toolbox is vast. Here is a map of the major families — we will explore a curated selection in this chapter, not all of them.</p>
+
+
+<figure class="rich-figure">
+<svg viewBox="0 0 720 400" xmlns="http://www.w3.org/2000/svg" width="100%">
+    <defs>
+      <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 z" fill="#bbb"/>
+      </marker>
+    </defs>
+
+    
+    <ellipse cx="360" cy="200" rx="72" ry="32" fill="#0f0f14" stroke="#0f0f14"/>
+    <text x="360" y="197" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="Segoe UI, Arial, sans-serif">OR Problem</text>
+    <text x="360" y="213" text-anchor="middle" font-size="10" fill="#aaa" font-family="Segoe UI, Arial, sans-serif">minimize f(x) s.t. Ax ≤ b</text>
+
+    
+    <ellipse cx="115" cy="90" rx="90" ry="30" fill="#dceeff" stroke="#1a6bc8" stroke-width="1.5"/>
+    <text x="115" y="86" text-anchor="middle" font-size="12" font-weight="700" fill="#1a6bc8" font-family="Segoe UI, Arial, sans-serif">Exact Methods</text>
+    <text x="115" y="102" text-anchor="middle" font-size="9.5" fill="#1a6bc8" font-family="Segoe UI, Arial, sans-serif">LP · MIP · Branch &amp; Bound</text>
+    <line x1="200" y1="107" x2="295" y2="176" stroke="#bbb" stroke-width="1.2" marker-end="url(#arr)"/>
+    <text x="244" y="148" font-size="9" fill="#888" font-family="Segoe UI, Arial, sans-serif" text-anchor="middle">small–medium</text>
+
+    
+    <ellipse cx="115" cy="200" rx="90" ry="30" fill="#ffe4dc" stroke="#c8441a" stroke-width="1.5"/>
+    <text x="115" y="196" text-anchor="middle" font-size="12" font-weight="700" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif">Commercial Solvers</text>
+    <text x="115" y="212" text-anchor="middle" font-size="9.5" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif">Gurobi · OR-Tools · CPLEX</text>
+    <line x1="205" y1="200" x2="287" y2="200" stroke="#bbb" stroke-width="1.2" marker-end="url(#arr)"/>
+    <text x="244" y="193" font-size="9" fill="#888" font-family="Segoe UI, Arial, sans-serif" text-anchor="middle">plug-in</text>
+
+    
+    <ellipse cx="115" cy="310" rx="90" ry="30" fill="#d4f5e4" stroke="#2a9c5e" stroke-width="1.5"/>
+    <text x="115" y="306" text-anchor="middle" font-size="12" font-weight="700" fill="#1a7a4a" font-family="Segoe UI, Arial, sans-serif">Nature-Inspired</text>
+    <text x="115" y="322" text-anchor="middle" font-size="9.5" fill="#1a7a4a" font-family="Segoe UI, Arial, sans-serif">GA · ACO · PSO · SA</text>
+    <line x1="200" y1="294" x2="295" y2="224" stroke="#bbb" stroke-width="1.2" marker-end="url(#arr)"/>
+    <text x="242" y="260" font-size="9" fill="#888" font-family="Segoe UI, Arial, sans-serif" text-anchor="middle">large, complex</text>
+
+    
+    <ellipse cx="605" cy="90" rx="90" ry="30" fill="#ecdcff" stroke="#8b44c8" stroke-width="1.5"/>
+    <text x="605" y="86" text-anchor="middle" font-size="12" font-weight="700" fill="#6b1acc" font-family="Segoe UI, Arial, sans-serif">Multi-Objective</text>
+    <text x="605" y="102" text-anchor="middle" font-size="9.5" fill="#6b1acc" font-family="Segoe UI, Arial, sans-serif">NSGA-II · MOEA/D · Pareto</text>
+    <line x1="520" y1="107" x2="425" y2="176" stroke="#bbb" stroke-width="1.2" marker-end="url(#arr)"/>
+
+    
+    <ellipse cx="605" cy="200" rx="90" ry="30" fill="#fff0cc" stroke="#c8941a" stroke-width="1.5"/>
+    <text x="605" y="196" text-anchor="middle" font-size="12" font-weight="700" fill="#9a6a00" font-family="Segoe UI, Arial, sans-serif">Convex / QP</text>
+    <text x="605" y="212" text-anchor="middle" font-size="9.5" fill="#9a6a00" font-family="Segoe UI, Arial, sans-serif">SQP · Interior Point · SDP</text>
+    <line x1="515" y1="200" x2="433" y2="200" stroke="#bbb" stroke-width="1.2" marker-end="url(#arr)"/>
+
+    
+    <ellipse cx="605" cy="310" rx="90" ry="30" fill="#e8f0ff" stroke="#4466cc" stroke-width="1.5"/>
+    <text x="605" y="306" text-anchor="middle" font-size="12" font-weight="700" fill="#2244aa" font-family="Segoe UI, Arial, sans-serif">ML-Augmented</text>
+    <text x="605" y="322" text-anchor="middle" font-size="9.5" fill="#2244aa" font-family="Segoe UI, Arial, sans-serif">RL · Neural CO · LLM+OR</text>
+    <line x1="520" y1="294" x2="425" y2="224" stroke="#bbb" stroke-width="1.2" marker-end="url(#arr)"/>
+
+    
+    <rect x="260" y="248" width="202" height="28" rx="6" fill="#fff9f0" stroke="#f0c070" stroke-width="1.2"/>
+    <text x="361" y="266" text-anchor="middle" font-size="10.5" fill="#9a6a00" font-family="Segoe UI, Arial, sans-serif">★ Covered in this chapter: Solvers, GA, ACO, MOO</text>
+  </svg>
+<figcaption>OR Algorithm Families: A Navigator's Map</figcaption>
+</figure>
+
+<p>Each family has its home terrain. Exact methods shine on small, well-structured problems. Commercial solvers bundle decades of tricks and win on medium-scale industrial problems. Nature-inspired metaheuristics scale beautifully but sacrifice the optimality guarantee. ML-augmented methods are an exciting frontier we will touch on in a later chapter.</p>
+
+<blockquote>
+<p><strong>Chapter Scope:</strong> In this chapter we cover: <strong>OR Solvers</strong> (Google OR-Tools and Gurobi), <strong>Genetic Algorithms</strong>, <strong>Ant Colony Optimization</strong>, and <strong>Multi-Objective Optimization</strong> with Pareto fronts. Each section pairs the concept with a real-world worked example.</p>
+</blockquote>
+
+
+<h2 id="or-solvers-standing-on-giants-shoulders">14.3 OR Solvers — Standing on Giants' Shoulders</h2>
+
+<p>Before writing a single line of custom optimization code, the first question should always be: <em>can a solver handle this?</em> Modern OR solvers are engineering marvels — each embedding 30+ years of algorithmic research and capable of solving problems with millions of variables.</p>
+
+<h3 id="what-does-a-solver-actually-do">What Does a Solver Actually Do?</h3>
+
+<p>An OR solver is a software engine that takes a mathematical description of your problem — variables, constraints, objective — and finds the optimal (or near-optimal) solution. You don't write the search algorithm; you write the <em>model</em>. The solver handles the rest.</p>
+
+<p>Under the hood, most solvers use a family of techniques called <strong>Mixed Integer Programming (MIP)</strong>. Here's the progression of ideas, from simplest to most powerful:</p>
+
+<div class="intuition-note">
+<div class="in-label">Mental Model</div>
+If all variables were continuous (not integers), the problem would be a simple <em>Linear Program</em> — solvable exactly in milliseconds using the Simplex or Interior Point method. The hardness of combinatorial problems comes entirely from the integrality constraints (x ∈ {0, 1} or x ∈ ℤ). Solvers exploit this by starting with the easy continuous relaxation and progressively enforcing integrality.
+</div>
+
+<h3 id="how-solvers-work-step-by-step">How Solvers Work — Step by Step</h3>
+
+<div class="steps">
+  <div class="step"><div class="step-num blue">1</div><div class="step-body"><strong>Formulate as MIP.</strong> Express your problem as: minimize cᵀx subject to Ax ≤ b, with some or all xᵢ ∈ {0,1} or ℤ. This is the modeling step — the art of turning a business problem into math.</div></div>
+  <div class="step"><div class="step-num blue">2</div><div class="step-body"><strong>LP Relaxation.</strong> Temporarily drop the integrality requirement — let xᵢ ∈ [0,1] instead of {0,1}. Solve this relaxed continuous problem. This gives a bound: the relaxation is <em>at least as good</em> as the true integer optimum. If the relaxation solution happens to be integer, we're done.</div></div>
+  <div class="step"><div class="step-num blue">3</div><div class="step-body"><strong>Branch & Bound.</strong> Pick a fractional variable (say x₁ = 3.5). Fork the search tree: left branch adds x₁ ≤ 3, right branch adds x₁ ≥ 4. Solve the LP relaxation in each sub-problem. Recurse until all variables are integer.</div></div>
+  <div class="step"><div class="step-num blue">4</div><div class="step-body"><strong>Cutting Planes.</strong> Before branching, add inequalities (cuts) that slice off the fractional LP solution without removing any valid integer point. Gomory cuts, cover cuts, and clique cuts dramatically tighten the LP bound — reducing the tree size by orders of magnitude.</div></div>
+  <div class="step"><div class="step-num blue">5</div><div class="step-body"><strong>Prune & Terminate.</strong> Prune any branch whose LP bound is worse than the best integer solution found so far (the <em>incumbent</em>). When the tree is exhausted, the incumbent is certified optimal. Return it.</div></div>
+</div>
+
+
+<figure class="rich-figure">
+<svg viewBox="0 0 680 310" xmlns="http://www.w3.org/2000/svg" width="100%">
+    
+    <rect x="270" y="16" width="140" height="44" rx="8" fill="#1a6bc8" stroke="#1a6bc8"/>
+    <text x="340" y="34" text-anchor="middle" font-size="11" fill="#fff" font-family="Segoe UI, Arial, sans-serif" font-weight="700">LP Relaxation</text>
+    <text x="340" y="50" text-anchor="middle" font-size="10" fill="#c8e4ff" font-family="Segoe UI, Arial, sans-serif">z = 24.7, x₁=3.5</text>
+
+    
+    <line x1="300" y1="60" x2="190" y2="112" stroke="#aaa" stroke-width="1.2"/>
+    <line x1="380" y1="60" x2="490" y2="112" stroke="#aaa" stroke-width="1.2"/>
+    <text x="220" y="90" font-size="9.5" fill="#888" font-family="Segoe UI, Arial, sans-serif">x₁ ≤ 3</text>
+    <text x="430" y="90" font-size="9.5" fill="#888" font-family="Segoe UI, Arial, sans-serif">x₁ ≥ 4</text>
+
+    <rect x="110" y="112" width="160" height="44" rx="8" fill="#2a9c5e" stroke="#2a9c5e"/>
+    <text x="190" y="130" text-anchor="middle" font-size="11" fill="#fff" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Node A</text>
+    <text x="190" y="146" text-anchor="middle" font-size="10" fill="#c8ffe4" font-family="Segoe UI, Arial, sans-serif">z = 23.2, x₂=1.8</text>
+
+    <rect x="410" y="112" width="160" height="44" rx="8" fill="#c8441a" stroke="#c8441a"/>
+    <text x="490" y="130" text-anchor="middle" font-size="11" fill="#fff" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Node B</text>
+    <text x="490" y="146" text-anchor="middle" font-size="10" fill="#ffe4dc" font-family="Segoe UI, Arial, sans-serif">z = 22.0, integer ✓</text>
+
+    
+    <line x1="160" y1="156" x2="100" y2="208" stroke="#aaa" stroke-width="1.2"/>
+    <line x1="220" y1="156" x2="280" y2="208" stroke="#aaa" stroke-width="1.2"/>
+    <text x="118" y="188" font-size="9.5" fill="#888" font-family="Segoe UI, Arial, sans-serif">x₂ ≤ 1</text>
+    <text x="240" y="188" font-size="9.5" fill="#888" font-family="Segoe UI, Arial, sans-serif">x₂ ≥ 2</text>
+
+    <rect x="30" y="208" width="140" height="44" rx="8" fill="#2a9c5e" stroke="#2a9c5e"/>
+    <text x="100" y="226" text-anchor="middle" font-size="11" fill="#fff" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Node C ★</text>
+    <text x="100" y="242" text-anchor="middle" font-size="10" fill="#c8ffe4" font-family="Segoe UI, Arial, sans-serif">z = 22.8, integer ✓</text>
+
+    <rect x="210" y="208" width="140" height="44" rx="8" fill="#888" stroke="#888" opacity=".5"/>
+    <text x="280" y="226" text-anchor="middle" font-size="11" fill="#fff" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Node D</text>
+    <text x="280" y="242" text-anchor="middle" font-size="10" fill="#eee" font-family="Segoe UI, Arial, sans-serif">Infeasible — pruned</text>
+
+    
+    <rect x="430" y="208" width="12" height="12" rx="2" fill="#2a9c5e"/>
+    <text x="448" y="219" font-size="10" fill="#555" font-family="Segoe UI, Arial, sans-serif">Integer solution</text>
+    <rect x="430" y="228" width="12" height="12" rx="2" fill="#c8441a"/>
+    <text x="448" y="239" font-size="10" fill="#555" font-family="Segoe UI, Arial, sans-serif">Incumbent best</text>
+    <rect x="430" y="248" width="12" height="12" rx="2" fill="#888" opacity=".5"/>
+    <text x="448" y="259" font-size="10" fill="#555" font-family="Segoe UI, Arial, sans-serif">Pruned (infeasible)</text>
+
+    <text x="340" y="292" text-anchor="middle" font-size="10" fill="#888" font-family="Segoe UI, Arial, sans-serif">Best integer solution: Node C with z=22.8 — reported as optimal</text>
+  </svg>
+<figcaption>Branch & Bound Tree (Integer Program Example)</figcaption>
+</figure>
+
+<h3 id="google-or-tools-vs-gurobi-choosing-your-solver">Google OR-Tools vs. Gurobi — Choosing Your Solver</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th>Google OR-Tools</th>
+      <th>Gurobi</th>
+      <th>CPLEX</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>License</td>
+      <td>Open Source (Apache 2)</td>
+      <td>Commercial (free academic)</td>
+      <td>Commercial</td>
+    </tr>
+    <tr>
+      <td>LP / MIP</td>
+      <td>✅ GLOP solver, CP-SAT</td>
+      <td>✅ Best-in-class MIP</td>
+      <td>✅ Strong MIP</td>
+    </tr>
+    <tr>
+      <td>Constraint Programming</td>
+      <td>✅ CP-SAT (excellent)</td>
+      <td>⚠️ Limited</td>
+      <td>⚠️ CP Optimizer separate</td>
+    </tr>
+    <tr>
+      <td>Routing / VRP</td>
+      <td>✅ Built-in routing library</td>
+      <td>⚠️ Requires manual modeling</td>
+      <td>⚠️ Manual modeling</td>
+    </tr>
+    <tr>
+      <td>Scheduling</td>
+      <td>✅ CP-SAT native</td>
+      <td>✅ Via MIP</td>
+      <td>✅ Via MIP</td>
+    </tr>
+    <tr>
+      <td>Quadratic Programming</td>
+      <td>⚠️ Basic</td>
+      <td>✅ Convex QP/QCQP</td>
+      <td>✅ QP supported</td>
+    </tr>
+    <tr>
+      <td>Scale (vars)</td>
+      <td>~10⁵–10⁶</td>
+      <td>10⁶–10⁸</td>
+      <td>10⁶–10⁷</td>
+    </tr>
+    <tr>
+      <td>Python API</td>
+      <td>✅ First-class</td>
+      <td>✅ gurobipy</td>
+      <td>✅ docplex</td>
+    </tr>
+    <tr>
+      <td>Best for</td>
+      <td>VRP, scheduling, CP, open-source stacks</td>
+      <td>Large MIP, finance, production planning</td>
+      <td>Enterprise MIP, IBM cloud</td>
+    </tr>
+  </tbody>
+</table>
+
+<p class="ref">* References: Gurobi Optimizer Reference Manual (2024), gurobi.com/documentation; Google OR-Tools documentation, developers.google.com/optimization (2024); Achterberg, "SCIP: Solving Constraint Integer Programs," <em>Mathematical Programming Computation</em> 1(1) (2009) — the foundational MIP framework still used in all major solvers today.</p>
+
+<div class="practical-example">
+<div class="pe-label">Real-World ML Use Case</div>
+<h4>Vehicle Routing at a Last-Mile Delivery Startup</h4>
+  <p><strong>Problem:</strong> 200 delivery stops, 12 vans, each with 800 kg capacity, 8-hour time windows per stop, depot start/end. A classic Capacitated VRP with Time Windows (CVRPTW).</p>
+  <p><strong>Tool:</strong> Google OR-Tools routing solver. Models each van as a vehicle, each stop as a node with a demand and time window, and minimizes total travel distance using guided local search over the MIP formulation.</p>
+  <p><strong>Result:</strong> Solves 200-stop instances in under 2 seconds, cutting total driven distance by ~22% vs. manual planning. At 1,000 stops, switching to CP-SAT with metaheuristic local search gives solutions within 5% of optimal in under 30 seconds.</p>
+  <p class="ref">* Uchoa et al., "New benchmark instances for the Capacitated Vehicle Routing Problem," <em>European Journal of Operational Research</em> 257(3) (2017) — the current gold-standard CVRP benchmark, used to evaluate all modern solvers including OR-Tools.</p>
+</div>
+
+<blockquote>
+<p><strong>When to reach for a solver first:</strong> If your problem has <strong>fewer than ~10,000 binary variables</strong> and a clean mathematical structure (LP, MIP, CP), try a solver before reaching for a metaheuristic. Modern solvers are shockingly powerful and you may not need a custom algorithm at all.</p>
+</blockquote>
+
+
+<h2 id="genetic-algorithms-evolution-as-optimizer">14.4 Genetic Algorithms — Evolution as Optimizer</h2>
+
+<div class="algo-card">
+  <div class="algo-card-header orange">
+    <div class="algo-icon">🧬</div>
+    <div class="algo-card-title">
+      <h3 id="genetic-algorithm-ga">Genetic Algorithm (GA)</h3>
+      <p>Population-based metaheuristic · Inspired by Darwinian evolution · Holland, 1975</p>
+    </div>
+  </div>
+  <div class="algo-card-body">
+    <p>Nature has been solving optimization problems for 3.8 billion years. Genetic Algorithms borrow the core machinery of evolution — <strong>selection</strong>, <strong>crossover</strong>, and <strong>mutation</strong> — to navigate large, rugged search spaces where gradients are unavailable or meaningless.</p>
+  </div>
+</div>
+
+<h3 id="the-core-loop-intuition-first">The Core Loop — Intuition First</h3>
+
+<p>Think of each candidate solution as a <em>chromosome</em> — a string encoding the decisions (route order, schedule, weights). A <em>population</em> of chromosomes competes, mates, and mutates across generations. The fittest survive. Over time, the population drifts toward better and better regions of the search space.</p>
+
+
+<figure class="rich-figure">
+<svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg" width="100%">
+    <defs>
+      <marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 z" fill="#c8441a"/>
+      </marker>
+    </defs>
+    
+    <rect x="20" y="70" width="100" height="52" rx="8" fill="#ffe4dc" stroke="#c8441a" stroke-width="1.5"/>
+    <text x="70" y="92" text-anchor="middle" font-size="12" font-weight="700" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif">Initialize</text>
+    <text x="70" y="108" text-anchor="middle" font-size="10" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif">Random pop.</text>
+
+    <rect x="157" y="70" width="100" height="52" rx="8" fill="#fff0cc" stroke="#c8941a" stroke-width="1.5"/>
+    <text x="207" y="92" text-anchor="middle" font-size="12" font-weight="700" fill="#9a6a00" font-family="Segoe UI, Arial, sans-serif">Evaluate</text>
+    <text x="207" y="108" text-anchor="middle" font-size="10" fill="#9a6a00" font-family="Segoe UI, Arial, sans-serif">Fitness f(x)</text>
+
+    <rect x="294" y="70" width="100" height="52" rx="8" fill="#dceeff" stroke="#1a6bc8" stroke-width="1.5"/>
+    <text x="344" y="92" text-anchor="middle" font-size="12" font-weight="700" fill="#1a6bc8" font-family="Segoe UI, Arial, sans-serif">Select</text>
+    <text x="344" y="108" text-anchor="middle" font-size="10" fill="#1a6bc8" font-family="Segoe UI, Arial, sans-serif">Tournament</text>
+
+    <rect x="431" y="70" width="100" height="52" rx="8" fill="#d4f5e4" stroke="#2a9c5e" stroke-width="1.5"/>
+    <text x="481" y="92" text-anchor="middle" font-size="12" font-weight="700" fill="#1a7a4a" font-family="Segoe UI, Arial, sans-serif">Crossover</text>
+    <text x="481" y="108" text-anchor="middle" font-size="10" fill="#1a7a4a" font-family="Segoe UI, Arial, sans-serif">Recombine</text>
+
+    <rect x="568" y="70" width="100" height="52" rx="8" fill="#ecdcff" stroke="#8b44c8" stroke-width="1.5"/>
+    <text x="618" y="92" text-anchor="middle" font-size="12" font-weight="700" fill="#6b1acc" font-family="Segoe UI, Arial, sans-serif">Mutate</text>
+    <text x="618" y="108" text-anchor="middle" font-size="10" fill="#6b1acc" font-family="Segoe UI, Arial, sans-serif">Random flip</text>
+
+    
+    <line x1="120" y1="96" x2="154" y2="96" stroke="#c8441a" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <line x1="257" y1="96" x2="291" y2="96" stroke="#c8441a" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <line x1="394" y1="96" x2="428" y2="96" stroke="#c8441a" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <line x1="531" y1="96" x2="565" y2="96" stroke="#c8441a" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+    
+    <path d="M 618,122 C 618,160 207,160 207,125" stroke="#c8441a" stroke-width="1.4" stroke-dasharray="6,4" fill="none" marker-end="url(#arr2)"/>
+    <text x="410" y="175" text-anchor="middle" font-size="10" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif">Next generation (until convergence or max gen.)</text>
+
+    
+    <text x="344" y="50" text-anchor="middle" font-size="10" fill="#888" font-family="Segoe UI, Arial, sans-serif">Stop: max gen. reached OR fitness plateau</text>
+  </svg>
+<figcaption>The Genetic Algorithm Lifecycle</figcaption>
+</figure>
+
+<h3 id="step-0-encoding-the-problem-as-a-chromosome">Step 0: Encoding the Problem as a Chromosome</h3>
+
+<p>Before any evolution can happen, you must answer: <em>how do I represent a candidate solution as a string of genes?</em> This is the most important design decision in a GA — a bad encoding makes crossover meaningless, while a good encoding bakes domain structure directly into the search.</p>
+
+
+<figure class="rich-figure">
+<svg viewBox="0 0 700 360" xmlns="http://www.w3.org/2000/svg" width="100%">
+    <defs>
+      <marker id="arr2b" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 z" fill="#c8441a"/>
+      </marker>
+    </defs>
+    <text x="20" y="28" font-size="13" font-weight="700" fill="#1a6bc8" font-family="Segoe UI, Arial, sans-serif">① Binary Encoding</text>
+    <text x="20" y="45" font-size="10.5" fill="#888" font-family="Segoe UI, Arial, sans-serif">Problem: Knapsack — which items to pack? Gene i=1 means item i is in the bag.</text>
+    <g font-family="monospace" font-size="13">
+      <rect x="20" y="54" width="36" height="30" rx="4" fill="#1a6bc8"/><text x="38" y="74" text-anchor="middle" fill="#fff">1</text>
+      <rect x="58" y="54" width="36" height="30" rx="4" fill="#dceeff" stroke="#1a6bc8" stroke-width="1.2"/><text x="76" y="74" text-anchor="middle" fill="#1a6bc8">0</text>
+      <rect x="96" y="54" width="36" height="30" rx="4" fill="#1a6bc8"/><text x="114" y="74" text-anchor="middle" fill="#fff">1</text>
+      <rect x="134" y="54" width="36" height="30" rx="4" fill="#1a6bc8"/><text x="152" y="74" text-anchor="middle" fill="#fff">1</text>
+      <rect x="172" y="54" width="36" height="30" rx="4" fill="#dceeff" stroke="#1a6bc8" stroke-width="1.2"/><text x="190" y="74" text-anchor="middle" fill="#1a6bc8">0</text>
+      <rect x="210" y="54" width="36" height="30" rx="4" fill="#1a6bc8"/><text x="228" y="74" text-anchor="middle" fill="#fff">1</text>
+    </g>
+    <text x="20" y="102" font-size="9.5" fill="#888" font-family="Segoe UI, Arial, sans-serif">Items selected: {Laptop, Charger, Camera, Headphones} → Fitness = total value, penalize if weight exceeds capacity</text>
+    <text x="264" y="74" font-size="10" fill="#aaa" font-family="Segoe UI, Arial, sans-serif">Item₁ Item₂ Item₃ Item₄ Item₅ Item₆</text>
+
+    <line x1="0" y1="116" x2="700" y2="116" stroke="#eee" stroke-width="1"/>
+
+    
+    <text x="20" y="138" font-size="13" font-weight="700" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif">② Permutation Encoding</text>
+    <text x="20" y="155" font-size="10.5" fill="#888" font-family="Segoe UI, Arial, sans-serif">Problem: Traveling Salesman — visit each city once. Gene i = which city to visit at step i.</text>
+    <g font-family="monospace" font-size="11">
+      <rect x="20" y="163" width="42" height="30" rx="4" fill="#c8441a"/><text x="41" y="183" text-anchor="middle" fill="#fff">MUM</text>
+      <rect x="64" y="163" width="42" height="30" rx="4" fill="#ffe4dc" stroke="#c8441a" stroke-width="1.2"/><text x="85" y="183" text-anchor="middle" fill="#c8441a">DEL</text>
+      <rect x="108" y="163" width="42" height="30" rx="4" fill="#c8441a"/><text x="129" y="183" text-anchor="middle" fill="#fff">BLR</text>
+      <rect x="152" y="163" width="42" height="30" rx="4" fill="#ffe4dc" stroke="#c8441a" stroke-width="1.2"/><text x="173" y="183" text-anchor="middle" fill="#c8441a">HYD</text>
+      <rect x="196" y="163" width="42" height="30" rx="4" fill="#c8441a"/><text x="217" y="183" text-anchor="middle" fill="#fff">CHE</text>
+      <rect x="240" y="163" width="42" height="30" rx="4" fill="#ffe4dc" stroke="#c8441a" stroke-width="1.2"/><text x="261" y="183" text-anchor="middle" fill="#c8441a">PNQ</text>
+      <rect x="284" y="163" width="42" height="30" rx="4" fill="#c8441a"/><text x="305" y="183" text-anchor="middle" fill="#fff">AMD</text>
+    </g>
+    
+    <path d="M 41,193 L 85,193 L 129,193 L 173,193 L 217,193 L 261,193 L 305,193" stroke="#c8441a" stroke-width="1" fill="none" stroke-dasharray="3,2" marker-end="url(#arr2b)"/>
+    <text x="20" y="214" font-size="9.5" fill="#888" font-family="Segoe UI, Arial, sans-serif">Route: MUM→DEL→BLR→HYD→CHE→PNQ→AMD→MUM. Fitness = total distance (minimize).</text>
+
+    <line x1="0" y1="228" x2="700" y2="228" stroke="#eee" stroke-width="1"/>
+
+    
+    <text x="20" y="250" font-size="13" font-weight="700" fill="#2a9c5e" font-family="Segoe UI, Arial, sans-serif">③ Real-Value (Matrix) Encoding</text>
+    <text x="20" y="267" font-size="10.5" fill="#888" font-family="Segoe UI, Arial, sans-serif">Problem: Nurse Scheduling — each cell = shift assigned to nurse n on day d.</text>
+    
+    <g font-family="monospace" font-size="9.5" text-anchor="middle">
+      
+      <text x="72" y="283" fill="#888" font-family="Segoe UI, Arial, sans-serif" font-size="9">Mon</text>
+      <text x="106" y="283" fill="#888" font-family="Segoe UI, Arial, sans-serif" font-size="9">Tue</text>
+      <text x="140" y="283" fill="#888" font-family="Segoe UI, Arial, sans-serif" font-size="9">Wed</text>
+      <text x="174" y="283" fill="#888" font-family="Segoe UI, Arial, sans-serif" font-size="9">Thu</text>
+      <text x="208" y="283" fill="#888" font-family="Segoe UI, Arial, sans-serif" font-size="9">Fri</text>
+      
+      <text x="38" y="302" fill="#2a9c5e" font-family="Segoe UI, Arial, sans-serif" font-size="9">N₁</text>
+      <text x="38" y="326" fill="#2a9c5e" font-family="Segoe UI, Arial, sans-serif" font-size="9">N₂</text>
+      <text x="38" y="350" fill="#2a9c5e" font-family="Segoe UI, Arial, sans-serif" font-size="9">N₃</text>
+      
+      <rect x="52" y="289" width="38" height="20" rx="3" fill="#2a9c5e"/><text x="71" y="303" fill="#fff">Day</text>
+      <rect x="90" y="289" width="38" height="20" rx="3" fill="#d4f5e4" stroke="#2a9c5e" stroke-width="1"/><text x="109" y="303" fill="#1a7a4a">Eve</text>
+      <rect x="128" y="289" width="38" height="20" rx="3" fill="#2a9c5e"/><text x="147" y="303" fill="#fff">Day</text>
+      <rect x="166" y="289" width="38" height="20" rx="3" fill="#888" opacity=".4"/><text x="185" y="303" fill="#555">Off</text>
+      <rect x="204" y="289" width="38" height="20" rx="3" fill="#2a9c5e"/><text x="223" y="303" fill="#fff">Ngt</text>
+      
+      <rect x="52" y="313" width="38" height="20" rx="3" fill="#d4f5e4" stroke="#2a9c5e" stroke-width="1"/><text x="71" y="327" fill="#1a7a4a">Eve</text>
+      <rect x="90" y="313" width="38" height="20" rx="3" fill="#2a9c5e"/><text x="109" y="327" fill="#fff">Day</text>
+      <rect x="128" y="313" width="38" height="20" rx="3" fill="#888" opacity=".4"/><text x="147" y="327" fill="#555">Off</text>
+      <rect x="166" y="313" width="38" height="20" rx="3" fill="#2a9c5e"/><text x="185" y="327" fill="#fff">Day</text>
+      <rect x="204" y="313" width="38" height="20" rx="3" fill="#d4f5e4" stroke="#2a9c5e" stroke-width="1"/><text x="223" y="327" fill="#1a7a4a">Eve</text>
+      
+      <rect x="52" y="337" width="38" height="20" rx="3" fill="#888" opacity=".4"/><text x="71" y="351" fill="#555">Off</text>
+      <rect x="90" y="337" width="38" height="20" rx="3" fill="#2a9c5e"/><text x="109" y="351" fill="#fff">Ngt</text>
+      <rect x="128" y="337" width="38" height="20" rx="3" fill="#2a9c5e"/><text x="147" y="351" fill="#fff">Eve</text>
+      <rect x="166" y="337" width="38" height="20" rx="3" fill="#2a9c5e"/><text x="185" y="351" fill="#fff">Day</text>
+      <rect x="204" y="337" width="38" height="20" rx="3" fill="#888" opacity=".4"/><text x="223" y="351" fill="#555">Off</text>
+    </g>
+    <text x="265" y="310" font-size="10" fill="#888" font-family="Segoe UI, Arial, sans-serif">Each row = one nurse's week.</text>
+    <text x="265" y="324" font-size="10" fill="#888" font-family="Segoe UI, Arial, sans-serif">Crossover swaps rows (whole nurse schedules).</text>
+    <text x="265" y="338" font-size="10" fill="#888" font-family="Segoe UI, Arial, sans-serif">Mutation flips one cell (change a single shift).</text>
+    <text x="265" y="352" font-size="10" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Fitness = total coverage − λ·(constraint violations)</text>
+  </svg>
+<figcaption>Three Classic Chromosome Encodings</figcaption>
+</figure>
+
+<h3 id="fitness-selection-the-core-loop">Fitness, Selection & The Core Loop</h3>
+
+<p>Once you have an encoding, the GA machinery takes over. The <strong>fitness function</strong> scores each chromosome — higher is better. For a scheduling problem, fitness might be: <em>coverage score − 1000 × (number of violated rules)</em>. The penalty weight λ is a tuning knob: too low and the GA ignores constraints; too high and it never explores.</p>
+
+<p><strong>Selection</strong> determines who gets to reproduce. <em>Tournament selection</em> — pick k random individuals, let the best one win — is simple and robust. <em>Roulette wheel</em> selection samples proportionally to fitness. Elitism always keeps the top-k survivors intact, guaranteeing the best solution never gets lost.</p>
+
+<h3 id="the-operators-crossover-mutation-in-detail">The Operators: Crossover & Mutation in Detail</h3>
+
+<p>Once selection has chosen two parent chromosomes to mate, <strong>crossover</strong> combines them to produce offspring that inherit structure from both. <strong>Mutation</strong> then introduces small random perturbations — the engine of diversity that prevents premature convergence on a local optimum. The diagrams below show both operators on a permutation chromosome (city tour).</p>
+
+<figure class="rich-figure">
+<svg viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg" width="100%">
+    
+    <text x="20" y="28" font-size="13" font-weight="700" fill="#1a6bc8" font-family="Segoe UI, Arial, sans-serif">Order Crossover (OX)</text>
+
+    
+    <text x="20" y="52" font-size="10" fill="#888" font-family="Segoe UI, Arial, sans-serif">Parent 1:</text>
+    
+    <g fill="#dceeff" stroke="#1a6bc8" stroke-width="1.2">
+      <rect x="80" y="40" width="32" height="26" rx="4"/>
+      <rect x="114" y="40" width="32" height="26" rx="4"/>
+      <rect x="148" y="40" width="32" height="26" rx="4" fill="#1a6bc8"/>
+      <rect x="182" y="40" width="32" height="26" rx="4" fill="#1a6bc8"/>
+      <rect x="216" y="40" width="32" height="26" rx="4" fill="#1a6bc8"/>
+      <rect x="250" y="40" width="32" height="26" rx="4"/>
+      <rect x="284" y="40" width="32" height="26" rx="4"/>
+    </g>
+    <text x="96" y="57" text-anchor="middle" font-size="11" font-family="monospace" fill="#1a6bc8">A</text>
+    <text x="130" y="57" text-anchor="middle" font-size="11" font-family="monospace" fill="#1a6bc8">B</text>
+    <text x="164" y="57" text-anchor="middle" font-size="11" font-family="monospace" fill="#fff">C</text>
+    <text x="198" y="57" text-anchor="middle" font-size="11" font-family="monospace" fill="#fff">D</text>
+    <text x="232" y="57" text-anchor="middle" font-size="11" font-family="monospace" fill="#fff">E</text>
+    <text x="266" y="57" text-anchor="middle" font-size="11" font-family="monospace" fill="#1a6bc8">F</text>
+    <text x="300" y="57" text-anchor="middle" font-size="11" font-family="monospace" fill="#1a6bc8">G</text>
+
+    
+    <text x="20" y="88" font-size="10" fill="#888" font-family="Segoe UI, Arial, sans-serif">Parent 2:</text>
+    <g fill="#d4f5e4" stroke="#2a9c5e" stroke-width="1.2">
+      <rect x="80" y="76" width="32" height="26" rx="4"/>
+      <rect x="114" y="76" width="32" height="26" rx="4"/>
+      <rect x="148" y="76" width="32" height="26" rx="4" fill="#2a9c5e"/>
+      <rect x="182" y="76" width="32" height="26" rx="4" fill="#2a9c5e"/>
+      <rect x="216" y="76" width="32" height="26" rx="4" fill="#2a9c5e"/>
+      <rect x="250" y="76" width="32" height="26" rx="4"/>
+      <rect x="284" y="76" width="32" height="26" rx="4"/>
+    </g>
+    <text x="96" y="93" text-anchor="middle" font-size="11" font-family="monospace" fill="#2a9c5e">E</text>
+    <text x="130" y="93" text-anchor="middle" font-size="11" font-family="monospace" fill="#2a9c5e">G</text>
+    <text x="164" y="93" text-anchor="middle" font-size="11" font-family="monospace" fill="#fff">C</text>
+    <text x="198" y="93" text-anchor="middle" font-size="11" font-family="monospace" fill="#fff">D</text>
+    <text x="232" y="93" text-anchor="middle" font-size="11" font-family="monospace" fill="#fff">E</text>
+    <text x="266" y="93" text-anchor="middle" font-size="11" font-family="monospace" fill="#2a9c5e">A</text>
+    <text x="300" y="93" text-anchor="middle" font-size="11" font-family="monospace" fill="#2a9c5e">B</text>
+
+    
+    <text x="20" y="130" font-size="10" fill="#888" font-family="Segoe UI, Arial, sans-serif">Child:</text>
+    <g fill="#ffe4dc" stroke="#c8441a" stroke-width="1.2">
+      <rect x="80" y="118" width="32" height="26" rx="4"/>
+      <rect x="114" y="118" width="32" height="26" rx="4"/>
+      <rect x="148" y="118" width="32" height="26" rx="4" fill="#c8441a"/>
+      <rect x="182" y="118" width="32" height="26" rx="4" fill="#c8441a"/>
+      <rect x="216" y="118" width="32" height="26" rx="4" fill="#c8441a"/>
+      <rect x="250" y="118" width="32" height="26" rx="4"/>
+      <rect x="284" y="118" width="32" height="26" rx="4"/>
+    </g>
+    <text x="96" y="135" text-anchor="middle" font-size="11" font-family="monospace" fill="#c8441a">G</text>
+    <text x="130" y="135" text-anchor="middle" font-size="11" font-family="monospace" fill="#c8441a">A</text>
+    <text x="164" y="135" text-anchor="middle" font-size="11" font-family="monospace" fill="#fff">C</text>
+    <text x="198" y="135" text-anchor="middle" font-size="11" font-family="monospace" fill="#fff">D</text>
+    <text x="232" y="135" text-anchor="middle" font-size="11" font-family="monospace" fill="#fff">E</text>
+    <text x="266" y="135" text-anchor="middle" font-size="11" font-family="monospace" fill="#c8441a">B</text>
+    <text x="300" y="135" text-anchor="middle" font-size="11" font-family="monospace" fill="#c8441a">F</text>
+    <text x="350" y="132" font-size="10" fill="#888" font-family="Segoe UI, Arial, sans-serif">Inherits middle segment from P1, fills gaps from P2 order</text>
+
+    
+    <line x1="20" y1="160" x2="680" y2="160" stroke="#eee" stroke-width="1"/>
+    <text x="20" y="182" font-size="13" font-weight="700" fill="#6b1acc" font-family="Segoe UI, Arial, sans-serif">Swap Mutation</text>
+    <g fill="#ecdcff" stroke="#8b44c8" stroke-width="1.2">
+      <rect x="80" y="192" width="32" height="26" rx="4"/>
+      <rect x="114" y="192" width="32" height="26" rx="4"/>
+      <rect x="148" y="192" width="32" height="26" rx="4"/>
+      <rect x="182" y="192" width="32" height="26" rx="4"/>
+      <rect x="216" y="192" width="32" height="26" rx="4"/>
+    </g>
+    <text x="96" y="209" text-anchor="middle" font-size="11" font-family="monospace" fill="#6b1acc">A</text>
+    <text x="130" y="209" text-anchor="middle" font-size="11" font-family="monospace" fill="#6b1acc">B</text>
+    <text x="164" y="209" text-anchor="middle" font-size="11" font-family="monospace" fill="#6b1acc">C</text>
+    <text x="198" y="209" text-anchor="middle" font-size="11" font-family="monospace" fill="#6b1acc">D</text>
+    <text x="232" y="209" text-anchor="middle" font-size="11" font-family="monospace" fill="#6b1acc">E</text>
+
+    <text x="278" y="208" font-size="18" fill="#8b44c8" font-family="Segoe UI, Arial, sans-serif">→</text>
+
+    <g fill="#ecdcff" stroke="#8b44c8" stroke-width="1.2">
+      <rect x="300" y="192" width="32" height="26" rx="4"/>
+      <rect x="334" y="192" width="32" height="26" rx="4" fill="#8b44c8"/>
+      <rect x="368" y="192" width="32" height="26" rx="4"/>
+      <rect x="402" y="192" width="32" height="26" rx="4" fill="#8b44c8"/>
+      <rect x="436" y="192" width="32" height="26" rx="4"/>
+    </g>
+    <text x="316" y="209" text-anchor="middle" font-size="11" font-family="monospace" fill="#6b1acc">A</text>
+    <text x="350" y="209" text-anchor="middle" font-size="11" font-family="monospace" fill="#fff">D</text>
+    <text x="384" y="209" text-anchor="middle" font-size="11" font-family="monospace" fill="#6b1acc">C</text>
+    <text x="418" y="209" text-anchor="middle" font-size="11" font-family="monospace" fill="#fff">B</text>
+    <text x="452" y="209" text-anchor="middle" font-size="11" font-family="monospace" fill="#6b1acc">E</text>
+    <text x="490" y="208" font-size="10" fill="#888" font-family="Segoe UI, Arial, sans-serif">B ↔ D swapped (random, low prob)</text>
+  </svg>
+<figcaption>Crossover & Mutation Operators on a TSP Chromosome</figcaption>
+</figure>
+
+
+<figure class="rich-figure">
+<svg viewBox="0 0 680 240" xmlns="http://www.w3.org/2000/svg" width="100%">
+    <line x1="60" y1="200" x2="640" y2="200" stroke="#ccc" stroke-width="1.2"/>
+    <line x1="60" y1="200" x2="60" y2="20" stroke="#ccc" stroke-width="1.2"/>
+    <text x="350" y="225" text-anchor="middle" font-size="11" fill="#888" font-family="Segoe UI, Arial, sans-serif">Generation →</text>
+    <text x="18" y="115" text-anchor="middle" font-size="11" fill="#888" font-family="Segoe UI, Arial, sans-serif" transform="rotate(-90,18,115)">Fitness →</text>
+
+    
+    <line x1="60" y1="50" x2="640" y2="50" stroke="#f0ece4" stroke-width="1"/>
+    <line x1="60" y1="100" x2="640" y2="100" stroke="#f0ece4" stroke-width="1"/>
+    <line x1="60" y1="150" x2="640" y2="150" stroke="#f0ece4" stroke-width="1"/>
+
+    
+    <path d="M60,185 C100,170 140,140 200,100 260,72 320,56 400,50 500,48 600,47 640,47" stroke="#c8441a" stroke-width="2.5" fill="none"/>
+    
+    <path d="M60,192 C100,183 140,165 200,135 260,112 320,95 400,85 500,78 600,74 640,72" stroke="#1a6bc8" stroke-width="2" fill="none" stroke-dasharray="6,3"/>
+
+    
+    <rect x="60" y="20" width="220" height="175" fill="#fff9f0" opacity=".4" rx="4"/>
+    <text x="170" y="38" text-anchor="middle" font-size="10" fill="#c8941a" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Exploration phase</text>
+    <text x="170" y="52" text-anchor="middle" font-size="9.5" fill="#c8941a" font-family="Segoe UI, Arial, sans-serif">High diversity, rapid gain</text>
+
+    <rect x="400" y="20" width="240" height="175" fill="#f4f8ff" opacity=".4" rx="4"/>
+    <text x="520" y="38" text-anchor="middle" font-size="10" fill="#1a6bc8" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Exploitation phase</text>
+    <text x="520" y="52" text-anchor="middle" font-size="9.5" fill="#1a6bc8" font-family="Segoe UI, Arial, sans-serif">Converging on optima</text>
+
+    
+    <line x1="430" y1="180" x2="460" y2="180" stroke="#c8441a" stroke-width="2.5"/>
+    <text x="466" y="184" font-size="10" fill="#555" font-family="Segoe UI, Arial, sans-serif">Best individual</text>
+    <line x1="430" y1="196" x2="460" y2="196" stroke="#1a6bc8" stroke-width="2" stroke-dasharray="6,3"/>
+    <text x="466" y="200" font-size="10" fill="#555" font-family="Segoe UI, Arial, sans-serif">Population average</text>
+  </svg>
+<figcaption>GA Convergence: Population Best vs. Average Fitness Over Generations</figcaption>
+</figure>
+
+<h3 id="when-to-use-a-genetic-algorithm">When to Use a Genetic Algorithm</h3>
+
+<blockquote>
+<p><strong>Use GA when...:</strong> ✅ The search space is huge, non-convex, and multimodal (many local optima). ✅ No gradient is available. ✅ You have a natural encoding (permutation for routing, bitstring for scheduling). ✅ You can afford 100–1000 function evaluations per run. ❌ Avoid when the problem is convex or a solver can crack it in seconds.</p>
+</blockquote>
+
+<div class="practical-example">
+<div class="pe-label">Real-World ML Use Case</div>
+<h4>Hospital Nurse Scheduling (NHS Trust, UK)</h4>
+  <p><strong>Problem:</strong> Assign 120 nurses to three shift types (Day/Evening/Night) across 28 days. Hard constraints: minimum staff per shift per skill level, max 48 hours/week per nurse, ≥11 hours between consecutive shifts (EU Working Time Directive), no more than 7 consecutive days. Soft constraints: nurse day-off preferences, balanced night-shift load.</p>
+  <p><strong>Chromosome:</strong> 120 × 28 integer matrix. Each cell ∈ {Day=1, Evening=2, Night=3, Off=0}. Population size: 200 individuals initialized with constraint-aware random schedules.</p>
+  <p><strong>Fitness:</strong> f = coverage_score − 500·(hard_violations) − 10·(soft_violations). Hard constraints are penalized 50× more than soft ones so feasibility is prioritized first.</p>
+  <p><strong>Crossover:</strong> Row-wise — swap entire nurse rows between parents (preserving individual nurse schedule integrity). <strong>Mutation:</strong> With probability 0.02 per cell, randomly reassign a shift — subject to a repair operator that fixes hard constraint violations post-mutation.</p>
+  <p><strong>Result:</strong> The GA reduced manual scheduling time from <strong>3 days → 45 minutes</strong>. Hard constraint satisfaction improved from 78% to 97%.*</p>
+  <p class="ref">* Ceschia et al., "Second International Nurse Rostering Competition (INRC-II)," <em>Annals of Operations Research</em> 264(1) (2018) — the definitive modern benchmark for nurse scheduling; GA-based methods remain competitive against exact MIP solvers at scale. Burke et al., "A classification of hyper-heuristic approaches," <em>Handbook of Metaheuristics</em> (2019).</p>
+</div>
+
+<div class="practical-example">
+<div class="pe-label">Real-World ML Use Case</div>
+<h4>Multi-Echelon Inventory Optimization at a Retail Chain</h4>
+  <p><strong>Problem:</strong> A grocery retailer with 300 stores and 5 regional distribution centres (DCs) must set reorder points (s) and order quantities (Q) for 8,000 SKUs at each level. Minimize total inventory holding cost + stockout penalty + ordering cost. Demand is stochastic (seasonal, promotional spikes). This is a multi-echelon stochastic inventory problem — NP-Hard.</p>
+  <p><strong>Chromosome:</strong> For each SKU, a vector [s_store, Q_store, s_DC, Q_DC] (4 real-valued genes × 8,000 SKUs). Population: 150 chromosomes. Fitness: simulated total cost over a 52-week demand horizon using historical demand traces.</p>
+  <p><strong>Result:</strong> A GA-tuned inventory policy reduced total inventory holding costs by <strong>14%</strong> while simultaneously cutting stockout rates from 6.2% to 3.1% — a result no manual policy adjustment had achieved over 3 years.*</p>
+  <p class="ref">* Porras & Dekker, "An inventory control system for spare parts at a refinery: An empirical comparison of different reorder point methods," <em>European Journal of Operational Research</em> 184(1) (2008); Rego & Mesquita, "Inventory management in unplanned maintenance of aircraft: a hybrid approach," <em>Computers &amp; Industrial Engineering</em> 79 (2015). Multi-echelon stochastic inventory via evolutionary methods is an active research area — see also Minner, "Multiple-supplier inventory models in supply chain management," <em>Int. J. Production Economics</em> 81–82 (2003) for the theoretical framing still used today.</p>
+</div>
+
+
+<h2 id="ant-colony-optimization-follow-the-pheromone">14.5 Ant Colony Optimization — Follow the Pheromone</h2>
+
+<div class="algo-card">
+  <div class="algo-card-header green">
+    <div class="algo-icon">🐜</div>
+    <div class="algo-card-title">
+      <h3 id="ant-colony-optimization-aco">Ant Colony Optimization (ACO)</h3>
+      <p>Stigmergic metaheuristic · Inspired by foraging ants · Dorigo, 1992</p>
+    </div>
+  </div>
+  <div class="algo-card-body">
+    <p>Real ants are blind. Yet they reliably find the shortest path between their nest and a food source — via chemistry. Ants deposit <strong>pheromone</strong> as they walk. Shorter paths get traversed more often, accumulating more pheromone. Other ants follow stronger pheromone trails. The feedback loop converges on the shortest path. ACO distills this into a powerful graph-search algorithm.</p>
+  </div>
+</div>
+
+
+<figure class="rich-figure">
+<svg viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg" width="100%">
+    
+    <text x="170" y="22" text-anchor="middle" font-size="12" font-weight="700" fill="#555" font-family="Segoe UI, Arial, sans-serif">t=0: Random Exploration</text>
+    <circle cx="50" cy="130" r="18" fill="#0f0f14"/><text x="50" y="135" text-anchor="middle" font-size="10" fill="#fff" font-family="Segoe UI, Arial, sans-serif">Nest</text>
+    <circle cx="290" cy="130" r="18" fill="#c8941a"/><text x="290" y="135" text-anchor="middle" font-size="10" fill="#fff" font-family="Segoe UI, Arial, sans-serif">Food</text>
+    <path d="M 68,120 Q 170,60 272,120" stroke="#bbb" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>
+    <text x="170" y="72" text-anchor="middle" font-size="9.5" fill="#888" font-family="Segoe UI, Arial, sans-serif">Short path (length=4)</text>
+    <path d="M 68,140 Q 170,210 272,140" stroke="#bbb" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>
+    <text x="170" y="215" text-anchor="middle" font-size="9.5" fill="#888" font-family="Segoe UI, Arial, sans-serif">Long path (length=7)</text>
+    <circle cx="140" cy="82" r="5" fill="#2a9c5e" opacity=".7"/>
+    <circle cx="200" cy="78" r="5" fill="#2a9c5e" opacity=".7"/>
+    <circle cx="145" cy="188" r="5" fill="#2a9c5e" opacity=".7"/>
+    <circle cx="195" cy="192" r="5" fill="#2a9c5e" opacity=".7"/>
+    <line x1="340" y1="20" x2="340" y2="250" stroke="#ddd" stroke-width="1"/>
+    <text x="520" y="22" text-anchor="middle" font-size="12" font-weight="700" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif">t=N: Pheromone Convergence</text>
+    <circle cx="380" cy="130" r="18" fill="#0f0f14"/><text x="380" y="135" text-anchor="middle" font-size="10" fill="#fff" font-family="Segoe UI, Arial, sans-serif">Nest</text>
+    <circle cx="640" cy="130" r="18" fill="#c8941a"/><text x="640" y="135" text-anchor="middle" font-size="10" fill="#fff" font-family="Segoe UI, Arial, sans-serif">Food</text>
+    <path d="M 398,120 Q 510,55 622,120" stroke="#c8441a" stroke-width="5" fill="none" opacity=".7"/>
+    <text x="510" y="68" text-anchor="middle" font-size="10" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif" font-weight="700">High pheromone 🐜🐜🐜</text>
+    <path d="M 398,140 Q 510,205 622,140" stroke="#ddd" stroke-width="1.2" fill="none" stroke-dasharray="4,3"/>
+    <text x="510" y="215" text-anchor="middle" font-size="9.5" fill="#bbb" font-family="Segoe UI, Arial, sans-serif">Evaporated — rarely used</text>
+    <circle cx="460" cy="77" r="5" fill="#2a9c5e"/>
+    <circle cx="490" cy="66" r="5" fill="#2a9c5e"/>
+    <circle cx="525" cy="62" r="5" fill="#2a9c5e"/>
+    <circle cx="560" cy="68" r="5" fill="#2a9c5e"/>
+    <circle cx="590" cy="82" r="5" fill="#2a9c5e"/>
+  </svg>
+<figcaption>Pheromone Reinforcement: Ants Finding the Shortest Path Between Two Points</figcaption>
+</figure>
+
+
+<figure class="rich-figure">
+<svg viewBox="0 0 700 420" xmlns="http://www.w3.org/2000/svg" width="100%">
+    <defs>
+      <marker id="arr-aco" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L6,3 z" fill="#c8441a"/>
+      </marker>
+    </defs>
+
+    
+    <text x="175" y="22" text-anchor="middle" font-size="12" font-weight="700" fill="#888" font-family="Segoe UI, Arial, sans-serif">Iteration 1 — All trails equal (τ₀)</text>
+    <text x="175" y="38" text-anchor="middle" font-size="10" fill="#aaa" font-family="Segoe UI, Arial, sans-serif">Ants explore randomly. Thin, uniform pheromone everywhere.</text>
+
+    
+    
+    
+
+    
+    <circle cx="80" cy="220" r="9" fill="#555"/>  
+    <circle cx="130" cy="100" r="9" fill="#555"/>  
+    <circle cx="210" cy="270" r="9" fill="#555"/>  
+    <circle cx="195" cy="210" r="9" fill="#555"/>  
+    <circle cx="230" cy="245" r="9" fill="#555"/>  
+    <circle cx="280" cy="130" r="9" fill="#555"/>  
+    <circle cx="90" cy="175" r="9" fill="#555"/>   
+    <circle cx="100" cy="250" r="9" fill="#555"/>  
+    <circle cx="135" cy="155" r="9" fill="#555"/>  
+    <circle cx="95" cy="195" r="9" fill="#555"/>   
+
+    
+    <g font-size="9" font-family="Segoe UI, Arial, sans-serif" fill="#888">
+      <text x="68" y="218">MUM</text>
+      <text x="136" y="97">DEL</text>
+      <text x="217" y="268">BLR</text>
+      <text x="201" y="207">HYD</text>
+      <text x="236" y="242">CHE</text>
+      <text x="286" y="127">KOL</text>
+      <text x="68" y="173">AMD</text>
+      <text x="107" y="262">PNQ</text>
+      <text x="141" y="152">JAI</text>
+      <text x="100" y="192">SRT</text>
+    </g>
+
+    
+    <g stroke="#ccc" stroke-width="0.8" opacity="0.7">
+      <line x1="80" y1="220" x2="130" y2="100"/>
+      <line x1="80" y1="220" x2="210" y2="270"/>
+      <line x1="80" y1="220" x2="195" y2="210"/>
+      <line x1="80" y1="220" x2="230" y2="245"/>
+      <line x1="80" y1="220" x2="280" y2="130"/>
+      <line x1="80" y1="220" x2="90" y2="175"/>
+      <line x1="80" y1="220" x2="100" y2="250"/>
+      <line x1="80" y1="220" x2="135" y2="155"/>
+      <line x1="80" y1="220" x2="95" y2="195"/>
+      <line x1="130" y1="100" x2="210" y2="270"/>
+      <line x1="130" y1="100" x2="195" y2="210"/>
+      <line x1="130" y1="100" x2="230" y2="245"/>
+      <line x1="130" y1="100" x2="280" y2="130"/>
+      <line x1="130" y1="100" x2="90" y2="175"/>
+      <line x1="130" y1="100" x2="100" y2="250"/>
+      <line x1="130" y1="100" x2="135" y2="155"/>
+      <line x1="130" y1="100" x2="95" y2="195"/>
+      <line x1="210" y1="270" x2="195" y2="210"/>
+      <line x1="210" y1="270" x2="230" y2="245"/>
+      <line x1="210" y1="270" x2="280" y2="130"/>
+      <line x1="210" y1="270" x2="90" y2="175"/>
+      <line x1="210" y1="270" x2="100" y2="250"/>
+      <line x1="210" y1="270" x2="135" y2="155"/>
+      <line x1="210" y1="270" x2="95" y2="195"/>
+      <line x1="195" y1="210" x2="230" y2="245"/>
+      <line x1="195" y1="210" x2="280" y2="130"/>
+      <line x1="195" y1="210" x2="90" y2="175"/>
+      <line x1="195" y1="210" x2="100" y2="250"/>
+      <line x1="195" y1="210" x2="135" y2="155"/>
+      <line x1="195" y1="210" x2="95" y2="195"/>
+      <line x1="230" y1="245" x2="280" y2="130"/>
+      <line x1="230" y1="245" x2="90" y2="175"/>
+      <line x1="230" y1="245" x2="100" y2="250"/>
+      <line x1="230" y1="245" x2="135" y2="155"/>
+      <line x1="230" y1="245" x2="95" y2="195"/>
+      <line x1="280" y1="130" x2="90" y2="175"/>
+      <line x1="280" y1="130" x2="100" y2="250"/>
+      <line x1="280" y1="130" x2="135" y2="155"/>
+      <line x1="280" y1="130" x2="95" y2="195"/>
+      <line x1="90" y1="175" x2="100" y2="250"/>
+      <line x1="90" y1="175" x2="135" y2="155"/>
+      <line x1="90" y1="175" x2="95" y2="195"/>
+      <line x1="100" y1="250" x2="135" y2="155"/>
+      <line x1="100" y1="250" x2="95" y2="195"/>
+      <line x1="135" y1="155" x2="95" y2="195"/>
+    </g>
+
+    
+    <polyline points="80,220 130,100 280,130 195,210 230,245 210,270 100,250 95,195 90,175 135,155 80,220" stroke="#2a9c5e" stroke-width="1.2" fill="none" opacity="0.5" stroke-dasharray="5,4"/>
+    <polyline points="80,220 90,175 135,155 130,100 280,130 230,245 210,270 195,210 100,250 95,195 80,220" stroke="#1a6bc8" stroke-width="1.2" fill="none" opacity="0.4" stroke-dasharray="5,4"/>
+
+    <text x="175" y="310" text-anchor="middle" font-size="9.5" fill="#aaa" font-family="Segoe UI, Arial, sans-serif">Tour length: ~4,820 km (ant 1, green)</text>
+    <text x="175" y="324" text-anchor="middle" font-size="9.5" fill="#aaa" font-family="Segoe UI, Arial, sans-serif">Tour length: ~5,190 km (ant 2, blue)</text>
+
+    
+    <line x1="350" y1="30" x2="350" y2="400" stroke="#ddd" stroke-width="1.2"/>
+
+    
+    <text x="530" y="22" text-anchor="middle" font-size="12" font-weight="700" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif">Iteration 80 — Trails Converged</text>
+    <text x="530" y="38" text-anchor="middle" font-size="10" fill="#aaa" font-family="Segoe UI, Arial, sans-serif">Strong trail on near-optimal tour. Weak links evaporated (ρ=0.1).</text>
+
+    
+    <circle cx="435" cy="220" r="9" fill="#c8441a"/>  
+    <circle cx="485" cy="100" r="9" fill="#c8441a"/>  
+    <circle cx="565" cy="270" r="9" fill="#c8441a"/>  
+    <circle cx="550" cy="210" r="9" fill="#c8441a"/>  
+    <circle cx="585" cy="245" r="9" fill="#c8441a"/>  
+    <circle cx="635" cy="130" r="9" fill="#c8441a"/>  
+    <circle cx="445" cy="175" r="9" fill="#c8441a"/>  
+    <circle cx="455" cy="250" r="9" fill="#c8441a"/>  
+    <circle cx="490" cy="155" r="9" fill="#c8441a"/>  
+    <circle cx="450" cy="195" r="9" fill="#c8441a"/>  
+
+    
+    <g font-size="9" font-family="Segoe UI, Arial, sans-serif" fill="#c8441a">
+      <text x="420" y="218">MUM</text>
+      <text x="490" y="97">DEL</text>
+      <text x="572" y="268">BLR</text>
+      <text x="556" y="207">HYD</text>
+      <text x="591" y="242">CHE</text>
+      <text x="641" y="127">KOL</text>
+      <text x="422" y="173">AMD</text>
+      <text x="461" y="262">PNQ</text>
+      <text x="496" y="152">JAI</text>
+      <text x="454" y="192">SRT</text>
+    </g>
+
+    
+    <g stroke="#eee" stroke-width="0.6" opacity="0.5">
+      <line x1="435" y1="220" x2="565" y2="270"/>
+      <line x1="435" y1="220" x2="635" y2="130"/>
+      <line x1="485" y1="100" x2="565" y2="270"/>
+      <line x1="485" y1="100" x2="585" y2="245"/>
+      <line x1="550" y1="210" x2="635" y2="130"/>
+      <line x1="565" y1="270" x2="445" y2="175"/>
+      <line x1="490" y1="155" x2="635" y2="130"/>
+    </g>
+
+    
+    
+    <g stroke="#c8441a" fill="none">
+      <line x1="435" y1="220" x2="455" y2="250" stroke-width="4.5" opacity=".8"/>  
+      <line x1="455" y1="250" x2="450" y2="195" stroke-width="4.5" opacity=".8"/>  
+      <line x1="450" y1="195" x2="445" y2="175" stroke-width="4.5" opacity=".8"/>  
+      <line x1="445" y1="175" x2="490" y2="155" stroke-width="4" opacity=".75"/>  
+      <line x1="490" y1="155" x2="485" y2="100" stroke-width="4" opacity=".75"/>  
+      <line x1="485" y1="100" x2="635" y2="130" stroke-width="3.5" opacity=".7"/> 
+      <line x1="635" y1="130" x2="550" y2="210" stroke-width="3.5" opacity=".7"/> 
+      <line x1="550" y1="210" x2="585" y2="245" stroke-width="4" opacity=".75"/> 
+      <line x1="585" y1="245" x2="565" y2="270" stroke-width="4" opacity=".75"/> 
+      <line x1="565" y1="270" x2="435" y2="220" stroke-width="3.5" opacity=".65"/> 
+    </g>
+
+    
+    <g fill="#c8441a">
+      <polygon points="455,250 448,241 459,241" opacity=".8"/>
+      <polygon points="485,100 479,110 490,108" opacity=".8"/>
+      <polygon points="635,130 626,123 628,134" opacity=".8"/>
+    </g>
+
+    <text x="530" y="310" text-anchor="middle" font-size="10" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Best tour: ~3,440 km — 28% shorter than random</text>
+    <text x="530" y="326" text-anchor="middle" font-size="9.5" fill="#888" font-family="Segoe UI, Arial, sans-serif">MUM→PNQ→SRT→AMD→JAI→DEL→KOL→HYD→CHE→BLR→MUM</text>
+
+    
+    <rect x="370" y="345" width="310" height="46" rx="8" fill="#fff9f6" stroke="#f0c8b8" stroke-width="1"/>
+    <text x="385" y="360" font-size="9.5" fill="#888" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Pheromone strength:</text>
+    <line x1="385" y1="376" x2="415" y2="376" stroke="#c8441a" stroke-width="5" opacity=".8"/>
+    <text x="420" y="380" font-size="9" fill="#888" font-family="Segoe UI, Arial, sans-serif">High (used often)</text>
+    <line x1="500" y1="376" x2="530" y2="376" stroke="#ddd" stroke-width="1.5"/>
+    <text x="535" y="380" font-size="9" fill="#bbb" font-family="Segoe UI, Arial, sans-serif">Low (evaporated)</text>
+    <text x="385" y="393" font-size="9" fill="#aaa" font-family="Segoe UI, Arial, sans-serif">Evaporation rate ρ=0.1 · Deposit: Δτ = Q/tour_length</text>
+  </svg>
+<figcaption>ACO on a 10-City TSP: Pheromone Trail Evolution Across Iterations</figcaption>
+</figure>
+
+<h3 id="the-aco-algorithm">The ACO Algorithm</h3>
+
+<div class="steps">
+  <div class="step"><div class="step-num green">1</div><div class="step-body"><strong>Initialize pheromone τ uniformly</strong> across all edges. Set heuristic desirability η (e.g., 1/distance for TSP).</div></div>
+  <div class="step"><div class="step-num green">2</div><div class="step-body"><strong>Each ant constructs a solution</strong> probabilistically. At each node i, ant chooses next node j with probability:<br><br><span class="mono" style="background:var(--cream);border:1px solid var(--border);padding:6px 12px;display:inline-block;border-radius:6px;font-size:14px;margin-top:4px">P(i→j) = [τᵢⱼ]ᵅ · [ηᵢⱼ]ᵝ / Σ [τ]ᵅ·[η]ᵝ</span><br><br>α controls pheromone influence, β controls heuristic influence.</div></div>
+  <div class="step"><div class="step-num green">3</div><div class="step-body"><strong>Evaporate pheromone</strong> on all edges: τᵢⱼ ← (1−ρ)·τᵢⱼ. This prevents premature convergence.</div></div>
+  <div class="step"><div class="step-num green">4</div><div class="step-body"><strong>Deposit pheromone</strong> proportional to solution quality. Better solutions lay more trail: τᵢⱼ += Q/L_k (Q=constant, L_k=tour length).</div></div>
+  <div class="step"><div class="step-num green">5</div><div class="step-body"><strong>Repeat</strong> for all ants, all iterations. Return best solution found.</div></div>
+</div>
+
+
+<figure class="rich-figure">
+<svg viewBox="0 0 700 240" xmlns="http://www.w3.org/2000/svg" width="100%">
+    
+    
+    <text x="175" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#888" font-family="Segoe UI, Arial, sans-serif">Iteration 5 — Diffuse trails</text>
+    <g id="cities-early">
+      <circle cx="100" cy="100" r="7" fill="#0f0f14"/><text x="100" y="83" text-anchor="middle" font-size="9" fill="#555" font-family="Segoe UI, Arial, sans-serif">City A</text>
+      <circle cx="180" cy="60" r="7" fill="#0f0f14"/><text x="180" y="44" text-anchor="middle" font-size="9" fill="#555" font-family="Segoe UI, Arial, sans-serif">City B</text>
+      <circle cx="260" cy="90" r="7" fill="#0f0f14"/><text x="260" y="74" text-anchor="middle" font-size="9" fill="#555" font-family="Segoe UI, Arial, sans-serif">City C</text>
+      <circle cx="240" cy="180" r="7" fill="#0f0f14"/>
+      <circle cx="130" cy="185" r="7" fill="#0f0f14"/>
+      
+      <line x1="107" y1="100" x2="173" y2="63" stroke="#2a9c5e" stroke-width="1" opacity=".4"/>
+      <line x1="107" y1="104" x2="133" y2="181" stroke="#2a9c5e" stroke-width="1" opacity=".4"/>
+      <line x1="187" y1="63" x2="253" y2="87" stroke="#2a9c5e" stroke-width="1.5" opacity=".5"/>
+      <line x1="253" y1="97" x2="243" y2="173" stroke="#2a9c5e" stroke-width="1" opacity=".4"/>
+      <line x1="137" y1="183" x2="233" y2="181" stroke="#2a9c5e" stroke-width="1" opacity=".4"/>
+      <line x1="130" y1="178" x2="105" y2="107" stroke="#2a9c5e" stroke-width="1" opacity=".4"/>
+      
+      <line x1="107" y1="96" x2="237" y2="175" stroke="#2a9c5e" stroke-width="0.8" opacity=".25"/>
+      <line x1="181" y1="67" x2="133" y2="179" stroke="#2a9c5e" stroke-width="0.8" opacity=".25"/>
+    </g>
+
+    
+    <line x1="350" y1="20" x2="350" y2="220" stroke="#ddd" stroke-width="1"/>
+
+    
+    <text x="520" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif">Iteration 80 — Converged trail</text>
+    <g>
+      <circle cx="410" cy="100" r="7" fill="#0f0f14"/><text x="410" y="83" text-anchor="middle" font-size="9" fill="#555" font-family="Segoe UI, Arial, sans-serif">City A</text>
+      <circle cx="490" cy="60" r="7" fill="#0f0f14"/><text x="490" y="44" text-anchor="middle" font-size="9" fill="#555" font-family="Segoe UI, Arial, sans-serif">City B</text>
+      <circle cx="570" cy="90" r="7" fill="#0f0f14"/><text x="570" y="74" text-anchor="middle" font-size="9" fill="#555" font-family="Segoe UI, Arial, sans-serif">City C</text>
+      <circle cx="550" cy="180" r="7" fill="#0f0f14"/>
+      <circle cx="440" cy="185" r="7" fill="#0f0f14"/>
+      
+      <line x1="417" y1="100" x2="483" y2="63" stroke="#c8441a" stroke-width="4" opacity=".8"/>
+      <line x1="497" y1="63" x2="563" y2="87" stroke="#c8441a" stroke-width="4" opacity=".8"/>
+      <line x1="563" y1="97" x2="553" y2="173" stroke="#c8441a" stroke-width="4" opacity=".8"/>
+      <line x1="545" y1="180" x2="448" y2="182" stroke="#c8441a" stroke-width="4" opacity=".8"/>
+      <line x1="440" y1="178" x2="415" y2="107" stroke="#c8441a" stroke-width="4" opacity=".8"/>
+      
+      <line x1="417" y1="96" x2="548" y2="174" stroke="#2a9c5e" stroke-width="0.5" opacity=".15"/>
+      <line x1="491" y1="67" x2="443" y2="179" stroke="#2a9c5e" stroke-width="0.5" opacity=".15"/>
+    </g>
+  </svg>
+<figcaption>ACO Probability Formula: How an Ant Chooses Its Next City</figcaption>
+</figure>
+
+<h3 id="when-to-use-aco">When to Use ACO</h3>
+
+<blockquote>
+<p><strong>ACO's Sweet Spot:</strong> ACO is purpose-built for <strong>graph traversal problems</strong>: TSP, vehicle routing, network routing, job shop scheduling with sequence dependencies. It naturally handles dynamic problems (road closures, demand changes) because pheromone adapts in real time. ❌ Not ideal for continuous optimization (use PSO or CMA-ES instead).</p>
+</blockquote>
+
+<div class="practical-example">
+<div class="pe-label">Real-World ML Use Case</div>
+<h4>Telecom Network Routing (AntNet)</h4>
+  <p><strong>Problem:</strong> Route internet packets through a dynamic network of 500 routers. Link loads fluctuate. Failures happen. Minimize end-to-end latency.</p>
+  <p><strong>Why ACO?</strong> The network is a graph. Optimal routing changes in real time. ACO's pheromone naturally fades on congested paths — exactly what you want.</p>
+  <p><strong>AntNet system</strong> (studied by Swisscom and BT): Synthetic ants probe routes every few milliseconds, updating routing tables via pheromone. The system reduced average packet delay by 18–35% vs. shortest-path routing under heavy load, and recovered automatically from link failures in under 200ms — no central controller needed.*</p>
+  <p class="ref">* Di Caro & Dorigo, "AntNet: Distributed Stigmergetic Control for Communications Networks," <em>Journal of Artificial Intelligence Research</em> 9 (1998) — seminal paper; the AntNet routing principles it established are directly incorporated into modern SDN adaptive routing research. For a current review: Blum & Roli, "Metaheuristics in Combinatorial Optimization," <em>ACM Computing Surveys</em> 55(9) (2023).</p>
+</div>
+
+
+<h2 id="multi-objective-optimization-the-pareto-front">14.6 Multi-Objective Optimization & The Pareto Front</h2>
+
+<div class="algo-card">
+  <div class="algo-card-header purple">
+    <div class="algo-icon">⚖️</div>
+    <div class="algo-card-title">
+      <h3 id="multi-objective-optimization">Multi-Objective Optimization</h3>
+      <p>Simultaneous optimization of competing objectives · NSGA-II, MOEA/D · Zitzler & Deb, 1999–2002</p>
+    </div>
+  </div>
+  <div class="algo-card-body">
+    <p>Most real problems have multiple, conflicting objectives. A portfolio must <em>maximize return and minimize risk</em>. A car engine must <em>maximize power and minimize emissions</em>. A supply chain must <em>minimize cost and maximize reliability</em>. There is no single "best" solution — there is a family of best trade-offs.</p>
+  </div>
+</div>
+
+<h3 id="the-pareto-front-a-frontier-of-best-trade-offs">The Pareto Front — A Frontier of Best Trade-offs</h3>
+
+<p>A solution <strong>x</strong> is <em>Pareto-optimal</em> if there is no other solution that improves one objective without worsening another. The set of all Pareto-optimal solutions forms the <strong>Pareto Front</strong> — the efficient frontier of the problem.</p>
+
+
+<figure class="rich-figure">
+<svg viewBox="0 0 680 310" xmlns="http://www.w3.org/2000/svg" width="100%">
+    
+    <line x1="70" y1="250" x2="620" y2="250" stroke="#ccc" stroke-width="1.5"/>
+    <line x1="70" y1="250" x2="70" y2="30" stroke="#ccc" stroke-width="1.5"/>
+    <text x="345" y="282" text-anchor="middle" font-size="12" fill="#888" font-family="Segoe UI, Arial, sans-serif">Risk (σ) →</text>
+    <text x="22" y="145" text-anchor="middle" font-size="12" fill="#888" font-family="Segoe UI, Arial, sans-serif" transform="rotate(-90,22,145)">Return (%) →</text>
+    <text x="70" y="262" font-size="10" fill="#aaa" font-family="monospace">Low</text>
+    <text x="560" y="262" font-size="10" fill="#aaa" font-family="monospace">High</text>
+    <text x="55" y="250" text-anchor="end" font-size="10" fill="#aaa" font-family="monospace">Low</text>
+    <text x="55" y="50" text-anchor="end" font-size="10" fill="#aaa" font-family="monospace">High</text>
+
+    
+    <path d="M 180,210 C 230,190 290,155 370,120 430,98 490,85 560,78 L 560,250 L 70,250 Z" fill="#ffe4dc" opacity=".3"/>
+
+    
+    <path d="M 140,225 C 180,210 230,190 290,155 350,125 430,98 500,83 560,75" stroke="#c8441a" stroke-width="3" fill="none"/>
+
+    
+    <circle cx="200" cy="230" r="5" fill="#bbb"/><text x="206" y="243" font-size="9" fill="#aaa" font-family="Segoe UI, Arial, sans-serif">dominated</text>
+    <circle cx="350" cy="180" r="5" fill="#bbb"/>
+    <circle cx="420" cy="160" r="5" fill="#bbb"/>
+    <circle cx="300" cy="210" r="5" fill="#bbb"/>
+    <circle cx="470" cy="145" r="5" fill="#bbb"/>
+
+    
+    <circle cx="140" cy="225" r="7" fill="#c8441a"/>
+    <circle cx="200" cy="195" r="7" fill="#c8441a"/>
+    <circle cx="290" cy="155" r="7" fill="#c8441a"/>
+    <circle cx="380" cy="118" r="7" fill="#c8441a"/>
+    <circle cx="460" cy="93" r="7" fill="#c8441a"/>
+    <circle cx="545" cy="78" r="7" fill="#c8441a"/>
+
+    
+    <text x="138" y="218" font-size="9.5" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif" text-anchor="end">Low risk,<tspan x="138" dy="11">low return</tspan></text>
+    <text x="548" y="72" font-size="9.5" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif">High return,<tspan x="548" dy="11">high risk</tspan></text>
+    <text x="294" y="148" font-size="9.5" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif">Balanced<tspan x="294" dy="11">✦ Sweet spot</tspan></text>
+
+    
+    <circle cx="100" cy="50" r="5" fill="none" stroke="#2a9c5e" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <text x="108" y="54" font-size="9" fill="#2a9c5e" font-family="Segoe UI, Arial, sans-serif">Utopia point (impossible)</text>
+
+    
+    <text x="260" y="240" font-size="10" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif" opacity=".7">← Pareto Front (efficient frontier)</text>
+
+    
+    <text x="330" y="195" font-size="9.5" fill="#888" font-family="Segoe UI, Arial, sans-serif">Dominated region:</text>
+    <text x="330" y="208" font-size="9.5" fill="#888" font-family="Segoe UI, Arial, sans-serif">worse in ≥1 obj, equal in rest</text>
+  </svg>
+<figcaption>Pareto Front: Return vs. Risk (Portfolio Example)</figcaption>
+</figure>
+
+<h3 id="nsga-ii-the-workhorse-algorithm">NSGA-II: The Workhorse Algorithm</h3>
+
+<p>The <strong>Non-dominated Sorting Genetic Algorithm II</strong> (NSGA-II) is the most widely used multi-objective evolutionary algorithm. It extends a GA with two key ideas:</p>
+
+<div class="steps">
+  <div class="step"><div class="step-num purple">1</div><div class="step-body"><strong>Non-dominated sorting.</strong> Rank solutions into Pareto fronts: Front 1 = no solution dominates them. Front 2 = only Front 1 dominates them. And so on. Solutions on lower fronts are "better."</div></div>
+  <div class="step"><div class="step-num purple">2</div><div class="step-body"><strong>Crowding distance.</strong> Within the same front, prefer solutions that are more spread out (higher crowding distance). This preserves diversity along the Pareto front — crucial for giving decision-makers a rich set of options.</div></div>
+  <div class="step"><div class="step-num purple">3</div><div class="step-body"><strong>Elite preservation.</strong> Combine parent and offspring populations, sort by rank + crowding distance, keep the top N. The algorithm naturally converges toward the Pareto front while maintaining spread.</div></div>
+</div>
+
+
+<figure class="rich-figure">
+<svg viewBox="0 0 660 280" xmlns="http://www.w3.org/2000/svg" width="100%">
+    <line x1="60" y1="240" x2="600" y2="240" stroke="#ccc" stroke-width="1.2"/>
+    <line x1="60" y1="240" x2="60" y2="30" stroke="#ccc" stroke-width="1.2"/>
+    <text x="330" y="264" text-anchor="middle" font-size="11" fill="#888" font-family="Segoe UI, Arial, sans-serif">Objective 1 (minimize) →</text>
+    <text x="18" y="140" text-anchor="middle" font-size="11" fill="#888" font-family="Segoe UI, Arial, sans-serif" transform="rotate(-90,18,140)">Objective 2 (minimize) →</text>
+
+    
+    <circle cx="120" cy="200" r="8" fill="#c8441a"/><text x="120" y="192" font-size="9" text-anchor="middle" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif">a</text>
+    <circle cx="200" cy="155" r="8" fill="#c8441a"/><text x="200" y="147" font-size="9" text-anchor="middle" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif">b</text>
+    <circle cx="310" cy="110" r="8" fill="#c8441a"/><text x="310" y="102" font-size="9" text-anchor="middle" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif">c</text>
+    <circle cx="430" cy="80" r="8" fill="#c8441a"/><text x="430" y="72" font-size="9" text-anchor="middle" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif">d</text>
+    <path d="M 120,200 C 155,175 220,145 310,110 380,88 410,80 430,80" stroke="#c8441a" stroke-width="1.5" fill="none" opacity=".4" stroke-dasharray="4,3"/>
+    <text x="540" y="90" font-size="11" fill="#c8441a" font-weight="700" font-family="Segoe UI, Arial, sans-serif">Front 1</text>
+
+    
+    <circle cx="175" cy="210" r="7" fill="#c8941a"/><text x="175" y="202" font-size="9" text-anchor="middle" fill="#c8941a" font-family="Segoe UI, Arial, sans-serif">e</text>
+    <circle cx="270" cy="165" r="7" fill="#c8941a"/><text x="270" y="157" font-size="9" text-anchor="middle" fill="#c8941a" font-family="Segoe UI, Arial, sans-serif">f</text>
+    <circle cx="380" cy="130" r="7" fill="#c8941a"/>
+    <path d="M 175,210 C 220,190 280,155 380,130" stroke="#c8941a" stroke-width="1.3" fill="none" opacity=".4" stroke-dasharray="4,3"/>
+    <text x="540" y="130" font-size="11" fill="#c8941a" font-weight="700" font-family="Segoe UI, Arial, sans-serif">Front 2</text>
+
+    
+    <circle cx="240" cy="210" r="7" fill="#1a6bc8"/><text x="240" y="202" font-size="9" text-anchor="middle" fill="#1a6bc8" font-family="Segoe UI, Arial, sans-serif">g</text>
+    <circle cx="360" cy="185" r="7" fill="#1a6bc8"/>
+    <circle cx="460" cy="150" r="7" fill="#1a6bc8"/>
+    <path d="M 240,210 C 300,198 380,178 460,150" stroke="#1a6bc8" stroke-width="1.2" fill="none" opacity=".4" stroke-dasharray="4,3"/>
+    <text x="540" y="162" font-size="11" fill="#1a6bc8" font-weight="700" font-family="Segoe UI, Arial, sans-serif">Front 3</text>
+  </svg>
+<figcaption>Non-Dominated Sorting: Pareto Ranks Across Two Objectives</figcaption>
+</figure>
+
+<blockquote>
+<p><strong>Key Insight:</strong> The Pareto front doesn't give you <em>the</em> answer — it gives you the <em>space of best answers</em>. A human decision-maker then chooses a point on the front based on their preferences. This is far more powerful than forcing a single weighted objective, which buries the trade-off structure.</p>
+</blockquote>
+
+<div class="practical-example">
+<div class="pe-label">Real-World ML Use Case</div>
+<h4>Portfolio Optimization at a Quantitative Hedge Fund</h4>
+  <p><strong>Problem:</strong> Construct a portfolio of 200 assets. Objectives: maximize expected return, minimize portfolio variance (risk), minimize drawdown, minimize turnover (transaction costs).</p>
+  <p><strong>Why MOO + Pareto?</strong> A single-objective approach forces you to weight objectives, which is subjective. The Pareto front reveals the <em>actual trade-off curve</em> — a risk manager and a return-maximizing PM can each pick their preferred point.</p>
+  <p><strong>Approach:</strong> NSGA-II over 200 assets, objectives: E[r], σ², max drawdown. Run for 2,000 generations with population 300. The resulting Pareto front surface gives portfolio managers a dashboard showing exactly how much extra risk is required for each extra 0.1% of return — a genuinely superior decision tool vs. mean-variance optimization alone.*</p>
+  <p class="ref">* Deb et al., "A fast and elitist multiobjective genetic algorithm: NSGA-II," <em>IEEE Transactions on Evolutionary Computation</em> 6(2) (2002) — 40,000+ citations, still the benchmark MOO algorithm. For a current survey: Talbi, "Machine Learning into Metaheuristics," <em>ACM Computing Surveys</em> 54(6) (2021); portfolio application: Liagkouras & Metaxiotis, "Efficient Portfolio Construction with the Use of Multiobjective Evolutionary Algorithms," <em>J. of Portfolio Management</em> 42(1) (2015).</p>
+</div>
+
+
+<hr />
+
+<h2 id="chapter-14-summary">Chapter 14 Summary</h2>
+
+<p>Operational Research is the engine beneath the world's most consequential systems — from how your packages arrive on time to how hospitals staff their ICUs. In this chapter we toured four foundational pillars of the OR practitioner's toolkit.</p>
+
+
+<table>
+  <thead>
+    <tr><th>Method</th><th>Best Problem Type</th><th>Guarantee</th><th>Scale</th><th>Real-World Fit</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>OR Solvers (Gurobi / OR-Tools)</td>
+      <td>LP, MIP, CP, VRP, scheduling</td>
+      <td>Optimal (if feasible)</td>
+      <td>~10⁵–10⁷ vars</td>
+      <td>Logistics, planning, finance</td>
+    </tr>
+    <tr>
+      <td>Genetic Algorithm</td>
+      <td>Combinatorial, no gradient, multimodal</td>
+      <td>Good approximation</td>
+      <td>Any (scalable)</td>
+      <td>Scheduling, design, routing</td>
+    </tr>
+    <tr>
+      <td>Ant Colony Optimization</td>
+      <td>Graph/path problems, dynamic networks</td>
+      <td>Good approximation</td>
+      <td>Large graphs</td>
+      <td>TSP, network routing, VRP</td>
+    </tr>
+    <tr>
+      <td>Multi-Objective / NSGA-II</td>
+      <td>Competing objectives, trade-off analysis</td>
+      <td>Pareto-optimal set</td>
+      <td>Any (scalable)</td>
+      <td>Portfolio, engineering design</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="decision-guide-picking-your-algorithm">Decision Guide: Picking Your Algorithm</h3>
+
+
+<figure class="rich-figure">
+<svg viewBox="0 0 700 340" xmlns="http://www.w3.org/2000/svg" width="100%">
+    <defs>
+      <marker id="arr3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 z" fill="#888"/>
+      </marker>
+    </defs>
+    
+    <rect x="270" y="10" width="160" height="40" rx="20" fill="#0f0f14"/>
+    <text x="350" y="35" text-anchor="middle" font-size="13" fill="#fff" font-family="Segoe UI, Arial, sans-serif" font-weight="700">OR Problem</text>
+
+    
+    <line x1="350" y1="50" x2="350" y2="80" stroke="#888" stroke-width="1.3" marker-end="url(#arr3)"/>
+    <rect x="220" y="80" width="260" height="38" rx="6" fill="#fff0cc" stroke="#c8941a" stroke-width="1.3"/>
+    <text x="350" y="101" text-anchor="middle" font-size="12" fill="#9a6a00" font-family="Segoe UI, Arial, sans-serif">Multiple conflicting objectives?</text>
+
+    
+    <line x1="480" y1="99" x2="580" y2="99" stroke="#888" stroke-width="1.3" marker-end="url(#arr3)"/>
+    <text x="528" y="93" font-size="9.5" fill="#888" font-family="Segoe UI, Arial, sans-serif">YES</text>
+    <rect x="580" y="82" width="110" height="34" rx="6" fill="#ecdcff" stroke="#8b44c8" stroke-width="1.5"/>
+    <text x="635" y="103" text-anchor="middle" font-size="11" font-weight="700" fill="#6b1acc" font-family="Segoe UI, Arial, sans-serif">NSGA-II / MOO</text>
+
+    
+    <line x1="350" y1="118" x2="350" y2="148" stroke="#888" stroke-width="1.3" marker-end="url(#arr3)"/>
+    <text x="356" y="136" font-size="9.5" fill="#888" font-family="Segoe UI, Arial, sans-serif">NO</text>
+    <rect x="205" y="148" width="290" height="38" rx="6" fill="#fff0cc" stroke="#c8941a" stroke-width="1.3"/>
+    <text x="350" y="165" text-anchor="middle" font-size="12" fill="#9a6a00" font-family="Segoe UI, Arial, sans-serif">Problem fits LP/MIP/CP structure?</text>
+    <text x="350" y="178" text-anchor="middle" font-size="9.5" fill="#9a6a00" font-family="Segoe UI, Arial, sans-serif">&lt; ~100k vars, clean math?</text>
+
+    
+    <line x1="495" y1="165" x2="575" y2="165" stroke="#888" stroke-width="1.3" marker-end="url(#arr3)"/>
+    <text x="534" y="158" font-size="9.5" fill="#888" font-family="Segoe UI, Arial, sans-serif">YES</text>
+    <rect x="575" y="148" width="115" height="34" rx="6" fill="#dceeff" stroke="#1a6bc8" stroke-width="1.5"/>
+    <text x="632" y="169" text-anchor="middle" font-size="11" font-weight="700" fill="#1a6bc8" font-family="Segoe UI, Arial, sans-serif">OR Solver</text>
+
+    
+    <line x1="350" y1="186" x2="350" y2="218" stroke="#888" stroke-width="1.3" marker-end="url(#arr3)"/>
+    <text x="356" y="205" font-size="9.5" fill="#888" font-family="Segoe UI, Arial, sans-serif">NO</text>
+    <rect x="210" y="218" width="280" height="38" rx="6" fill="#fff0cc" stroke="#c8941a" stroke-width="1.3"/>
+    <text x="350" y="235" text-anchor="middle" font-size="12" fill="#9a6a00" font-family="Segoe UI, Arial, sans-serif">Problem is a graph/path traversal?</text>
+    <text x="350" y="248" text-anchor="middle" font-size="9.5" fill="#9a6a00" font-family="Segoe UI, Arial, sans-serif">TSP, routing, network flow?</text>
+
+    
+    <line x1="490" y1="235" x2="575" y2="235" stroke="#888" stroke-width="1.3" marker-end="url(#arr3)"/>
+    <text x="531" y="228" font-size="9.5" fill="#888" font-family="Segoe UI, Arial, sans-serif">YES</text>
+    <rect x="575" y="218" width="115" height="34" rx="6" fill="#d4f5e4" stroke="#2a9c5e" stroke-width="1.5"/>
+    <text x="632" y="239" text-anchor="middle" font-size="11" font-weight="700" fill="#1a7a4a" font-family="Segoe UI, Arial, sans-serif">ACO</text>
+
+    
+    <line x1="350" y1="256" x2="350" y2="288" stroke="#888" stroke-width="1.3" marker-end="url(#arr3)"/>
+    <text x="356" y="275" font-size="9.5" fill="#888" font-family="Segoe UI, Arial, sans-serif">NO</text>
+    <rect x="260" y="288" width="180" height="38" rx="6" fill="#ffe4dc" stroke="#c8441a" stroke-width="1.5"/>
+    <text x="350" y="312" text-anchor="middle" font-size="12" font-weight="700" fill="#c8441a" font-family="Segoe UI, Arial, sans-serif">Genetic Algorithm (GA)</text>
+  </svg>
+<figcaption>Algorithm Selection Flowchart</figcaption>
+</figure>
+
+<h3 id="key-takeaways-18">Key Takeaways</h3>
+
+<div class="takeaway-grid">
+  <div class="takeaway-item">
+    <div class="t-icon">🔭</div>
+    <strong>Try a solver first</strong>
+    If your problem fits LP/MIP and has clean math, a modern solver like Gurobi or OR-Tools will outperform any custom metaheuristic on medium-scale instances. Reach for metaheuristics when the problem is too large or structurally complex.
+  </div>
+  <div class="takeaway-item">
+    <div class="t-icon">🧬</div>
+    <strong>GAs for combinatorial chaos</strong>
+    When the search space is exponentially large, gradients are absent, and you can encode solutions as chromosomes — genetic algorithms are a natural, robust choice with decades of real-world deployment.
+  </div>
+  <div class="takeaway-item">
+    <div class="t-icon">🐜</div>
+    <strong>ACO for dynamic graphs</strong>
+    Ant Colony Optimization is uniquely suited to routing and graph problems where the environment changes. The pheromone evaporation mechanism provides implicit adaptivity that is difficult to replicate with static algorithms.
+  </div>
+  <div class="takeaway-item">
+    <div class="t-icon">⚖️</div>
+    <strong>Multi-objective = better decisions</strong>
+    Single-objective optimization buries trade-offs inside your weight choices. The Pareto front surfaces them explicitly, enabling better-informed decisions by stakeholders — and is almost always worth the extra algorithmic complexity.
+  </div>
+  <div class="takeaway-item">
+    <div class="t-icon">⏱️</div>
+    <strong>Approximation is often enough</strong>
+    In practice, a solution within 2–5% of optimal delivered in 1 second beats a provably optimal solution delivered in 10 hours. Always benchmark against business time requirements before insisting on exact methods.
+  </div>
+  <div class="takeaway-item">
+    <div class="t-icon">🧱</div>
+    <strong>Problem encoding is everything</strong>
+    In metaheuristics, how you encode the solution is often more important than which algorithm you pick. A bad encoding makes crossover meaningless. A good encoding encodes domain knowledge directly into the search structure.
+  </div>
+</div>
+
+
+
+
+
+<div class="chapter-nav">
+  <a href="chapter-13.html">&larr; Chapter 13: Time Series and Forecasting</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-15.html">Chapter 15: Data and SQL &rarr;</a>
+</div>
+<div class="site-footer">
+  <p>&copy; 2026 Hariram Subramanian Gopal &middot; <a href="index.html">Data to Decisions</a></p>
+</div>
+</body>
+</html>

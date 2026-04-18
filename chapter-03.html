@@ -1,0 +1,2773 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Hariram Subramanian Gopal" />
+  <title>Chapter 03: Python for Data Science | Data to Decisions</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</head>
+<body>
+<div class="chapter-nav">
+  <a href="chapter-02.html">&larr; Chapter 02: Math Foundations</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-04.html">Chapter 04: Feature Engineering and EDA &rarr;</a>
+</div>
+<h1 id="chapter-03-python-for-data-science">Chapter 03: Python for Data
+
+Science</h1>
+
+<h2 id="chapter-scope-2">3.0 Chapter Scope</h2>
+
+<p>Python is the lingua franca of data science and ML. This chapter
+
+covers the language mechanics, libraries, and coding patterns you use
+
+daily — from variable binding and data structures through Pandas, NumPy,
+
+visualization, scikit-learn pipelines, and code quality practices.</p>
+
+<p><strong>What you will learn:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Section</th>
+
+<th>Topic</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>3.1</td>
+
+<td>Python essentials: references, mutability, error handling</td>
+
+</tr>
+
+<tr>
+
+<td>3.2</td>
+
+<td>Python patterns every DS uses daily</td>
+
+</tr>
+
+<tr>
+
+<td>3.3</td>
+
+<td>Functions, decorators, and context managers</td>
+
+</tr>
+
+<tr>
+
+<td>3.4</td>
+
+<td>Object-oriented Python for ML</td>
+
+</tr>
+
+<tr>
+
+<td>3.5</td>
+
+<td>Data wrangling with Pandas</td>
+
+</tr>
+
+<tr>
+
+<td>3.6</td>
+
+<td>Matplotlib and Seaborn: visualization</td>
+
+</tr>
+
+<tr>
+
+<td>3.7</td>
+
+<td>Scikit-learn patterns</td>
+
+</tr>
+
+<tr>
+
+<td>3.8</td>
+
+<td>File I/O, string processing, and regex</td>
+
+</tr>
+
+<tr>
+
+<td>3.9</td>
+
+<td>Testing and code quality for data science</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Prerequisites:</strong> Basic programming experience. No
+
+prior Python assumed but helpful.</p>
+
+<hr />
+
+<h2 id="python-essentials">3.1 Python Essentials</h2>
+
+<p>Two fundamentals:</p>
+
+<ol type="1">
+
+<li>variable binding / mutation<br />
+
+</li>
+
+<li>runtime error handling</li>
+
+</ol>
+
+<blockquote>
+
+<p><strong>Key:</strong> Python variables are <strong>names bound to
+
+objects</strong>; rebinding a name ≠ mutating an object.</p>
+
+</blockquote>
+
+<h3 id="what-it-is-4">3.1.1 What It Is</h3>
+
+<p>Mental model:</p>
+
+<div style="border-left:4px solid #6366f1; padding:8px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.95rem;">
+<strong>name → object</strong>
+</div>
+
+
+<ul>
+
+<li>If 2 names point to the same <strong>mutable</strong> object,
+
+in-place change is visible via both.</li>
+
+<li>Reassigning one name only changes that binding.</li>
+
+</ul>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Immutable example: rebinding</span></span>
+<span id="cb81-2"><a href="#cb81-2" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> <span class="dv">1</span></span>
+<span id="cb81-3"><a href="#cb81-3" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> x</span>
+<span id="cb81-4"><a href="#cb81-4" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> <span class="dv">2</span></span>
+<span id="cb81-5"><a href="#cb81-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb81-6"><a href="#cb81-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(x)  <span class="co"># 2</span></span>
+<span id="cb81-7"><a href="#cb81-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(y)  <span class="co"># 1</span></span>
+<span id="cb81-8"><a href="#cb81-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb81-9"><a href="#cb81-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Mutable example: shared-object mutation</span></span>
+<span id="cb81-10"><a href="#cb81-10" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> {<span class="st">&quot;value&quot;</span>: <span class="dv">1</span>}</span>
+<span id="cb81-11"><a href="#cb81-11" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> a</span>
+<span id="cb81-12"><a href="#cb81-12" aria-hidden="true" tabindex="-1"></a>b[<span class="st">&quot;value&quot;</span>] <span class="op">=</span> <span class="dv">2</span></span>
+<span id="cb81-13"><a href="#cb81-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb81-14"><a href="#cb81-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(a)  <span class="co"># {&#39;value&#39;: 2}</span></span>
+<span id="cb81-15"><a href="#cb81-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(b)  <span class="co"># {&#39;value&#39;: 2}</span></span></code></pre></div>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="230" viewBox="0 0 520 230" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .im-title { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .im-code { font: 12px 'Consolas', monospace; fill: #334155; }
+    .im-note { font: 11px system-ui, sans-serif; fill: #64748b; }
+  </style>
+  <defs><marker id="im-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <!-- Immutable side -->
+  <rect x="10" y="6" width="230" height="100" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="125" y="24" text-anchor="middle" class="im-title">Immutable (int)</text>
+  <text x="30" y="44" class="im-code">x ─▶ 1   y ─▶ 1</text>
+  <text x="30" y="62" class="im-code">x = 2</text>
+  <text x="30" y="82" class="im-code">x ─▶ 2   y ─▶ 1</text>
+  <text x="30" y="98" class="im-note">y unchanged — rebinding, not mutation</text>
+  <!-- Mutable side -->
+  <rect x="270" y="6" width="240" height="100" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="390" y="24" text-anchor="middle" class="im-title">Mutable (dict)</text>
+  <text x="290" y="44" class="im-code">a ─┐</text>
+  <text x="290" y="62" class="im-code">    ├─▶ {"value": 1}</text>
+  <text x="290" y="80" class="im-code">b ─┘</text>
+  <text x="290" y="98" class="im-note">b["value"]=2 → a also sees {"value": 2}</text>
+  <!-- Lesson -->
+  <rect x="60" y="126" width="400" height="46" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="260" y="148" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#6366f1">Immutable: rebinding creates new object</text>
+  <text x="260" y="166" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#ef4444">Mutable: shared reference → both see changes</text>
+  <!-- Downstream note -->
+  <text x="260" y="200" text-anchor="middle" class="im-note">Same reference model underlies linked lists:</text>
+  <text x="260" y="218" text-anchor="middle" class="im-note">each node stores a reference to the next node.</text>
+</svg>
+
+<ul>
+
+<li><strong>Python list</strong>: dynamic array; ordered, direct
+
+indexing.</li>
+
+<li><strong>Singly linked list</strong>: chain of nodes; sequential
+
+traversal only.</li>
+
+</ul>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="100" viewBox="0 0 480 100" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .ds-title { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .ds-code { font: 12px 'Consolas', monospace; fill: #334155; }
+  </style>
+  <defs><marker id="ds-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <!-- Python list -->
+  <rect x="10" y="10" width="170" height="70" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="95" y="30" text-anchor="middle" class="ds-title">Python list</text>
+  <text x="25" y="48" class="ds-code">[11, 7, 3, 23]</text>
+  <text x="25" y="66" class="ds-code">arr[2] = 3  ← O(1)</text>
+  <!-- Linked list -->
+  <rect x="210" y="10" width="260" height="70" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="340" y="30" text-anchor="middle" class="ds-title">Singly linked list</text>
+  <text x="225" y="52" class="ds-code">head→[11|•]→[7|•]→[3|•]→[23|None]</text>
+  <text x="225" y="70" class="ds-code">sequential traversal ← O(n)</text>
+</svg>
+
+<h3 id="key-concepts-and-formulas-3">3.1.2 Key Concepts and Formulas</h3>
+
+<h4 id="core-definitions-1">Core definitions</h4>
+
+<ul>
+
+<li><strong>Reference / binding</strong>: name refers to object.</li>
+
+<li><strong>Immutable</strong>: no in-place change; “change” =
+
+rebinding.</li>
+
+<li><strong>Mutable</strong>: can change in place.</li>
+
+<li><strong>List</strong>: ordered collection with direct indexing.</li>
+
+<li><strong>Linked list</strong>: nodes connected by references.</li>
+
+<li><strong>Node</strong>: value + <code>next</code> reference.</li>
+
+<li><strong>Big O</strong>: growth of time/space with input size.</li>
+
+</ul>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Operation</th>
+
+<th>Python list</th>
+
+<th>Singly linked list</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Access by index</td>
+
+<td>typically <span class="math inline">\(O(1)\)</span></td>
+
+<td><span class="math inline">\(O(n)\)</span></td>
+
+</tr>
+
+<tr>
+
+<td>Search by value</td>
+
+<td>typically <span class="math inline">\(O(n)\)</span></td>
+
+<td><span class="math inline">\(O(n)\)</span></td>
+
+</tr>
+
+<tr>
+
+<td>Append</td>
+
+<td>typically <span class="math inline">\(O(1)\)</span> amortized</td>
+
+<td><span class="math inline">\(O(n)\)</span> from head if no tail</td>
+
+</tr>
+
+<tr>
+
+<td>Insert/delete at front</td>
+
+<td>typically <span class="math inline">\(O(n)\)</span></td>
+
+<td><span class="math inline">\(O(1)\)</span></td>
+
+</tr>
+
+<tr>
+
+<td>Insert/delete in middle</td>
+
+<td>typically <span class="math inline">\(O(n)\)</span> (shift)</td>
+
+<td>relink <span class="math inline">\(O(1)\)</span> <strong>if
+
+node/prev known</strong>; else traversal makes total <span
+
+class="math inline">\(O(n)\)</span></td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Linked lists are only cheap to update when you
+
+already hold the needed node/reference.</p>
+
+</blockquote>
+
+<h4 id="minimal-python-linked-list-node">Minimal Python linked-list
+
+node</h4>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass</span>
+<span id="cb84-2"><a href="#cb84-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-3"><a href="#cb84-3" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb84-4"><a href="#cb84-4" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Node:</span>
+<span id="cb84-5"><a href="#cb84-5" aria-hidden="true" tabindex="-1"></a>    value: <span class="bu">int</span></span>
+<span id="cb84-6"><a href="#cb84-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">next</span>: <span class="st">&quot;Node | None&quot;</span> <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb84-7"><a href="#cb84-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-8"><a href="#cb84-8" aria-hidden="true" tabindex="-1"></a>third <span class="op">=</span> Node(<span class="dv">3</span>)</span>
+<span id="cb84-9"><a href="#cb84-9" aria-hidden="true" tabindex="-1"></a>second <span class="op">=</span> Node(<span class="dv">7</span>, third)   <span class="co"># &#39;next&#39; stores a reference to another Node object</span></span>
+<span id="cb84-10"><a href="#cb84-10" aria-hidden="true" tabindex="-1"></a>head <span class="op">=</span> Node(<span class="dv">11</span>, second)   <span class="co"># 11 -&gt; 7 -&gt; 3</span></span></code></pre></div>
+
+<p>Usually prefer: - built-in <code>list</code> -
+
+<code>collections.deque</code></p>
+
+<p>Linked lists matter mainly for DS intuition / interviews.</p>
+
+<h4 id="intuition-first">Intuition first</h4>
+
+<ul>
+
+<li>Integers look shared but are <strong>immutable</strong>.</li>
+
+<li>Dicts are <strong>mutable</strong>; assignment can create shared
+
+state.</li>
+
+<li>Lists support <code>arr[2]</code>.</li>
+
+<li>Linked lists require traversal.</li>
+
+</ul>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Shared reference with a mutable object</span></span>
+<span id="cb85-2"><a href="#cb85-2" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> {<span class="st">&quot;value&quot;</span>: <span class="dv">11</span>}</span>
+<span id="cb85-3"><a href="#cb85-3" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> a</span>
+<span id="cb85-4"><a href="#cb85-4" aria-hidden="true" tabindex="-1"></a>b[<span class="st">&quot;value&quot;</span>] <span class="op">=</span> <span class="dv">22</span></span>
+<span id="cb85-5"><a href="#cb85-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb85-6"><a href="#cb85-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(a)  <span class="co"># {&#39;value&#39;: 22}</span></span>
+<span id="cb85-7"><a href="#cb85-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(b)  <span class="co"># {&#39;value&#39;: 22}</span></span>
+<span id="cb85-8"><a href="#cb85-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb85-9"><a href="#cb85-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Rebinding with an immutable object</span></span>
+<span id="cb85-10"><a href="#cb85-10" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> <span class="dv">11</span></span>
+<span id="cb85-11"><a href="#cb85-11" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> x</span>
+<span id="cb85-12"><a href="#cb85-12" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> <span class="dv">22</span></span>
+<span id="cb85-13"><a href="#cb85-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb85-14"><a href="#cb85-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(x)  <span class="co"># 11</span></span>
+<span id="cb85-15"><a href="#cb85-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(y)  <span class="co"># 22</span></span></code></pre></div>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Tiny linked-list node example</span></span>
+<span id="cb86-2"><a href="#cb86-2" aria-hidden="true" tabindex="-1"></a>node1 <span class="op">=</span> {<span class="st">&quot;value&quot;</span>: <span class="dv">11</span>, <span class="st">&quot;next&quot;</span>: <span class="va">None</span>}</span>
+<span id="cb86-3"><a href="#cb86-3" aria-hidden="true" tabindex="-1"></a>node2 <span class="op">=</span> {<span class="st">&quot;value&quot;</span>: <span class="dv">7</span>, <span class="st">&quot;next&quot;</span>: <span class="va">None</span>}</span>
+<span id="cb86-4"><a href="#cb86-4" aria-hidden="true" tabindex="-1"></a>node1[<span class="st">&quot;next&quot;</span>] <span class="op">=</span> node2</span>
+<span id="cb86-5"><a href="#cb86-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb86-6"><a href="#cb86-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(node1[<span class="st">&quot;value&quot;</span>])           <span class="co"># 11</span></span>
+<span id="cb86-7"><a href="#cb86-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(node1[<span class="st">&quot;next&quot;</span>][<span class="st">&quot;value&quot;</span>])   <span class="co"># 7</span></span></code></pre></div>
+
+<h4 id="formal-complexity-notation">Formal complexity notation</h4>
+
+<p>Big O:</p>
+
+<p><span class="math display">\[O(f(n))\]</span></p>
+
+<p>Describes growth as input size <span class="math inline">\(n\)</span>
+
+increases.</p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Structure</th>
+
+<th>Fast operations</th>
+
+<th>Slow operations</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Python list</td>
+
+<td>index access, append</td>
+
+<td>front insert/delete, middle shifts</td>
+
+</tr>
+
+<tr>
+
+<td>Linked list</td>
+
+<td>front insert/delete, relinking with node access</td>
+
+<td>indexing, traversal search, append from head</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Use lists for fast random access; linked lists
+
+help when updates happen at a node you already have.</p>
+
+</blockquote>
+
+<h4 id="interview-style-comparison">Interview-style comparison</h4>
+
+<ul>
+
+<li><strong>List indexing</strong>: direct access.</li>
+
+<li><strong>Linked-list traversal</strong>: walk from head.</li>
+
+<li>If <code>a = b</code> and <code>b</code> is a dict, then
+
+<code>a['x'] = 10</code> mutates the shared object.</li>
+
+</ul>
+
+<h3 id="example-walkthrough-3">3.1.3 Example / Walkthrough</h3>
+
+<h4 id="integer-assignment-example">1) Integer assignment example</h4>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a>num1 <span class="op">=</span> <span class="dv">11</span></span>
+<span id="cb87-2"><a href="#cb87-2" aria-hidden="true" tabindex="-1"></a>num2 <span class="op">=</span> num1</span></code></pre></div>
+
+<p>Then:</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb88-1"><a href="#cb88-1" aria-hidden="true" tabindex="-1"></a>num2 <span class="op">=</span> <span class="dv">22</span></span></code></pre></div>
+
+<p><code>num2</code> is rebound; original <code>11</code> is
+
+unchanged.</p>
+
+<h4 id="dictionary-reference-sharing">2) Dictionary reference
+
+sharing</h4>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb89-1"><a href="#cb89-1" aria-hidden="true" tabindex="-1"></a>dict1 <span class="op">=</span> {<span class="st">&quot;value&quot;</span>: <span class="dv">11</span>}</span>
+<span id="cb89-2"><a href="#cb89-2" aria-hidden="true" tabindex="-1"></a>dict2 <span class="op">=</span> dict1</span></code></pre></div>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb90-1"><a href="#cb90-1" aria-hidden="true" tabindex="-1"></a>dict2[<span class="st">&quot;value&quot;</span>] <span class="op">=</span> <span class="dv">22</span></span></code></pre></div>
+
+<p>Both names see the mutation:</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb91-1"><a href="#cb91-1" aria-hidden="true" tabindex="-1"></a>dict1  <span class="co"># {&#39;value&#39;: 22}</span></span>
+<span id="cb91-2"><a href="#cb91-2" aria-hidden="true" tabindex="-1"></a>dict2  <span class="co"># {&#39;value&#39;: 22}</span></span></code></pre></div>
+
+<h4 id="list-vs-linked-list">3) List vs linked list</h4>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a>arr <span class="op">=</span> [<span class="dv">11</span>, <span class="dv">7</span>, <span class="dv">3</span>, <span class="dv">23</span>]</span>
+<span id="cb92-2"><a href="#cb92-2" aria-hidden="true" tabindex="-1"></a>arr[<span class="dv">2</span>]   <span class="co"># 3</span></span></code></pre></div>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb93-1"><a href="#cb93-1" aria-hidden="true" tabindex="-1"></a>head <span class="op">=</span> {</span>
+<span id="cb93-2"><a href="#cb93-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;value&quot;</span>: <span class="dv">11</span>,</span>
+<span id="cb93-3"><a href="#cb93-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;next&quot;</span>: {</span>
+<span id="cb93-4"><a href="#cb93-4" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;value&quot;</span>: <span class="dv">7</span>,</span>
+<span id="cb93-5"><a href="#cb93-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;next&quot;</span>: {</span>
+<span id="cb93-6"><a href="#cb93-6" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;value&quot;</span>: <span class="dv">3</span>,</span>
+<span id="cb93-7"><a href="#cb93-7" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;next&quot;</span>: {</span>
+<span id="cb93-8"><a href="#cb93-8" aria-hidden="true" tabindex="-1"></a>                <span class="st">&quot;value&quot;</span>: <span class="dv">23</span>,</span>
+<span id="cb93-9"><a href="#cb93-9" aria-hidden="true" tabindex="-1"></a>                <span class="st">&quot;next&quot;</span>: <span class="va">None</span></span>
+<span id="cb93-10"><a href="#cb93-10" aria-hidden="true" tabindex="-1"></a>            }</span>
+<span id="cb93-11"><a href="#cb93-11" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb93-12"><a href="#cb93-12" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb93-13"><a href="#cb93-13" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+
+<p>To reach <code>23</code>, follow <code>next</code> step by step.</p>
+
+<h4 id="why-big-o-shows-up-here">4) Why Big O shows up here</h4>
+
+<ul>
+
+<li>List index access: commonly <span
+
+class="math inline">\(O(1)\)</span></li>
+
+<li>Linked-list access to item <span class="math inline">\(k\)</span>:
+
+worst-case <span class="math inline">\(O(n)\)</span></li>
+
+</ul>
+
+<p>Same data, different structure, different cost.</p>
+
+<h3 id="key-takeaways-4">3.1.4 Key Takeaways</h3>
+
+<ul>
+
+<li>Variables are <strong>names bound to objects</strong>.</li>
+
+<li><strong>Rebinding</strong> and <strong>mutation</strong>
+
+differ.</li>
+
+<li>Integers are immutable.</li>
+
+<li>Dictionaries are mutable and often shared by assignment.</li>
+
+<li>Lists support direct indexing.</li>
+
+<li>Linked lists require following references.</li>
+
+<li>Big O, written as <span class="math inline">\(O(f(n))\)</span>,
+
+compares growth of operation costs.</li>
+
+</ul>
+
+<h3 id="common-pitfalls-7">3.1.5 Common Pitfalls</h3>
+
+<ul>
+
+<li>Assuming assignment creates a copy.</li>
+
+<li>Confusing rebinding with in-place mutation.</li>
+
+<li>Expecting linked lists to support list-style indexing.</li>
+
+<li>Thinking of Python variables as raw C-style pointers.</li>
+
+</ul>
+
+<h3 id="what-it-is-5">3.1.6 What It Is</h3>
+
+<p>Python errors fall into 3 groups:</p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Type</th>
+
+<th>When</th>
+
+<th>Example</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Syntax error</td>
+
+<td>before execution</td>
+
+<td><code>print("hello"</code></td>
+
+</tr>
+
+<tr>
+
+<td>Runtime exception</td>
+
+<td>during execution</td>
+
+<td><code>10 / 0</code></td>
+
+</tr>
+
+<tr>
+
+<td>Logic bug</td>
+
+<td>code runs, wrong result</td>
+
+<td><code>+</code> instead of <code>*</code></td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p>Runtime exceptions use <code>try</code>, <code>except</code>,
+
+<code>finally</code>.</p>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="230" viewBox="0 0 460 230" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .te-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .te-code { font: 12px 'Consolas', monospace; fill: #334155; }
+    .te-note { font: italic 11px system-ui, sans-serif; fill: #64748b; }
+  </style>
+  <!-- try block -->
+  <rect x="30" y="10" width="400" height="42" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="50" y="28" class="te-lbl" fill="#1e40af">try:</text>
+  <text x="50" y="44" class="te-code">risky_operation()</text>
+  <text x="280" y="36" class="te-note">← runs first, always</text>
+  <!-- except specific -->
+  <rect x="30" y="60" width="400" height="42" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="50" y="78" class="te-lbl" fill="#92400e">except SpecificError:</text>
+  <text x="50" y="94" class="te-code">handle_it()</text>
+  <text x="280" y="86" class="te-note">← only if error matches</text>
+  <!-- except broad -->
+  <rect x="30" y="110" width="400" height="42" rx="6" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="50" y="128" class="te-lbl" fill="#dc2626">except Exception as e:</text>
+  <text x="50" y="144" class="te-code">fallback()</text>
+  <text x="280" y="136" class="te-note">← catch-all (last resort)</text>
+  <!-- finally -->
+  <rect x="30" y="160" width="400" height="42" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="50" y="178" class="te-lbl" fill="#166534">finally:</text>
+  <text x="50" y="194" class="te-code">cleanup()</text>
+  <text x="280" y="186" class="te-note">← ALWAYS runs</text>
+  <!-- Rule -->
+  <text x="230" y="222" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="600" fill="#6366f1">Rule: specific exceptions first, broad ones last.</text>
+</svg>
+
+<ul>
+
+<li><strong><code>try</code></strong>: risky code</li>
+
+<li><strong><code>except</code></strong>: matching handler</li>
+
+<li><strong><code>finally</code></strong>: cleanup either way</li>
+
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> Catch specific exceptions first; use broad
+
+<code>Exception</code> only as fallback.</p>
+
+</blockquote>
+
+<h3 id="core-ideas">3.1.7 Core ideas</h3>
+
+<ul>
+
+<li><strong>Syntax error</strong>: invalid code structure.</li>
+
+<li><strong>Logic bug</strong>: code runs, result wrong.</li>
+
+<li><strong>Runtime exception</strong>: failure during execution.</li>
+
+<li><strong><code>ZeroDivisionError</code></strong>: divide by
+
+zero.</li>
+
+<li><strong><code>ValueError</code></strong>: right type, wrong value
+
+content.</li>
+
+<li><strong><code>Exception</code></strong>: broad base for many runtime
+
+errors.</li>
+
+</ul>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb95-1"><a href="#cb95-1" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
+<span id="cb95-2"><a href="#cb95-2" aria-hidden="true" tabindex="-1"></a>    value <span class="op">=</span> <span class="bu">int</span>(<span class="bu">input</span>(<span class="st">&quot;Enter an integer: &quot;</span>))</span>
+<span id="cb95-3"><a href="#cb95-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;Parsed integer:&quot;</span>, value)</span>
+<span id="cb95-4"><a href="#cb95-4" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> <span class="pp">ValueError</span>:</span>
+<span id="cb95-5"><a href="#cb95-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;Input error: please type digits like 42, not text like &#39;hello&#39;.&quot;</span>)</span>
+<span id="cb95-6"><a href="#cb95-6" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> <span class="pp">Exception</span> <span class="im">as</span> e:  <span class="co"># fallback handling for unexpected cases</span></span>
+<span id="cb95-7"><a href="#cb95-7" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;Unexpected runtime problem while processing input:&quot;</span>, e)</span>
+<span id="cb95-8"><a href="#cb95-8" aria-hidden="true" tabindex="-1"></a><span class="cf">finally</span>:</span>
+<span id="cb95-9"><a href="#cb95-9" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;Input step finished; cleanup/reporting runs no matter what.&quot;</span>)</span></code></pre></div>
+
+<p>Ordering rule: - specific <code>except</code> first - broad
+
+<code>except Exception</code> last</p>
+
+<h3 id="example-walkthrough-4">3.1.8 Example / Walkthrough</h3>
+
+<h4 id="basic-try-except-finally-with-division">1) Basic
+
+<code>try-except-finally</code> with division</h4>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb96-1"><a href="#cb96-1" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> <span class="dv">5</span></span>
+<span id="cb96-2"><a href="#cb96-2" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> <span class="dv">2</span></span>
+<span id="cb96-3"><a href="#cb96-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb96-4"><a href="#cb96-4" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
+<span id="cb96-5"><a href="#cb96-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;resource Open&quot;</span>)</span>
+<span id="cb96-6"><a href="#cb96-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(a <span class="op">/</span> b)</span>
+<span id="cb96-7"><a href="#cb96-7" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> <span class="pp">Exception</span> <span class="im">as</span> e:</span>
+<span id="cb96-8"><a href="#cb96-8" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;Hey, You cannot divide a Number by Zero&quot;</span>, e)</span>
+<span id="cb96-9"><a href="#cb96-9" aria-hidden="true" tabindex="-1"></a><span class="cf">finally</span>:</span>
+<span id="cb96-10"><a href="#cb96-10" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;resource Closed&quot;</span>)</span></code></pre></div>
+
+<ul>
+
+<li>If <code>b = 2</code>: division succeeds; <code>finally</code> still
+
+runs.</li>
+
+<li>If <code>b = 0</code>: <code>ZeroDivisionError</code> is caught;
+
+<code>finally</code> still runs.</li>
+
+</ul>
+
+<h4 id="handling-multiple-exception-types-separately">2) Handling
+
+multiple exception types separately</h4>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb97-1"><a href="#cb97-1" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> <span class="dv">5</span></span>
+<span id="cb97-2"><a href="#cb97-2" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> <span class="dv">2</span></span>
+<span id="cb97-3"><a href="#cb97-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb97-4"><a href="#cb97-4" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
+<span id="cb97-5"><a href="#cb97-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;resource Open&quot;</span>)</span>
+<span id="cb97-6"><a href="#cb97-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(a <span class="op">/</span> b)</span>
+<span id="cb97-7"><a href="#cb97-7" aria-hidden="true" tabindex="-1"></a>    k <span class="op">=</span> <span class="bu">int</span>(<span class="bu">input</span>(<span class="st">&quot;Enter a number&quot;</span>))</span>
+<span id="cb97-8"><a href="#cb97-8" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(k)</span>
+<span id="cb97-9"><a href="#cb97-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb97-10"><a href="#cb97-10" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> <span class="pp">ZeroDivisionError</span> <span class="im">as</span> e:</span>
+<span id="cb97-11"><a href="#cb97-11" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;Hey, You cannot divide a Number by Zero&quot;</span>, e)</span>
+<span id="cb97-12"><a href="#cb97-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb97-13"><a href="#cb97-13" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> <span class="pp">ValueError</span> <span class="im">as</span> e:</span>
+<span id="cb97-14"><a href="#cb97-14" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;Invalid Input&quot;</span>)</span>
+<span id="cb97-15"><a href="#cb97-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb97-16"><a href="#cb97-16" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> <span class="pp">Exception</span> <span class="im">as</span> e:</span>
+<span id="cb97-17"><a href="#cb97-17" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;Something went Wrong.&quot;</span>)</span>
+<span id="cb97-18"><a href="#cb97-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb97-19"><a href="#cb97-19" aria-hidden="true" tabindex="-1"></a><span class="cf">finally</span>:</span>
+<span id="cb97-20"><a href="#cb97-20" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;resource Closed&quot;</span>)</span></code></pre></div>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Risky line</th>
+
+<th>Possible exception</th>
+
+<th>Handler</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><code>a / b</code></td>
+
+<td><code>ZeroDivisionError</code></td>
+
+<td>first <code>except</code></td>
+
+</tr>
+
+<tr>
+
+<td><code>int(input(.))</code></td>
+
+<td><code>ValueError</code></td>
+
+<td>second <code>except</code></td>
+
+</tr>
+
+<tr>
+
+<td>unexpected issue</td>
+
+<td>other runtime exception</td>
+
+<td><code>Exception</code> fallback</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Separate handlers make failures clearer and
+
+debugging easier.</p>
+
+</blockquote>
+
+<h3 id="key-takeaways-5">3.1.9 Key Takeaways</h3>
+
+<ul>
+
+<li>Syntax, logic, and runtime errors are different.</li>
+
+<li>Use <code>try</code> for risky code, <code>except</code> for
+
+handling, <code>finally</code> for cleanup.</li>
+
+<li><code>ZeroDivisionError</code> and <code>ValueError</code> are
+
+specific runtime exceptions.</li>
+
+<li>Prefer specific <code>except</code> blocks over only a generic
+
+<code>Exception</code>.</li>
+
+</ul>
+
+<h3 id="common-pitfalls-8">3.1.10 Common Pitfalls</h3>
+
+<ul>
+
+<li>Catching only <code>Exception</code> and hiding the real cause.</li>
+
+<li>Forgetting <code>int(input(.))</code> can raise
+
+<code>ValueError</code>.</li>
+
+<li>Confusing syntax errors with runtime exceptions.</li>
+
+<li>Assuming cleanup happens without <code>finally</code>.</li>
+
+</ul>
+
+<h3 id="what-it-is-6">3.1.11 What It Is</h3>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Tool</th>
+
+<th>Best for</th>
+
+<th>Core object</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><code>NumPy</code></td>
+
+<td>fast numerical array ops</td>
+
+<td><code>ndarray</code></td>
+
+</tr>
+
+<tr>
+
+<td><code>Pandas</code></td>
+
+<td>labeled tabular data</td>
+
+<td><code>DataFrame</code></td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/03_python_for_data_science/numpy_vs_pandas.svg" alt="NumPy vs Pandas: ndarray for math operations, DataFrame for labeled tabular wrangling — two complementary tools">
+
+<figcaption>
+
+NumPy vs Pandas: ndarray for math operations, DataFrame for labeled tabular wrangling — two complementary tools
+
+</figcaption>
+
+</figure>
+
+<blockquote>
+
+<p><strong>Key:</strong> <code>NumPy</code> = compute on arrays;
+
+<code>Pandas</code> = organize/query labeled tables.</p>
+
+</blockquote>
+
+<h3 id="key-concepts-and-formulas-4">3.1.12 Key Concepts and Formulas</h3>
+
+<h4 id="terms-youll-actually-use">Terms you’ll actually use</h4>
+
+<ul>
+
+<li><strong>NumPy array</strong>: homogeneous N-D numeric
+
+container.</li>
+
+<li><strong>Vectorized op</strong>: apply an op to whole arrays at
+
+once.</li>
+
+<li><strong><code>axis</code></strong>: dimension being
+
+reduced/aggregated.</li>
+
+<li><strong>DataFrame index</strong>: row labels for
+
+<code>.loc[.]</code>.</li>
+
+</ul>
+
+<h4 id="practical-intuition">Practical intuition</h4>
+
+<ul>
+
+<li><code>a + b</code> on arrays is element-wise.</li>
+
+<li>In 2D:
+
+<ul>
+
+<li><code>axis=0</code> → one result per <strong>column</strong></li>
+
+<li><code>axis=1</code> → one result per <strong>row</strong></li>
+
+</ul></li>
+
+<li><code>df.set_index(col)</code> makes that column the row label.</li>
+
+</ul>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px;">2D array = rows × columns</caption>
+<thead><tr>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Axis</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Operation</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Result</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 14px; font-family:'Consolas',monospace; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">axis=0</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">collapse rows ↓</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">per-column result</td></tr>
+<tr><td style="padding:6px 14px; font-family:'Consolas',monospace; font-weight:600;">axis=1</td>
+    <td style="padding:6px 14px;">collapse columns →</td>
+    <td style="padding:6px 14px;">per-row result</td></tr>
+</tbody>
+</table>
+
+<h4 id="formulas">Formulas</h4>
+
+<p><strong>Element-wise array addition</strong></p>
+
+<p><span class="math display">\[
+
+\mathbf{c} = \mathbf{a} + \mathbf{b}, \quad c_i = a_i + b_i
+
+\]</span></p>
+
+<p><strong>Axis-wise sum</strong></p>
+
+<p><span class="math display">\[
+
+s_j = \sum_i x_{ij}
+
+\]</span></p>
+
+<p><strong>Axis-wise maximum</strong></p>
+
+<p><span class="math display">\[
+
+m_i = \max_j x_{ij}
+
+\]</span></p>
+
+<h3 id="example-walkthrough-5">3.1.13 Example / Walkthrough</h3>
+
+<h4 id="creating-numpy-arrays">1) Creating NumPy arrays</h4>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Goal</th>
+
+<th>Function</th>
+
+<th>Example</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>all zeros</td>
+
+<td><code>np.zeros()</code></td>
+
+<td><code>np.zeros((2,3))</code></td>
+
+</tr>
+
+<tr>
+
+<td>all ones</td>
+
+<td><code>np.ones()</code></td>
+
+<td><code>np.ones((4,2,2), dtype='int32')</code></td>
+
+</tr>
+
+<tr>
+
+<td>constant fill</td>
+
+<td><code>np.full()</code></td>
+
+<td><code>np.full((2,2), 99)</code></td>
+
+</tr>
+
+<tr>
+
+<td>numeric range</td>
+
+<td><code>np.arange()</code></td>
+
+<td><code>np.arange(1,15,2)</code></td>
+
+</tr>
+
+<tr>
+
+<td>random integers</td>
+
+<td><code>np.random.randint()</code></td>
+
+<td><code>np.random.randint(-4,8, size=(3,3))</code></td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb99-1"><a href="#cb99-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb99-2"><a href="#cb99-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb99-3"><a href="#cb99-3" aria-hidden="true" tabindex="-1"></a>np.zeros((<span class="dv">2</span>,<span class="dv">3</span>))</span>
+<span id="cb99-4"><a href="#cb99-4" aria-hidden="true" tabindex="-1"></a>np.ones((<span class="dv">4</span>,<span class="dv">2</span>,<span class="dv">2</span>), dtype<span class="op">=</span><span class="st">&#39;int32&#39;</span>)</span>
+<span id="cb99-5"><a href="#cb99-5" aria-hidden="true" tabindex="-1"></a>np.full((<span class="dv">2</span>,<span class="dv">2</span>), <span class="dv">99</span>)</span>
+<span id="cb99-6"><a href="#cb99-6" aria-hidden="true" tabindex="-1"></a>np.arange(<span class="dv">1</span>,<span class="dv">15</span>,<span class="dv">2</span>)</span>
+<span id="cb99-7"><a href="#cb99-7" aria-hidden="true" tabindex="-1"></a>np.random.randint(<span class="op">-</span><span class="dv">4</span>,<span class="dv">8</span>, size<span class="op">=</span>(<span class="dv">3</span>,<span class="dv">3</span>))</span></code></pre></div>
+
+<h4 id="vectorized-arithmetic">2) Vectorized arithmetic</h4>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb100-1"><a href="#cb100-1" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> np.array([<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>])</span>
+<span id="cb100-2"><a href="#cb100-2" aria-hidden="true" tabindex="-1"></a>a <span class="op">+</span> <span class="dv">1</span></span>
+<span id="cb100-3"><a href="#cb100-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb100-4"><a href="#cb100-4" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> np.array([<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">0</span>])</span>
+<span id="cb100-5"><a href="#cb100-5" aria-hidden="true" tabindex="-1"></a>a <span class="op">+</span> b</span></code></pre></div>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb101-1"><a href="#cb101-1" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> np.array([[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>],</span>
+<span id="cb101-2"><a href="#cb101-2" aria-hidden="true" tabindex="-1"></a>              [<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>]])</span>
+<span id="cb101-3"><a href="#cb101-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb101-4"><a href="#cb101-4" aria-hidden="true" tabindex="-1"></a>x.<span class="bu">sum</span>(axis<span class="op">=</span><span class="dv">0</span>)   <span class="co"># array([5, 7, 9])</span></span>
+<span id="cb101-5"><a href="#cb101-5" aria-hidden="true" tabindex="-1"></a>x.<span class="bu">sum</span>(axis<span class="op">=</span><span class="dv">1</span>)   <span class="co"># array([ 6, 15])</span></span></code></pre></div>
+
+<blockquote>
+
+<p><strong>Key:</strong> Ask: “one result per what?” Column →
+
+<code>axis=0</code>; row → <code>axis=1</code>.</p>
+
+</blockquote>
+
+<h4 id="linear-algebra-identity-determinant">3) Linear algebra: identity
+
++ determinant</h4>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb102-1"><a href="#cb102-1" aria-hidden="true" tabindex="-1"></a>c <span class="op">=</span> np.identity(<span class="dv">3</span>)</span>
+<span id="cb102-2"><a href="#cb102-2" aria-hidden="true" tabindex="-1"></a>np.linalg.det(c)   <span class="co"># 1.0</span></span></code></pre></div>
+
+<p><span class="math display">\[
+
+\det(I_n) = 1
+
+\]</span></p>
+
+<h4 id="basic-statistics-with-axis">4) Basic statistics with
+
+<code>axis</code></h4>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb103-1"><a href="#cb103-1" aria-hidden="true" tabindex="-1"></a>stats <span class="op">=</span> np.array([[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>],</span>
+<span id="cb103-2"><a href="#cb103-2" aria-hidden="true" tabindex="-1"></a>                  [<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>]])</span>
+<span id="cb103-3"><a href="#cb103-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb103-4"><a href="#cb103-4" aria-hidden="true" tabindex="-1"></a>np.<span class="bu">min</span>(stats)           <span class="co"># 1</span></span>
+<span id="cb103-5"><a href="#cb103-5" aria-hidden="true" tabindex="-1"></a>np.<span class="bu">max</span>(stats, axis<span class="op">=</span><span class="dv">1</span>)   <span class="co"># array([3, 6])</span></span>
+<span id="cb103-6"><a href="#cb103-6" aria-hidden="true" tabindex="-1"></a>np.<span class="bu">sum</span>(stats, axis<span class="op">=</span><span class="dv">0</span>)   <span class="co"># array([5, 7, 9])</span></span></code></pre></div>
+
+<p><span class="math display">\[
+
+\begin{bmatrix}
+
+1 &amp; 2 &amp; 3 \\
+
+4 &amp; 5 &amp; 6
+
+\end{bmatrix}
+
+\]</span></p>
+
+<h4 id="pandas-setting-an-index">5) Pandas: setting an index</h4>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb104-1"><a href="#cb104-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb104-2"><a href="#cb104-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb104-3"><a href="#cb104-3" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.DataFrame({</span>
+<span id="cb104-4"><a href="#cb104-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;name&#39;</span>: [<span class="st">&#39;Asha&#39;</span>, <span class="st">&#39;Ben&#39;</span>, <span class="st">&#39;Cara&#39;</span>],</span>
+<span id="cb104-5"><a href="#cb104-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;score&#39;</span>: [<span class="dv">88</span>, <span class="dv">92</span>, <span class="dv">85</span>],</span>
+<span id="cb104-6"><a href="#cb104-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;city&#39;</span>: [<span class="st">&#39;NYC&#39;</span>, <span class="st">&#39;LA&#39;</span>, <span class="st">&#39;Chicago&#39;</span>]</span>
+<span id="cb104-7"><a href="#cb104-7" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb104-8"><a href="#cb104-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb104-9"><a href="#cb104-9" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df.set_index(<span class="st">&quot;name&quot;</span>)</span>
+<span id="cb104-10"><a href="#cb104-10" aria-hidden="true" tabindex="-1"></a>df.loc[<span class="st">&quot;Ben&quot;</span>]</span></code></pre></div>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="120" viewBox="0 0 320 120" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .si2-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .si2-code { font: 12px 'Consolas', monospace; fill: #334155; }
+  </style>
+  <defs><marker id="si2-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <rect x="10" y="10" width="120" height="40" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="70" y="35" text-anchor="middle" class="si2-lbl">Index: 0, 1, 2</text>
+  <line x1="130" y1="30" x2="180" y2="30" stroke="#6366f1" stroke-width="2" marker-end="url(#si2-a)"/>
+  <text x="155" y="22" text-anchor="middle" class="si2-code" font-size="10">set_index("name")</text>
+  <rect x="188" y="10" width="120" height="40" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="248" y="35" text-anchor="middle" class="si2-lbl">Asha, Ben, Cara</text>
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> <code>set_index()</code> converts a column into
+
+row labels for label-based lookup.</p>
+
+</blockquote>
+
+<h3 id="key-takeaways-6">3.1.14 Key Takeaways</h3>
+
+<ul>
+
+<li><code>NumPy</code> arrays: efficient homogeneous numeric
+
+containers.</li>
+
+<li>Vectorization: element-wise whole-array ops.</li>
+
+<li><code>axis=0</code> → per column, <code>axis=1</code> → per
+
+row.</li>
+
+<li><code>np.identity()</code> + <code>np.linalg.det()</code> are basic
+
+linear algebra utilities.</li>
+
+<li><code>df.set_index(.)</code> enables label-based row access.</li>
+
+</ul>
+
+<h3 id="common-pitfalls-9">3.1.15 Common Pitfalls</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 50%" />
+
+<col style="width: 50%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Pitfall</th>
+
+<th>Fix</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Confusing <code>axis=0</code> vs <code>axis=1</code></td>
+
+<td>think “result per column” vs “result per row”</td>
+
+</tr>
+
+<tr>
+
+<td>Assuming NumPy math is scalar-style</td>
+
+<td>remember matching shapes → element-wise</td>
+
+</tr>
+
+<tr>
+
+<td>Forgetting random outputs vary</td>
+
+<td>set seed if reproducibility matters</td>
+
+</tr>
+
+<tr>
+
+<td>Ignoring <code>dtype</code></td>
+
+<td>check numeric type explicitly</td>
+
+</tr>
+
+<tr>
+
+<td>Forgetting index mutation behavior</td>
+
+<td>know whether reassignment / <code>inplace=True</code> is used</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="core-distinctions">3.1.16 Core distinctions</h3>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Notation</th>
+
+<th>Name</th>
+
+<th>Plain English</th>
+
+<th>Example</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><span class="math inline">\(O(f(n))\)</span></td>
+
+<td>Big O — upper bound</td>
+
+<td>Growth is <strong>at most</strong> this fast. “It will never be worse than…”</td>
+
+<td>Merge sort is <span class="math inline">\(O(n \log n)\)</span> — even in the worst case, it never exceeds <span class="math inline">\(n \log n\)</span> operations.</td>
+
+</tr>
+
+<tr>
+
+<td><span class="math inline">\(\Theta(f(n))\)</span></td>
+
+<td>Big Theta — tight bound</td>
+
+<td>Growth is <strong>exactly</strong> this rate (bounded above and below). “It always grows like…”</td>
+
+<td>Merge sort is <span class="math inline">\(\Theta(n \log n)\)</span> — it does roughly <span class="math inline">\(n \log n\)</span> work in <em>every</em> case.</td>
+
+</tr>
+
+<tr>
+
+<td><span class="math inline">\(\Omega(f(n))\)</span></td>
+
+<td>Big Omega — lower bound</td>
+
+<td>Growth is <strong>at least</strong> this fast. “You can’t do better than…”</td>
+
+<td>Comparison-based sorting is <span class="math inline">\(\Omega(n \log n)\)</span> — no comparison sort can beat this.</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Quick mnemonic:</strong> <span class="math inline">\(O\)</span> = ceiling (upper), <span class="math inline">\(\Omega\)</span> = floor (lower), <span class="math inline">\(\Theta\)</span> = exact fit (both). In interviews, <span class="math inline">\(O\)</span> is used 95% of the time.</p>
+
+</blockquote>
+
+<h4 id="best-average-worst-case">Best / average / worst case</h4>
+
+<p>These describe <strong>which inputs</strong> you’re analyzing — they are <em>separate</em> from
+<span class="math inline">\(O/\Theta/\Omega\)</span>, which describe <strong>how you bound</strong> the growth.</p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Case</th>
+
+<th>Meaning</th>
+
+<th>Linear search example (<code>find x in list of n</code>)</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Best case</td>
+
+<td>Luckiest possible input</td>
+
+<td><span class="math inline">\(O(1)\)</span> — <code>x</code> is the first element</td>
+
+</tr>
+
+<tr>
+
+<td>Average case</td>
+
+<td>Expected over random inputs</td>
+
+<td><span class="math inline">\(O(n/2) = O(n)\)</span> — on average, scan half the list</td>
+
+</tr>
+
+<tr>
+
+<td>Worst case</td>
+
+<td>Unluckiest possible input</td>
+
+<td><span class="math inline">\(O(n)\)</span> — <code>x</code> is last or not present</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p>So: “worst-case time is <span class="math inline">\(O(n^2)\)</span>”
+= case analysis (<em>worst</em>) + asymptotic bound (<span class="math inline">\(O\)</span>). Two independent choices.</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> Big O is not “worst case” by definition — that’s
+just common usage. You can absolutely say “the <em>best-case</em> time is <span class="math inline">\(O(1)\)</span>” or “the <em>average-case</em> time is <span class="math inline">\(O(n \log n)\)</span>.”</p>
+
+</blockquote>
+
+<h4 id="quick-sort-the-classic-interview-example">Quick sort — the classic interview example</h4>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Case</th>
+
+<th>Complexity</th>
+
+<th>When it happens</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Best</td>
+
+<td><span class="math inline">\(O(n \log n)\)</span></td>
+
+<td>Pivot always lands near the median</td>
+
+</tr>
+
+<tr>
+
+<td>Average</td>
+
+<td><span class="math inline">\(O(n \log n)\)</span></td>
+
+<td>Random pivots — expected over random inputs</td>
+
+</tr>
+
+<tr>
+
+<td>Worst</td>
+
+<td><span class="math inline">\(O(n^2)\)</span></td>
+
+<td>Pivot is always the smallest/largest element (e.g., already sorted input with naïve pivot)</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="read-code-3-rules">3.1.17 Read code: 3 rules</h3>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px;">Complexity combination rules</caption>
+<thead><tr>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Pattern</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Operation</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Example</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">Sequential parts</td>
+    <td style="padding:6px 14px; font-family:'Consolas',monospace; border-bottom:1px solid rgba(0,0,0,0.06);">T1 + T2 → add</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">same n → O(n+n)=O(n), diff inputs → O(a+b)</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">Nested parts</td>
+    <td style="padding:6px 14px; font-family:'Consolas',monospace; border-bottom:1px solid rgba(0,0,0,0.06);">T1 × T2 → multiply</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">O(a×b) or O(n²)</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600;">Independent inputs</td>
+    <td style="padding:6px 14px; font-family:'Consolas',monospace;">keep separate</td>
+    <td style="padding:6px 14px;">O(a) and O(b), not O(a+b)</td></tr>
+</tbody>
+</table>
+
+<h3 id="key-formulas">3.1.18 Key formulas</h3>
+
+<ul>
+
+<li><strong>Asymptotic lower bound:</strong> <span
+
+class="math inline">\(\Omega(n)\)</span></li>
+
+<li><strong>Tight asymptotic bound:</strong> <span
+
+class="math inline">\(\Theta(n)\)</span></li>
+
+<li><strong>Asymptotic upper bound:</strong> <span
+
+class="math inline">\(O(n)\)</span></li>
+
+<li><strong>Different independent loop bounds:</strong> <span
+
+class="math inline">\(O(a + b)\)</span></li>
+
+<li><strong>Same loop-bound simplification:</strong> <span
+
+class="math inline">\(O(n + n) = O(n)\)</span></li>
+
+</ul>
+
+<h3 id="simplification-rule">3.1.19 Simplification rule</h3>
+
+<p>Only simplify terms when they use the <strong>same
+
+variable</strong>.</p>
+
+<ul>
+
+<li><span class="math inline">\(O(n+n)=O(n)\)</span></li>
+
+<li><span class="math inline">\(O(a+b)\)</span> stays <span
+
+class="math inline">\(O(a+b)\)</span> if <span
+
+class="math inline">\(a,b\)</span> are independent</li>
+
+<li>nested independent loops: <span
+
+class="math inline">\(O(a*b)\)</span></li>
+
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> Separate inputs stay separate.</p>
+
+</blockquote>
+
+<h3 id="examples">3.1.20 Examples</h3>
+
+<h4 id="sequential-loops-over-different-inputs">Sequential loops over
+
+different inputs</h4>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb108-1"><a href="#cb108-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> process(a, b):</span>
+<span id="cb108-2"><a href="#cb108-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(a):</span>
+<span id="cb108-3"><a href="#cb108-3" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(i)</span>
+<span id="cb108-4"><a href="#cb108-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb108-5"><a href="#cb108-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> j <span class="kw">in</span> <span class="bu">range</span>(b):</span>
+<span id="cb108-6"><a href="#cb108-6" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(j)</span></code></pre></div>
+
+<p><span class="math display">\[
+
+O(a + b)
+
+\]</span></p>
+
+<h4 id="nested-loops">Nested loops</h4>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb109-1"><a href="#cb109-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> process_pairs(a, b):</span>
+<span id="cb109-2"><a href="#cb109-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(a):</span>
+<span id="cb109-3"><a href="#cb109-3" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> j <span class="kw">in</span> <span class="bu">range</span>(b):</span>
+<span id="cb109-4"><a href="#cb109-4" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(i, j)</span></code></pre></div>
+
+<p><span class="math display">\[
+
+O(a * b)
+
+\]</span></p>
+
+<h4 id="sequential-loops-over-same-input">Sequential loops over same
+
+input</h4>
+
+<p><span class="math display">\[
+
+O(n + n) = O(2n) = O(n)
+
+\]</span></p>
+
+<h3 id="common-growth-rates">3.1.21 Common growth rates</h3>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Growth</th>
+
+<th>Name</th>
+
+<th>Example</th>
+
+<th style="text-align: right;">n=1000 ops</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><span class="math inline">\(O(1)\)</span></td>
+
+<td>constant</td>
+
+<td>dict lookup, array index</td>
+
+<td style="text-align: right;">1</td>
+
+</tr>
+
+<tr>
+
+<td><span class="math inline">\(O(\log n)\)</span></td>
+
+<td>logarithmic</td>
+
+<td>binary search</td>
+
+<td style="text-align: right;">~10</td>
+
+</tr>
+
+<tr>
+
+<td><span class="math inline">\(O(n)\)</span></td>
+
+<td>linear</td>
+
+<td>single scan</td>
+
+<td style="text-align: right;">1,000</td>
+
+</tr>
+
+<tr>
+
+<td><span class="math inline">\(O(n \log n)\)</span></td>
+
+<td>linearithmic</td>
+
+<td>merge sort</td>
+
+<td style="text-align: right;">~10,000</td>
+
+</tr>
+
+<tr>
+
+<td><span class="math inline">\(O(n^2)\)</span></td>
+
+<td>quadratic</td>
+
+<td>nested loops / bubble sort</td>
+
+<td style="text-align: right;">1,000,000</td>
+
+</tr>
+
+<tr>
+
+<td><span class="math inline">\(O(2^n)\)</span></td>
+
+<td>exponential</td>
+
+<td>brute-force subsets</td>
+
+<td style="text-align: right;">astronomical</td>
+
+</tr>
+
+<tr>
+
+<td><span class="math inline">\(O(n!)\)</span></td>
+
+<td>factorial</td>
+
+<td>all permutations</td>
+
+<td style="text-align: right;">impossible</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Anything above <span class="math inline">\(O(n
+
+\log n)\)</span> becomes impractical fast. Prefer hash maps over nested
+
+loops.</p>
+
+</blockquote>
+
+<h3 id="mini-code-read">3.1.22 Mini code read</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb110-1"><a href="#cb110-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> contains_common_value(xs, ys):</span>
+<span id="cb110-2"><a href="#cb110-2" aria-hidden="true" tabindex="-1"></a>    seen <span class="op">=</span> <span class="bu">set</span>(xs)</span>
+<span id="cb110-3"><a href="#cb110-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> y <span class="kw">in</span> ys:</span>
+<span id="cb110-4"><a href="#cb110-4" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> y <span class="kw">in</span> seen:</span>
+<span id="cb110-5"><a href="#cb110-5" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="va">True</span></span>
+<span id="cb110-6"><a href="#cb110-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="va">False</span></span></code></pre></div>
+
+<ul>
+
+<li>build <code>seen</code>: <span class="math inline">\(O(a)\)</span>
+
+for <code>xs</code></li>
+
+<li>scan <code>ys</code>: <span class="math inline">\(O(b)\)</span></li>
+
+<li><code>y in seen</code>: typical average-case <span
+
+class="math inline">\(O(1)\)</span></li>
+
+</ul>
+
+<p>Overall:</p>
+
+<p><span class="math display">\[
+
+O(a + b)
+
+\]</span></p>
+
+<h3 id="data-structure-intuition">3.1.23 Data structure intuition</h3>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Operation / structure</th>
+
+<th>Typical cost</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>array/list indexing</td>
+
+<td><span class="math inline">\(O(1)\)</span></td>
+
+</tr>
+
+<tr>
+
+<td>linked-list search</td>
+
+<td><span class="math inline">\(O(n)\)</span></td>
+
+</tr>
+
+<tr>
+
+<td>hash-table / set lookup</td>
+
+<td>often average-case <span class="math inline">\(O(1)\)</span></td>
+
+</tr>
+
+<tr>
+
+<td>balanced-tree operations</td>
+
+<td>often <span class="math inline">\(O(\log n)\)</span></td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Data structure choice often matters more than
+
+loop cleverness.</p>
+
+</blockquote>
+
+<h3 id="interview-checklist">3.1.24 Interview checklist</h3>
+
+<ul>
+
+<li>know <span class="math inline">\(\Omega\)</span>, <span
+
+class="math inline">\(\Theta\)</span>, <span
+
+class="math inline">\(O\)</span></li>
+
+<li>distinguish sequential vs nested loops</li>
+
+<li>know when terms simplify vs stay separate</li>
+
+</ul>
+
+<p>Classic answer:</p>
+
+<ul>
+
+<li>two separate loops over <code>n</code> → add → <span
+
+class="math inline">\(O(n)\)</span></li>
+
+<li>nested loops over <code>n</code> → multiply → <span
+
+class="math inline">\(O(n^2)\)</span></li>
+
+</ul>
+
+<h3 id="practical-intuition-1">3.1.25 Practical intuition</h3>
+
+<table style="border-collapse:collapse; margin:16px 0; font-size:0.92rem; max-width:420px;">
+<thead><tr>
+<th style="text-align:left; padding:6px 12px; border-bottom:2px solid #6366f1; color:#4f46e5;">Pattern</th>
+<th style="text-align:left; padding:6px 12px; border-bottom:2px solid #6366f1; color:#4f46e5;">Result</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0;">loop <em>n</em> + loop <em>n</em> <span style="color:#64748b;">(same variable)</span></td><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0; font-weight:600; color:#166534;">O(n) — linear</td></tr>
+<tr><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0;">loop <em>a</em> + loop <em>b</em> <span style="color:#64748b;">(different variables)</span></td><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0; font-weight:600; color:#1e40af;">O(a + b) — keep both</td></tr>
+<tr><td style="padding:6px 12px;">loop <em>n</em> × loop <em>n</em> <span style="color:#64748b;">(nested)</span></td><td style="padding:6px 12px; font-weight:600; color:#991b1b;">O(n²) — quadratic</td></tr>
+</tbody>
+</table>
+
+
+<hr />
+
+<h2 id="python-patterns-every-ds-uses-daily">3.2 Python Patterns Every
+
+DS Uses Daily</h2>
+
+<h3 id="list-comprehensions-and-generator-expressions">3.2.1 List
+
+Comprehensions and Generator Expressions</h3>
+
+<p>The most Pythonic way to build sequences. Faster than loops and more
+
+readable once you know them.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb112-1"><a href="#cb112-1" aria-hidden="true" tabindex="-1"></a><span class="co"># List comprehension — builds a list</span></span>
+<span id="cb112-2"><a href="#cb112-2" aria-hidden="true" tabindex="-1"></a>squares <span class="op">=</span> [x<span class="op">**</span><span class="dv">2</span> <span class="cf">for</span> x <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">10</span>)]</span>
+<span id="cb112-3"><a href="#cb112-3" aria-hidden="true" tabindex="-1"></a>evens   <span class="op">=</span> [x <span class="cf">for</span> x <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">20</span>) <span class="cf">if</span> x <span class="op">%</span> <span class="dv">2</span> <span class="op">==</span> <span class="dv">0</span>]</span>
+<span id="cb112-4"><a href="#cb112-4" aria-hidden="true" tabindex="-1"></a>flat    <span class="op">=</span> [item <span class="cf">for</span> sublist <span class="kw">in</span> nested <span class="cf">for</span> item <span class="kw">in</span> sublist]</span>
+<span id="cb112-5"><a href="#cb112-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb112-6"><a href="#cb112-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Dict comprehension</span></span>
+<span id="cb112-7"><a href="#cb112-7" aria-hidden="true" tabindex="-1"></a>word_len <span class="op">=</span> {word: <span class="bu">len</span>(word) <span class="cf">for</span> word <span class="kw">in</span> [<span class="st">&#39;cat&#39;</span>, <span class="st">&#39;elephant&#39;</span>, <span class="st">&#39;ox&#39;</span>]}</span>
+<span id="cb112-8"><a href="#cb112-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb112-9"><a href="#cb112-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Set comprehension</span></span>
+<span id="cb112-10"><a href="#cb112-10" aria-hidden="true" tabindex="-1"></a>unique_lengths <span class="op">=</span> {<span class="bu">len</span>(word) <span class="cf">for</span> word <span class="kw">in</span> [<span class="st">&#39;cat&#39;</span>, <span class="st">&#39;elephant&#39;</span>, <span class="st">&#39;ox&#39;</span>]}</span>
+<span id="cb112-11"><a href="#cb112-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb112-12"><a href="#cb112-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Generator — lazy, memory-efficient (no brackets, no list built in memory)</span></span>
+<span id="cb112-13"><a href="#cb112-13" aria-hidden="true" tabindex="-1"></a>gen <span class="op">=</span> (x<span class="op">**</span><span class="dv">2</span> <span class="cf">for</span> x <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">10_000_000</span>))  <span class="co"># instant, no memory cost</span></span>
+<span id="cb112-14"><a href="#cb112-14" aria-hidden="true" tabindex="-1"></a>total <span class="op">=</span> <span class="bu">sum</span>(gen)  <span class="co"># compute on demand</span></span></code></pre></div>
+
+<svg viewBox="0 0 460 80" style="display:block; margin:16px auto; max-width:100%;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="List comprehension anatomy: [expr for x in iterable if condition]">
+<!-- Bracket -->
+<text x="10" y="30" font-family="ui-monospace,monospace" font-size="16" font-weight="700" fill="#1e293b">[</text>
+<!-- expr -->
+<rect x="22" y="12" width="55" height="28" rx="4" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="49" y="31" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12" fill="#166534">expr</text>
+<text x="49" y="68" text-anchor="middle" font-family="system-ui" font-size="10" fill="#166534" font-weight="600">↑ output</text>
+<!-- for x in -->
+<text x="84" y="30" font-family="ui-monospace,monospace" font-size="12" fill="#6366f1" font-weight="600">for</text>
+<text x="110" y="30" font-family="ui-monospace,monospace" font-size="12" fill="#1e293b">x</text>
+<text x="126" y="30" font-family="ui-monospace,monospace" font-size="12" fill="#6366f1" font-weight="600">in</text>
+<!-- iterable -->
+<rect x="145" y="12" width="80" height="28" rx="4" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="185" y="31" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12" fill="#1e40af">iterable</text>
+<text x="185" y="68" text-anchor="middle" font-family="system-ui" font-size="10" fill="#1e40af" font-weight="600">↑ input</text>
+<!-- if -->
+<text x="232" y="30" font-family="ui-monospace,monospace" font-size="12" fill="#6366f1" font-weight="600">if</text>
+<!-- condition -->
+<rect x="252" y="12" width="90" height="28" rx="4" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="297" y="31" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12" fill="#92400e">condition</text>
+<text x="297" y="68" text-anchor="middle" font-family="system-ui" font-size="10" fill="#92400e" font-weight="600">↑ filter (optional)</text>
+<!-- Bracket -->
+<text x="348" y="30" font-family="ui-monospace,monospace" font-size="16" font-weight="700" fill="#1e293b">]</text>
+</svg>
+
+
+<h3 id="lambda-map-filter">3.2.2 Lambda, map, filter</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb114-1"><a href="#cb114-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Lambda — anonymous function for simple one-liners</span></span>
+<span id="cb114-2"><a href="#cb114-2" aria-hidden="true" tabindex="-1"></a>square <span class="op">=</span> <span class="kw">lambda</span> x: x<span class="op">**</span><span class="dv">2</span></span>
+<span id="cb114-3"><a href="#cb114-3" aria-hidden="true" tabindex="-1"></a>add    <span class="op">=</span> <span class="kw">lambda</span> x, y: x <span class="op">+</span> y</span>
+<span id="cb114-4"><a href="#cb114-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb114-5"><a href="#cb114-5" aria-hidden="true" tabindex="-1"></a><span class="co"># map — apply function to every element</span></span>
+<span id="cb114-6"><a href="#cb114-6" aria-hidden="true" tabindex="-1"></a>squared <span class="op">=</span> <span class="bu">list</span>(<span class="bu">map</span>(<span class="kw">lambda</span> x: x<span class="op">**</span><span class="dv">2</span>, [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>]))</span>
+<span id="cb114-7"><a href="#cb114-7" aria-hidden="true" tabindex="-1"></a><span class="co"># same as: [x**2 for x in [1,2,3,4]]  ← usually prefer comprehension</span></span>
+<span id="cb114-8"><a href="#cb114-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb114-9"><a href="#cb114-9" aria-hidden="true" tabindex="-1"></a><span class="co"># filter — keep elements where function returns True</span></span>
+<span id="cb114-10"><a href="#cb114-10" aria-hidden="true" tabindex="-1"></a>evens <span class="op">=</span> <span class="bu">list</span>(<span class="bu">filter</span>(<span class="kw">lambda</span> x: x <span class="op">%</span> <span class="dv">2</span> <span class="op">==</span> <span class="dv">0</span>, <span class="bu">range</span>(<span class="dv">10</span>)))</span>
+<span id="cb114-11"><a href="#cb114-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb114-12"><a href="#cb114-12" aria-hidden="true" tabindex="-1"></a><span class="co"># sorted with key</span></span>
+<span id="cb114-13"><a href="#cb114-13" aria-hidden="true" tabindex="-1"></a>people <span class="op">=</span> [(<span class="st">&#39;Alice&#39;</span>, <span class="dv">30</span>), (<span class="st">&#39;Bob&#39;</span>, <span class="dv">25</span>), (<span class="st">&#39;Charlie&#39;</span>, <span class="dv">35</span>)]</span>
+<span id="cb114-14"><a href="#cb114-14" aria-hidden="true" tabindex="-1"></a>by_age <span class="op">=</span> <span class="bu">sorted</span>(people, key<span class="op">=</span><span class="kw">lambda</span> p: p[<span class="dv">1</span>])</span></code></pre></div>
+
+<h3 id="useful-built-in-functions">3.2.3 Useful Built-in Functions</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb115-1"><a href="#cb115-1" aria-hidden="true" tabindex="-1"></a><span class="co"># zip — pair up iterables</span></span>
+<span id="cb115-2"><a href="#cb115-2" aria-hidden="true" tabindex="-1"></a>names <span class="op">=</span> [<span class="st">&#39;Alice&#39;</span>, <span class="st">&#39;Bob&#39;</span>, <span class="st">&#39;Carol&#39;</span>]</span>
+<span id="cb115-3"><a href="#cb115-3" aria-hidden="true" tabindex="-1"></a>scores <span class="op">=</span> [<span class="dv">92</span>, <span class="dv">85</span>, <span class="dv">91</span>]</span>
+<span id="cb115-4"><a href="#cb115-4" aria-hidden="true" tabindex="-1"></a>paired <span class="op">=</span> <span class="bu">list</span>(<span class="bu">zip</span>(names, scores))    <span class="co"># [(&#39;Alice&#39;, 92), .]</span></span>
+<span id="cb115-5"><a href="#cb115-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb115-6"><a href="#cb115-6" aria-hidden="true" tabindex="-1"></a><span class="co"># enumerate — index + value</span></span>
+<span id="cb115-7"><a href="#cb115-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, name <span class="kw">in</span> <span class="bu">enumerate</span>(names, start<span class="op">=</span><span class="dv">1</span>):</span>
+<span id="cb115-8"><a href="#cb115-8" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">. </span><span class="sc">{</span>name<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb115-9"><a href="#cb115-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb115-10"><a href="#cb115-10" aria-hidden="true" tabindex="-1"></a><span class="co"># any / all</span></span>
+<span id="cb115-11"><a href="#cb115-11" aria-hidden="true" tabindex="-1"></a>all_passing <span class="op">=</span> <span class="bu">all</span>(s <span class="op">&gt;=</span> <span class="dv">50</span> <span class="cf">for</span> s <span class="kw">in</span> scores)   <span class="co"># True</span></span>
+<span id="cb115-12"><a href="#cb115-12" aria-hidden="true" tabindex="-1"></a>any_failing <span class="op">=</span> <span class="bu">any</span>(s <span class="op">&lt;</span> <span class="dv">50</span> <span class="cf">for</span> s <span class="kw">in</span> scores)    <span class="co"># False</span></span>
+<span id="cb115-13"><a href="#cb115-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb115-14"><a href="#cb115-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Counter — fast frequency counting</span></span>
+<span id="cb115-15"><a href="#cb115-15" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> collections <span class="im">import</span> Counter</span>
+<span id="cb115-16"><a href="#cb115-16" aria-hidden="true" tabindex="-1"></a>word_counts <span class="op">=</span> Counter(<span class="st">&quot;the quick brown fox the fox&quot;</span>.split())</span>
+<span id="cb115-17"><a href="#cb115-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Counter({&#39;the&#39;: 2, &#39;fox&#39;: 2, &#39;quick&#39;: 1, &#39;brown&#39;: 1})</span></span>
+<span id="cb115-18"><a href="#cb115-18" aria-hidden="true" tabindex="-1"></a>top_2 <span class="op">=</span> word_counts.most_common(<span class="dv">2</span>)</span>
+<span id="cb115-19"><a href="#cb115-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb115-20"><a href="#cb115-20" aria-hidden="true" tabindex="-1"></a><span class="co"># defaultdict — no KeyError on missing key</span></span>
+<span id="cb115-21"><a href="#cb115-21" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> collections <span class="im">import</span> defaultdict</span>
+<span id="cb115-22"><a href="#cb115-22" aria-hidden="true" tabindex="-1"></a>graph <span class="op">=</span> defaultdict(<span class="bu">list</span>)</span>
+<span id="cb115-23"><a href="#cb115-23" aria-hidden="true" tabindex="-1"></a>graph[<span class="st">&#39;A&#39;</span>].append(<span class="st">&#39;B&#39;</span>)   <span class="co"># no need to initialize graph[&#39;A&#39;] = [] first</span></span></code></pre></div>
+
+<hr />
+
+<h2 id="functions-decorators-and-context-managers">3.3 Functions,
+
+Decorators, and Context Managers</h2>
+
+<h3 id="writing-good-functions">3.3.1 Writing Good Functions</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb116-1"><a href="#cb116-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Type hints — document what your function expects</span></span>
+<span id="cb116-2"><a href="#cb116-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> List, Dict, Optional, Tuple, Union</span>
+<span id="cb116-3"><a href="#cb116-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb116-4"><a href="#cb116-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> train_model(</span>
+<span id="cb116-5"><a href="#cb116-5" aria-hidden="true" tabindex="-1"></a>    X: <span class="st">&#39;np.ndarray&#39;</span>,</span>
+<span id="cb116-6"><a href="#cb116-6" aria-hidden="true" tabindex="-1"></a>    y: <span class="st">&#39;np.ndarray&#39;</span>,</span>
+<span id="cb116-7"><a href="#cb116-7" aria-hidden="true" tabindex="-1"></a>    learning_rate: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.01</span>,</span>
+<span id="cb116-8"><a href="#cb116-8" aria-hidden="true" tabindex="-1"></a>    epochs: <span class="bu">int</span> <span class="op">=</span> <span class="dv">100</span>,</span>
+<span id="cb116-9"><a href="#cb116-9" aria-hidden="true" tabindex="-1"></a>    verbose: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,</span>
+<span id="cb116-10"><a href="#cb116-10" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Dict[<span class="bu">str</span>, <span class="bu">float</span>]:</span>
+<span id="cb116-11"><a href="#cb116-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;</span></span>
+<span id="cb116-12"><a href="#cb116-12" aria-hidden="true" tabindex="-1"></a><span class="co">    Train a simple model.</span></span>
+<span id="cb116-13"><a href="#cb116-13" aria-hidden="true" tabindex="-1"></a><span class="co">    </span></span>
+<span id="cb116-14"><a href="#cb116-14" aria-hidden="true" tabindex="-1"></a><span class="co">    Args:</span></span>
+<span id="cb116-15"><a href="#cb116-15" aria-hidden="true" tabindex="-1"></a><span class="co">        X: Feature matrix (n_samples, n_features)</span></span>
+<span id="cb116-16"><a href="#cb116-16" aria-hidden="true" tabindex="-1"></a><span class="co">        y: Target vector (n_samples,)</span></span>
+<span id="cb116-17"><a href="#cb116-17" aria-hidden="true" tabindex="-1"></a><span class="co">        learning_rate: Step size for gradient descent</span></span>
+<span id="cb116-18"><a href="#cb116-18" aria-hidden="true" tabindex="-1"></a><span class="co">        epochs: Number of training iterations</span></span>
+<span id="cb116-19"><a href="#cb116-19" aria-hidden="true" tabindex="-1"></a><span class="co">        verbose: Print progress if True</span></span>
+<span id="cb116-20"><a href="#cb116-20" aria-hidden="true" tabindex="-1"></a><span class="co">    </span></span>
+<span id="cb116-21"><a href="#cb116-21" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns:</span></span>
+<span id="cb116-22"><a href="#cb116-22" aria-hidden="true" tabindex="-1"></a><span class="co">        Dict with &#39;train_loss&#39; and &#39;val_loss&#39; keys</span></span>
+<span id="cb116-23"><a href="#cb116-23" aria-hidden="true" tabindex="-1"></a><span class="co">    &quot;&quot;&quot;</span></span>
+<span id="cb116-24"><a href="#cb116-24" aria-hidden="true" tabindex="-1"></a>    <span class="co"># . training logic .</span></span>
+<span id="cb116-25"><a href="#cb116-25" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {<span class="st">&#39;train_loss&#39;</span>: <span class="fl">0.12</span>, <span class="st">&#39;val_loss&#39;</span>: <span class="fl">0.15</span>}</span></code></pre></div>
+
+<h3 id="decorators">3.3.2 Decorators</h3>
+
+<p>A decorator wraps a function to add behavior without modifying its
+
+code. Common in production ML: logging, timing, caching.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb117-1"><a href="#cb117-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> time</span>
+<span id="cb117-2"><a href="#cb117-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> functools</span>
+<span id="cb117-3"><a href="#cb117-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb117-4"><a href="#cb117-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> timer(func):</span>
+<span id="cb117-5"><a href="#cb117-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Decorator: print how long a function takes.&quot;&quot;&quot;</span></span>
+<span id="cb117-6"><a href="#cb117-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">@functools.wraps</span>(func)  <span class="co"># preserves function name/docstring</span></span>
+<span id="cb117-7"><a href="#cb117-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> wrapper(<span class="op">*</span>args, <span class="op">**</span>kwargs):</span>
+<span id="cb117-8"><a href="#cb117-8" aria-hidden="true" tabindex="-1"></a>        start <span class="op">=</span> time.time()</span>
+<span id="cb117-9"><a href="#cb117-9" aria-hidden="true" tabindex="-1"></a>        result <span class="op">=</span> func(<span class="op">*</span>args, <span class="op">**</span>kwargs)</span>
+<span id="cb117-10"><a href="#cb117-10" aria-hidden="true" tabindex="-1"></a>        elapsed <span class="op">=</span> time.time() <span class="op">-</span> start</span>
+<span id="cb117-11"><a href="#cb117-11" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f&quot;</span><span class="sc">{</span>func<span class="sc">.</span><span class="va">__name__</span><span class="sc">}</span><span class="ss"> took </span><span class="sc">{</span>elapsed<span class="sc">:.3f}</span><span class="ss">s&quot;</span>)</span>
+<span id="cb117-12"><a href="#cb117-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> result</span>
+<span id="cb117-13"><a href="#cb117-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> wrapper</span>
+<span id="cb117-14"><a href="#cb117-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb117-15"><a href="#cb117-15" aria-hidden="true" tabindex="-1"></a><span class="at">@timer</span></span>
+<span id="cb117-16"><a href="#cb117-16" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> load_data(path):</span>
+<span id="cb117-17"><a href="#cb117-17" aria-hidden="true" tabindex="-1"></a>    <span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb117-18"><a href="#cb117-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> pd.read_csv(path)</span>
+<span id="cb117-19"><a href="#cb117-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb117-20"><a href="#cb117-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Equivalent to: load_data = timer(load_data)</span></span>
+<span id="cb117-21"><a href="#cb117-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb117-22"><a href="#cb117-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Built-in useful decorator: cache expensive function calls</span></span>
+<span id="cb117-23"><a href="#cb117-23" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> functools <span class="im">import</span> lru_cache</span>
+<span id="cb117-24"><a href="#cb117-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb117-25"><a href="#cb117-25" aria-hidden="true" tabindex="-1"></a><span class="at">@lru_cache</span>(maxsize<span class="op">=</span><span class="dv">128</span>)</span>
+<span id="cb117-26"><a href="#cb117-26" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> compute_features(user_id: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="bu">tuple</span>:</span>
+<span id="cb117-27"><a href="#cb117-27" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Expensive DB call — result is cached after first call</span></span>
+<span id="cb117-28"><a href="#cb117-28" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> fetch_user_features(user_id)</span></code></pre></div>
+
+<h3 id="context-managers">3.3.3 Context Managers</h3>
+
+<p>The <code>with</code> statement ensures resources are properly
+
+cleaned up.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb118-1"><a href="#cb118-1" aria-hidden="true" tabindex="-1"></a><span class="co"># File I/O — file always closed even if exception occurs</span></span>
+<span id="cb118-2"><a href="#cb118-2" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(<span class="st">&#39;data.csv&#39;</span>, <span class="st">&#39;r&#39;</span>) <span class="im">as</span> f:</span>
+<span id="cb118-3"><a href="#cb118-3" aria-hidden="true" tabindex="-1"></a>    data <span class="op">=</span> f.read()</span>
+<span id="cb118-4"><a href="#cb118-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb118-5"><a href="#cb118-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Multiple resources</span></span>
+<span id="cb118-6"><a href="#cb118-6" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(<span class="st">&#39;input.txt&#39;</span>) <span class="im">as</span> fin, <span class="bu">open</span>(<span class="st">&#39;output.txt&#39;</span>, <span class="st">&#39;w&#39;</span>) <span class="im">as</span> fout:</span>
+<span id="cb118-7"><a href="#cb118-7" aria-hidden="true" tabindex="-1"></a>    fout.write(fin.read().upper())</span>
+<span id="cb118-8"><a href="#cb118-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb118-9"><a href="#cb118-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Custom context manager with contextlib</span></span>
+<span id="cb118-10"><a href="#cb118-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> contextlib <span class="im">import</span> contextmanager</span>
+<span id="cb118-11"><a href="#cb118-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb118-12"><a href="#cb118-12" aria-hidden="true" tabindex="-1"></a><span class="at">@contextmanager</span></span>
+<span id="cb118-13"><a href="#cb118-13" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> timer_context(label<span class="op">=</span><span class="st">&#39;&#39;</span>):</span>
+<span id="cb118-14"><a href="#cb118-14" aria-hidden="true" tabindex="-1"></a>    start <span class="op">=</span> time.time()</span>
+<span id="cb118-15"><a href="#cb118-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">yield</span>  <span class="co"># code in the with block runs here</span></span>
+<span id="cb118-16"><a href="#cb118-16" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;</span><span class="sc">{</span>label<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>time<span class="sc">.</span>time()<span class="op">-</span>start<span class="sc">:.3f}</span><span class="ss">s&quot;</span>)</span>
+<span id="cb118-17"><a href="#cb118-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb118-18"><a href="#cb118-18" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> timer_context(<span class="st">&quot;model training&quot;</span>):</span>
+<span id="cb118-19"><a href="#cb118-19" aria-hidden="true" tabindex="-1"></a>    model.fit(X_train, y_train)</span></code></pre></div>
+
+<hr />
+
+<h2 id="object-oriented-python-for-ml">3.4 Object-Oriented Python for
+
+ML</h2>
+
+<p>Classes organize code that has state. In ML you’ll see them
+
+everywhere — sklearn models, PyTorch layers, data loaders.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb119-1"><a href="#cb119-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass, field</span>
+<span id="cb119-2"><a href="#cb119-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Optional</span>
+<span id="cb119-3"><a href="#cb119-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb119-4"><a href="#cb119-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb119-5"><a href="#cb119-5" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb119-6"><a href="#cb119-6" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ModelConfig:</span>
+<span id="cb119-7"><a href="#cb119-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Configuration for an ML model. Dataclass handles __init__ automatically.&quot;&quot;&quot;</span></span>
+<span id="cb119-8"><a href="#cb119-8" aria-hidden="true" tabindex="-1"></a>    learning_rate: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.01</span></span>
+<span id="cb119-9"><a href="#cb119-9" aria-hidden="true" tabindex="-1"></a>    n_epochs: <span class="bu">int</span> <span class="op">=</span> <span class="dv">100</span></span>
+<span id="cb119-10"><a href="#cb119-10" aria-hidden="true" tabindex="-1"></a>    hidden_dims: <span class="bu">list</span> <span class="op">=</span> field(default_factory<span class="op">=</span><span class="kw">lambda</span>: [<span class="dv">128</span>, <span class="dv">64</span>])</span>
+<span id="cb119-11"><a href="#cb119-11" aria-hidden="true" tabindex="-1"></a>    dropout: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.2</span></span>
+<span id="cb119-12"><a href="#cb119-12" aria-hidden="true" tabindex="-1"></a>    seed: Optional[<span class="bu">int</span>] <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb119-13"><a href="#cb119-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb119-14"><a href="#cb119-14" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> LinearClassifier:</span>
+<span id="cb119-15"><a href="#cb119-15" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;A simple linear classifier implementing sklearn-style API.&quot;&quot;&quot;</span></span>
+<span id="cb119-16"><a href="#cb119-16" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb119-17"><a href="#cb119-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, config: ModelConfig):</span>
+<span id="cb119-18"><a href="#cb119-18" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.config <span class="op">=</span> config</span>
+<span id="cb119-19"><a href="#cb119-19" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.weights <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb119-20"><a href="#cb119-20" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.bias <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb119-21"><a href="#cb119-21" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.is_fitted <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb119-22"><a href="#cb119-22" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb119-23"><a href="#cb119-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> fit(<span class="va">self</span>, X: np.ndarray, y: np.ndarray) <span class="op">-&gt;</span> <span class="st">&#39;LinearClassifier&#39;</span>:</span>
+<span id="cb119-24"><a href="#cb119-24" aria-hidden="true" tabindex="-1"></a>        <span class="co">&quot;&quot;&quot;Train the model. Returns self for method chaining.&quot;&quot;&quot;</span></span>
+<span id="cb119-25"><a href="#cb119-25" aria-hidden="true" tabindex="-1"></a>        n_features <span class="op">=</span> X.shape[<span class="dv">1</span>]</span>
+<span id="cb119-26"><a href="#cb119-26" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.weights <span class="op">=</span> np.zeros(n_features)</span>
+<span id="cb119-27"><a href="#cb119-27" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.bias <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb119-28"><a href="#cb119-28" aria-hidden="true" tabindex="-1"></a>        <span class="co"># . training loop .</span></span>
+<span id="cb119-29"><a href="#cb119-29" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.is_fitted <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb119-30"><a href="#cb119-30" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>  <span class="co"># enables: model.fit(X, y).predict(X_test)</span></span>
+<span id="cb119-31"><a href="#cb119-31" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb119-32"><a href="#cb119-32" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> predict(<span class="va">self</span>, X: np.ndarray) <span class="op">-&gt;</span> np.ndarray:</span>
+<span id="cb119-33"><a href="#cb119-33" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="kw">not</span> <span class="va">self</span>.is_fitted:</span>
+<span id="cb119-34"><a href="#cb119-34" aria-hidden="true" tabindex="-1"></a>            <span class="cf">raise</span> <span class="pp">RuntimeError</span>(<span class="st">&quot;Call fit() before predict()&quot;</span>)</span>
+<span id="cb119-35"><a href="#cb119-35" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> (X <span class="op">@</span> <span class="va">self</span>.weights <span class="op">+</span> <span class="va">self</span>.bias <span class="op">&gt;</span> <span class="dv">0</span>).astype(<span class="bu">int</span>)</span>
+<span id="cb119-36"><a href="#cb119-36" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb119-37"><a href="#cb119-37" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__repr__</span>(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>:</span>
+<span id="cb119-38"><a href="#cb119-38" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="ss">f&quot;LinearClassifier(lr=</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>config<span class="sc">.</span>learning_rate<span class="sc">}</span><span class="ss">, fitted=</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>is_fitted<span class="sc">}</span><span class="ss">)&quot;</span></span>
+<span id="cb119-39"><a href="#cb119-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb119-40"><a href="#cb119-40" aria-hidden="true" tabindex="-1"></a><span class="co"># Usage</span></span>
+<span id="cb119-41"><a href="#cb119-41" aria-hidden="true" tabindex="-1"></a>config <span class="op">=</span> ModelConfig(learning_rate<span class="op">=</span><span class="fl">0.001</span>, n_epochs<span class="op">=</span><span class="dv">200</span>)</span>
+<span id="cb119-42"><a href="#cb119-42" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> LinearClassifier(config)</span>
+<span id="cb119-43"><a href="#cb119-43" aria-hidden="true" tabindex="-1"></a>model.fit(X_train, y_train)</span>
+<span id="cb119-44"><a href="#cb119-44" aria-hidden="true" tabindex="-1"></a>preds <span class="op">=</span> model.predict(X_test)</span></code></pre></div>
+
+<h3 id="inheritance-extending-sklearn">3.4.1 Inheritance — extending
+
+sklearn</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb120-1"><a href="#cb120-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.base <span class="im">import</span> BaseEstimator, TransformerMixin</span>
+<span id="cb120-2"><a href="#cb120-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb120-3"><a href="#cb120-3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> LogTransformer(BaseEstimator, TransformerMixin):</span>
+<span id="cb120-4"><a href="#cb120-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Custom sklearn transformer: log(1+x).&quot;&quot;&quot;</span></span>
+<span id="cb120-5"><a href="#cb120-5" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb120-6"><a href="#cb120-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> fit(<span class="va">self</span>, X, y<span class="op">=</span><span class="va">None</span>):</span>
+<span id="cb120-7"><a href="#cb120-7" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>  <span class="co"># nothing to learn</span></span>
+<span id="cb120-8"><a href="#cb120-8" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb120-9"><a href="#cb120-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> transform(<span class="va">self</span>, X, y<span class="op">=</span><span class="va">None</span>):</span>
+<span id="cb120-10"><a href="#cb120-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> np.log1p(X)</span>
+<span id="cb120-11"><a href="#cb120-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb120-12"><a href="#cb120-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Now works in sklearn Pipeline!</span></span>
+<span id="cb120-13"><a href="#cb120-13" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.pipeline <span class="im">import</span> Pipeline</span>
+<span id="cb120-14"><a href="#cb120-14" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> LogisticRegression</span>
+<span id="cb120-15"><a href="#cb120-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb120-16"><a href="#cb120-16" aria-hidden="true" tabindex="-1"></a>pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb120-17"><a href="#cb120-17" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&#39;log&#39;</span>, LogTransformer()),</span>
+<span id="cb120-18"><a href="#cb120-18" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&#39;model&#39;</span>, LogisticRegression()),</span>
+<span id="cb120-19"><a href="#cb120-19" aria-hidden="true" tabindex="-1"></a>])</span>
+<span id="cb120-20"><a href="#cb120-20" aria-hidden="true" tabindex="-1"></a>pipe.fit(X_train, y_train)</span></code></pre></div>
+
+<hr />
+
+<h2 id="data-wrangling-with-pandas-practical-patterns">3.5 Data
+
+Wrangling with Pandas — Practical Patterns</h2>
+
+<h3 id="the-20-operations-youll-use-90-of-the-time">3.5.1 The 20 Operations
+
+You’ll Use 90% of the Time</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb121-1"><a href="#cb121-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb121-2"><a href="#cb121-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb121-3"><a href="#cb121-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb121-4"><a href="#cb121-4" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.read_csv(<span class="st">&#39;data.csv&#39;</span>)</span>
+<span id="cb121-5"><a href="#cb121-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb121-6"><a href="#cb121-6" aria-hidden="true" tabindex="-1"></a><span class="co"># ── INSPECT ─────────────────────────────────────────────────</span></span>
+<span id="cb121-7"><a href="#cb121-7" aria-hidden="true" tabindex="-1"></a>df.shape             <span class="co"># (rows, cols)</span></span>
+<span id="cb121-8"><a href="#cb121-8" aria-hidden="true" tabindex="-1"></a>df.dtypes            <span class="co"># column types</span></span>
+<span id="cb121-9"><a href="#cb121-9" aria-hidden="true" tabindex="-1"></a>df.info()            <span class="co"># types + nulls at once</span></span>
+<span id="cb121-10"><a href="#cb121-10" aria-hidden="true" tabindex="-1"></a>df.describe()        <span class="co"># mean, std, quartiles</span></span>
+<span id="cb121-11"><a href="#cb121-11" aria-hidden="true" tabindex="-1"></a>df.head(<span class="dv">5</span>)           <span class="co"># first 5 rows</span></span>
+<span id="cb121-12"><a href="#cb121-12" aria-hidden="true" tabindex="-1"></a>df.value_counts()    <span class="co"># frequency of each value</span></span>
+<span id="cb121-13"><a href="#cb121-13" aria-hidden="true" tabindex="-1"></a>df.nunique()         <span class="co"># unique values per column</span></span>
+<span id="cb121-14"><a href="#cb121-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb121-15"><a href="#cb121-15" aria-hidden="true" tabindex="-1"></a><span class="co"># ── FILTER ──────────────────────────────────────────────────</span></span>
+<span id="cb121-16"><a href="#cb121-16" aria-hidden="true" tabindex="-1"></a>df[df[<span class="st">&#39;age&#39;</span>] <span class="op">&gt;</span> <span class="dv">30</span>]                          <span class="co"># single condition</span></span>
+<span id="cb121-17"><a href="#cb121-17" aria-hidden="true" tabindex="-1"></a>df[(df[<span class="st">&#39;age&#39;</span>] <span class="op">&gt;</span> <span class="dv">30</span>) <span class="op">&amp;</span> (df[<span class="st">&#39;city&#39;</span>] <span class="op">==</span> <span class="st">&#39;NY&#39;</span>)] <span class="co"># multiple: use &amp; not &#39;and&#39;</span></span>
+<span id="cb121-18"><a href="#cb121-18" aria-hidden="true" tabindex="-1"></a>df.query(<span class="st">&quot;age &gt; 30 and city == &#39;NY&#39;&quot;</span>)       <span class="co"># cleaner syntax for complex filters</span></span>
+<span id="cb121-19"><a href="#cb121-19" aria-hidden="true" tabindex="-1"></a>df[df[<span class="st">&#39;col&#39;</span>].isin([<span class="st">&#39;a&#39;</span>, <span class="st">&#39;b&#39;</span>, <span class="st">&#39;c&#39;</span>])]         <span class="co"># membership test</span></span>
+<span id="cb121-20"><a href="#cb121-20" aria-hidden="true" tabindex="-1"></a>df[df[<span class="st">&#39;col&#39;</span>].notna()]                        <span class="co"># drop NaN rows</span></span>
+<span id="cb121-21"><a href="#cb121-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb121-22"><a href="#cb121-22" aria-hidden="true" tabindex="-1"></a><span class="co"># ── SELECT AND RESHAPE ──────────────────────────────────────</span></span>
+<span id="cb121-23"><a href="#cb121-23" aria-hidden="true" tabindex="-1"></a>df[[<span class="st">&#39;col1&#39;</span>, <span class="st">&#39;col2&#39;</span>]]                        <span class="co"># select columns</span></span>
+<span id="cb121-24"><a href="#cb121-24" aria-hidden="true" tabindex="-1"></a>df.drop(columns<span class="op">=</span>[<span class="st">&#39;col_to_remove&#39;</span>])          <span class="co"># drop column</span></span>
+<span id="cb121-25"><a href="#cb121-25" aria-hidden="true" tabindex="-1"></a>df.rename(columns<span class="op">=</span>{<span class="st">&#39;old&#39;</span>: <span class="st">&#39;new&#39;</span>})           <span class="co"># rename</span></span>
+<span id="cb121-26"><a href="#cb121-26" aria-hidden="true" tabindex="-1"></a>df.sort_values(<span class="st">&#39;col&#39;</span>, ascending<span class="op">=</span><span class="va">False</span>)      <span class="co"># sort</span></span>
+<span id="cb121-27"><a href="#cb121-27" aria-hidden="true" tabindex="-1"></a>df.drop_duplicates(subset<span class="op">=</span>[<span class="st">&#39;user_id&#39;</span>])      <span class="co"># dedup</span></span>
+<span id="cb121-28"><a href="#cb121-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb121-29"><a href="#cb121-29" aria-hidden="true" tabindex="-1"></a><span class="co"># ── GROUPBY ─────────────────────────────────────────────────</span></span>
+<span id="cb121-30"><a href="#cb121-30" aria-hidden="true" tabindex="-1"></a>df.groupby(<span class="st">&#39;category&#39;</span>)[<span class="st">&#39;revenue&#39;</span>].<span class="bu">sum</span>()     <span class="co"># sum per group</span></span>
+<span id="cb121-31"><a href="#cb121-31" aria-hidden="true" tabindex="-1"></a>df.groupby(<span class="st">&#39;city&#39;</span>).agg({<span class="st">&#39;revenue&#39;</span>: <span class="st">&#39;mean&#39;</span>, <span class="st">&#39;orders&#39;</span>: <span class="st">&#39;count&#39;</span>})</span>
+<span id="cb121-32"><a href="#cb121-32" aria-hidden="true" tabindex="-1"></a>df.groupby([<span class="st">&#39;city&#39;</span>, <span class="st">&#39;month&#39;</span>])[<span class="st">&#39;revenue&#39;</span>].<span class="bu">sum</span>().reset_index()</span>
+<span id="cb121-33"><a href="#cb121-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb121-34"><a href="#cb121-34" aria-hidden="true" tabindex="-1"></a><span class="co"># ── JOINS ───────────────────────────────────────────────────</span></span>
+<span id="cb121-35"><a href="#cb121-35" aria-hidden="true" tabindex="-1"></a>pd.merge(df_left, df_right, on<span class="op">=</span><span class="st">&#39;user_id&#39;</span>, how<span class="op">=</span><span class="st">&#39;left&#39;</span>)  <span class="co"># SQL-style join</span></span>
+<span id="cb121-36"><a href="#cb121-36" aria-hidden="true" tabindex="-1"></a>pd.concat([df1, df2], ignore_index<span class="op">=</span><span class="va">True</span>)               <span class="co"># stack rows</span></span>
+<span id="cb121-37"><a href="#cb121-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb121-38"><a href="#cb121-38" aria-hidden="true" tabindex="-1"></a><span class="co"># ── MISSING VALUES ──────────────────────────────────────────</span></span>
+<span id="cb121-39"><a href="#cb121-39" aria-hidden="true" tabindex="-1"></a>df.isna().<span class="bu">sum</span>()                          <span class="co"># count nulls per column</span></span>
+<span id="cb121-40"><a href="#cb121-40" aria-hidden="true" tabindex="-1"></a>df.isna().mean() <span class="op">*</span> <span class="dv">100</span>                   <span class="co"># % null per column</span></span>
+<span id="cb121-41"><a href="#cb121-41" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&#39;col&#39;</span>].fillna(df[<span class="st">&#39;col&#39;</span>].median())     <span class="co"># fill with median</span></span>
+<span id="cb121-42"><a href="#cb121-42" aria-hidden="true" tabindex="-1"></a>df.dropna(subset<span class="op">=</span>[<span class="st">&#39;required_col&#39;</span>])       <span class="co"># drop rows where this col is null</span></span>
+<span id="cb121-43"><a href="#cb121-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb121-44"><a href="#cb121-44" aria-hidden="true" tabindex="-1"></a><span class="co"># ── APPLY and TRANSFORM ───────────────────────────────────────</span></span>
+<span id="cb121-45"><a href="#cb121-45" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&#39;new&#39;</span>] <span class="op">=</span> df[<span class="st">&#39;text&#39;</span>].<span class="bu">apply</span>(<span class="kw">lambda</span> x: <span class="bu">len</span>(x.split()))  <span class="co"># apply function</span></span>
+<span id="cb121-46"><a href="#cb121-46" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&#39;norm&#39;</span>] <span class="op">=</span> (df[<span class="st">&#39;val&#39;</span>] <span class="op">-</span> df[<span class="st">&#39;val&#39;</span>].mean()) <span class="op">/</span> df[<span class="st">&#39;val&#39;</span>].std()  <span class="co"># standardize</span></span>
+<span id="cb121-47"><a href="#cb121-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb121-48"><a href="#cb121-48" aria-hidden="true" tabindex="-1"></a><span class="co"># ── WINDOW FUNCTIONS ────────────────────────────────────────</span></span>
+<span id="cb121-49"><a href="#cb121-49" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&#39;rolling_mean&#39;</span>] <span class="op">=</span> df[<span class="st">&#39;sales&#39;</span>].rolling(<span class="dv">7</span>).mean()          <span class="co"># 7-day moving avg</span></span>
+<span id="cb121-50"><a href="#cb121-50" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&#39;cumulative&#39;</span>] <span class="op">=</span> df[<span class="st">&#39;sales&#39;</span>].cumsum()                      <span class="co"># running total</span></span>
+<span id="cb121-51"><a href="#cb121-51" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&#39;rank&#39;</span>] <span class="op">=</span> df[<span class="st">&#39;revenue&#39;</span>].rank(ascending<span class="op">=</span><span class="va">False</span>, method<span class="op">=</span><span class="st">&#39;dense&#39;</span>)</span>
+<span id="cb121-52"><a href="#cb121-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb121-53"><a href="#cb121-53" aria-hidden="true" tabindex="-1"></a><span class="co"># ── STRING OPS ──────────────────────────────────────────────</span></span>
+<span id="cb121-54"><a href="#cb121-54" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&#39;email&#39;</span>].<span class="bu">str</span>.lower()                   <span class="co"># lowercase</span></span>
+<span id="cb121-55"><a href="#cb121-55" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&#39;name&#39;</span>].<span class="bu">str</span>.contains(<span class="st">&#39;Smith&#39;</span>)          <span class="co"># regex search</span></span>
+<span id="cb121-56"><a href="#cb121-56" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&#39;text&#39;</span>].<span class="bu">str</span>.split(<span class="st">&#39; &#39;</span>).<span class="bu">str</span>[<span class="dv">0</span>]          <span class="co"># split and get first word</span></span>
+<span id="cb121-57"><a href="#cb121-57" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&#39;col&#39;</span>].<span class="bu">str</span>.extract(<span class="vs">r&#39;</span><span class="kw">(</span><span class="dv">\d</span><span class="op">{4}</span><span class="kw">)</span><span class="vs">&#39;</span>)         <span class="co"># extract with regex</span></span></code></pre></div>
+
+<h3 id="method-chaining-clean-pandas-style">3.5.2 Method Chaining — Clean
+
+Pandas Style</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb122-1"><a href="#cb122-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Messy style (many reassignments)</span></span>
+<span id="cb122-2"><a href="#cb122-2" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df.dropna(subset<span class="op">=</span>[<span class="st">&#39;revenue&#39;</span>])</span>
+<span id="cb122-3"><a href="#cb122-3" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df[df[<span class="st">&#39;revenue&#39;</span>] <span class="op">&gt;</span> <span class="dv">0</span>]</span>
+<span id="cb122-4"><a href="#cb122-4" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df.rename(columns<span class="op">=</span>{<span class="st">&#39;revenue&#39;</span>: <span class="st">&#39;sales&#39;</span>})</span>
+<span id="cb122-5"><a href="#cb122-5" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df.sort_values(<span class="st">&#39;sales&#39;</span>, ascending<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb122-6"><a href="#cb122-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb122-7"><a href="#cb122-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Clean chained style</span></span>
+<span id="cb122-8"><a href="#cb122-8" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> (</span>
+<span id="cb122-9"><a href="#cb122-9" aria-hidden="true" tabindex="-1"></a>    df</span>
+<span id="cb122-10"><a href="#cb122-10" aria-hidden="true" tabindex="-1"></a>    .dropna(subset<span class="op">=</span>[<span class="st">&#39;revenue&#39;</span>])</span>
+<span id="cb122-11"><a href="#cb122-11" aria-hidden="true" tabindex="-1"></a>    .query(<span class="st">&#39;revenue &gt; 0&#39;</span>)</span>
+<span id="cb122-12"><a href="#cb122-12" aria-hidden="true" tabindex="-1"></a>    .rename(columns<span class="op">=</span>{<span class="st">&#39;revenue&#39;</span>: <span class="st">&#39;sales&#39;</span>})</span>
+<span id="cb122-13"><a href="#cb122-13" aria-hidden="true" tabindex="-1"></a>    .sort_values(<span class="st">&#39;sales&#39;</span>, ascending<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb122-14"><a href="#cb122-14" aria-hidden="true" tabindex="-1"></a>    .reset_index(drop<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb122-15"><a href="#cb122-15" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+
+<hr />
+
+<h2 id="matplotlib-and-seaborn-visualization-essentials">3.6 Matplotlib
+
+and Seaborn — Visualization Essentials</h2>
+
+<p>Good visualizations are not optional in DS — they’re how you
+
+communicate findings and how you debug models.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb123-1"><a href="#cb123-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb123-2"><a href="#cb123-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> seaborn <span class="im">as</span> sns</span>
+<span id="cb123-3"><a href="#cb123-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb123-4"><a href="#cb123-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Set a clean style once at the top of your notebook</span></span>
+<span id="cb123-5"><a href="#cb123-5" aria-hidden="true" tabindex="-1"></a>sns.set_theme(style<span class="op">=</span><span class="st">&#39;whitegrid&#39;</span>, palette<span class="op">=</span><span class="st">&#39;colorblind&#39;</span>)</span>
+<span id="cb123-6"><a href="#cb123-6" aria-hidden="true" tabindex="-1"></a>plt.rcParams[<span class="st">&#39;figure.dpi&#39;</span>] <span class="op">=</span> <span class="dv">120</span></span>
+<span id="cb123-7"><a href="#cb123-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb123-8"><a href="#cb123-8" aria-hidden="true" tabindex="-1"></a><span class="co"># ── DISTRIBUTION ────────────────────────────────────────────</span></span>
+<span id="cb123-9"><a href="#cb123-9" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="dv">4</span>))</span>
+<span id="cb123-10"><a href="#cb123-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb123-11"><a href="#cb123-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Histogram + KDE</span></span>
+<span id="cb123-12"><a href="#cb123-12" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].hist(df[<span class="st">&#39;age&#39;</span>], bins<span class="op">=</span><span class="dv">30</span>, edgecolor<span class="op">=</span><span class="st">&#39;white&#39;</span>, alpha<span class="op">=</span><span class="fl">0.7</span>)</span>
+<span id="cb123-13"><a href="#cb123-13" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].set_title(<span class="st">&#39;Age Distribution&#39;</span>)</span>
+<span id="cb123-14"><a href="#cb123-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb123-15"><a href="#cb123-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Box plot — shows quartiles + outliers</span></span>
+<span id="cb123-16"><a href="#cb123-16" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].boxplot([group_a, group_b], labels<span class="op">=</span>[<span class="st">&#39;Control&#39;</span>, <span class="st">&#39;Treatment&#39;</span>])</span>
+<span id="cb123-17"><a href="#cb123-17" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].set_title(<span class="st">&#39;Score by Group&#39;</span>)</span>
+<span id="cb123-18"><a href="#cb123-18" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb123-19"><a href="#cb123-19" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb123-20"><a href="#cb123-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb123-21"><a href="#cb123-21" aria-hidden="true" tabindex="-1"></a><span class="co"># ── RELATIONSHIPS ───────────────────────────────────────────</span></span>
+<span id="cb123-22"><a href="#cb123-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Scatter with regression line</span></span>
+<span id="cb123-23"><a href="#cb123-23" aria-hidden="true" tabindex="-1"></a>sns.regplot(data<span class="op">=</span>df, x<span class="op">=</span><span class="st">&#39;hours_studied&#39;</span>, y<span class="op">=</span><span class="st">&#39;score&#39;</span>, scatter_kws<span class="op">=</span>{<span class="st">&#39;alpha&#39;</span>:<span class="fl">0.5</span>})</span>
+<span id="cb123-24"><a href="#cb123-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb123-25"><a href="#cb123-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Correlation heatmap — essential for EDA</span></span>
+<span id="cb123-26"><a href="#cb123-26" aria-hidden="true" tabindex="-1"></a>corr_matrix <span class="op">=</span> df.select_dtypes(<span class="st">&#39;number&#39;</span>).corr()</span>
+<span id="cb123-27"><a href="#cb123-27" aria-hidden="true" tabindex="-1"></a>sns.heatmap(corr_matrix, annot<span class="op">=</span><span class="va">True</span>, fmt<span class="op">=</span><span class="st">&#39;.2f&#39;</span>, cmap<span class="op">=</span><span class="st">&#39;coolwarm&#39;</span>, center<span class="op">=</span><span class="dv">0</span>,</span>
+<span id="cb123-28"><a href="#cb123-28" aria-hidden="true" tabindex="-1"></a>            square<span class="op">=</span><span class="va">True</span>, cbar_kws<span class="op">=</span>{<span class="st">&#39;shrink&#39;</span>: <span class="fl">0.8</span>})</span>
+<span id="cb123-29"><a href="#cb123-29" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">&#39;Feature Correlation Matrix&#39;</span>)</span>
+<span id="cb123-30"><a href="#cb123-30" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb123-31"><a href="#cb123-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb123-32"><a href="#cb123-32" aria-hidden="true" tabindex="-1"></a><span class="co"># ── CATEGORICAL ─────────────────────────────────────────────</span></span>
+<span id="cb123-33"><a href="#cb123-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Bar chart with confidence intervals</span></span>
+<span id="cb123-34"><a href="#cb123-34" aria-hidden="true" tabindex="-1"></a>sns.barplot(data<span class="op">=</span>df, x<span class="op">=</span><span class="st">&#39;category&#39;</span>, y<span class="op">=</span><span class="st">&#39;revenue&#39;</span>, errorbar<span class="op">=</span><span class="st">&#39;ci&#39;</span>)</span>
+<span id="cb123-35"><a href="#cb123-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb123-36"><a href="#cb123-36" aria-hidden="true" tabindex="-1"></a><span class="co"># Count plot</span></span>
+<span id="cb123-37"><a href="#cb123-37" aria-hidden="true" tabindex="-1"></a>sns.countplot(data<span class="op">=</span>df, x<span class="op">=</span><span class="st">&#39;churn&#39;</span>, hue<span class="op">=</span><span class="st">&#39;contract_type&#39;</span>, order<span class="op">=</span>[<span class="st">&#39;No&#39;</span>,<span class="st">&#39;Yes&#39;</span>])</span>
+<span id="cb123-38"><a href="#cb123-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb123-39"><a href="#cb123-39" aria-hidden="true" tabindex="-1"></a><span class="co"># ── TIME SERIES ─────────────────────────────────────────────</span></span>
+<span id="cb123-40"><a href="#cb123-40" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">4</span>))</span>
+<span id="cb123-41"><a href="#cb123-41" aria-hidden="true" tabindex="-1"></a>ax.plot(df[<span class="st">&#39;date&#39;</span>], df[<span class="st">&#39;sales&#39;</span>], linewidth<span class="op">=</span><span class="fl">1.5</span>, label<span class="op">=</span><span class="st">&#39;Sales&#39;</span>)</span>
+<span id="cb123-42"><a href="#cb123-42" aria-hidden="true" tabindex="-1"></a>ax.fill_between(df[<span class="st">&#39;date&#39;</span>], df[<span class="st">&#39;lower_ci&#39;</span>], df[<span class="st">&#39;upper_ci&#39;</span>], alpha<span class="op">=</span><span class="fl">0.2</span>, label<span class="op">=</span><span class="st">&#39;95% CI&#39;</span>)</span>
+<span id="cb123-43"><a href="#cb123-43" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">&#39;Date&#39;</span>)</span>
+<span id="cb123-44"><a href="#cb123-44" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">&#39;Sales&#39;</span>)</span>
+<span id="cb123-45"><a href="#cb123-45" aria-hidden="true" tabindex="-1"></a>ax.legend()</span>
+<span id="cb123-46"><a href="#cb123-46" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div>
+
+<h3 id="ml-specific-plots">3.6.1 ML-Specific Plots</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb124-1"><a href="#cb124-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> confusion_matrix, ConfusionMatrixDisplay</span>
+<span id="cb124-2"><a href="#cb124-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> RocCurveDisplay</span>
+<span id="cb124-3"><a href="#cb124-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb124-4"><a href="#cb124-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Confusion matrix</span></span>
+<span id="cb124-5"><a href="#cb124-5" aria-hidden="true" tabindex="-1"></a>cm <span class="op">=</span> confusion_matrix(y_test, y_pred)</span>
+<span id="cb124-6"><a href="#cb124-6" aria-hidden="true" tabindex="-1"></a>disp <span class="op">=</span> ConfusionMatrixDisplay(cm, display_labels<span class="op">=</span>[<span class="st">&#39;No Fraud&#39;</span>, <span class="st">&#39;Fraud&#39;</span>])</span>
+<span id="cb124-7"><a href="#cb124-7" aria-hidden="true" tabindex="-1"></a>disp.plot(cmap<span class="op">=</span><span class="st">&#39;Blues&#39;</span>)</span>
+<span id="cb124-8"><a href="#cb124-8" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">&#39;Confusion Matrix&#39;</span>)</span>
+<span id="cb124-9"><a href="#cb124-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb124-10"><a href="#cb124-10" aria-hidden="true" tabindex="-1"></a><span class="co"># ROC curve</span></span>
+<span id="cb124-11"><a href="#cb124-11" aria-hidden="true" tabindex="-1"></a>RocCurveDisplay.from_estimator(model, X_test, y_test)</span>
+<span id="cb124-12"><a href="#cb124-12" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">&#39;ROC Curve&#39;</span>)</span>
+<span id="cb124-13"><a href="#cb124-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb124-14"><a href="#cb124-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Feature importance</span></span>
+<span id="cb124-15"><a href="#cb124-15" aria-hidden="true" tabindex="-1"></a>importances <span class="op">=</span> pd.Series(model.feature_importances_, index<span class="op">=</span>feature_names)</span>
+<span id="cb124-16"><a href="#cb124-16" aria-hidden="true" tabindex="-1"></a>importances.sort_values().tail(<span class="dv">15</span>).plot(kind<span class="op">=</span><span class="st">&#39;barh&#39;</span>, figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">6</span>))</span>
+<span id="cb124-17"><a href="#cb124-17" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">&#39;Top 15 Feature Importances&#39;</span>)</span>
+<span id="cb124-18"><a href="#cb124-18" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span></code></pre></div>
+
+<hr />
+
+<h2 id="scikit-learn-patterns-the-ml-toolkit">3.7 Scikit-learn Patterns
+
+— The ML Toolkit</h2>
+
+<p>sklearn is the backbone of practical ML in Python. Understanding its
+
+API is essential.</p>
+
+<h3 id="the-sklearn-interface">3.7.1 The sklearn Interface</h3>
+
+<p>Every estimator follows the same three-method contract:</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb125-1"><a href="#cb125-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> LogisticRegression</span>
+<span id="cb125-2"><a href="#cb125-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb125-3"><a href="#cb125-3" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> LogisticRegression(C<span class="op">=</span><span class="fl">1.0</span>, max_iter<span class="op">=</span><span class="dv">1000</span>)  <span class="co"># 1. configure</span></span>
+<span id="cb125-4"><a href="#cb125-4" aria-hidden="true" tabindex="-1"></a>model.fit(X_train, y_train)                        <span class="co"># 2. learn from data</span></span>
+<span id="cb125-5"><a href="#cb125-5" aria-hidden="true" tabindex="-1"></a>predictions <span class="op">=</span> model.predict(X_test)                <span class="co"># 3. use</span></span>
+<span id="cb125-6"><a href="#cb125-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb125-7"><a href="#cb125-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Probabilistic outputs</span></span>
+<span id="cb125-8"><a href="#cb125-8" aria-hidden="true" tabindex="-1"></a>probas <span class="op">=</span> model.predict_proba(X_test)[:, <span class="dv">1</span>]         <span class="co"># P(positive class)</span></span>
+<span id="cb125-9"><a href="#cb125-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb125-10"><a href="#cb125-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Regression</span></span>
+<span id="cb125-11"><a href="#cb125-11" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.ensemble <span class="im">import</span> GradientBoostingRegressor</span>
+<span id="cb125-12"><a href="#cb125-12" aria-hidden="true" tabindex="-1"></a>reg <span class="op">=</span> GradientBoostingRegressor(n_estimators<span class="op">=</span><span class="dv">100</span>, learning_rate<span class="op">=</span><span class="fl">0.1</span>)</span>
+<span id="cb125-13"><a href="#cb125-13" aria-hidden="true" tabindex="-1"></a>reg.fit(X_train, y_train)</span>
+<span id="cb125-14"><a href="#cb125-14" aria-hidden="true" tabindex="-1"></a>y_pred <span class="op">=</span> reg.predict(X_test)</span></code></pre></div>
+
+<h3 id="pipelines-the-right-way-to-preprocess">3.7.2 Pipelines — The Right Way
+
+to Preprocess</h3>
+
+<p>The #1 mistake beginners make is fitting the scaler on the whole
+
+dataset. Pipelines prevent this automatically.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb126-1"><a href="#cb126-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.pipeline <span class="im">import</span> Pipeline</span>
+<span id="cb126-2"><a href="#cb126-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> StandardScaler, OneHotEncoder</span>
+<span id="cb126-3"><a href="#cb126-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.compose <span class="im">import</span> ColumnTransformer</span>
+<span id="cb126-4"><a href="#cb126-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.ensemble <span class="im">import</span> RandomForestClassifier</span>
+<span id="cb126-5"><a href="#cb126-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> cross_val_score</span>
+<span id="cb126-6"><a href="#cb126-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb126-7"><a href="#cb126-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Define preprocessing for different column types</span></span>
+<span id="cb126-8"><a href="#cb126-8" aria-hidden="true" tabindex="-1"></a>numeric_features <span class="op">=</span> [<span class="st">&#39;age&#39;</span>, <span class="st">&#39;income&#39;</span>, <span class="st">&#39;tenure&#39;</span>]</span>
+<span id="cb126-9"><a href="#cb126-9" aria-hidden="true" tabindex="-1"></a>categorical_features <span class="op">=</span> [<span class="st">&#39;city&#39;</span>, <span class="st">&#39;product_type&#39;</span>]</span>
+<span id="cb126-10"><a href="#cb126-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb126-11"><a href="#cb126-11" aria-hidden="true" tabindex="-1"></a>preprocessor <span class="op">=</span> ColumnTransformer(transformers<span class="op">=</span>[</span>
+<span id="cb126-12"><a href="#cb126-12" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&#39;num&#39;</span>, StandardScaler(), numeric_features),</span>
+<span id="cb126-13"><a href="#cb126-13" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&#39;cat&#39;</span>, OneHotEncoder(handle_unknown<span class="op">=</span><span class="st">&#39;ignore&#39;</span>), categorical_features),</span>
+<span id="cb126-14"><a href="#cb126-14" aria-hidden="true" tabindex="-1"></a>])</span>
+<span id="cb126-15"><a href="#cb126-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb126-16"><a href="#cb126-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Full pipeline: preprocessing → model</span></span>
+<span id="cb126-17"><a href="#cb126-17" aria-hidden="true" tabindex="-1"></a>pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb126-18"><a href="#cb126-18" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&#39;prep&#39;</span>, preprocessor),</span>
+<span id="cb126-19"><a href="#cb126-19" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&#39;model&#39;</span>, RandomForestClassifier(n_estimators<span class="op">=</span><span class="dv">200</span>, random_state<span class="op">=</span><span class="dv">42</span>)),</span>
+<span id="cb126-20"><a href="#cb126-20" aria-hidden="true" tabindex="-1"></a>])</span>
+<span id="cb126-21"><a href="#cb126-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb126-22"><a href="#cb126-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Cross-validation evaluates the WHOLE pipeline — no leakage</span></span>
+<span id="cb126-23"><a href="#cb126-23" aria-hidden="true" tabindex="-1"></a>scores <span class="op">=</span> cross_val_score(pipe, X, y, cv<span class="op">=</span><span class="dv">5</span>, scoring<span class="op">=</span><span class="st">&#39;roc_auc&#39;</span>)</span>
+<span id="cb126-24"><a href="#cb126-24" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;AUC: </span><span class="sc">{</span>scores<span class="sc">.</span>mean()<span class="sc">:.3f}</span><span class="ss"> ± </span><span class="sc">{</span>scores<span class="sc">.</span>std()<span class="sc">:.3f}</span><span class="ss">&quot;</span>)</span>
+<span id="cb126-25"><a href="#cb126-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb126-26"><a href="#cb126-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit on full train set, predict on test</span></span>
+<span id="cb126-27"><a href="#cb126-27" aria-hidden="true" tabindex="-1"></a>pipe.fit(X_train, y_train)</span>
+<span id="cb126-28"><a href="#cb126-28" aria-hidden="true" tabindex="-1"></a>y_pred <span class="op">=</span> pipe.predict(X_test)</span></code></pre></div>
+
+<h3 id="hyperparameter-search">3.7.3 Hyperparameter Search</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb127-1"><a href="#cb127-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> GridSearchCV, RandomizedSearchCV</span>
+<span id="cb127-2"><a href="#cb127-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> scipy.stats <span class="im">import</span> randint, uniform</span>
+<span id="cb127-3"><a href="#cb127-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb127-4"><a href="#cb127-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Grid search — exhaustive over all combinations</span></span>
+<span id="cb127-5"><a href="#cb127-5" aria-hidden="true" tabindex="-1"></a>param_grid <span class="op">=</span> {</span>
+<span id="cb127-6"><a href="#cb127-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;model__n_estimators&#39;</span>: [<span class="dv">100</span>, <span class="dv">200</span>, <span class="dv">500</span>],</span>
+<span id="cb127-7"><a href="#cb127-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;model__max_depth&#39;</span>: [<span class="va">None</span>, <span class="dv">5</span>, <span class="dv">10</span>, <span class="dv">20</span>],</span>
+<span id="cb127-8"><a href="#cb127-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;model__min_samples_split&#39;</span>: [<span class="dv">2</span>, <span class="dv">5</span>, <span class="dv">10</span>],</span>
+<span id="cb127-9"><a href="#cb127-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb127-10"><a href="#cb127-10" aria-hidden="true" tabindex="-1"></a>grid_search <span class="op">=</span> GridSearchCV(pipe, param_grid, cv<span class="op">=</span><span class="dv">5</span>, scoring<span class="op">=</span><span class="st">&#39;roc_auc&#39;</span>, n_jobs<span class="op">=-</span><span class="dv">1</span>)</span>
+<span id="cb127-11"><a href="#cb127-11" aria-hidden="true" tabindex="-1"></a>grid_search.fit(X_train, y_train)</span>
+<span id="cb127-12"><a href="#cb127-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">&quot;Best params:&quot;</span>, grid_search.best_params_)</span>
+<span id="cb127-13"><a href="#cb127-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">&quot;Best AUC:&quot;</span>, grid_search.best_score_)</span>
+<span id="cb127-14"><a href="#cb127-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb127-15"><a href="#cb127-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Randomized search — faster for large spaces</span></span>
+<span id="cb127-16"><a href="#cb127-16" aria-hidden="true" tabindex="-1"></a>param_dist <span class="op">=</span> {</span>
+<span id="cb127-17"><a href="#cb127-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;model__n_estimators&#39;</span>: randint(<span class="dv">50</span>, <span class="dv">500</span>),</span>
+<span id="cb127-18"><a href="#cb127-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;model__max_depth&#39;</span>: [<span class="va">None</span>, <span class="dv">5</span>, <span class="dv">10</span>, <span class="dv">20</span>, <span class="dv">30</span>],</span>
+<span id="cb127-19"><a href="#cb127-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;model__min_samples_leaf&#39;</span>: randint(<span class="dv">1</span>, <span class="dv">10</span>),</span>
+<span id="cb127-20"><a href="#cb127-20" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;model__max_features&#39;</span>: uniform(<span class="fl">0.3</span>, <span class="fl">0.7</span>),</span>
+<span id="cb127-21"><a href="#cb127-21" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb127-22"><a href="#cb127-22" aria-hidden="true" tabindex="-1"></a>rand_search <span class="op">=</span> RandomizedSearchCV(pipe, param_dist, n_iter<span class="op">=</span><span class="dv">50</span>,</span>
+<span id="cb127-23"><a href="#cb127-23" aria-hidden="true" tabindex="-1"></a>                                  cv<span class="op">=</span><span class="dv">5</span>, scoring<span class="op">=</span><span class="st">&#39;roc_auc&#39;</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb127-24"><a href="#cb127-24" aria-hidden="true" tabindex="-1"></a>rand_search.fit(X_train, y_train)</span></code></pre></div>
+
+<hr />
+
+<h2 id="file-io-string-processing-and-regex">3.8 File I/O, String
+
+Processing, and Regex</h2>
+
+<h3 id="file-formats-in-ds">3.8.1 File Formats in DS</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb128-1"><a href="#cb128-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb128-2"><a href="#cb128-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json, csv</span>
+<span id="cb128-3"><a href="#cb128-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb128-4"><a href="#cb128-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb128-5"><a href="#cb128-5" aria-hidden="true" tabindex="-1"></a><span class="co"># CSV</span></span>
+<span id="cb128-6"><a href="#cb128-6" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.read_csv(<span class="st">&#39;data.csv&#39;</span>, parse_dates<span class="op">=</span>[<span class="st">&#39;date_col&#39;</span>])</span>
+<span id="cb128-7"><a href="#cb128-7" aria-hidden="true" tabindex="-1"></a>df.to_csv(<span class="st">&#39;output.csv&#39;</span>, index<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb128-8"><a href="#cb128-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb128-9"><a href="#cb128-9" aria-hidden="true" tabindex="-1"></a><span class="co"># JSON</span></span>
+<span id="cb128-10"><a href="#cb128-10" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(<span class="st">&#39;config.json&#39;</span>) <span class="im">as</span> f:</span>
+<span id="cb128-11"><a href="#cb128-11" aria-hidden="true" tabindex="-1"></a>    config <span class="op">=</span> json.load(f)</span>
+<span id="cb128-12"><a href="#cb128-12" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(<span class="st">&#39;results.json&#39;</span>, <span class="st">&#39;w&#39;</span>) <span class="im">as</span> f:</span>
+<span id="cb128-13"><a href="#cb128-13" aria-hidden="true" tabindex="-1"></a>    json.dump(results_dict, f, indent<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb128-14"><a href="#cb128-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb128-15"><a href="#cb128-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Parquet — columnar format, much faster than CSV for large data</span></span>
+<span id="cb128-16"><a href="#cb128-16" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.read_parquet(<span class="st">&#39;data.parquet&#39;</span>)</span>
+<span id="cb128-17"><a href="#cb128-17" aria-hidden="true" tabindex="-1"></a>df.to_parquet(<span class="st">&#39;output.parquet&#39;</span>, compression<span class="op">=</span><span class="st">&#39;snappy&#39;</span>)</span>
+<span id="cb128-18"><a href="#cb128-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb128-19"><a href="#cb128-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Pathlib — modern file path handling</span></span>
+<span id="cb128-20"><a href="#cb128-20" aria-hidden="true" tabindex="-1"></a>data_dir <span class="op">=</span> Path(<span class="st">&#39;data&#39;</span>) <span class="op">/</span> <span class="st">&#39;processed&#39;</span></span>
+<span id="cb128-21"><a href="#cb128-21" aria-hidden="true" tabindex="-1"></a>data_dir.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb128-22"><a href="#cb128-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb128-23"><a href="#cb128-23" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> filepath <span class="kw">in</span> data_dir.glob(<span class="st">&#39;*.csv&#39;</span>):</span>
+<span id="cb128-24"><a href="#cb128-24" aria-hidden="true" tabindex="-1"></a>    df <span class="op">=</span> pd.read_csv(filepath)</span>
+<span id="cb128-25"><a href="#cb128-25" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;</span><span class="sc">{</span>filepath<span class="sc">.</span>name<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span><span class="bu">len</span>(df)<span class="sc">}</span><span class="ss"> rows&quot;</span>)</span></code></pre></div>
+
+<h3 id="regex-for-ds">3.8.2 Regex for DS</h3>
+
+<p>Regular expressions extract structured data from messy text.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb129-1"><a href="#cb129-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> re</span>
+<span id="cb129-2"><a href="#cb129-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb129-3"><a href="#cb129-3" aria-hidden="true" tabindex="-1"></a>text <span class="op">=</span> <span class="st">&quot;User ID: 12345, email: alice@example.com, date: 2024-03-15&quot;</span></span>
+<span id="cb129-4"><a href="#cb129-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb129-5"><a href="#cb129-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract patterns</span></span>
+<span id="cb129-6"><a href="#cb129-6" aria-hidden="true" tabindex="-1"></a>email <span class="op">=</span> re.search(<span class="vs">r&#39;</span><span class="pp">[</span><span class="dv">\w</span><span class="pp">.-]</span><span class="op">+</span><span class="vs">@</span><span class="pp">[</span><span class="dv">\w</span><span class="pp">.-]</span><span class="op">+</span><span class="ch">\.</span><span class="dv">\w</span><span class="op">+</span><span class="vs">&#39;</span>, text).group()</span>
+<span id="cb129-7"><a href="#cb129-7" aria-hidden="true" tabindex="-1"></a>date  <span class="op">=</span> re.search(<span class="vs">r&#39;</span><span class="dv">\d</span><span class="op">{4}</span><span class="vs">-</span><span class="dv">\d</span><span class="op">{2}</span><span class="vs">-</span><span class="dv">\d</span><span class="op">{2}</span><span class="vs">&#39;</span>, text).group()</span>
+<span id="cb129-8"><a href="#cb129-8" aria-hidden="true" tabindex="-1"></a>user_id <span class="op">=</span> re.search(<span class="vs">r&#39;ID: </span><span class="kw">(</span><span class="dv">\d</span><span class="op">+</span><span class="kw">)</span><span class="vs">&#39;</span>, text).group(<span class="dv">1</span>)  <span class="co"># group(1) = first capture group</span></span>
+<span id="cb129-9"><a href="#cb129-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb129-10"><a href="#cb129-10" aria-hidden="true" tabindex="-1"></a><span class="co"># In Pandas</span></span>
+<span id="cb129-11"><a href="#cb129-11" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&#39;email&#39;</span>] <span class="op">=</span> df[<span class="st">&#39;text&#39;</span>].<span class="bu">str</span>.extract(<span class="vs">r&#39;</span><span class="kw">(</span><span class="pp">[</span><span class="dv">\w</span><span class="pp">.-]</span><span class="op">+</span><span class="vs">@</span><span class="pp">[</span><span class="dv">\w</span><span class="pp">.-]</span><span class="op">+</span><span class="ch">\.</span><span class="dv">\w</span><span class="op">+</span><span class="kw">)</span><span class="vs">&#39;</span>)</span>
+<span id="cb129-12"><a href="#cb129-12" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&#39;year&#39;</span>] <span class="op">=</span> df[<span class="st">&#39;date_str&#39;</span>].<span class="bu">str</span>.extract(<span class="vs">r&#39;</span><span class="kw">(</span><span class="dv">\d</span><span class="op">{4}</span><span class="kw">)</span><span class="vs">&#39;</span>)</span>
+<span id="cb129-13"><a href="#cb129-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb129-14"><a href="#cb129-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Clean text</span></span>
+<span id="cb129-15"><a href="#cb129-15" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> clean_text(text):</span>
+<span id="cb129-16"><a href="#cb129-16" aria-hidden="true" tabindex="-1"></a>    text <span class="op">=</span> re.sub(<span class="vs">r&#39;&lt;</span><span class="pp">[^&gt;]</span><span class="op">+</span><span class="vs">&gt;&#39;</span>, <span class="st">&#39;&#39;</span>, text)      <span class="co"># remove HTML tags</span></span>
+<span id="cb129-17"><a href="#cb129-17" aria-hidden="true" tabindex="-1"></a>    text <span class="op">=</span> re.sub(<span class="vs">r&#39;http</span><span class="dv">\S</span><span class="op">+</span><span class="vs">&#39;</span>, <span class="st">&#39;&#39;</span>, text)      <span class="co"># remove URLs</span></span>
+<span id="cb129-18"><a href="#cb129-18" aria-hidden="true" tabindex="-1"></a>    text <span class="op">=</span> re.sub(<span class="vs">r&#39;</span><span class="pp">[^a-zA-Z</span><span class="dv">\s</span><span class="pp">]</span><span class="vs">&#39;</span>, <span class="st">&#39;&#39;</span>, text)  <span class="co"># keep only letters</span></span>
+<span id="cb129-19"><a href="#cb129-19" aria-hidden="true" tabindex="-1"></a>    text <span class="op">=</span> re.sub(<span class="vs">r&#39;</span><span class="dv">\s</span><span class="op">+</span><span class="vs">&#39;</span>, <span class="st">&#39; &#39;</span>, text).strip() <span class="co"># normalize whitespace</span></span>
+<span id="cb129-20"><a href="#cb129-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> text.lower()</span></code></pre></div>
+
+<hr />
+
+<h2 id="testing-and-code-quality-for-ds">3.9 Testing and Code Quality
+
+for DS</h2>
+
+<p>Production ML code needs tests. Models that silently produce wrong
+
+outputs are worse than models that crash.</p>
+
+<h3 id="pytest-basics">3.9.1 Pytest Basics</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb130-1"><a href="#cb130-1" aria-hidden="true" tabindex="-1"></a><span class="co"># test_features.py</span></span>
+<span id="cb130-2"><a href="#cb130-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pytest</span>
+<span id="cb130-3"><a href="#cb130-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb130-4"><a href="#cb130-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb130-5"><a href="#cb130-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> features <span class="im">import</span> compute_age_feature, encode_categories</span>
+<span id="cb130-6"><a href="#cb130-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb130-7"><a href="#cb130-7" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> test_age_feature_positive():</span>
+<span id="cb130-8"><a href="#cb130-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Age features should never be negative.&quot;&quot;&quot;</span></span>
+<span id="cb130-9"><a href="#cb130-9" aria-hidden="true" tabindex="-1"></a>    df <span class="op">=</span> pd.DataFrame({<span class="st">&#39;birth_year&#39;</span>: [<span class="dv">1990</span>, <span class="dv">1985</span>, <span class="dv">2000</span>]})</span>
+<span id="cb130-10"><a href="#cb130-10" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> compute_age_feature(df, reference_year<span class="op">=</span><span class="dv">2024</span>)</span>
+<span id="cb130-11"><a href="#cb130-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> (result[<span class="st">&#39;age&#39;</span>] <span class="op">&gt;=</span> <span class="dv">0</span>).<span class="bu">all</span>(), <span class="st">&quot;Found negative ages&quot;</span></span>
+<span id="cb130-12"><a href="#cb130-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb130-13"><a href="#cb130-13" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> test_age_feature_range():</span>
+<span id="cb130-14"><a href="#cb130-14" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Ages should be reasonable (0-120).&quot;&quot;&quot;</span></span>
+<span id="cb130-15"><a href="#cb130-15" aria-hidden="true" tabindex="-1"></a>    df <span class="op">=</span> pd.DataFrame({<span class="st">&#39;birth_year&#39;</span>: [<span class="dv">1990</span>, <span class="dv">1985</span>, <span class="dv">2000</span>]})</span>
+<span id="cb130-16"><a href="#cb130-16" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> compute_age_feature(df, reference_year<span class="op">=</span><span class="dv">2024</span>)</span>
+<span id="cb130-17"><a href="#cb130-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> result[<span class="st">&#39;age&#39;</span>].between(<span class="dv">0</span>, <span class="dv">120</span>).<span class="bu">all</span>()</span>
+<span id="cb130-18"><a href="#cb130-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb130-19"><a href="#cb130-19" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> test_encoding_no_nulls():</span>
+<span id="cb130-20"><a href="#cb130-20" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Encoding should not introduce nulls.&quot;&quot;&quot;</span></span>
+<span id="cb130-21"><a href="#cb130-21" aria-hidden="true" tabindex="-1"></a>    df <span class="op">=</span> pd.DataFrame({<span class="st">&#39;category&#39;</span>: [<span class="st">&#39;A&#39;</span>, <span class="st">&#39;B&#39;</span>, <span class="st">&#39;A&#39;</span>, <span class="st">&#39;C&#39;</span>]})</span>
+<span id="cb130-22"><a href="#cb130-22" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> encode_categories(df)</span>
+<span id="cb130-23"><a href="#cb130-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> result.isna().<span class="bu">sum</span>().<span class="bu">sum</span>() <span class="op">==</span> <span class="dv">0</span></span>
+<span id="cb130-24"><a href="#cb130-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb130-25"><a href="#cb130-25" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> test_encoding_shape():</span>
+<span id="cb130-26"><a href="#cb130-26" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Output should have same number of rows.&quot;&quot;&quot;</span></span>
+<span id="cb130-27"><a href="#cb130-27" aria-hidden="true" tabindex="-1"></a>    df <span class="op">=</span> pd.DataFrame({<span class="st">&#39;category&#39;</span>: [<span class="st">&#39;A&#39;</span>, <span class="st">&#39;B&#39;</span>, <span class="st">&#39;A&#39;</span>, <span class="st">&#39;C&#39;</span>]})</span>
+<span id="cb130-28"><a href="#cb130-28" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> encode_categories(df)</span>
+<span id="cb130-29"><a href="#cb130-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> <span class="bu">len</span>(result) <span class="op">==</span> <span class="bu">len</span>(df)</span>
+<span id="cb130-30"><a href="#cb130-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb130-31"><a href="#cb130-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Run with: pytest test_features.py -v</span></span></code></pre></div>
+
+<h3 id="data-validation">3.9.2 Data Validation</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb131-1"><a href="#cb131-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Great Expectations / pandera style validation</span></span>
+<span id="cb131-2"><a href="#cb131-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandera <span class="im">as</span> pa</span>
+<span id="cb131-3"><a href="#cb131-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb131-4"><a href="#cb131-4" aria-hidden="true" tabindex="-1"></a>schema <span class="op">=</span> pa.DataFrameSchema({</span>
+<span id="cb131-5"><a href="#cb131-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;age&#39;</span>: pa.Column(<span class="bu">int</span>, checks<span class="op">=</span>[</span>
+<span id="cb131-6"><a href="#cb131-6" aria-hidden="true" tabindex="-1"></a>        pa.Check.ge(<span class="dv">0</span>),       <span class="co"># &gt;= 0</span></span>
+<span id="cb131-7"><a href="#cb131-7" aria-hidden="true" tabindex="-1"></a>        pa.Check.le(<span class="dv">120</span>),     <span class="co"># &lt;= 120</span></span>
+<span id="cb131-8"><a href="#cb131-8" aria-hidden="true" tabindex="-1"></a>    ]),</span>
+<span id="cb131-9"><a href="#cb131-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;income&#39;</span>: pa.Column(<span class="bu">float</span>, checks<span class="op">=</span>pa.Check.ge(<span class="dv">0</span>), nullable<span class="op">=</span><span class="va">True</span>),</span>
+<span id="cb131-10"><a href="#cb131-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;email&#39;</span>: pa.Column(<span class="bu">str</span>, checks<span class="op">=</span>pa.Check.str_matches(<span class="vs">r&#39;</span><span class="dv">.</span><span class="op">+</span><span class="vs">@</span><span class="dv">.</span><span class="op">+</span><span class="ch">\.</span><span class="dv">.</span><span class="op">+</span><span class="vs">&#39;</span>)),</span>
+<span id="cb131-11"><a href="#cb131-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;churn&#39;</span>: pa.Column(<span class="bu">int</span>, checks<span class="op">=</span>pa.Check.isin([<span class="dv">0</span>, <span class="dv">1</span>])),</span>
+<span id="cb131-12"><a href="#cb131-12" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb131-13"><a href="#cb131-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb131-14"><a href="#cb131-14" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
+<span id="cb131-15"><a href="#cb131-15" aria-hidden="true" tabindex="-1"></a>    validated_df <span class="op">=</span> schema.validate(df)</span>
+<span id="cb131-16"><a href="#cb131-16" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> pa.errors.SchemaError <span class="im">as</span> e:</span>
+<span id="cb131-17"><a href="#cb131-17" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;Validation failed: </span><span class="sc">{</span>e<span class="sc">}</span><span class="ss">&quot;</span>)</span></code></pre></div>
+
+<h3 id="virtual-environments">3.9.3 Virtual Environments</h3>
+
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb132-1"><a href="#cb132-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create isolated environment for each project</span></span>
+<span id="cb132-2"><a href="#cb132-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> <span class="at">-m</span> venv .venv</span>
+<span id="cb132-3"><a href="#cb132-3" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> .venv/bin/activate        <span class="co"># Linux/Mac</span></span>
+<span id="cb132-4"><a href="#cb132-4" aria-hidden="true" tabindex="-1"></a><span class="ex">.venv\Scripts\activate.bat</span>     <span class="co"># Windows</span></span>
+<span id="cb132-5"><a href="#cb132-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb132-6"><a href="#cb132-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Install packages</span></span>
+<span id="cb132-7"><a href="#cb132-7" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install pandas scikit-learn xgboost matplotlib seaborn</span>
+<span id="cb132-8"><a href="#cb132-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb132-9"><a href="#cb132-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Freeze for reproducibility</span></span>
+<span id="cb132-10"><a href="#cb132-10" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> freeze <span class="op">&gt;</span> requirements.txt</span>
+<span id="cb132-11"><a href="#cb132-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb132-12"><a href="#cb132-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Restore from requirements</span></span>
+<span id="cb132-13"><a href="#cb132-13" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-r</span> requirements.txt</span>
+<span id="cb132-14"><a href="#cb132-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb132-15"><a href="#cb132-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Using conda (alternative)</span></span>
+<span id="cb132-16"><a href="#cb132-16" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">-n</span> ml-project python=3.11</span>
+<span id="cb132-17"><a href="#cb132-17" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> activate ml-project</span>
+<span id="cb132-18"><a href="#cb132-18" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install pandas scikit-learn <span class="at">-c</span> conda-forge</span></code></pre></div>
+
+<blockquote>
+
+<p><strong>Key:</strong> Always use a virtual environment. Never install
+
+ML packages into the system Python.</p>
+
+</blockquote>
+
+<hr />
+
+<h2 id="chapter-summary">Chapter Summary</h2>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="282" viewBox="0 0 700 282" style="display:block; margin:20px auto; max-width:100%;">
+  <defs>
+    <clipPath id="pc-clip"><rect width="700" height="282" rx="10"/></clipPath>
+  </defs>
+  <g clip-path="url(#pc-clip)">
+    <!-- Card background + border -->
+    <rect x="0" y="0" width="700" height="282" rx="10" fill="#fff" stroke="#e2e8f0" stroke-width="1.5"/>
+    <!-- Header bar -->
+    <rect x="0" y="0" width="700" height="48" fill="#6366f1"/>
+    <text x="26" y="30" font-family="'Segoe UI',Arial,sans-serif" font-size="15" font-weight="700" fill="#fff">Python Core</text>
+    <text x="26" y="43" font-family="'Segoe UI',Arial,sans-serif" font-size="10" fill="rgba(255,255,255,0.7)">TOPIC</text>
+    <text x="360" y="43" font-family="'Segoe UI',Arial,sans-serif" font-size="10" fill="rgba(255,255,255,0.7)">KEY INSIGHT</text>
+    <!-- Column divider -->
+    <line x1="348" y1="48" x2="348" y2="282" stroke="#f1f5f9" stroke-width="1"/>
+    <!-- Row 1 — Names/objects/mutability — blue -->
+    <rect x="0" y="48" width="5" height="46" fill="#3b82f6"/>
+    <circle cx="26" cy="71" r="7" fill="#3b82f6"/>
+    <text x="44" y="76" font-family="'Segoe UI',Arial,sans-serif" font-size="13" font-weight="600" fill="#1e293b">Names, objects, mutability</text>
+    <text x="360" y="76" font-family="'Segoe UI',Arial,sans-serif" font-size="12" fill="#64748b">Variables bind to objects &mdash; rebinding &ne; mutation</text>
+    <line x1="0" y1="94" x2="700" y2="94" stroke="#f1f5f9" stroke-width="1"/>
+    <!-- Row 2 — Exceptions — amber -->
+    <rect x="0" y="94" width="5" height="46" fill="#f59e0b"/>
+    <circle cx="26" cy="117" r="7" fill="#f59e0b"/>
+    <text x="44" y="122" font-family="'Segoe UI',Arial,sans-serif" font-size="13" font-weight="600" fill="#1e293b">Exceptions &amp; control flow</text>
+    <text x="360" y="122" font-family="'Segoe UI',Arial,sans-serif" font-size="12" fill="#64748b">Explicit failure handling makes pipelines robust</text>
+    <line x1="0" y1="140" x2="700" y2="140" stroke="#f1f5f9" stroke-width="1"/>
+    <!-- Row 3 — NumPy — purple -->
+    <rect x="0" y="140" width="5" height="46" fill="#8b5cf6"/>
+    <circle cx="26" cy="163" r="7" fill="#8b5cf6"/>
+    <text x="44" y="168" font-family="'Segoe UI',Arial,sans-serif" font-size="13" font-weight="600" fill="#1e293b">NumPy arrays</text>
+    <text x="360" y="168" font-family="'Segoe UI',Arial,sans-serif" font-size="12" fill="#64748b">Vectorised numerical ops &mdash; the engine under sklearn</text>
+    <line x1="0" y1="186" x2="700" y2="186" stroke="#f1f5f9" stroke-width="1"/>
+    <!-- Row 4 — Pandas — green -->
+    <rect x="0" y="186" width="5" height="46" fill="#22c55e"/>
+    <circle cx="26" cy="209" r="7" fill="#22c55e"/>
+    <text x="44" y="214" font-family="'Segoe UI',Arial,sans-serif" font-size="13" font-weight="600" fill="#1e293b">Pandas tables</text>
+    <text x="360" y="214" font-family="'Segoe UI',Arial,sans-serif" font-size="12" fill="#64748b">Labelled tabular data &mdash; clean, join, analyse</text>
+    <line x1="0" y1="232" x2="700" y2="232" stroke="#f1f5f9" stroke-width="1"/>
+    <!-- Row 5 — Big O — pink -->
+    <rect x="0" y="232" width="5" height="46" fill="#ec4899"/>
+    <circle cx="26" cy="255" r="7" fill="#ec4899"/>
+    <text x="44" y="260" font-family="'Segoe UI',Arial,sans-serif" font-size="13" font-weight="600" fill="#1e293b">Big O scalability</text>
+    <text x="360" y="260" font-family="'Segoe UI',Arial,sans-serif" font-size="12" fill="#64748b">Complexity lens for choosing algorithms at scale</text>
+  </g>
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> This chapter builds the Python/performance base
+
+for ML systems.</p>
+
+</blockquote>
+
+<h3 id="key-takeaways-7">3.9.4 Key takeaways</h3>
+
+<ul>
+
+<li>names bind to objects; rebinding ≠ mutation</li>
+
+<li>exceptions make code/pipelines robust</li>
+
+<li>NumPy = vectorized numeric arrays</li>
+
+<li>Pandas = labeled tabular data</li>
+
+<li>Big O = scalability lens</li>
+
+</ul>
+
+<h3 id="quick-comparison">3.9.5 Quick comparison</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Topic</th>
+
+<th>Core idea</th>
+
+<th>Why you use it</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Names vs objects</td>
+
+<td>variables bind to objects</td>
+
+<td>avoid mutation bugs</td>
+
+</tr>
+
+<tr>
+
+<td>Exceptions</td>
+
+<td>explicit failure handling</td>
+
+<td>more reliable pipelines</td>
+
+</tr>
+
+<tr>
+
+<td>NumPy</td>
+
+<td>fast array ops</td>
+
+<td>numerical computing</td>
+
+</tr>
+
+<tr>
+
+<td>Pandas</td>
+
+<td>labeled tables</td>
+
+<td>clean/join/analyze data</td>
+
+</tr>
+
+<tr>
+
+<td>Big O</td>
+
+<td>growth of time/space</td>
+
+<td>choose scalable designs</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="60" viewBox="0 0 460 60" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .tf-lbl { font: bold 13px system-ui, sans-serif; fill: #1e293b; }
+  </style>
+  <defs><marker id="tf-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <rect x="10" y="12" width="110" height="36" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="65" y="35" text-anchor="middle" class="tf-lbl">Theory</text>
+  <line x1="120" y1="30" x2="162" y2="30" stroke="#6366f1" stroke-width="2" marker-end="url(#tf-a)"/>
+  <rect x="170" y="12" width="120" height="36" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="230" y="35" text-anchor="middle" class="tf-lbl">Python code</text>
+  <line x1="290" y1="30" x2="332" y2="30" stroke="#6366f1" stroke-width="2" marker-end="url(#tf-a)"/>
+  <rect x="340" y="12" width="110" height="36" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="395" y="35" text-anchor="middle" class="tf-lbl">ML systems</text>
+</svg>
+
+
+<div class="chapter-nav">
+  <a href="chapter-02.html">&larr; Chapter 02: Math Foundations</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-04.html">Chapter 04: Feature Engineering and EDA &rarr;</a>
+</div>
+<div class="site-footer">
+  <p>&copy; 2026 Hariram Subramanian Gopal &middot; <a href="index.html">Data to Decisions</a></p>
+</div>
+</body>
+</html>

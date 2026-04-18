@@ -1,0 +1,2879 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Hariram Subramanian Gopal" />
+  <title>Chapter 13: Time Series and Forecasting | Data to Decisions</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</head>
+<body>
+<div class="chapter-nav">
+  <a href="chapter-12.html">&larr; Chapter 12: Reinforcement Learning</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-14.html">Chapter 14: Operational Research &rarr;</a>
+</div>
+<h1 id="chapter-13-time-series-and-forecasting">Chapter 13: Time Series
+
+and Forecasting</h1>
+
+<h2 id="chapter-scope-12a">13.0 Chapter Scope</h2>
+
+<p>Tabular ML treats each row as independent. Time series breaks that
+
+assumption — the order matters, and yesterday’s value is often the best
+
+predictor of today’s.</p>
+
+<p>Time series forecasting shows up everywhere: demand planning,
+
+financial markets, energy grids, staffing, inventory. The core challenge
+
+is that you must predict the future without using it during training — a
+
+constraint that changes how you split data, engineer features, and
+
+evaluate models. This chapter builds from classical decomposition and
+
+ARIMA through modern ML and deep learning approaches, ending with
+
+production-grade forecasting systems.</p>
+
+<p><strong>Goal:</strong> predict future values from ordered history,
+
+with optional external signals like weather, holidays, or
+
+promotions.</p>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/12_time_series_and_forecasting/forecasting_pipeline.svg" alt="Time series forecasting pipeline: past values + exogenous variables → model → future predictions">
+
+<figcaption>
+
+Time series forecasting pipeline: past values + exogenous variables → model → future predictions
+
+</figcaption>
+
+</figure>
+
+<blockquote>
+
+<p><strong>Key:</strong> Forecasting = predict future from ordered
+
+history, not i.i.d. samples.</p>
+
+</blockquote>
+
+<p><strong>What you will learn:</strong></p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 50%" />
+
+<col style="width: 50%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Section</th>
+
+<th>Topic</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>12.1</td>
+
+<td>Time series fundamentals: decomposition, stationarity, ACF/PACF</td>
+
+</tr>
+
+<tr>
+
+<td>12.2</td>
+
+<td>Classical models: ARIMA, SARIMA</td>
+
+</tr>
+
+<tr>
+
+<td>12.3</td>
+
+<td>Prophet: trend, seasonality, holidays</td>
+
+</tr>
+
+<tr>
+
+<td>12.4</td>
+
+<td>Feature engineering for ML-based forecasting</td>
+
+</tr>
+
+<tr>
+
+<td>12.5</td>
+
+<td>ML models: LightGBM and XGBoost for time series</td>
+
+</tr>
+
+<tr>
+
+<td>12.6</td>
+
+<td>Deep learning: LSTM, N-BEATS, TFT</td>
+
+</tr>
+
+<tr>
+
+<td>12.7</td>
+
+<td>Evaluation: metrics and walk-forward validation</td>
+
+</tr>
+
+<tr>
+
+<td>12.8</td>
+
+<td>Production: feature stores, monitoring, hierarchical
+
+forecasting</td>
+
+</tr>
+
+<tr>
+
+<td>12.9</td>
+
+<td>Case study: energy and supply chain forecasting</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Prerequisites:</strong> Regression (Chapter 5), feature engineering (Chapter 4), basic probability and distributions (Chapter 1).</p>
+
+<hr />
+
+<h2 id="time-series-fundamentals">13.1 Time Series Fundamentals</h2>
+
+<p>Time series = ordered observations, usually <strong>not
+
+i.i.d.</strong> Nearby points are statistically dependent; shuffling
+
+destroys signal.</p>
+
+<h3 id="decomposition">13.1.1 Decomposition</h3>
+
+<p>Every observed time series can be decomposed into three
+
+components:</p>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/12_time_series_and_forecasting/time_series_decomposition.svg" alt="Decomposing a time series into trend (long-run direction), seasonality (periodic pattern), and residual (unexplained noise)">
+
+<figcaption>
+
+Decomposing a time series into trend (long-run direction), seasonality (periodic pattern), and residual (unexplained noise)
+
+</figcaption>
+
+</figure>
+
+<p><strong>Additive model</strong> — seasonal amplitude is constant:
+
+<span class="math display">\[y_t = T_t + S_t + e_t\]</span>
+
+</p>
+
+<p><strong>Where:</strong> <span class="math inline">\(T_t\)</span> = trend (long-run direction), <span class="math inline">\(S_t\)</span> = seasonal component (periodic pattern), <span class="math inline">\(e_t\)</span> = residual (noise).</p>
+
+<p><strong>Multiplicative model</strong> — seasonal amplitude grows with
+
+the level: <span class="math display">\[y_t = T_t \times S_t \times
+
+e_t\]</span>
+
+</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> Use additive when seasonal swings are roughly
+
+constant in size. Use multiplicative when they scale with the series
+
+level (common in sales and economic data).</p>
+
+</blockquote>
+
+<h3 id="stationarity">13.1.2 Stationarity</h3>
+
+<p>Classical models require the series to be stationary — stable
+
+statistical properties over time.</p>
+
+<p><strong>Weak stationarity requires:</strong></p>
+
+<ul>
+<li>Constant mean -  Constant variance</li>
+<li>Autocovariance depends only on the lag, not on  time</li>
+</ul>
+
+<p><strong>What breaks stationarity:</strong></p>
+
+<ul>
+<li>Trend (rising or falling  mean)</li>
+<li>Heteroscedasticity (changing variance)</li>
+<li>Structural breaks  (sudden regime changes)</li>
+</ul>
+
+<p><strong>Common fixes:</strong></p>
+
+<ul>
+<li>First differencing: <span  class="math inline">\(y&#39;_t = y_t</li>
+<li>y_{t-1}\)</span></li>
+<li>Log transform:  stabilizes variance</li>
+<li>Box-Cox transform: generalizes the log</li>
+<li>Seasonal  differencing: <span class="math inline">\(y&#39;_t = y_t -  y_{t-s}\)</span></li>
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> Make the series only as stationary as the model
+
+requires. Over-differencing throws away useful signal.</p>
+
+</blockquote>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/12_time_series_and_forecasting/stationarity_comparison.svg" alt="Stationary vs non-stationary series: constant mean/variance, trend, heteroscedasticity, and fixes">
+
+<figcaption>
+
+Stationarity diagnosis: stationary series (constant mean/variance), trend non-stationarity (fix: first differencing), heteroscedastic variance (fix: log transform + differencing)
+
+</figcaption>
+
+</figure>
+
+<h3 id="autocorrelation">13.1.3 Autocorrelation</h3>
+
+<p>Autocorrelation measures the relationship between <span
+
+class="math inline">\(y_t\)</span> and its lagged values <span
+
+class="math inline">\(y_{t-k}\)</span>.</p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Tool</th>
+
+<th>What it measures</th>
+
+<th>Typical use</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>ACF</strong></td>
+
+<td>Correlation at each lag, including indirect effects</td>
+
+<td>Detect persistence, seasonality</td>
+
+</tr>
+
+<tr>
+
+<td><strong>PACF</strong></td>
+
+<td>Lag-<span class="math inline">\(k\)</span> correlation after
+
+removing effects of shorter lags</td>
+
+<td>Identify AR order for ARIMA</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>ACF/PACF heuristics for ARIMA:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Pattern</th>
+
+<th>Suggests</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>ACF cuts off at lag <span class="math inline">\(q\)</span>, PACF
+
+decays gradually</td>
+
+<td>MA(<span class="math inline">\(q\)</span>)</td>
+
+</tr>
+
+<tr>
+
+<td>ACF decays gradually, PACF cuts off at lag <span
+
+class="math inline">\(p\)</span></td>
+
+<td>AR(<span class="math inline">\(p\)</span>)</td>
+
+</tr>
+
+<tr>
+
+<td>Both decay gradually</td>
+
+<td>ARMA</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="data-granularity-and-frequency">13.1.4 Data granularity and
+
+frequency</h3>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Frequency</th>
+
+<th>Examples</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Yearly, quarterly</td>
+
+<td>GDP, annual sales</td>
+
+</tr>
+
+<tr>
+
+<td>Monthly</td>
+
+<td>Subscriptions, billing</td>
+
+</tr>
+
+<tr>
+
+<td>Weekly, daily</td>
+
+<td>Retail demand, web traffic</td>
+
+</tr>
+
+<tr>
+
+<td>Hourly, sub-hourly</td>
+
+<td>Energy consumption, IoT sensors</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p>Finer granularity can expose multiple seasonalities — hour-of-day and
+
+day-of-week for example — which simpler models may struggle to
+
+capture.</p>
+
+<h3 id="baselines-first">13.1.5 Baselines first</h3>
+
+<p>Before fitting any model, establish a naive baseline:</p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Baseline</th>
+
+<th>Formula</th>
+
+<th>When it works</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Naive</td>
+
+<td><span class="math inline">\(\hat{y}_{t+1} = y_t\)</span></td>
+
+<td>Random walk series</td>
+
+</tr>
+
+<tr>
+
+<td>Seasonal naive</td>
+
+<td><span class="math inline">\(\hat{y}_t = y_{t-s}\)</span></td>
+
+<td>Strong fixed seasonality</td>
+
+</tr>
+
+<tr>
+
+<td>Moving average</td>
+
+<td>Mean of last <span class="math inline">\(k\)</span> periods</td>
+
+<td>Smooth trend</td>
+
+</tr>
+
+<tr>
+
+<td>Exponential smoothing</td>
+
+<td>Weighted mean, recency-weighted</td>
+
+<td>Gradual trend</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> If your model cannot beat seasonal naive, it is
+
+adding no value over guessing last year’s same period.</p>
+
+</blockquote>
+
+<h3 id="preprocessing-pipeline">13.1.6 Preprocessing pipeline</h3>
+
+<svg viewBox="0 0 700 100" style="display:block; margin:20px auto; max-width:100%;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Time series preprocessing pipeline: raw data through resample, impute, outliers, transform, split">
+<defs><marker id="ts-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6366f1"/></marker></defs>
+<!-- Raw data -->
+<rect x="5" y="10" width="80" height="32" rx="6" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+<text x="45" y="30" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#991b1b">Raw data</text>
+<line x1="90" y1="26" x2="115" y2="26" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ts-arr)"/>
+<!-- Resample -->
+<rect x="120" y="10" width="100" height="32" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="170" y="30" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#1e40af">Resample</text>
+<line x1="225" y1="26" x2="250" y2="26" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ts-arr)"/>
+<!-- Impute -->
+<rect x="255" y="10" width="100" height="32" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="305" y="30" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#1e40af">Impute</text>
+<line x1="360" y1="26" x2="385" y2="26" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ts-arr)"/>
+<!-- Handle outliers -->
+<rect x="390" y="10" width="100" height="32" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="440" y="30" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#92400e">Outliers</text>
+<line x1="495" y1="26" x2="520" y2="26" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ts-arr)"/>
+<!-- Transform -->
+<rect x="525" y="10" width="80" height="32" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="565" y="25" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#5b21b6">Transform</text>
+<text x="565" y="37" text-anchor="middle" font-family="system-ui" font-size="8" fill="#7c3aed">log, Box-Cox</text>
+<line x1="610" y1="26" x2="625" y2="26" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ts-arr)"/>
+<!-- Chronological split -->
+<rect x="630" y="5" width="65" height="42" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="662" y="23" text-anchor="middle" font-family="system-ui" font-size="9" font-weight="600" fill="#166534">Chrono</text>
+<text x="662" y="35" text-anchor="middle" font-family="system-ui" font-size="9" font-weight="600" fill="#166534">split</text>
+</svg>
+
+
+<p><strong>Never use random train-test splits</strong> for time series.
+
+The test set must come after the training set chronologically.</p>
+
+<h3 id="forecasting-setups">13.1.7 Forecasting setups</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Setup</th>
+
+<th>Predicts</th>
+
+<th>Main challenge</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>One-step-ahead</td>
+
+<td><span class="math inline">\(y_{t+1}\)</span></td>
+
+<td>Simplest; errors do not accumulate</td>
+
+</tr>
+
+<tr>
+
+<td>Multi-step</td>
+
+<td><span class="math inline">\(y_{t+1}, \dots, y_{t+h}\)</span></td>
+
+<td>Error accumulation, horizon degradation</td>
+
+</tr>
+
+<tr>
+
+<td>Univariate</td>
+
+<td>Target history only</td>
+
+<td>Misses external drivers</td>
+
+</tr>
+
+<tr>
+
+<td>Multivariate / exogenous</td>
+
+<td>Target + related variables</td>
+
+<td>Feature alignment, future availability</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<hr />
+
+<figure class="rich-figure">
+
+<img src="figures/generated/12_time_series_and_forecasting/acf_pacf_patterns.svg" alt="ACF and PACF patterns for AR(2), MA(2), and ARMA(1,1) — how to read them to choose ARIMA order">
+
+<figcaption>
+
+ACF and PACF patterns: AR(2) shows gradual ACF decay and PACF cut-off at lag 2; MA(2) shows ACF cut-off at lag 2; ARMA shows mixed gradual decay in both
+
+</figcaption>
+
+</figure>
+
+<h2 id="arima-and-sarima">13.2 ARIMA and SARIMA</h2>
+
+<p>Classical forecasting models for series driven by past values,
+
+differencing, and correlated errors.</p>
+
+<h3 id="arima-intuition">13.2.1 ARIMA intuition</h3>
+
+<p><span class="math display">\[\text{ARIMA}(p, d, q)\]</span></p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Component</th>
+
+<th>Stands for</th>
+
+<th>Role</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>AR</strong></td>
+
+<td>AutoRegressive</td>
+
+<td>Uses past values <span class="math inline">\(y_{t-1}, \dots,
+
+y_{t-p}\)</span></td>
+
+</tr>
+
+<tr>
+
+<td><strong>I</strong></td>
+
+<td>Integrated</td>
+
+<td>Differencing order <span class="math inline">\(d\)</span> to achieve
+
+stationarity</td>
+
+</tr>
+
+<tr>
+
+<td><strong>MA</strong></td>
+
+<td>Moving Average</td>
+
+<td>Uses past forecast errors <span
+
+class="math inline">\(\epsilon_{t-1}, \dots,
+
+\epsilon_{t-q}\)</span></td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<svg viewBox="0 0 480 55" style="display:block; margin:20px auto; max-width:460px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ARIMA pipeline: AR(p) → I(d) → MA(q)">
+<defs><marker id="ar-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<rect x="5" y="5" width="120" height="42" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="65" y="22" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#1e40af">Past y</text>
+<text x="65" y="38" text-anchor="middle" font-family="system-ui" font-size="10" fill="#3b82f6">AR(p)</text>
+<line x1="125" y1="26" x2="155" y2="26" stroke="#6366f1" stroke-width="1.3" marker-end="url(#ar-a)"/>
+<rect x="162" y="5" width="130" height="42" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="227" y="22" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#5b21b6">Differencing</text>
+<text x="227" y="38" text-anchor="middle" font-family="system-ui" font-size="10" fill="#8b5cf6">I(d)</text>
+<line x1="292" y1="26" x2="322" y2="26" stroke="#6366f1" stroke-width="1.3" marker-end="url(#ar-a)"/>
+<rect x="329" y="5" width="120" height="42" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="389" y="22" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#166534">Past errors</text>
+<text x="389" y="38" text-anchor="middle" font-family="system-ui" font-size="10" fill="#22c55e">MA(q)</text>
+</svg>
+
+<h3 id="component-equations">13.2.2 Component equations</h3>
+
+<p><strong>AR component:</strong> <span class="math display">\[y_t = c +
+
+\phi_1 y_{t-1} + \phi_2 y_{t-2} + \dots + \phi_p y_{t-p} +
+
+\epsilon_t\]</span></p>
+
+<p><strong>Where:</strong> <span class="math inline">\(c\)</span> = constant, <span class="math inline">\(\phi_1, \dots, \phi_p\)</span> = AR coefficients, <span class="math inline">\(\epsilon_t\)</span> = white noise error term.</p>
+
+<p><strong>MA component:</strong> <span class="math display">\[y_t = c +
+
+\epsilon_t + \theta_1 \epsilon_{t-1} + \dots + \theta_q
+
+\epsilon_{t-q}\]</span></p>
+
+<p><strong>Where:</strong> <span class="math inline">\(\theta_1, \dots, \theta_q\)</span> = MA coefficients (weights on past forecast errors).</p>
+
+<p>The MA component uses past forecast errors, not a simple rolling
+
+average.</p>
+
+<p><strong>First differencing:</strong> <span
+
+class="math display">\[y&#39;_t = y_t - y_{t-1}\]</span></p>
+
+<p><strong>Second differencing:</strong> <span
+
+class="math display">\[y&#39;&#39;_t = y&#39;_t -
+
+y&#39;_{t-1}\]</span></p>
+
+<h3 id="sarima-adding-seasonal-structure">13.2.3 SARIMA: adding seasonal
+
+structure</h3>
+
+<p><span class="math display">\[\text{SARIMA}(p, d, q)(P, D,
+
+Q)_s\]</span></p>
+
+<p>The seasonal part adds:</p>
+
+<ul>
+<li><span class="math inline">\(P\)</span>:  seasonal AR order</li>
+<li><span class="math inline">\(D\)</span>: seasonal  differencing order</li>
+<li><span class="math inline">\(Q\)</span>: seasonal MA  order</li>
+<li><span class="math inline">\(s\)</span>: seasonal period (e.g. 7  for weekly data, 12 for monthly)</li>
+</ul>
+
+<p><strong>Seasonal differencing:</strong> <span
+
+class="math display">\[y&#39;_t = y_t - y_{t-s}\]</span></p>
+
+<blockquote>
+
+<p><strong>Key:</strong> SARIMA = ARIMA + explicit seasonal
+
+AR/MA/differencing at period <span class="math inline">\(s\)</span>.</p>
+
+</blockquote>
+
+<h3 id="model-building-workflow">13.2.4 Model-building workflow</h3>
+
+<ol type="1">
+
+<li>Plot the series — identify trend, seasonality, anomalies</li>
+
+<li>Transform if variance is non-constant (log, Box-Cox)</li>
+
+<li>Difference to achieve approximate stationarity</li>
+
+<li>Inspect ACF and PACF for order hints</li>
+
+<li>Fit candidate models</li>
+
+<li>Compare via AIC, BIC, and hold-out validation</li>
+
+<li>Diagnose residuals — they should be white noise</li>
+
+<li>Forecast</li>
+
+</ol>
+
+<h3 id="arimax-sarimax">13.2.5 ARIMAX / SARIMAX</h3>
+
+<p>Adding exogenous regressors: holidays, weather, promotions, price
+
+changes, macro signals. These are variables the model uses as inputs
+
+alongside the target’s own history.</p>
+
+<h3 id="strengths-and-limitations">13.2.6 Strengths and limitations</h3>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Strengths</th>
+
+<th>Limitations</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Interpretable coefficients</td>
+
+<td>Assumes stable dynamics</td>
+
+</tr>
+
+<tr>
+
+<td>Strong statistical baseline</td>
+
+<td>Struggles with multiple seasonalities</td>
+
+</tr>
+
+<tr>
+
+<td>Works with small to medium data</td>
+
+<td>Order selection is fiddly</td>
+
+</tr>
+
+<tr>
+
+<td>Confidence intervals built in</td>
+
+<td>Weak on strong nonlinearities</td>
+
+</tr>
+
+<tr>
+
+<td>Simple per-series fitting</td>
+
+<td>One series at a time; not designed for global cross-series models</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="python-example">13.2.7 Python example</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb396-1"><a href="#cb396-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> statsmodels.tsa.statespace.sarimax <span class="im">import</span> SARIMAX</span>
+<span id="cb396-2"><a href="#cb396-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb396-3"><a href="#cb396-3" aria-hidden="true" tabindex="-1"></a><span class="co"># y: pandas Series with DatetimeIndex</span></span>
+<span id="cb396-4"><a href="#cb396-4" aria-hidden="true" tabindex="-1"></a>train <span class="op">=</span> y.iloc[:<span class="op">-</span><span class="dv">30</span>]</span>
+<span id="cb396-5"><a href="#cb396-5" aria-hidden="true" tabindex="-1"></a>test  <span class="op">=</span> y.iloc[<span class="op">-</span><span class="dv">30</span>:]</span>
+<span id="cb396-6"><a href="#cb396-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb396-7"><a href="#cb396-7" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> SARIMAX(train, order<span class="op">=</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>), seasonal_order<span class="op">=</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">7</span>))</span>
+<span id="cb396-8"><a href="#cb396-8" aria-hidden="true" tabindex="-1"></a>fit   <span class="op">=</span> model.fit(disp<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb396-9"><a href="#cb396-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb396-10"><a href="#cb396-10" aria-hidden="true" tabindex="-1"></a>forecast <span class="op">=</span> fit.forecast(steps<span class="op">=</span><span class="bu">len</span>(test))</span></code></pre></div>
+
+<hr />
+
+<figure class="rich-figure">
+
+<img src="figures/generated/12_time_series_and_forecasting/arima_components.svg" alt="ARIMA components: AR (autoregression on past values), I (differencing to remove trend), MA (moving average on past errors)">
+
+<figcaption>
+
+ARIMA(p,d,q): AR(p) uses past values, I(d) differences to achieve stationarity, MA(q) uses past forecast errors — with ACF/PACF pattern interpretation guide
+
+</figcaption>
+
+</figure>
+
+<h2 id="prophet">13.3 Prophet</h2>
+
+<p>Prophet (Meta, 2017) is a forecasting library designed for business
+
+time series. It decomposes the signal into trend, seasonality, and
+
+holiday effects using an additive model.</p>
+
+<p><span class="math display">\[y(t) = g(t) + s(t) + h(t) +
+
+\epsilon_t\]</span></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Component</th>
+
+<th>Meaning</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><span class="math inline">\(g(t)\)</span></td>
+
+<td>Trend — long-run direction</td>
+
+</tr>
+
+<tr>
+
+<td><span class="math inline">\(s(t)\)</span></td>
+
+<td>Seasonality — Fourier series representation</td>
+
+</tr>
+
+<tr>
+
+<td><span class="math inline">\(h(t)\)</span></td>
+
+<td>Holiday/event effects — user-specified dates</td>
+
+</tr>
+
+<tr>
+
+<td><span class="math inline">\(\epsilon_t\)</span></td>
+
+<td>Random error</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-family:system-ui, sans-serif; line-height:1.8;">
+<strong style="color:#4f46e5;">y(t)</strong><br>
+<span style="color:#334155;"> ├─ <strong style="color:#3b82f6;">g(t)</strong>: piecewise linear or logistic growth trend</span><br>
+<span style="color:#334155;"> ├─ <strong style="color:#8b5cf6;">s(t)</strong>: Fourier seasonality (yearly, weekly, daily + custom)</span><br>
+<span style="color:#334155;"> ├─ <strong style="color:#22c55e;">h(t)</strong>: holiday and event effects</span><br>
+<span style="color:#334155;"> └─ <strong style="color:#f59e0b;">ε_t</strong>: residual noise</span>
+</div>
+
+<blockquote>
+
+<p><strong>Key:</strong> Prophet = interpretable additive decomposition
+
+for calendar-driven forecasting.</p>
+
+</blockquote>
+
+<h3 id="trend-modeling">13.3.1 Trend modeling</h3>
+
+<p>Prophet automatically detects <strong>changepoints</strong> — moments
+
+where the trend rate shifts. You can control how many changepoints it
+
+considers and how flexible it is.</p>
+
+<p>Two trend modes:</p>
+
+<ul>
+<li><strong>Piecewise linear</strong>: suitable for  series with a continuous but shifting rate of growth</li>
+<li><strong>Logistic  growth</strong>: for series with a natural capacity ceiling (e.g. market  penetration)</li>
+</ul>
+
+<h3 id="seasonality">13.3.2 Seasonality</h3>
+
+<p>Prophet uses Fourier series to represent seasonality:</p>
+
+<ul>
+<li>Built-in:  yearly, weekly, daily</li>
+<li>Custom: add any periodicity you specify</li>
+</ul>
+
+<h3 id="holiday-effects">13.3.3 Holiday effects</h3>
+
+<p>You pass in a DataFrame of known dates (public holidays, sale events,
+
+product launches) and Prophet learns a separate effect for each.</p>
+
+<h3 id="python-example-1">13.3.4 Python example</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb398-1"><a href="#cb398-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> prophet <span class="im">import</span> Prophet</span>
+<span id="cb398-2"><a href="#cb398-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb398-3"><a href="#cb398-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb398-4"><a href="#cb398-4" aria-hidden="true" tabindex="-1"></a><span class="co"># DataFrame must have columns ds (date) and y (value)</span></span>
+<span id="cb398-5"><a href="#cb398-5" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.DataFrame({<span class="st">&quot;ds&quot;</span>: y.index, <span class="st">&quot;y&quot;</span>: y.values})</span>
+<span id="cb398-6"><a href="#cb398-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb398-7"><a href="#cb398-7" aria-hidden="true" tabindex="-1"></a>train <span class="op">=</span> df.iloc[:<span class="op">-</span><span class="dv">30</span>]</span>
+<span id="cb398-8"><a href="#cb398-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb398-9"><a href="#cb398-9" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> Prophet()</span>
+<span id="cb398-10"><a href="#cb398-10" aria-hidden="true" tabindex="-1"></a>model.fit(train)</span>
+<span id="cb398-11"><a href="#cb398-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb398-12"><a href="#cb398-12" aria-hidden="true" tabindex="-1"></a>future   <span class="op">=</span> model.make_future_dataframe(periods<span class="op">=</span><span class="dv">30</span>)</span>
+<span id="cb398-13"><a href="#cb398-13" aria-hidden="true" tabindex="-1"></a>forecast <span class="op">=</span> model.predict(future)</span>
+<span id="cb398-14"><a href="#cb398-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb398-15"><a href="#cb398-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(forecast[[<span class="st">&quot;ds&quot;</span>, <span class="st">&quot;yhat&quot;</span>, <span class="st">&quot;yhat_lower&quot;</span>, <span class="st">&quot;yhat_upper&quot;</span>]].tail())</span></code></pre></div>
+
+<h3 id="when-prophet-works-well-and-when-it-does-not">13.3.5 When Prophet works
+
+well — and when it does not</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 50%" />
+
+<col style="width: 50%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Good fit</th>
+
+<th>Poor fit</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Strong calendar/seasonal structure</td>
+
+<td>High-frequency noisy data</td>
+
+</tr>
+
+<tr>
+
+<td>Trend changes over time</td>
+
+<td>Strong short-lag autocorrelation dominates</td>
+
+</tr>
+
+<tr>
+
+<td>Known holiday dates matter</td>
+
+<td>Joint modeling across many series</td>
+
+</tr>
+
+<tr>
+
+<td>Quick, interpretable baseline needed</td>
+
+<td>Strict statistical inference required</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Use Prophet when known calendar dates cause
+
+repeatable spikes or drops. For series dominated by short-lag
+
+autocorrelation, AR-based models usually win.</p>
+
+</blockquote>
+
+<hr />
+
+<h2 id="feature-engineering-for-ml-based-forecasting">13.4 Feature
+
+Engineering for ML-Based Forecasting</h2>
+
+<p>The core idea: convert time series forecasting into a standard
+
+supervised regression problem by creating time-based features.</p>
+
+<svg viewBox="0 0 560 55" style="display:block; margin:20px auto; max-width:100%;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Time series to feature engineering to tabular model pipeline">
+<defs><marker id="tf-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<rect x="5" y="8" width="110" height="36" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="60" y="30" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#1e40af">Time series</text>
+<line x1="115" y1="26" x2="138" y2="26" stroke="#6366f1" stroke-width="1.3" marker-end="url(#tf-a)"/>
+<rect x="145" y="5" width="270" height="42" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="280" y="30" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#5b21b6">lag / rolling / calendar / exog</text>
+<line x1="415" y1="26" x2="438" y2="26" stroke="#6366f1" stroke-width="1.3" marker-end="url(#tf-a)"/>
+<rect x="445" y="8" width="110" height="36" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="500" y="30" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" fill="#166534">Tabular model</text>
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> Every feature must use only information
+
+available at prediction time. The most common bug in time series ML is
+
+inadvertent leakage.</p>
+
+</blockquote>
+
+<h3 id="lag-features">13.4.1 Lag features</h3>
+
+<p>Lag features let the model explicitly use past values:</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb400-1"><a href="#cb400-1" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;lag_1&quot;</span>]  <span class="op">=</span> df[<span class="st">&quot;y&quot;</span>].shift(<span class="dv">1</span>)</span>
+<span id="cb400-2"><a href="#cb400-2" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;lag_7&quot;</span>]  <span class="op">=</span> df[<span class="st">&quot;y&quot;</span>].shift(<span class="dv">7</span>)</span>
+<span id="cb400-3"><a href="#cb400-3" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;lag_14&quot;</span>] <span class="op">=</span> df[<span class="st">&quot;y&quot;</span>].shift(<span class="dv">14</span>)</span>
+<span id="cb400-4"><a href="#cb400-4" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;lag_28&quot;</span>] <span class="op">=</span> df[<span class="st">&quot;y&quot;</span>].shift(<span class="dv">28</span>)</span></code></pre></div>
+
+<p>Pick lags that match the natural rhythms of the series — if you have
+
+weekly data, <span class="math inline">\(t-7\)</span> is often the most
+
+useful single feature.</p>
+
+<h3 id="rolling-statistics">13.4.2 Rolling statistics</h3>
+
+<p>Rolling and expanding summaries capture recent trend and
+
+variance:</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb401-1"><a href="#cb401-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Shift by 1 before rolling to avoid using current value</span></span>
+<span id="cb401-2"><a href="#cb401-2" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;roll_mean_7&quot;</span>]  <span class="op">=</span> df[<span class="st">&quot;y&quot;</span>].shift(<span class="dv">1</span>).rolling(<span class="dv">7</span>).mean()</span>
+<span id="cb401-3"><a href="#cb401-3" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;roll_std_7&quot;</span>]   <span class="op">=</span> df[<span class="st">&quot;y&quot;</span>].shift(<span class="dv">1</span>).rolling(<span class="dv">7</span>).std()</span>
+<span id="cb401-4"><a href="#cb401-4" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;roll_mean_28&quot;</span>] <span class="op">=</span> df[<span class="st">&quot;y&quot;</span>].shift(<span class="dv">1</span>).rolling(<span class="dv">28</span>).mean()</span>
+<span id="cb401-5"><a href="#cb401-5" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;roll_max_7&quot;</span>]   <span class="op">=</span> df[<span class="st">&quot;y&quot;</span>].shift(<span class="dv">1</span>).rolling(<span class="dv">7</span>).<span class="bu">max</span>()</span></code></pre></div>
+
+<p>The <code>.shift(1)</code> before <code>.rolling()</code> is critical
+
+— it prevents the current value from appearing in its own feature.</p>
+
+<h3 id="calendar-features">13.4.3 Calendar features</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb402-1"><a href="#cb402-1" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;dayofweek&quot;</span>] <span class="op">=</span> df.index.dayofweek</span>
+<span id="cb402-2"><a href="#cb402-2" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;month&quot;</span>]     <span class="op">=</span> df.index.month</span>
+<span id="cb402-3"><a href="#cb402-3" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;quarter&quot;</span>]   <span class="op">=</span> df.index.quarter</span>
+<span id="cb402-4"><a href="#cb402-4" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;is_weekend&quot;</span>] <span class="op">=</span> (df.index.dayofweek <span class="op">&gt;=</span> <span class="dv">5</span>).astype(<span class="bu">int</span>)</span>
+<span id="cb402-5"><a href="#cb402-5" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;is_month_end&quot;</span>] <span class="op">=</span> df.index.is_month_end.astype(<span class="bu">int</span>)</span></code></pre></div>
+
+<p>For cyclic variables like day-of-week and month, encode with sine and
+
+cosine to preserve the circular structure:</p>
+
+<p><span class="math display">\[x_{\sin} = \sin\!\left(\frac{2\pi
+
+x}{P}\right), \quad x_{\cos} = \cos\!\left(\frac{2\pi
+
+x}{P}\right)\]</span></p>
+
+<p><strong>Where:</strong> <span class="math inline">\(x\)</span> = raw feature value (e.g., day of week 0–6), <span class="math inline">\(P\)</span> = period of the cycle (e.g., 7 for weekly, 12 for monthly).</p>
+
+<h3 id="exogenous-features">13.4.4 Exogenous features</h3>
+
+<p>External signals that can improve forecasts:</p>
+
+<ul>
+<li>Weather (temperature,  rainfall)</li>
+<li>Promotions and price changes</li>
+<li>Inventory levels</li>
+<li>Marketing  campaigns</li>
+<li>Macro economic indicators</li>
+</ul>
+
+<p><strong>Rule:</strong> use exogenous inputs only if they are known at
+
+forecast time, or if you can reliably forecast them separately.</p>
+
+<h3 id="complete-feature-engineering-function">13.4.5 Complete feature
+
+engineering function</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb403-1"><a href="#cb403-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb403-2"><a href="#cb403-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb403-3"><a href="#cb403-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb403-4"><a href="#cb403-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> make_ts_features(df, target<span class="op">=</span><span class="st">&quot;y&quot;</span>, lags<span class="op">=</span>[<span class="dv">1</span>, <span class="dv">7</span>, <span class="dv">14</span>, <span class="dv">28</span>],</span>
+<span id="cb403-5"><a href="#cb403-5" aria-hidden="true" tabindex="-1"></a>                     rolls<span class="op">=</span>[<span class="dv">7</span>, <span class="dv">28</span>], horizon<span class="op">=</span><span class="dv">1</span>):</span>
+<span id="cb403-6"><a href="#cb403-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;</span></span>
+<span id="cb403-7"><a href="#cb403-7" aria-hidden="true" tabindex="-1"></a><span class="co">    Convert time series DataFrame to supervised feature matrix.</span></span>
+<span id="cb403-8"><a href="#cb403-8" aria-hidden="true" tabindex="-1"></a><span class="co">    df: DataFrame with DatetimeIndex, column &#39;y&#39;.</span></span>
+<span id="cb403-9"><a href="#cb403-9" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns feature matrix without leakage.</span></span>
+<span id="cb403-10"><a href="#cb403-10" aria-hidden="true" tabindex="-1"></a><span class="co">    &quot;&quot;&quot;</span></span>
+<span id="cb403-11"><a href="#cb403-11" aria-hidden="true" tabindex="-1"></a>    feat <span class="op">=</span> pd.DataFrame(index<span class="op">=</span>df.index)</span>
+<span id="cb403-12"><a href="#cb403-12" aria-hidden="true" tabindex="-1"></a>    feat[<span class="st">&quot;y&quot;</span>] <span class="op">=</span> df[target]</span>
+<span id="cb403-13"><a href="#cb403-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb403-14"><a href="#cb403-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Lag features</span></span>
+<span id="cb403-15"><a href="#cb403-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> lag <span class="kw">in</span> lags:</span>
+<span id="cb403-16"><a href="#cb403-16" aria-hidden="true" tabindex="-1"></a>        feat[<span class="ss">f&quot;lag_</span><span class="sc">{</span>lag<span class="sc">}</span><span class="ss">&quot;</span>] <span class="op">=</span> df[target].shift(lag <span class="op">+</span> horizon <span class="op">-</span> <span class="dv">1</span>)</span>
+<span id="cb403-17"><a href="#cb403-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb403-18"><a href="#cb403-18" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Rolling statistics</span></span>
+<span id="cb403-19"><a href="#cb403-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> w <span class="kw">in</span> rolls:</span>
+<span id="cb403-20"><a href="#cb403-20" aria-hidden="true" tabindex="-1"></a>        shifted <span class="op">=</span> df[target].shift(horizon)</span>
+<span id="cb403-21"><a href="#cb403-21" aria-hidden="true" tabindex="-1"></a>        feat[<span class="ss">f&quot;roll_mean_</span><span class="sc">{</span>w<span class="sc">}</span><span class="ss">&quot;</span>] <span class="op">=</span> shifted.rolling(w).mean()</span>
+<span id="cb403-22"><a href="#cb403-22" aria-hidden="true" tabindex="-1"></a>        feat[<span class="ss">f&quot;roll_std_</span><span class="sc">{</span>w<span class="sc">}</span><span class="ss">&quot;</span>]  <span class="op">=</span> shifted.rolling(w).std()</span>
+<span id="cb403-23"><a href="#cb403-23" aria-hidden="true" tabindex="-1"></a>        feat[<span class="ss">f&quot;roll_max_</span><span class="sc">{</span>w<span class="sc">}</span><span class="ss">&quot;</span>]  <span class="op">=</span> shifted.rolling(w).<span class="bu">max</span>()</span>
+<span id="cb403-24"><a href="#cb403-24" aria-hidden="true" tabindex="-1"></a>        feat[<span class="ss">f&quot;roll_min_</span><span class="sc">{</span>w<span class="sc">}</span><span class="ss">&quot;</span>]  <span class="op">=</span> shifted.rolling(w).<span class="bu">min</span>()</span>
+<span id="cb403-25"><a href="#cb403-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb403-26"><a href="#cb403-26" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Calendar features</span></span>
+<span id="cb403-27"><a href="#cb403-27" aria-hidden="true" tabindex="-1"></a>    feat[<span class="st">&quot;dayofweek&quot;</span>]      <span class="op">=</span> df.index.dayofweek</span>
+<span id="cb403-28"><a href="#cb403-28" aria-hidden="true" tabindex="-1"></a>    feat[<span class="st">&quot;month&quot;</span>]          <span class="op">=</span> df.index.month</span>
+<span id="cb403-29"><a href="#cb403-29" aria-hidden="true" tabindex="-1"></a>    feat[<span class="st">&quot;quarter&quot;</span>]        <span class="op">=</span> df.index.quarter</span>
+<span id="cb403-30"><a href="#cb403-30" aria-hidden="true" tabindex="-1"></a>    feat[<span class="st">&quot;dayofmonth&quot;</span>]     <span class="op">=</span> df.index.day</span>
+<span id="cb403-31"><a href="#cb403-31" aria-hidden="true" tabindex="-1"></a>    feat[<span class="st">&quot;is_weekend&quot;</span>]     <span class="op">=</span> (df.index.dayofweek <span class="op">&gt;=</span> <span class="dv">5</span>).astype(<span class="bu">int</span>)</span>
+<span id="cb403-32"><a href="#cb403-32" aria-hidden="true" tabindex="-1"></a>    feat[<span class="st">&quot;expanding_mean&quot;</span>] <span class="op">=</span> df[target].shift(horizon).expanding().mean()</span>
+<span id="cb403-33"><a href="#cb403-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb403-34"><a href="#cb403-34" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> feat.dropna()</span></code></pre></div>
+
+<h3 id="multi-step-forecasting-strategies">13.4.6 Multi-step forecasting
+
+strategies</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Strategy</th>
+
+<th>How</th>
+
+<th>Pros</th>
+
+<th>Cons</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>Recursive</strong></td>
+
+<td>One model, predict 1 step, feed back as lag</td>
+
+<td>Simple</td>
+
+<td>Error accumulation</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Direct</strong></td>
+
+<td>One model per horizon step</td>
+
+<td>Stable at long horizons</td>
+
+<td>Many models to maintain</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Multi-output</strong></td>
+
+<td>One model predicts all horizons jointly</td>
+
+<td>Captures horizon dependence</td>
+
+<td>More complex</td>
+
+</tr>
+
+<tr>
+
+<td><strong>DirRec</strong></td>
+
+<td>Hybrid of direct and recursive</td>
+
+<td>Compromise</td>
+
+<td>More setup</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<hr />
+
+<h2 id="ml-models-lightgbm-and-xgboost-for-time-series">13.5 ML Models:
+
+LightGBM and XGBoost for Time Series</h2>
+
+<p>Classical ARIMA fits one series at a time. When you have hundreds or
+
+thousands of series, a global ML model — one LightGBM trained on all
+
+series simultaneously — often outperforms per-series ARIMA.</p>
+
+<h3 id="the-key-insight">13.5.1 The key insight</h3>
+
+<p>Instead of treating forecasting as a time series problem, treat it as
+
+supervised regression:</p>
+
+<table style="border-collapse:collapse; margin:16px 0; font-size:0.88rem; width:100%;">
+<thead><tr>
+<th style="text-align:left; padding:6px 10px; border-bottom:2px solid #6366f1; color:#4f46e5;">Date</th>
+<th style="text-align:right; padding:6px 10px; border-bottom:2px solid #6366f1; color:#4f46e5;">y</th>
+<th style="text-align:right; padding:6px 10px; border-bottom:2px solid #6366f1; color:#4f46e5;">lag_1</th>
+<th style="text-align:right; padding:6px 10px; border-bottom:2px solid #6366f1; color:#4f46e5;">lag_7</th>
+<th style="text-align:right; padding:6px 10px; border-bottom:2px solid #6366f1; color:#4f46e5;">roll_mean_28</th>
+<th style="text-align:right; padding:6px 10px; border-bottom:2px solid #6366f1; color:#4f46e5;">month</th>
+<th style="text-align:center; padding:6px 10px; border-bottom:2px solid #6366f1; color:#4f46e5;">is_holiday</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:5px 10px; border-bottom:1px solid #e2e8f0;">2024-01-08</td><td style="padding:5px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">142</td><td style="padding:5px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">138</td><td style="padding:5px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">135</td><td style="padding:5px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">136.4</td><td style="padding:5px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">1</td><td style="padding:5px 10px; border-bottom:1px solid #e2e8f0; text-align:center;">0</td></tr>
+<tr><td style="padding:5px 10px; border-bottom:1px solid #e2e8f0;">2024-01-09</td><td style="padding:5px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">149</td><td style="padding:5px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">142</td><td style="padding:5px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">141</td><td style="padding:5px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">137.1</td><td style="padding:5px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">1</td><td style="padding:5px 10px; border-bottom:1px solid #e2e8f0; text-align:center;">0</td></tr>
+<tr><td style="padding:5px 10px;">2024-01-10</td><td style="padding:5px 10px; text-align:right;">155</td><td style="padding:5px 10px; text-align:right;">149</td><td style="padding:5px 10px; text-align:right;">148</td><td style="padding:5px 10px; text-align:right;">138.0</td><td style="padding:5px 10px; text-align:right;">1</td><td style="padding:5px 10px; text-align:center;">0</td></tr>
+</tbody>
+</table>
+<div style="border-left:4px solid #6366f1; padding:8px 16px; background:#f8fafc; border-radius:6px; margin:8px 0; font-size:0.9em;">
+<strong>y = f(lag_1, lag_7, …, month, is_holiday, …)</strong> — This is just regression — use LightGBM.
+</div>
+
+
+<h3 id="walk-forward-validation">13.5.2 Walk-forward validation</h3>
+
+<p>Standard k-fold cross-validation leaks future information. Use
+
+walk-forward (expanding window) validation instead:</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb405-1"><a href="#cb405-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> lightgbm <span class="im">as</span> lgb</span>
+<span id="cb405-2"><a href="#cb405-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb405-3"><a href="#cb405-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> mean_absolute_error</span>
+<span id="cb405-4"><a href="#cb405-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb405-5"><a href="#cb405-5" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> walk_forward_validate(X, y, n_splits<span class="op">=</span><span class="dv">5</span>, horizon<span class="op">=</span><span class="dv">7</span>):</span>
+<span id="cb405-6"><a href="#cb405-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;</span></span>
+<span id="cb405-7"><a href="#cb405-7" aria-hidden="true" tabindex="-1"></a><span class="co">    Walk-forward validation for time series.</span></span>
+<span id="cb405-8"><a href="#cb405-8" aria-hidden="true" tabindex="-1"></a><span class="co">    Each fold trains on all past data and validates on the next horizon.</span></span>
+<span id="cb405-9"><a href="#cb405-9" aria-hidden="true" tabindex="-1"></a><span class="co">    &quot;&quot;&quot;</span></span>
+<span id="cb405-10"><a href="#cb405-10" aria-hidden="true" tabindex="-1"></a>    n <span class="op">=</span> <span class="bu">len</span>(X)</span>
+<span id="cb405-11"><a href="#cb405-11" aria-hidden="true" tabindex="-1"></a>    fold_size <span class="op">=</span> n <span class="op">//</span> (n_splits <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb405-12"><a href="#cb405-12" aria-hidden="true" tabindex="-1"></a>    scores <span class="op">=</span> []</span>
+<span id="cb405-13"><a href="#cb405-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb405-14"><a href="#cb405-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> fold <span class="kw">in</span> <span class="bu">range</span>(n_splits):</span>
+<span id="cb405-15"><a href="#cb405-15" aria-hidden="true" tabindex="-1"></a>        train_end <span class="op">=</span> fold_size <span class="op">*</span> (fold <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb405-16"><a href="#cb405-16" aria-hidden="true" tabindex="-1"></a>        val_end   <span class="op">=</span> <span class="bu">min</span>(train_end <span class="op">+</span> horizon, n)</span>
+<span id="cb405-17"><a href="#cb405-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb405-18"><a href="#cb405-18" aria-hidden="true" tabindex="-1"></a>        X_tr, y_tr   <span class="op">=</span> X.iloc[:train_end], y.iloc[:train_end]</span>
+<span id="cb405-19"><a href="#cb405-19" aria-hidden="true" tabindex="-1"></a>        X_val, y_val <span class="op">=</span> X.iloc[train_end:val_end], y.iloc[train_end:val_end]</span>
+<span id="cb405-20"><a href="#cb405-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb405-21"><a href="#cb405-21" aria-hidden="true" tabindex="-1"></a>        model <span class="op">=</span> lgb.LGBMRegressor(</span>
+<span id="cb405-22"><a href="#cb405-22" aria-hidden="true" tabindex="-1"></a>            n_estimators<span class="op">=</span><span class="dv">500</span>,</span>
+<span id="cb405-23"><a href="#cb405-23" aria-hidden="true" tabindex="-1"></a>            learning_rate<span class="op">=</span><span class="fl">0.05</span>,</span>
+<span id="cb405-24"><a href="#cb405-24" aria-hidden="true" tabindex="-1"></a>            num_leaves<span class="op">=</span><span class="dv">31</span>,</span>
+<span id="cb405-25"><a href="#cb405-25" aria-hidden="true" tabindex="-1"></a>            min_child_samples<span class="op">=</span><span class="dv">20</span>,</span>
+<span id="cb405-26"><a href="#cb405-26" aria-hidden="true" tabindex="-1"></a>            random_state<span class="op">=</span><span class="dv">42</span>,</span>
+<span id="cb405-27"><a href="#cb405-27" aria-hidden="true" tabindex="-1"></a>            n_jobs<span class="op">=-</span><span class="dv">1</span>,</span>
+<span id="cb405-28"><a href="#cb405-28" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb405-29"><a href="#cb405-29" aria-hidden="true" tabindex="-1"></a>        model.fit(</span>
+<span id="cb405-30"><a href="#cb405-30" aria-hidden="true" tabindex="-1"></a>            X_tr, y_tr,</span>
+<span id="cb405-31"><a href="#cb405-31" aria-hidden="true" tabindex="-1"></a>            eval_set<span class="op">=</span>[(X_val, y_val)],</span>
+<span id="cb405-32"><a href="#cb405-32" aria-hidden="true" tabindex="-1"></a>            callbacks<span class="op">=</span>[lgb.early_stopping(<span class="dv">50</span>, verbose<span class="op">=</span><span class="va">False</span>)],</span>
+<span id="cb405-33"><a href="#cb405-33" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb405-34"><a href="#cb405-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb405-35"><a href="#cb405-35" aria-hidden="true" tabindex="-1"></a>        preds <span class="op">=</span> model.predict(X_val)</span>
+<span id="cb405-36"><a href="#cb405-36" aria-hidden="true" tabindex="-1"></a>        mae   <span class="op">=</span> mean_absolute_error(y_val, preds)</span>
+<span id="cb405-37"><a href="#cb405-37" aria-hidden="true" tabindex="-1"></a>        mape  <span class="op">=</span> np.mean(np.<span class="bu">abs</span>((y_val <span class="op">-</span> preds) <span class="op">/</span> (np.<span class="bu">abs</span>(y_val) <span class="op">+</span> <span class="fl">1e-8</span>))) <span class="op">*</span> <span class="dv">100</span></span>
+<span id="cb405-38"><a href="#cb405-38" aria-hidden="true" tabindex="-1"></a>        scores.append({<span class="st">&quot;fold&quot;</span>: fold <span class="op">+</span> <span class="dv">1</span>, <span class="st">&quot;mae&quot;</span>: mae, <span class="st">&quot;mape&quot;</span>: mape})</span>
+<span id="cb405-39"><a href="#cb405-39" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f&quot;Fold </span><span class="sc">{</span>fold <span class="op">+</span> <span class="dv">1</span><span class="sc">}</span><span class="ss">: MAE=</span><span class="sc">{</span>mae<span class="sc">:.2f}</span><span class="ss">, MAPE=</span><span class="sc">{</span>mape<span class="sc">:.1f}</span><span class="ss">%&quot;</span>)</span>
+<span id="cb405-40"><a href="#cb405-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb405-41"><a href="#cb405-41" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> scores</span>
+<span id="cb405-42"><a href="#cb405-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb405-43"><a href="#cb405-43" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> walk_forward_validate(X, y, n_splits<span class="op">=</span><span class="dv">5</span>, horizon<span class="op">=</span><span class="dv">28</span>)</span></code></pre></div>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/12_time_series_and_forecasting/walk_forward_validation.svg" alt="Walk-forward (expanding window) validation: train grows each fold, test is always the next unseen period">
+
+<figcaption>
+
+Walk-forward (expanding window) validation: train grows each fold, test is always the next unseen period
+
+</figcaption>
+
+</figure>
+
+<h3 id="lightgbm-vs-arima-for-large-scale-forecasting">13.5.3 LightGBM vs ARIMA
+
+for large-scale forecasting</h3>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Aspect</th>
+
+<th>ARIMA/SARIMA</th>
+
+<th>LightGBM + features</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Series count</td>
+
+<td>One at a time</td>
+
+<td>All series simultaneously</td>
+
+</tr>
+
+<tr>
+
+<td>Exogenous variables</td>
+
+<td>Limited</td>
+
+<td>Unlimited (price, weather, etc.)</td>
+
+</tr>
+
+<tr>
+
+<td>Nonlinear effects</td>
+
+<td>No</td>
+
+<td>Yes</td>
+
+</tr>
+
+<tr>
+
+<td>Feature engineering</td>
+
+<td>Automatic (lags, diff)</td>
+
+<td>Manual but powerful</td>
+
+</tr>
+
+<tr>
+
+<td>Hierarchical forecasting</td>
+
+<td>Hard</td>
+
+<td>Easy (add group features)</td>
+
+</tr>
+
+<tr>
+
+<td>Training speed</td>
+
+<td>Slow (per series)</td>
+
+<td>Fast (one model)</td>
+
+</tr>
+
+<tr>
+
+<td>Interpretability</td>
+
+<td>Coefficients</td>
+
+<td>SHAP values</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> For large-scale forecasting across many series,
+
+start with LightGBM plus good lag features. Use ARIMA when you need a
+
+single series with statistical confidence intervals.</p>
+
+</blockquote>
+
+<hr />
+
+<h2 id="deep-learning-for-time-series">13.6 Deep Learning for Time
+
+Series</h2>
+
+<h3 id="when-deep-learning-helps">13.6.1 When deep learning helps</h3>
+
+<p>Deep learning for time series makes sense when:</p>
+
+<ul>
+<li>You have many  related series and a global model would benefit from cross-series  patterns</li>
+<li>Patterns are complex and nonlinear</li>
+<li>Long-range dependencies  span more than 100 timesteps</li>
+<li>You have enough data — typically more  than 1,000 timesteps per series</li>
+</ul>
+
+<p>For most business forecasting with limited data, LightGBM with good
+
+feature engineering is better. Always establish classical and boosting
+
+baselines before going deep.</p>
+
+<h3 id="lstm-and-gru">13.6.2 LSTM and GRU</h3>
+
+<p>LSTM (Long Short-Term Memory) processes sequences one step at a time
+
+while maintaining a hidden state that can carry information across long
+
+spans.</p>
+
+<svg viewBox="0 0 500 170" style="display:block; margin:20px auto; max-width:480px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="LSTM cell with inputs and outputs">
+<defs><marker id="lc-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<!-- LSTM box -->
+<rect x="160" y="15" width="140" height="80" rx="10" fill="#ede9fe" stroke="#8b5cf6" stroke-width="2"/>
+<text x="230" y="55" text-anchor="middle" font-family="system-ui" font-size="16" font-weight="700" fill="#5b21b6">LSTM</text>
+<!-- Inputs -->
+<text x="20" y="30" font-family="Consolas, monospace" font-size="10" fill="#1e40af">h_{t−1}</text>
+<line x1="78" y1="27" x2="158" y2="35" stroke="#3b82f6" stroke-width="1.2" marker-end="url(#lc-a)"/>
+<text x="20" y="58" font-family="Consolas, monospace" font-size="10" fill="#1e40af">x_t</text>
+<line x1="50" y1="55" x2="158" y2="55" stroke="#3b82f6" stroke-width="1.2" marker-end="url(#lc-a)"/>
+<text x="20" y="86" font-family="Consolas, monospace" font-size="10" fill="#1e40af">c_{t−1}</text>
+<line x1="78" y1="83" x2="158" y2="75" stroke="#3b82f6" stroke-width="1.2" marker-end="url(#lc-a)"/>
+<!-- Outputs -->
+<line x1="300" y1="35" x2="350" y2="35" stroke="#22c55e" stroke-width="1.2" marker-end="url(#lc-a)"/>
+<text x="356" y="38" font-family="system-ui" font-size="10" fill="#166534"><tspan font-weight="600">h_t</tspan> (hidden state)</text>
+<line x1="300" y1="55" x2="350" y2="55" stroke="#22c55e" stroke-width="1.2" marker-end="url(#lc-a)"/>
+<text x="356" y="58" font-family="system-ui" font-size="10" fill="#166534"><tspan font-weight="600">c_t</tspan> (cell state)</text>
+<line x1="300" y1="75" x2="350" y2="75" stroke="#22c55e" stroke-width="1.2" marker-end="url(#lc-a)"/>
+<text x="356" y="78" font-family="system-ui" font-size="10" fill="#166534"><tspan font-weight="600">y_t</tspan> (prediction)</text>
+<!-- Gate labels -->
+<rect x="80" y="110" width="100" height="22" rx="4" fill="#fef2f2" stroke="#ef4444" stroke-width="1"/>
+<text x="130" y="124" text-anchor="middle" font-family="system-ui" font-size="9" fill="#991b1b">Forget gate</text>
+<rect x="195" y="110" width="100" height="22" rx="4" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+<text x="245" y="124" text-anchor="middle" font-family="system-ui" font-size="9" fill="#1e40af">Input gate</text>
+<rect x="310" y="110" width="100" height="22" rx="4" fill="#dcfce7" stroke="#22c55e" stroke-width="1"/>
+<text x="360" y="124" text-anchor="middle" font-family="system-ui" font-size="9" fill="#166534">Output gate</text>
+<text x="130" y="148" text-anchor="middle" font-family="system-ui" font-size="8" fill="#64748b">erase from cell</text>
+<text x="245" y="148" text-anchor="middle" font-family="system-ui" font-size="8" fill="#64748b">add new info</text>
+<text x="360" y="148" text-anchor="middle" font-family="system-ui" font-size="8" fill="#64748b">output as hidden</text>
+</svg>
+
+<p>GRU (Gated Recurrent Unit) is a simpler alternative with fewer
+
+parameters that often performs comparably to LSTM.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb407-1"><a href="#cb407-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb407-2"><a href="#cb407-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch.nn <span class="im">as</span> nn</span>
+<span id="cb407-3"><a href="#cb407-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb407-4"><a href="#cb407-4" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> LSTMForecaster(nn.Module):</span>
+<span id="cb407-5"><a href="#cb407-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, input_size, hidden_size<span class="op">=</span><span class="dv">64</span>, num_layers<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb407-6"><a href="#cb407-6" aria-hidden="true" tabindex="-1"></a>                 horizon<span class="op">=</span><span class="dv">7</span>, dropout<span class="op">=</span><span class="fl">0.2</span>):</span>
+<span id="cb407-7"><a href="#cb407-7" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
+<span id="cb407-8"><a href="#cb407-8" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.lstm <span class="op">=</span> nn.LSTM(</span>
+<span id="cb407-9"><a href="#cb407-9" aria-hidden="true" tabindex="-1"></a>            input_size<span class="op">=</span>input_size,</span>
+<span id="cb407-10"><a href="#cb407-10" aria-hidden="true" tabindex="-1"></a>            hidden_size<span class="op">=</span>hidden_size,</span>
+<span id="cb407-11"><a href="#cb407-11" aria-hidden="true" tabindex="-1"></a>            num_layers<span class="op">=</span>num_layers,</span>
+<span id="cb407-12"><a href="#cb407-12" aria-hidden="true" tabindex="-1"></a>            batch_first<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb407-13"><a href="#cb407-13" aria-hidden="true" tabindex="-1"></a>            dropout<span class="op">=</span>dropout <span class="cf">if</span> num_layers <span class="op">&gt;</span> <span class="dv">1</span> <span class="cf">else</span> <span class="dv">0</span>,</span>
+<span id="cb407-14"><a href="#cb407-14" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb407-15"><a href="#cb407-15" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.fc      <span class="op">=</span> nn.Linear(hidden_size, horizon)</span>
+<span id="cb407-16"><a href="#cb407-16" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.dropout <span class="op">=</span> nn.Dropout(dropout)</span>
+<span id="cb407-17"><a href="#cb407-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb407-18"><a href="#cb407-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, x):</span>
+<span id="cb407-19"><a href="#cb407-19" aria-hidden="true" tabindex="-1"></a>        <span class="co"># x: (batch, seq_len, features)</span></span>
+<span id="cb407-20"><a href="#cb407-20" aria-hidden="true" tabindex="-1"></a>        lstm_out, _ <span class="op">=</span> <span class="va">self</span>.lstm(x)</span>
+<span id="cb407-21"><a href="#cb407-21" aria-hidden="true" tabindex="-1"></a>        last         <span class="op">=</span> lstm_out[:, <span class="op">-</span><span class="dv">1</span>, :]   <span class="co"># take last timestep output</span></span>
+<span id="cb407-22"><a href="#cb407-22" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.fc(<span class="va">self</span>.dropout(last))</span>
+<span id="cb407-23"><a href="#cb407-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb407-24"><a href="#cb407-24" aria-hidden="true" tabindex="-1"></a>model     <span class="op">=</span> LSTMForecaster(input_size<span class="op">=</span><span class="bu">len</span>(feature_cols), horizon<span class="op">=</span><span class="dv">7</span>)</span>
+<span id="cb407-25"><a href="#cb407-25" aria-hidden="true" tabindex="-1"></a>optimizer <span class="op">=</span> torch.optim.Adam(model.parameters(), lr<span class="op">=</span><span class="fl">1e-3</span>)</span>
+<span id="cb407-26"><a href="#cb407-26" aria-hidden="true" tabindex="-1"></a>criterion <span class="op">=</span> nn.HuberLoss()   <span class="co"># more robust than MSE for forecasting</span></span></code></pre></div>
+
+<h3 id="n-beats">13.6.3 N-BEATS</h3>
+
+<p>N-BEATS (Neural Basis Expansion Analysis) is a purely feed-forward
+
+neural network designed specifically for univariate forecasting. No
+
+recurrence, no convolutions.</p>
+
+<svg viewBox="0 0 600 155" style="display:block; margin:20px auto; max-width:100%;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="N-BEATS architecture with blocks producing backcasts and forecasts">
+<defs><marker id="nb-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<!-- Input -->
+<rect x="5" y="20" width="90" height="32" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="50" y="40" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#1e40af">Input window</text>
+<line x1="95" y1="36" x2="118" y2="36" stroke="#6366f1" stroke-width="1.3" marker-end="url(#nb-a)"/>
+<!-- Block 1 -->
+<rect x="125" y="20" width="80" height="32" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="165" y="40" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#5b21b6">Block 1</text>
+<line x1="205" y1="36" x2="228" y2="36" stroke="#6366f1" stroke-width="1.3" marker-end="url(#nb-a)"/>
+<text x="216" y="28" font-family="system-ui" font-size="8" fill="#64748b">residual</text>
+<!-- Block 2 -->
+<rect x="235" y="20" width="80" height="32" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="275" y="40" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#5b21b6">Block 2</text>
+<line x1="315" y1="36" x2="338" y2="36" stroke="#6366f1" stroke-width="1.3" marker-end="url(#nb-a)"/>
+<text x="326" y="28" font-family="system-ui" font-size="8" fill="#64748b">residual</text>
+<!-- Dots -->
+<text x="350" y="40" font-family="system-ui" font-size="14" fill="#6366f1">…</text>
+<line x1="365" y1="36" x2="388" y2="36" stroke="#6366f1" stroke-width="1.3" marker-end="url(#nb-a)"/>
+<!-- Block N -->
+<rect x="395" y="20" width="80" height="32" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="435" y="40" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#5b21b6">Block N</text>
+<line x1="475" y1="36" x2="498" y2="36" stroke="#6366f1" stroke-width="1.3" marker-end="url(#nb-a)"/>
+<!-- Forecast -->
+<rect x="505" y="20" width="85" height="32" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="547" y="40" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="700" fill="#166534">Forecast</text>
+<!-- Backcast arrows -->
+<line x1="165" y1="52" x2="165" y2="78" stroke="#ec4899" stroke-width="1" marker-end="url(#nb-a)"/>
+<text x="165" y="92" text-anchor="middle" font-family="system-ui" font-size="9" fill="#9d174d">backcast</text>
+<text x="165" y="104" text-anchor="middle" font-family="system-ui" font-size="7" fill="#ec4899">(explains input)</text>
+<line x1="275" y1="52" x2="275" y2="78" stroke="#ec4899" stroke-width="1" marker-end="url(#nb-a)"/>
+<text x="275" y="92" text-anchor="middle" font-family="system-ui" font-size="9" fill="#9d174d">backcast</text>
+<text x="275" y="104" text-anchor="middle" font-family="system-ui" font-size="7" fill="#ec4899">(explains residual)</text>
+<!-- Note -->
+<text x="300" y="130" text-anchor="middle" font-family="system-ui" font-size="9" fill="#334155">Each block: backcast (what it explains) + forecast (its contribution)</text>
+<text x="300" y="145" text-anchor="middle" font-family="system-ui" font-size="9" fill="#334155" font-weight="600">Final forecast = ∑ all block forecasts</text>
+</svg>
+
+<p>N-BEATS achieved state-of-the-art results on the M4 forecasting benchmark. It is a strong default
+
+for univariate series.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb409-1"><a href="#cb409-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> neuralforecast <span class="im">import</span> NeuralForecast</span>
+<span id="cb409-2"><a href="#cb409-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> neuralforecast.models <span class="im">import</span> NBEATS, NHITS</span>
+<span id="cb409-3"><a href="#cb409-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb409-4"><a href="#cb409-4" aria-hidden="true" tabindex="-1"></a>nf <span class="op">=</span> NeuralForecast(</span>
+<span id="cb409-5"><a href="#cb409-5" aria-hidden="true" tabindex="-1"></a>    models<span class="op">=</span>[</span>
+<span id="cb409-6"><a href="#cb409-6" aria-hidden="true" tabindex="-1"></a>        NBEATS(input_size<span class="op">=</span><span class="dv">28</span>, h<span class="op">=</span><span class="dv">7</span>, max_steps<span class="op">=</span><span class="dv">500</span>),</span>
+<span id="cb409-7"><a href="#cb409-7" aria-hidden="true" tabindex="-1"></a>        NHITS(input_size<span class="op">=</span><span class="dv">28</span>, h<span class="op">=</span><span class="dv">7</span>, max_steps<span class="op">=</span><span class="dv">500</span>),   <span class="co"># faster variant</span></span>
+<span id="cb409-8"><a href="#cb409-8" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb409-9"><a href="#cb409-9" aria-hidden="true" tabindex="-1"></a>    freq<span class="op">=</span><span class="st">&quot;D&quot;</span>,</span>
+<span id="cb409-10"><a href="#cb409-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb409-11"><a href="#cb409-11" aria-hidden="true" tabindex="-1"></a>nf.fit(df)          <span class="co"># df with columns: unique_id, ds, y</span></span>
+<span id="cb409-12"><a href="#cb409-12" aria-hidden="true" tabindex="-1"></a>forecasts <span class="op">=</span> nf.predict()</span></code></pre></div>
+
+<h3 id="temporal-fusion-transformer-tft">13.6.4 Temporal Fusion Transformer
+
+(TFT)</h3>
+
+<p>TFT combines attention mechanisms with gating to handle:</p>
+
+<ul>
+<li>Multiple  series simultaneously (global model)</li>
+<li>Static metadata (store ID,  product category)</li>
+<li>Known future information (holidays, promotions  planned in advance)</li>
+<li>Historical unknown covariates (past prices, past  weather)</li>
+</ul>
+
+<table style="border-collapse:collapse; margin:16px 0; font-size:0.92rem; width:100%; max-width:560px;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px; color:#1e293b;">TFT Data Inputs</caption>
+<thead><tr>
+<th style="text-align:left; padding:8px 12px; border-bottom:2px solid #6366f1; color:#4f46e5;">Input type</th>
+<th style="text-align:left; padding:8px 12px; border-bottom:2px solid #6366f1; color:#4f46e5;">Examples</th>
+<th style="text-align:left; padding:8px 12px; border-bottom:2px solid #6366f1; color:#4f46e5;">Behaviour</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0; font-weight:600; color:#1e40af;">Static features</td><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0;">store_id, region</td><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0; color:#64748b;">constant over time</td></tr>
+<tr><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0; font-weight:600; color:#166534;">Historical inputs</td><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0;">past sales, past prices</td><td style="padding:6px 12px; border-bottom:1px solid #e2e8f0; color:#64748b;">observed up to t</td></tr>
+<tr><td style="padding:6px 12px; font-weight:600; color:#92400e;">Future inputs</td><td style="padding:6px 12px;">holiday flag, planned promo</td><td style="padding:6px 12px; color:#64748b;">known in advance</td></tr>
+</tbody>
+</table>
+
+
+<h3 id="choosing-a-deep-learning-model">13.6.5 Choosing a deep learning
+
+model</h3>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Model</th>
+
+<th>Data needed</th>
+
+<th>Multivariate?</th>
+
+<th>Future covariates?</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>LSTM / GRU</strong></td>
+
+<td>Medium</td>
+
+<td>Yes</td>
+
+<td>With careful feature design</td>
+
+</tr>
+
+<tr>
+
+<td><strong>N-BEATS</strong></td>
+
+<td>Medium-large</td>
+
+<td>Univariate</td>
+
+<td>No</td>
+
+</tr>
+
+<tr>
+
+<td><strong>N-HiTS</strong></td>
+
+<td>Medium</td>
+
+<td>Univariate</td>
+
+<td>No</td>
+
+</tr>
+
+<tr>
+
+<td><strong>TFT</strong></td>
+
+<td>Large</td>
+
+<td>Yes</td>
+
+<td>Yes</td>
+
+</tr>
+
+<tr>
+
+<td><strong>PatchTST</strong></td>
+
+<td>Very large</td>
+
+<td>Yes</td>
+
+<td>Limited</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> For most business problems, LightGBM + lag
+
+features beats all of these unless you have 10,000+ timesteps per
+
+series. Always establish baselines first.</p>
+
+</blockquote>
+
+<hr />
+
+<h2 id="evaluation-metrics-and-walk-forward-validation">13.7 Evaluation:
+
+Metrics and Walk-Forward Validation</h2>
+
+<p>Forecast evaluation must preserve time order and reflect the business
+
+cost of errors.</p>
+
+<h3 id="common-metrics">13.7.1 Common metrics</h3>
+
+<p>In all formulas below: <span class="math inline">\(y_i\)</span> = actual value, <span class="math inline">\(\hat{y}_i\)</span> = forecast, <span class="math inline">\(\bar{y}\)</span> = mean of actuals, <span class="math inline">\(n\)</span> = number of forecast points.</p>
+
+<p><strong>Mean Absolute Error (MAE)</strong> — average miss in original
+
+units, robust to outliers: <span class="math display">\[\text{MAE} =
+
+\frac{1}{n}\sum_{i=1}^{n} |y_i - \hat{y}_i|\]</span>
+
+</p>
+
+<p><strong>Root Mean Squared Error (RMSE)</strong> — penalizes large
+
+errors more: <span class="math display">\[\text{RMSE} =
+
+\sqrt{\frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2}\]</span>
+
+</p>
+
+<p><strong>Mean Absolute Percentage Error (MAPE)</strong> — relative
+
+error in percent: <span class="math display">\[\text{MAPE} =
+
+\frac{100}{n}\sum_{i=1}^{n} \left|\frac{y_i -
+
+\hat{y}_i}{y_i}\right|\]</span>
+
+</p>
+
+<p>Unstable when <span class="math inline">\(y_i \approx 0\)</span> —
+
+avoid for sparse or intermittent demand.</p>
+
+<p><strong>Symmetric MAPE (sMAPE):</strong> <span
+
+class="math display">\[\text{sMAPE} = \frac{100}{n}\sum_{i=1}^{n}
+
+\frac{2|y_i - \hat{y}_i|}{|y_i| + |\hat{y}_i|}\]</span></p>
+
+<p><strong>Mean Absolute Scaled Error (MASE)</strong> — scale-free,
+
+benchmarked against naive: <span class="math display">\[\text{MASE} =
+
+\frac{\frac{1}{n}\sum_{i=1}^{n}|y_i -
+
+\hat{y}_i|}{\frac{1}{n-s}\sum_{t=s+1}^{n}|y_t - y_{t-s}|}\]</span>
+
+</p>
+
+<p><strong>Where:</strong> <span class="math inline">\(s\)</span> = seasonal period (e.g., 7 for daily/weekly, 12 for monthly/yearly); the denominator is the MAE of the seasonal naive forecast on training data.</p>
+
+<p><strong>MASE &lt; 1</strong> means your model beats seasonal naive.
+
+<strong>MASE &gt; 1</strong> means seasonal naive is better — go back to
+
+basics.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb411-1"><a href="#cb411-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb411-2"><a href="#cb411-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb411-3"><a href="#cb411-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> mape(y_true, y_pred, eps<span class="op">=</span><span class="fl">1e-8</span>):</span>
+<span id="cb411-4"><a href="#cb411-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> np.mean(np.<span class="bu">abs</span>((y_true <span class="op">-</span> y_pred) <span class="op">/</span> (np.<span class="bu">abs</span>(y_true) <span class="op">+</span> eps))) <span class="op">*</span> <span class="dv">100</span></span>
+<span id="cb411-5"><a href="#cb411-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb411-6"><a href="#cb411-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> smape(y_true, y_pred):</span>
+<span id="cb411-7"><a href="#cb411-7" aria-hidden="true" tabindex="-1"></a>    num <span class="op">=</span> <span class="dv">2</span> <span class="op">*</span> np.<span class="bu">abs</span>(y_true <span class="op">-</span> y_pred)</span>
+<span id="cb411-8"><a href="#cb411-8" aria-hidden="true" tabindex="-1"></a>    den <span class="op">=</span> np.<span class="bu">abs</span>(y_true) <span class="op">+</span> np.<span class="bu">abs</span>(y_pred) <span class="op">+</span> <span class="fl">1e-8</span></span>
+<span id="cb411-9"><a href="#cb411-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> np.mean(num <span class="op">/</span> den) <span class="op">*</span> <span class="dv">100</span></span>
+<span id="cb411-10"><a href="#cb411-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb411-11"><a href="#cb411-11" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> mase(y_true, y_pred, y_train, seasonality<span class="op">=</span><span class="dv">1</span>):</span>
+<span id="cb411-12"><a href="#cb411-12" aria-hidden="true" tabindex="-1"></a>    mae_pred  <span class="op">=</span> np.mean(np.<span class="bu">abs</span>(y_true <span class="op">-</span> y_pred))</span>
+<span id="cb411-13"><a href="#cb411-13" aria-hidden="true" tabindex="-1"></a>    naive_err <span class="op">=</span> np.<span class="bu">abs</span>(y_train[seasonality:] <span class="op">-</span> y_train[:<span class="op">-</span>seasonality])</span>
+<span id="cb411-14"><a href="#cb411-14" aria-hidden="true" tabindex="-1"></a>    mae_naive <span class="op">=</span> np.mean(naive_err)</span>
+<span id="cb411-15"><a href="#cb411-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> mae_pred <span class="op">/</span> (mae_naive <span class="op">+</span> <span class="fl">1e-8</span>)</span></code></pre></div>
+
+<h3 id="choosing-the-right-metric">13.7.2 Choosing the right metric</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Metric</th>
+
+<th>Prefer when</th>
+
+<th>Avoid when</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>MAE</td>
+
+<td>Interpretable miss in original units</td>
+
+<td>Large errors matter most</td>
+
+</tr>
+
+<tr>
+
+<td>RMSE</td>
+
+<td>Large misses are costly</td>
+
+<td>Outliers in the test set</td>
+
+</tr>
+
+<tr>
+
+<td>MAPE</td>
+
+<td>Business-friendly percentage</td>
+
+<td>Values near zero</td>
+
+</tr>
+
+<tr>
+
+<td>sMAPE</td>
+
+<td>Symmetric percentage comparison</td>
+
+<td>Awkward behaviors remain</td>
+
+</tr>
+
+<tr>
+
+<td>MASE</td>
+
+<td>Comparing accuracy across many series</td>
+
+<td>Comparing a single series</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Pick the metric that matches decision cost, not
+
+statistical convenience.</p>
+
+</blockquote>
+
+<h3 id="time-aware-validation-strategies">13.7.3 Time-aware validation
+
+strategies</h3>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">────────────────────── Time ──────────────────────────────────►</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">Holdout split</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">[ Train Train Train Train Train | Validation | Test ]</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">Walk-forward (expanding window)</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">[ Train | Val ]</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">[ Train Train | Val ]</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">[ Train Train Train | Val ]</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">[ Train Train Train Train | Val ]</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">Sliding window</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">[ Train Train | Val ]</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">[ Train Train | Val ]</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">[ Train Train | Val ]</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+</tr>
+</table>
+
+
+<p>Walk-forward validation is the most realistic — it mimics how the
+
+model would actually be used in production.</p>
+
+<h3 id="horizon-aware-evaluation">13.7.4 Horizon-aware evaluation</h3>
+
+<p>Forecast accuracy usually degrades as the horizon increases. Always
+
+report error at each horizon, not just an aggregate.</p>
+
+<svg viewBox="0 0 380 110" style="display:block; margin:16px auto; max-width:360px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MAE by forecast horizon: error grows with horizon">
+<text x="10" y="14" font-family="system-ui" font-size="11" font-weight="700" fill="#1e293b">MAE by forecast horizon</text>
+<!-- h=1 -->
+<text x="10" y="36" font-family="system-ui" font-size="10" fill="#64748b">h=1</text>
+<rect x="42" y="25" width="120" height="16" rx="3" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+<text x="168" y="37" font-family="system-ui" font-size="9" fill="#1e40af">(lower error)</text>
+<!-- h=7 -->
+<text x="10" y="56" font-family="system-ui" font-size="10" fill="#64748b">h=7</text>
+<rect x="42" y="45" width="170" height="16" rx="3" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1"/>
+<!-- h=14 -->
+<text x="10" y="76" font-family="system-ui" font-size="10" fill="#64748b">h=14</text>
+<rect x="42" y="65" width="230" height="16" rx="3" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
+<!-- h=30 -->
+<text x="10" y="96" font-family="system-ui" font-size="10" fill="#64748b">h=30</text>
+<rect x="42" y="85" width="290" height="16" rx="3" fill="#fef2f2" stroke="#ef4444" stroke-width="1"/>
+<text x="338" y="97" font-family="system-ui" font-size="9" fill="#991b1b">(higher error)</text>
+</svg>
+
+
+<p>A strong 1-step forecast does not guarantee a strong 14-step
+
+forecast.</p>
+
+<hr />
+
+<h2 id="production-time-series-systems">13.8 Production Time Series
+
+Systems</h2>
+
+<h3 id="feature-store-for-real-time-forecasting">13.8.1 Feature store for
+
+real-time forecasting</h3>
+
+<p>The biggest source of train-serve skew in time series is inconsistent
+
+feature computation — different code for offline training and online
+
+serving.</p>
+
+<svg viewBox="0 0 620 320" style="display:block; margin:20px auto; max-width:100%;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Offline training pipeline vs online serving pipeline">
+<defs><marker id="op-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<!-- Headers -->
+<text x="155" y="18" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="700" fill="#1e40af">Offline Training Pipeline</text>
+<text x="465" y="18" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="700" fill="#166534">Online Serving Pipeline</text>
+<!-- Offline column -->
+<rect x="70" y="30" width="170" height="30" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="155" y="49" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#1e40af">Historical database</text>
+<line x1="155" y1="60" x2="155" y2="78" stroke="#6366f1" stroke-width="1.2" marker-end="url(#op-a)"/>
+<rect x="50" y="83" width="210" height="30" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="155" y="102" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#5b21b6">Batch feature computation</text>
+<line x1="155" y1="113" x2="155" y2="131" stroke="#6366f1" stroke-width="1.2" marker-end="url(#op-a)"/>
+<rect x="75" y="136" width="160" height="30" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="155" y="155" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#92400e">Train LightGBM</text>
+<line x1="155" y1="166" x2="155" y2="184" stroke="#6366f1" stroke-width="1.2" marker-end="url(#op-a)"/>
+<rect x="55" y="189" width="200" height="30" rx="6" fill="#fce7f3" stroke="#ec4899" stroke-width="1.5"/>
+<text x="155" y="208" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#9d174d">Model Registry (MLflow)</text>
+<line x1="155" y1="219" x2="155" y2="237" stroke="#6366f1" stroke-width="1.2" marker-end="url(#op-a)"/>
+<rect x="50" y="242" width="210" height="30" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="155" y="261" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#166534">Versioned model artifact</text>
+<!-- Online column -->
+<rect x="370" y="30" width="190" height="30" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="465" y="49" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#1e40af">Real-time event stream</text>
+<line x1="465" y1="60" x2="465" y2="78" stroke="#6366f1" stroke-width="1.2" marker-end="url(#op-a)"/>
+<rect x="345" y="83" width="240" height="30" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="465" y="102" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#5b21b6">Streaming feature computation</text>
+<line x1="465" y1="113" x2="465" y2="131" stroke="#6366f1" stroke-width="1.2" marker-end="url(#op-a)"/>
+<rect x="355" y="136" width="220" height="30" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="465" y="155" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#92400e">Feature Store (Redis / Feast)</text>
+<line x1="465" y1="166" x2="465" y2="184" stroke="#6366f1" stroke-width="1.2" marker-end="url(#op-a)"/>
+<rect x="395" y="189" width="140" height="30" rx="6" fill="#fce7f3" stroke="#ec4899" stroke-width="1.5"/>
+<text x="465" y="208" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#9d174d">Model Server</text>
+<line x1="465" y1="219" x2="465" y2="237" stroke="#6366f1" stroke-width="1.2" marker-end="url(#op-a)"/>
+<rect x="400" y="242" width="130" height="30" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="465" y="261" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#166534">Forecast API</text>
+<!-- Same logic note -->
+<line x1="260" y1="98" x2="345" y2="98" stroke="#64748b" stroke-width="0.8" stroke-dasharray="4,3"/>
+<text x="303" y="93" text-anchor="middle" font-family="system-ui" font-size="8" fill="#64748b">same logic</text>
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> Use the same feature computation code for
+
+training and serving. Any divergence is a source of degraded production
+
+accuracy.</p>
+
+</blockquote>
+
+<h3 id="monitoring-and-retraining">13.8.2 Monitoring and retraining</h3>
+
+<p>Time series models degrade when the world changes: new products,
+
+seasonality shifts, regime changes.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb415-1"><a href="#cb415-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> monitor_forecast_accuracy(predictions, actuals, window<span class="op">=</span><span class="dv">28</span>, alert_mape<span class="op">=</span><span class="fl">15.0</span>):</span>
+<span id="cb415-2"><a href="#cb415-2" aria-hidden="true" tabindex="-1"></a>    recent_mape <span class="op">=</span> mape(actuals[<span class="op">-</span>window:], predictions[<span class="op">-</span>window:])</span>
+<span id="cb415-3"><a href="#cb415-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> recent_mape <span class="op">&gt;</span> alert_mape:</span>
+<span id="cb415-4"><a href="#cb415-4" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f&quot;ALERT: MAPE = </span><span class="sc">{</span>recent_mape<span class="sc">:.1f}</span><span class="ss">% &gt; threshold </span><span class="sc">{</span>alert_mape<span class="sc">}</span><span class="ss">%&quot;</span>)</span>
+<span id="cb415-5"><a href="#cb415-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="st">&quot;retrain&quot;</span></span>
+<span id="cb415-6"><a href="#cb415-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="st">&quot;ok&quot;</span></span></code></pre></div>
+
+<p><strong>Retraining triggers:</strong></p>
+
+<ul>
+<li>Performance metric degrades  past threshold</li>
+<li>Scheduled (weekly, monthly)</li>
+<li>Distribution shift  detected in input features</li>
+<li>Known structural change (new product  launch, major policy change)</li>
+</ul>
+
+<h3 id="hierarchical-forecasting">13.8.3 Hierarchical forecasting</h3>
+
+<p>Many business problems require forecasts at multiple levels — total →
+
+region → store → SKU.</p>
+
+<svg viewBox="0 0 460 165" style="display:block; margin:20px auto; max-width:440px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Hierarchical forecasting: Total to Region to Store to SKU">
+<rect x="170" y="5" width="120" height="26" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="230" y="22" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="700" fill="#1e40af">Total company</text>
+<line x1="200" y1="31" x2="120" y2="50" stroke="#6366f1" stroke-width="1"/>
+<line x1="260" y1="31" x2="340" y2="50" stroke="#6366f1" stroke-width="1"/>
+<rect x="60" y="52" width="120" height="24" rx="5" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="120" y="68" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#5b21b6">Region A</text>
+<rect x="280" y="52" width="120" height="24" rx="5" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="340" y="68" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#5b21b6">Region B</text>
+<line x1="95" y1="76" x2="55" y2="95" stroke="#6366f1" stroke-width="1"/>
+<line x1="145" y1="76" x2="185" y2="95" stroke="#6366f1" stroke-width="1"/>
+<line x1="315" y1="76" x2="275" y2="95" stroke="#6366f1" stroke-width="1"/>
+<line x1="365" y1="76" x2="405" y2="95" stroke="#6366f1" stroke-width="1"/>
+<rect x="10" y="98" width="90" height="22" rx="4" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
+<text x="55" y="113" text-anchor="middle" font-family="system-ui" font-size="9" fill="#92400e">Store A1</text>
+<rect x="140" y="98" width="90" height="22" rx="4" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
+<text x="185" y="113" text-anchor="middle" font-family="system-ui" font-size="9" fill="#92400e">Store A2</text>
+<rect x="230" y="98" width="90" height="22" rx="4" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
+<text x="275" y="113" text-anchor="middle" font-family="system-ui" font-size="9" fill="#92400e">Store B1</text>
+<rect x="360" y="98" width="90" height="22" rx="4" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
+<text x="405" y="113" text-anchor="middle" font-family="system-ui" font-size="9" fill="#92400e">Store B2</text>
+<text x="55" y="136" text-anchor="middle" font-family="system-ui" font-size="8" fill="#22c55e">SKU 1, 2 …</text>
+<text x="185" y="136" text-anchor="middle" font-family="system-ui" font-size="8" fill="#22c55e">SKU 3, 4 …</text>
+<text x="275" y="136" text-anchor="middle" font-family="system-ui" font-size="8" fill="#22c55e">SKU …</text>
+<text x="405" y="136" text-anchor="middle" font-family="system-ui" font-size="8" fill="#22c55e">SKU …</text>
+<text x="230" y="158" text-anchor="middle" font-family="system-ui" font-size="9" fill="#64748b" font-style="italic">Constraint: ∑ SKU forecasts = Store = Region = Total</text>
+</svg>
+
+<table>
+
+<colgroup>
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Approach</th>
+
+<th>How</th>
+
+<th>Strength</th>
+
+<th>Weakness</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>Bottom-up</strong></td>
+
+<td>Forecast SKUs, aggregate up</td>
+
+<td>Simple</td>
+
+<td>Loses top-level signal</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Top-down</strong></td>
+
+<td>Forecast total, split by historical proportions</td>
+
+<td>Simple</td>
+
+<td>Loses granularity</td>
+
+</tr>
+
+<tr>
+
+<td><strong>MinT reconciliation</strong></td>
+
+<td>Forecast all levels, adjust to be consistent</td>
+
+<td>Best in practice</td>
+
+<td>More complex</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="prediction-intervals-ch13">13.8.4 Prediction intervals</h3>
+
+<p>Point forecasts are rarely sufficient for planning. Add prediction
+
+intervals:</p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Concept</th>
+
+<th>Meaning</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Coverage</td>
+
+<td>Fraction of true values that fall inside the interval</td>
+
+</tr>
+
+<tr>
+
+<td>Sharpness</td>
+
+<td>Width of the interval (narrower = more useful)</td>
+
+</tr>
+
+<tr>
+
+<td>Calibration</td>
+
+<td>Whether nominal confidence matches observed frequency</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p>Good uncertainty: calibrated (coverage matches the stated
+
+probability) and sharp (narrow enough to guide decisions).</p>
+
+<hr />
+
+<h2 id="case-study-energy-and-supply-chain-forecasting">13.9 Case Study:
+
+Energy and Supply Chain Forecasting</h2>
+
+<p><strong>Problem:</strong> Forecast next 14 days of electricity
+
+consumption or product demand to improve current decisions.</p>
+
+<h3 id="step-1-frame-the-problem">13.9.1 Step 1: Frame the problem</h3>
+
+<p><strong>Inputs:</strong></p>
+
+<ul>
+<li>Historical demand (the target series) -  Weather and temperature forecasts</li>
+<li>Holiday flags</li>
+<li>Promotions and price  changes</li>
+<li>Inventory constraints</li>
+<li>Day-of-week, month</li>
+</ul>
+
+<p><strong>Business goals:</strong></p>
+
+<ul>
+<li>Reduce stockouts</li>
+<li>Minimize  overstock</li>
+<li>Improve staffing and logistics</li>
+<li>Plan energy generation and  purchasing</li>
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> The best model depends on the business cost of
+
+over- vs under-forecasting.</p>
+
+</blockquote>
+
+<h3 id="step-2-establish-baselines">13.9.2 Step 2: Establish baselines</h3>
+
+<p>Always compute before training a real model:</p>
+
+<ul>
+<li>Naive: predict last  observed value</li>
+<li>Seasonal naive: predict same value as the same period  last season</li>
+<li>Moving average</li>
+<li>Exponential smoothing</li>
+</ul>
+
+<p>If your model cannot beat seasonal naive, return to feature
+
+engineering.</p>
+
+<h3 id="step-3-candidate-models">13.9.3 Step 3: Candidate models</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 50%" />
+
+<col style="width: 50%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Model</th>
+
+<th>Best for</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>SARIMA / SARIMAX</td>
+
+<td>Structured seasonal dependence, single series</td>
+
+</tr>
+
+<tr>
+
+<td>Prophet</td>
+
+<td>Trend shifts, calendar effects, quick interpretable baseline</td>
+
+</tr>
+
+<tr>
+
+<td>Gradient boosting (LightGBM)</td>
+
+<td>Many series, lag/calendar/weather features</td>
+
+</tr>
+
+<tr>
+
+<td>LSTM / N-BEATS / TFT</td>
+
+<td>Complex nonlinear patterns, large data</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="step-4-walk-forward-backtest">13.9.4 Step 4: Walk-forward backtest</h3>
+
+<svg viewBox="0 0 490 80" style="display:block; margin:20px auto; max-width:470px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Walk-forward backtest: train, forecast 14 days, metrics, shift and repeat">
+<defs><marker id="wf-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<rect x="5" y="10" width="105" height="32" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="57" y="30" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#1e40af">Train ≤ t</text>
+<line x1="110" y1="26" x2="133" y2="26" stroke="#6366f1" stroke-width="1.3" marker-end="url(#wf-a)"/>
+<rect x="140" y="10" width="145" height="32" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="212" y="30" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#5b21b6">Forecast 14 days</text>
+<line x1="285" y1="26" x2="308" y2="26" stroke="#6366f1" stroke-width="1.3" marker-end="url(#wf-a)"/>
+<rect x="315" y="10" width="95" height="32" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="362" y="30" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#166534">Metrics</text>
+<!-- Loop arrow -->
+<path d="M57,42 L57,60 L430,60 L430,26 L415,26" stroke="#f59e0b" stroke-width="1.2" fill="none" marker-end="url(#wf-a)"/>
+<text x="250" y="56" text-anchor="middle" font-family="system-ui" font-size="8" fill="#92400e">shift cutoff forward → repeat</text>
+</svg>
+
+<p>Compute MAE, RMSE, and MASE across all windows. Compare every
+
+candidate model against seasonal naive.</p>
+
+<h3 id="step-5-error-analysis">13.9.5 Step 5: Error analysis</h3>
+
+<p>Examine where your model fails:</p>
+
+<ul>
+<li>On holidays not in training data -  During promotion periods</li>
+<li>After sudden weather changes</li>
+<li>For low-volume  intermittent SKUs</li>
+</ul>
+
+<p>Use segmented error analysis to discover what new features or rules
+
+would help.</p>
+
+<h3 id="step-6-deploy-and-monitor">13.9.6 Step 6: Deploy and monitor</h3>
+
+<p>Production requirements:</p>
+
+<ul>
+<li>Automated retraining on schedule or when  accuracy degrades</li>
+<li>Feature availability guaranteed at prediction time -  Handling of delayed or missing exogenous inputs</li>
+<li>Prediction intervals  alongside point forecasts</li>
+<li>Downstream integration with planning  tools</li>
+</ul>
+
+<h3 id="workflow-summary">13.9.7 Workflow summary</h3>
+
+<ol type="1">
+
+<li>Create daily series with consistent timestamp index</li>
+
+<li>Add lag, rolling, and calendar features</li>
+
+<li>Merge weather and holiday data</li>
+
+<li>Train seasonal naive, SARIMAX, Prophet, and LightGBM</li>
+
+<li>Evaluate with rolling MAE and MASE across 5+ windows</li>
+
+<li>Inspect feature importance and per-horizon error</li>
+
+<li>Deploy the best model with scheduled retraining and monitoring</li>
+
+</ol>
+
+<h3 id="lessons-from-practice">13.9.8 Lessons from practice</h3>
+
+<ul>
+
+<li>Baselines are essential — without them, you cannot measure
+
+improvement</li>
+
+<li>Business context sets the horizon and the metric that matters</li>
+
+<li>Exogenous variables (weather, promotions) can matter as much as
+
+model choice</li>
+
+<li>Leakage-free validation is mandatory — a model evaluated with data
+
+leakage is not evaluated at all</li>
+
+<li>Operational robustness matters as much as accuracy during
+
+backtesting</li>
+
+</ul>
+
+<hr />
+
+<h2 id="chapter-13-summary">Chapter 13 Summary</h2>
+
+<p>Time series differs from tabular ML because order matters. Every
+
+forecasting decision is shaped by this constraint.</p>
+
+<p><strong>The fundamentals:</strong></p>
+
+<ul>
+<li>Decompose into trend,  seasonality, and noise before modeling</li>
+<li>Test for stationarity;  difference if needed</li>
+<li>Use ACF/PACF to understand autocorrelation  structure</li>
+<li>Establish naive baselines — they are harder to beat than you  think</li>
+</ul>
+
+<p><strong>The models in order of complexity:</strong> 1. Seasonal naive
+
+→ always run this first 2. ARIMA/SARIMA → for single series with
+
+structured autocorrelation 3. Prophet → for calendar-driven business
+
+series 4. LightGBM + lag features → for many series or rich external
+
+signals 5. LSTM / N-BEATS / TFT → for complex nonlinear patterns with
+
+sufficient data</p>
+
+<p><strong>The critical validation rule:</strong> Never use random
+
+splits. Always evaluate on future data with walk-forward validation.</p>
+
+<p><strong>Quick selection guide:</strong></p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<thead><tr>
+<th style="text-align:left; padding:6px 14px; border-bottom:2px solid #6366f1;">Problem type</th>
+<th style="text-align:left; padding:6px 14px; border-bottom:2px solid #6366f1;">→ First model to try</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:5px 14px; border-bottom:1px solid #e2e8f0;">Single series, unknown pattern</td><td style="padding:5px 14px; border-bottom:1px solid #e2e8f0;">Auto-ARIMA, then Prophet</td></tr>
+<tr><td style="padding:5px 14px; border-bottom:1px solid #e2e8f0;">Single series, strong seasonality</td><td style="padding:5px 14px; border-bottom:1px solid #e2e8f0;">SARIMA</td></tr>
+<tr><td style="padding:5px 14px; border-bottom:1px solid #e2e8f0;">Many series, tabular features</td><td style="padding:5px 14px; border-bottom:1px solid #e2e8f0;">LightGBM with lag features</td></tr>
+<tr><td style="padding:5px 14px; border-bottom:1px solid #e2e8f0;">Many series, complex global</td><td style="padding:5px 14px; border-bottom:1px solid #e2e8f0;">N-BEATS or N-HiTS</td></tr>
+<tr><td style="padding:5px 14px; border-bottom:1px solid #e2e8f0;">Rich metadata + future covariates</td><td style="padding:5px 14px; border-bottom:1px solid #e2e8f0;">Temporal Fusion Transformer</td></tr>
+<tr><td style="padding:5px 14px; border-bottom:1px solid #e2e8f0;">Ultra-simple baseline</td><td style="padding:5px 14px; border-bottom:1px solid #e2e8f0;">Seasonal naive</td></tr>
+</tbody>
+</table>
+<p style="font-size:0.9em; color:#64748b; margin-top:4px;">If MASE &gt; 1, your model is worse than seasonal naive → restart.</p>
+
+<p><strong>Common pitfalls:</strong></p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 50%" />
+
+<col style="width: 50%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Mistake</th>
+
+<th>Fix</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Random train/test split</td>
+
+<td>Always chronological split</td>
+
+</tr>
+
+<tr>
+
+<td>Lag features using current value</td>
+
+<td>Shift by horizon before computing lags</td>
+
+</tr>
+
+<tr>
+
+<td>Single-window evaluation</td>
+
+<td>Rolling walk-forward validation</td>
+
+</tr>
+
+<tr>
+
+<td>Ignoring the naive baseline</td>
+
+<td>Always compute MASE against seasonal naive</td>
+
+</tr>
+
+<tr>
+
+<td>MAPE on zero or near-zero data</td>
+
+<td>Use MASE or sMAPE instead</td>
+
+</tr>
+
+<tr>
+
+<td>No prediction intervals</td>
+
+<td>Add uncertainty estimates before production</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<hr />
+
+<h2 id="ch13-interview-qa">Chapter 13 Interview Q&amp;A</h2>
+
+
+
+<h3>Q1. What is the difference between additive and multiplicative decomposition? When would you use each?</h3>
+
+<p><strong>A.</strong> <strong>Additive</strong>: Y<sub>t</sub> = T<sub>t</sub> + S<sub>t</sub> + R<sub>t</sub>. Seasonal swings are constant in magnitude regardless of the trend level. Use when the seasonal pattern is roughly constant (e.g., a fixed &plusmn;100 units every December). <strong>Multiplicative</strong>: Y<sub>t</sub> = T<sub>t</sub> &times; S<sub>t</sub> &times; R<sub>t</sub>. Seasonal swings grow proportionally to the trend. Use when the seasonal amplitude increases as the series grows (e.g., retail sales where December is always &ldquo;30% above the trend level&rdquo;). In practice: if the seasonal range visually expands with the trend, use multiplicative (or log-transform and apply additive). STL decomposition handles both via iteration and is robust to outliers.</p>
+
+
+
+<h3>Q2. What is stationarity and why does it matter for time series models?</h3>
+
+<p><strong>A.</strong> A time series is <strong>stationary</strong> if its statistical properties (mean, variance, autocorrelation) do not change over time. Most classical models (ARIMA, linear regression on lags) assume stationarity because the relationship between past and future values must be consistent to be learnable. Non-stationary series have trends or changing variance that make patterns time-dependent and models unreliable. Tests: <strong>Augmented Dickey-Fuller (ADF)</strong> &mdash; tests for a unit root (non-stationary null); reject null to conclude stationarity. <strong>KPSS</strong> &mdash; stationarity is the null; use both for confirmation. To achieve stationarity: differencing (subtract Y<sub>t-1</sub>), log transform (stabilizes variance), or detrending.</p>
+
+
+
+<h3>Q3. Explain ARIMA(p, d, q). What do each of the three parameters mean?</h3>
+
+<p><strong>A.</strong> ARIMA combines three components: <strong>AR(p)</strong> &mdash; AutoRegressive: the value depends on p lagged values Y<sub>t-1</sub>, ., Y<sub>t-p</sub>. <strong>I(d)</strong> &mdash; Integrated: difference the series d times to achieve stationarity. d=1 removes trend; d=2 removes trend in trend. <strong>MA(q)</strong> &mdash; Moving Average: the value depends on q lagged forecast errors &epsilon;<sub>t-1</sub>, ., &epsilon;<sub>t-q</sub>; captures short-term shocks. The model: (1-&phi;<sub>1</sub>B-.-&phi;<sub>p</sub>B<sup>p</sup>)(1-B)<sup>d</sup>Y<sub>t</sub> = (1+&theta;<sub>1</sub>B+.+&theta;<sub>q</sub>B<sup>q</sup>)&epsilon;<sub>t</sub>. Select p, q using ACF/PACF plots or AIC/BIC grid search. SARIMA extends ARIMA with seasonal terms (P, D, Q, m) for periodic series.</p>
+
+
+
+<h3>Q4. What is walk-forward validation and why is standard k-fold cross-validation wrong for time series?</h3>
+
+<p><strong>A.</strong> Standard k-fold shuffles data randomly, allowing future data to appear in the training fold &mdash; this is <strong>temporal leakage</strong> that gives optimistically biased estimates. In time series, the model must always be trained on past data and tested on future data. <strong>Walk-forward (expanding window) validation</strong>: Train on [1.T1], test on T1+1.T2; then train on [1.T2], test on T2+1.T3; etc. Each fold&rsquo;s test set is always in the future relative to training. Alternatively, <strong>sliding window</strong> keeps training window size fixed (trains on [T1.T2], tests on T3; then [T2.T3], tests on T4). Use expanding window when more historical data is always better; sliding window when the series is non-stationary over long horizons.</p>
+
+
+
+<h3>Q5. How does Prophet work and what are its main components?</h3>
+
+<p><strong>A.</strong> Prophet (Meta/Facebook) decomposes a time series as: y(t) = g(t) + s(t) + h(t) + &epsilon;<sub>t</sub>, where: <strong>g(t)</strong> = trend (piecewise linear or logistic growth with automatic changepoint detection); <strong>s(t)</strong> = seasonality (Fourier series terms for yearly, weekly, daily); <strong>h(t)</strong> = holiday effects (user-specified special days). Fitting uses Stan (MAP estimation). Key strengths: handles missing data, outliers, multiple seasonalities; requires minimal tuning; interpretable components. Key weaknesses: poor for highly irregular series, complex multivariate relationships, or when autocorrelation structure (ARIMA) dominates over decomposable components. Best for business time series with clear trend + seasonality + known holidays.</p>
+
+
+
+<h3>Q6. What are the key differences between statistical models (ARIMA) and ML models (XGBoost, LSTM) for forecasting?</h3>
+
+<p><strong>A.</strong></p>
+
+<table>
+
+<thead><tr><th></th><th>ARIMA/ETS</th><th>XGBoost (with lag features)</th><th>LSTM</th></tr></thead>
+
+<tbody>
+
+<tr><td><strong>Input</strong></td><td>Single series; past values only</td><td>Tabular lag features + exogenous</td><td>Raw sequences; learned features</td></tr>
+
+<tr><td><strong>Multivariate</strong></td><td>Limited (VAR)</td><td>Easy &mdash; just add columns</td><td>Native multi-input</td></tr>
+
+<tr><td><strong>Data needed</strong></td><td>Works with ~30+ points</td><td>Needs hundreds per series</td><td>Needs large datasets</td></tr>
+
+<tr><td><strong>Interpretability</strong></td><td>High (explicit parameters)</td><td>Medium (SHAP on lag features)</td><td>Low (black box)</td></tr>
+
+<tr><td><strong>Best for</strong></td><td>Single series, low data regime</td><td>Many series, rich exogenous features</td><td>Complex long-range patterns</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<h3>Q7. What evaluation metrics do you use for forecasting? What are their pitfalls?</h3>
+
+<p><strong>A.</strong> <strong>MAE</strong> (Mean Absolute Error): robust to outliers; same units as y. <strong>RMSE</strong>: penalizes large errors more; useful when big misses are costly. <strong>MAPE</strong> (Mean Absolute Percentage Error): scale-independent, easy to communicate; undefined when y=0, biased toward series with small true values, asymmetric (100% max underforecast, unlimited overforecast). <strong>sMAPE</strong>: symmetric MAPE, bounded at 200%; still problematic near zero. <strong>MASE</strong> (Mean Absolute Scaled Error): scales MAE by naive (seasonal walk) baseline MAE; &gt;1 means worse than naive, &lt;1 means better; works across series of different scales. For probabilistic forecasts: <strong>CRPS</strong> (Continuous Ranked Probability Score); for interval forecasts: coverage (actual in-interval %) and interval width.</p>
+
+
+
+<h3>Q8. How do you detect and handle seasonality in a time series?</h3>
+
+<p><strong>A.</strong> Detection: (1) Plot the autocorrelation function (ACF) &mdash; spikes at lag s, 2s, 3s indicate period s. (2) Seasonal decomposition (STL) &mdash; inspect the extracted seasonal component. (3) Periodogram (FFT) &mdash; dominant frequency = dominant period. Handling: (1) <strong>SARIMA</strong>: explicit seasonal terms (P, D, Q)<sub>m</sub>. (2) <strong>Seasonal differencing</strong>: Y<sub>t</sub> &minus; Y<sub>t-m</sub> removes seasonality; apply before ARIMA. (3) <strong>Fourier features</strong>: add sin/cos(2&pi;kt/m) terms as regressors to XGBoost or linear models. (4) <strong>STL decomposition</strong> then model the residual. Multiple seasonal periods (e.g., hourly data has daily + weekly seasonality): use TBATS, Prophet, or Fourier features with multiple periods.</p>
+
+
+
+<h3>Q9. What is a lag feature and how do you create them safely?</h3>
+
+<p><strong>A.</strong> Lag features encode past values of the target (or related series) as input features: lag_1 = Y<sub>t-1</sub>, lag_7 = Y<sub>t-7</sub>, lag_28 = Y<sub>t-28</sub>. They allow tree models and linear regressors to learn autocorrelation patterns without explicit time-series structure. Safe creation: always compute lags on the <strong>training set only</strong> (or compute them sequentially), never using future values. The main pitfall is <strong>leakage</strong>: if you compute lag features on the full dataset before splitting, the training set may contain lags that incorporate test-set values (for very recent lags near the split boundary). For rolling statistics (moving averages), use <code>df[&lsquo;rolling_mean&rsquo;] = df[&lsquo;y&rsquo;].shift(1).rolling(7).mean()</code> &mdash; the <code>shift(1)</code> is critical to avoid using the current value.</p>
+
+
+
+<h3>Q10. You have hourly sales data for 500 stores for 3 years. How would you build a scalable forecasting system?</h3>
+
+<p><strong>A.</strong></p>
+
+<ol>
+
+<li><strong>EDA</strong>: Check stationarity, seasonality periods (daily, weekly, yearly), missing value patterns, outliers (holidays, promotions). Aggregate to daily if hourly is too noisy.</li>
+
+<li><strong>Global model</strong>: Train a single XGBoost or LightGBM on all stores simultaneously with features: store_id (encoded), day_of_week, month, lag_1, lag_7, lag_28, rolling_mean_7d, rolling_mean_28d, holiday flag. Global models generalize across stores and avoid 500 separate model-fitting cycles.</li>
+
+<li><strong>Hierarchical</strong>: If store-level accuracy is critical, use hierarchical forecasting (reconcile bottom-up with top-down); MinT reconciliation produces coherent forecasts.</li>
+
+<li><strong>Evaluation</strong>: Walk-forward validation with 4&ndash;8 folds; MASE and P90 quantile loss (if probabilistic forecasts needed for inventory).</li>
+
+<li><strong>Production</strong>: Retrain weekly or monthly; monitor forecast bias per store; trigger alerts when MAPE &gt; threshold.</li>
+
+</ol>
+
+<h2 id="key-takeaways-19">Key Takeaways</h2>
+
+<ul>
+
+<li>Stationarity is the prerequisite for classical time-series models: check with the ADF test; fix non-stationarity with differencing or log transforms.</li>
+
+<li>ACF and PACF plots are your diagnostic tools for selecting p (AR order) and q (MA order): PACF cuts off at lag p for pure AR; ACF cuts off at lag q for pure MA.</li>
+
+<li>ARIMA(p, d, q) captures linear autoregressive and moving-average structure; SARIMA extends it with seasonal terms.</li>
+
+<li>Exponential Smoothing (Holt-Winters) is simpler than ARIMA and often competitive for short-horizon forecasting with clear trend/seasonality.</li>
+
+<li>For complex seasonality, multiple covariates, or long horizons, ML/DL methods (XGBoost with lag features, Prophet, LSTM, Temporal Fusion Transformer) generally outperform ARIMA.</li>
+
+<li>Always evaluate time-series models with walk-forward (expanding or rolling-window) cross-validation &mdash; never a random train/test split, which leaks future data.</li>
+
+<li>Forecast uncertainty matters as much as point estimates: use prediction intervals and communicate their width to stakeholders.</li>
+
+</ul>
+
+
+
+<h2 id="common-pitfalls-ch13">Common Pitfalls</h2>
+
+<table>
+
+<thead><tr><th>Mistake</th><th>What goes wrong</th><th>Fix</th></tr></thead>
+
+<tbody>
+
+<tr><td>Random train/test split on a time series</td><td>Future data leaks into training; model appears better than it is</td><td>Always split chronologically: train on past, test on future</td></tr>
+
+<tr><td>Differencing without checking stationarity first</td><td>Over-differencing makes data harder to model</td><td>Test with ADF; difference only as many times as needed (usually once)</td></tr>
+
+<tr><td>Applying ARIMA to multi-seasonal or complex data</td><td>ARIMA assumes a single frequency; residuals stay correlated</td><td>Use SARIMA for seasonal data, or Prophet/ML for multiple seasonalities</td></tr>
+
+<tr><td>Ignoring holidays and special events</td><td>Model residuals spike around known events</td><td>Add exogenous regressors or use Prophet which handles holidays natively</td></tr>
+
+<tr><td>Evaluating on too-short a test horizon</td><td>Does not reflect real forecast difficulty</td><td>Test over at least 2 full seasonal cycles</td></tr>
+
+<tr><td>Point forecast only</td><td>Decision-makers don&rsquo;t know the uncertainty</td><td>Always produce prediction intervals; use conformal prediction for model-agnostic intervals</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<h2 id="further-reading-12">Further Reading</h2>
+
+<ul>
+
+<li><strong>Forecasting: Principles and Practice</strong> (Hyndman &amp; Athanasopoulos, 3rd ed., free at otexts.com/fpp3) &mdash; the best practical forecasting book; R-based but concepts are universal</li>
+
+<li><strong>statsmodels documentation</strong> &mdash; definitive Python reference for ARIMA, SARIMA, state-space models, and seasonal decomposition</li>
+
+<li><strong>Prophet documentation</strong> (facebook.github.io/prophet) &mdash; explains its additive decomposition model and how to add holidays and regressors</li>
+
+<li><strong>Temporal Fusion Transformer</strong> (Lim et al., 2021) &mdash; the leading DL architecture for multi-horizon forecasting with interpretable attention</li>
+
+<li><strong>Nixtla&rsquo;s statsforecast / neuralforecast</strong> &mdash; fast, practical libraries with consistent APIs across classical and DL forecasting models</li>
+
+</ul>
+
+<hr />
+
+
+<hr />
+
+
+<div class="chapter-nav">
+  <a href="chapter-12.html">&larr; Chapter 12: Reinforcement Learning</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-14.html">Chapter 14: Operational Research &rarr;</a>
+</div>
+<div class="site-footer">
+  <p>&copy; 2026 Hariram Subramanian Gopal &middot; <a href="index.html">Data to Decisions</a></p>
+</div>
+</body>
+</html>

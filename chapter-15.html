@@ -1,0 +1,2459 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Hariram Subramanian Gopal" />
+  <title>Chapter 15: Data and SQL | Data to Decisions</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</head>
+<body>
+<div class="chapter-nav">
+  <a href="chapter-14.html">&larr; Chapter 14: Operational Research</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-16.html">Chapter 16: ML Systems and MLOps &rarr;</a>
+</div>
+<h1 id="chapter-15-data-and-sql">Chapter 15: Data and SQL</h1>
+
+<h2 id="chapter-scope-13a">15.0 Chapter Scope</h2>
+
+<p>Every ML system depends on data infrastructure. Before you can train
+
+a model, you need to understand where data lives, how it is structured,
+
+and how to query it efficiently.</p>
+
+<p>This chapter builds in two parts. First: the architecture of data
+
+systems — when to use relational databases, warehouses, data lakes, and
+
+NoSQL stores. Second: the SQL skills a data scientist actually uses in
+
+practice, from basic aggregations to window functions and analytics
+
+patterns.</p>
+
+<p><strong>What you will learn:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Section</th>
+
+<th>Topic</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>15.1</td>
+
+<td>Database fundamentals: OLTP, OLAP, warehouses, lakes</td>
+
+</tr>
+
+<tr>
+
+<td>15.2</td>
+
+<td>SQL basics: SELECT, WHERE, GROUP BY, ORDER BY</td>
+
+</tr>
+
+<tr>
+
+<td>15.3</td>
+
+<td>SQL JOINs: inner, left, right, full, self</td>
+
+</tr>
+
+<tr>
+
+<td>15.4</td>
+
+<td>Window functions: ranking, running totals, lag/lead</td>
+
+</tr>
+
+<tr>
+
+<td>15.5</td>
+
+<td>Common data science SQL patterns</td>
+
+</tr>
+
+<tr>
+
+<td>15.6</td>
+
+<td>Warehouse schema design: star, snowflake, partitioning</td>
+
+</tr>
+
+<tr>
+
+<td>15.7</td>
+
+<td>NoSQL: key-value, document, wide-column, graph</td>
+
+</tr>
+
+<tr>
+
+<td>15.8</td>
+
+<td>Big data concepts: ETL vs ELT, batch vs streaming, Spark, Dask</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Prerequisites:</strong> Basic Python (Chapter 3). No prior database experience required.</p>
+
+<hr />
+
+<h2 id="database-fundamentals">15.1 Database Fundamentals</h2>
+
+<h3 id="the-core-mental-model-oltp-vs-olap">15.1.1 The core mental model: OLTP
+
+vs OLAP</h3>
+
+<p>Every data system is designed for a dominant workload. The two
+
+fundamental workloads are operational and analytical.</p>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/13_data_and_sql/oltp_to_olap.svg" alt="Data flow from OLTP (transactional, row-optimized) to OLAP (analytical, column-optimized) systems">
+
+<figcaption>
+
+Data flow from OLTP (transactional, row-optimized) to OLAP (analytical, column-optimized) systems
+
+</figcaption>
+
+</figure>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Aspect</th>
+
+<th>OLTP</th>
+
+<th>OLAP</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>Purpose</strong></td>
+
+<td>Run the business</td>
+
+<td>Analyze the business</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Queries</strong></td>
+
+<td>Short reads/writes on current rows</td>
+
+<td>Long joins, scans, aggregations</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Data scope</strong></td>
+
+<td>Current, detailed, normalized</td>
+
+<td>Historical, consolidated, denormalized</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Users</strong></td>
+
+<td>Applications, end users, ops</td>
+
+<td>Analysts, BI, data teams, ML pipelines</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Latency goal</strong></td>
+
+<td>&lt; 10 ms</td>
+
+<td>Seconds to minutes</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Scale dimension</strong></td>
+
+<td>Write throughput, concurrency</td>
+
+<td>Read throughput, scan speed</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Examples</strong></td>
+
+<td>MySQL, PostgreSQL, Aurora</td>
+
+<td>Snowflake, BigQuery, Redshift, Athena</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> OLTP = run the business. OLAP = analyze it.
+
+Never run heavy analytical queries directly on your production OLTP
+
+database — it slows down operations for everyone.</p>
+
+</blockquote>
+
+<h3 id="warehouses-vs-data-lakes">15.1.2 Warehouses vs data lakes</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Concept</th>
+
+<th>Data warehouse</th>
+
+<th>Data lake</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>Schema</strong></td>
+
+<td>Schema on write — enforced at load time</td>
+
+<td>Schema on read — raw data, interpreted at query time</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Data type</strong></td>
+
+<td>Structured, curated</td>
+
+<td>Raw: structured, semi-structured, unstructured</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Query engine</strong></td>
+
+<td>SQL</td>
+
+<td>SQL via query engine (Athena, Spark) or custom code</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Use cases</strong></td>
+
+<td>BI, reporting, dashboards</td>
+
+<td>ML training data, data exploration, raw logs</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Examples</strong></td>
+
+<td>Snowflake, BigQuery, Redshift</td>
+
+<td>AWS S3 + Glue, Azure Data Lake, GCS</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>When to use which:</strong></p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 50%" />
+
+<col style="width: 50%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Need</th>
+
+<th>Best fit</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Dashboards, reporting, historical analytics</td>
+
+<td>Data warehouse</td>
+
+</tr>
+
+<tr>
+
+<td>Raw logs, images, audio, ML training data</td>
+
+<td>Data lake</td>
+
+</tr>
+
+<tr>
+
+<td>Curated analytics + raw ingestion</td>
+
+<td>Lake + warehouse (lakehouse pattern)</td>
+
+</tr>
+
+<tr>
+
+<td>Operational app reads/writes</td>
+
+<td>OLTP relational database</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="relational-databases">15.1.3 Relational databases</h3>
+
+<p>Relational databases organize data into tables with defined schemas
+
+and enforce referential integrity via foreign key constraints.</p>
+
+<p><strong>Key properties:</strong></p>
+
+<ul>
+<li>ACID transactions: Atomicity,  Consistency, Isolation, Durability</li>
+<li>SQL as the query language -  Normalization reduces data redundancy</li>
+<li>Strong consistency</li>
+</ul>
+
+<p><strong>Common choices:</strong></p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 50%" />
+
+<col style="width: 50%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Database</th>
+
+<th>Best for</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>PostgreSQL</td>
+
+<td>Open-source; excellent for analytics + app workloads</td>
+
+</tr>
+
+<tr>
+
+<td>MySQL / MariaDB</td>
+
+<td>Web applications; high write throughput</td>
+
+</tr>
+
+<tr>
+
+<td>Amazon Aurora</td>
+
+<td>Managed MySQL/PostgreSQL compatible; high availability</td>
+
+</tr>
+
+<tr>
+
+<td>SQLite</td>
+
+<td>Embedded; development and testing</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="the-data-pipeline-flow">15.1.4 The data pipeline flow</h3>
+
+<svg viewBox="0 0 520 200" style="display:block; margin:20px auto; max-width:500px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Data pipeline: source systems to storage to warehouse and ML">
+<defs><marker id="dp-a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker></defs>
+<rect x="115" y="5" width="270" height="28" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="250" y="23" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#1e40af">Source systems (apps, APIs, sensors)</text>
+<line x1="250" y1="33" x2="250" y2="48" stroke="#6366f1" stroke-width="1.3" marker-end="url(#dp-a)"/>
+<rect x="100" y="53" width="300" height="28" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="250" y="71" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#5b21b6">Ingestion layer (Kafka, Kinesis, Firehose)</text>
+<line x1="250" y1="81" x2="250" y2="96" stroke="#6366f1" stroke-width="1.3" marker-end="url(#dp-a)"/>
+<rect x="85" y="101" width="330" height="28" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="250" y="119" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#92400e">Raw storage (S3, GCS, ADLS — data lake)</text>
+<!-- Branch left -->
+<line x1="180" y1="129" x2="130" y2="148" stroke="#6366f1" stroke-width="1.2" marker-end="url(#dp-a)"/>
+<rect x="10" y="153" width="250" height="28" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="135" y="171" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#166534">ELT → Data warehouse (Snowflake, BigQuery)</text>
+<!-- Branch right -->
+<line x1="320" y1="129" x2="370" y2="148" stroke="#6366f1" stroke-width="1.2" marker-end="url(#dp-a)"/>
+<rect x="270" y="153" width="240" height="28" rx="6" fill="#fce7f3" stroke="#ec4899" stroke-width="1.5"/>
+<text x="390" y="171" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#9d174d">ML training (Spark, SageMaker)</text>
+</svg>
+
+<hr />
+
+<h2 id="sql-basics-select-where-group-by-order-by">15.2 SQL Basics:
+
+SELECT, WHERE, GROUP BY, ORDER BY</h2>
+
+<p>SQL is the language of data. Every analyst and data scientist uses it
+
+daily. This section builds from the foundation.</p>
+
+<h3 id="the-select-statement">15.2.1 The SELECT statement</h3>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb420-1"><a href="#cb420-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> column1, column2, <span class="op">.</span>.</span>
+<span id="cb420-2"><a href="#cb420-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> table_name</span>
+<span id="cb420-3"><a href="#cb420-3" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> condition</span>
+<span id="cb420-4"><a href="#cb420-4" aria-hidden="true" tabindex="-1"></a><span class="kw">GROUP</span> <span class="kw">BY</span> <span class="kw">column</span></span>
+<span id="cb420-5"><a href="#cb420-5" aria-hidden="true" tabindex="-1"></a><span class="kw">HAVING</span> aggregate_condition</span>
+<span id="cb420-6"><a href="#cb420-6" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> <span class="kw">column</span> <span class="kw">DESC</span></span>
+<span id="cb420-7"><a href="#cb420-7" aria-hidden="true" tabindex="-1"></a><span class="kw">LIMIT</span> n;</span></code></pre></div>
+
+<p><strong>Execution order</strong> (different from write order): 1.
+
+<code>FROM</code> — identify the table 2. <code>WHERE</code> — filter
+
+rows before grouping 3. <code>GROUP BY</code> — aggregate into groups 4.
+
+<code>HAVING</code> — filter groups after aggregation 5.
+
+<code>SELECT</code> — compute output columns 6. <code>ORDER BY</code> —
+
+sort results 7. <code>LIMIT</code> — restrict row count</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> <code>WHERE</code> filters rows;
+
+<code>HAVING</code> filters groups. Use <code>WHERE</code> before
+
+aggregation to avoid expensive post-aggregate filtering.</p>
+
+</blockquote>
+
+<h3 id="sql-basics-in-action">15.2.2 SQL basics in action: a practical
+walkthrough</h3>
+
+<p>Every query below operates on the same small dataset. Follow along
+to see exactly what each clause does.</p>
+
+<p><strong>Sample data &mdash; <code>orders</code> table:</strong></p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto; font-size:0.92em;">
+<thead><tr>
+<th style="text-align:left; padding:5px 12px; border-bottom:2px solid #6366f1;">order_id</th>
+<th style="text-align:left; padding:5px 12px; border-bottom:2px solid #6366f1;">customer_id</th>
+<th style="text-align:left; padding:5px 12px; border-bottom:2px solid #6366f1;">category</th>
+<th style="text-align:right; padding:5px 12px; border-bottom:2px solid #6366f1;">amount</th>
+<th style="text-align:left; padding:5px 12px; border-bottom:2px solid #6366f1;">status</th>
+<th style="text-align:left; padding:5px 12px; border-bottom:2px solid #6366f1;">created_at</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">1</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">Electronics</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0; text-align:right;">250</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">completed</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">2024-01-10</td></tr>
+<tr><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">2</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">102</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">Books</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0; text-align:right;">35</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">completed</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">2024-01-15</td></tr>
+<tr><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">3</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">Electronics</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0; text-align:right;">180</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">pending</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">2024-02-03</td></tr>
+<tr><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">4</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">103</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">Clothing</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0; text-align:right;">90</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">completed</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">2024-02-14</td></tr>
+<tr><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">5</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">102</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">Electronics</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0; text-align:right;">410</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">completed</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">2024-03-01</td></tr>
+<tr><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">6</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">Books</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0; text-align:right;">22</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">cancelled</td><td style="padding:4px 12px; border-bottom:1px solid #e2e8f0;">2024-03-10</td></tr>
+<tr><td style="padding:4px 12px;">7</td><td style="padding:4px 12px;">104</td><td style="padding:4px 12px;">Clothing</td><td style="padding:4px 12px; text-align:right;">150</td><td style="padding:4px 12px;">completed</td><td style="padding:4px 12px;">2024-03-22</td></tr>
+</tbody>
+</table>
+
+<p><strong>SELECT + WHERE + ORDER BY + LIMIT</strong> &mdash; <em>&ldquo;Show me the top 3 orders over $100&rdquo;</em>:</p>
+
+<div style="background:#f8fafc; border-radius:6px; padding:12px 16px; margin:12px 0;">
+<pre style="background:#1e293b; color:#e2e8f0; padding:10px 14px; border-radius:5px; font-size:0.88em; overflow-x:auto;"><code>SELECT order_id, customer_id, amount
+FROM orders
+WHERE amount &gt; 100
+ORDER BY amount DESC
+LIMIT 3;</code></pre>
+<p style="font-size:0.85em; color:#64748b; margin:8px 0 4px;"><strong>Result:</strong></p>
+<table style="border-collapse:collapse; width:auto; font-size:0.92em;">
+<thead><tr>
+<th style="text-align:left; padding:4px 12px; border-bottom:2px solid #6366f1;">order_id</th>
+<th style="text-align:left; padding:4px 12px; border-bottom:2px solid #6366f1;">customer_id</th>
+<th style="text-align:right; padding:4px 12px; border-bottom:2px solid #6366f1;">amount</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0;">5</td><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0;">102</td><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0; text-align:right;">410</td></tr>
+<tr><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0;">1</td><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0; text-align:right;">250</td></tr>
+<tr><td style="padding:3px 12px;">3</td><td style="padding:3px 12px;">101</td><td style="padding:3px 12px; text-align:right;">180</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>GROUP BY + aggregate functions</strong> &mdash; <em>&ldquo;Revenue and order count per category&rdquo;</em>:</p>
+
+<div style="background:#f8fafc; border-radius:6px; padding:12px 16px; margin:12px 0;">
+<pre style="background:#1e293b; color:#e2e8f0; padding:10px 14px; border-radius:5px; font-size:0.88em; overflow-x:auto;"><code>SELECT category, COUNT(*) AS orders, SUM(amount) AS total
+FROM orders
+GROUP BY category
+ORDER BY total DESC;</code></pre>
+<p style="font-size:0.85em; color:#64748b; margin:8px 0 4px;"><strong>Result:</strong></p>
+<table style="border-collapse:collapse; width:auto; font-size:0.92em;">
+<thead><tr>
+<th style="text-align:left; padding:4px 12px; border-bottom:2px solid #6366f1;">category</th>
+<th style="text-align:right; padding:4px 12px; border-bottom:2px solid #6366f1;">orders</th>
+<th style="text-align:right; padding:4px 12px; border-bottom:2px solid #6366f1;">total</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0;">Electronics</td><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0; text-align:right;">3</td><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0; text-align:right;">840</td></tr>
+<tr><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0;">Clothing</td><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0; text-align:right;">2</td><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0; text-align:right;">240</td></tr>
+<tr><td style="padding:3px 12px;">Books</td><td style="padding:3px 12px; text-align:right;">2</td><td style="padding:3px 12px; text-align:right;">57</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>HAVING</strong> &mdash; <em>&ldquo;Only categories with total revenue over $100&rdquo;</em>:</p>
+
+<div style="background:#f8fafc; border-radius:6px; padding:12px 16px; margin:12px 0;">
+<pre style="background:#1e293b; color:#e2e8f0; padding:10px 14px; border-radius:5px; font-size:0.88em; overflow-x:auto;"><code>SELECT category, SUM(amount) AS total
+FROM orders
+GROUP BY category
+HAVING SUM(amount) &gt; 100;</code></pre>
+<p style="font-size:0.85em; color:#64748b; margin:8px 0 4px;"><strong>Result:</strong></p>
+<table style="border-collapse:collapse; width:auto; font-size:0.92em;">
+<thead><tr>
+<th style="text-align:left; padding:4px 12px; border-bottom:2px solid #6366f1;">category</th>
+<th style="text-align:right; padding:4px 12px; border-bottom:2px solid #6366f1;">total</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0;">Electronics</td><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0; text-align:right;">840</td></tr>
+<tr><td style="padding:3px 12px;">Clothing</td><td style="padding:3px 12px; text-align:right;">240</td></tr>
+</tbody>
+</table>
+<p style="font-size:0.85em; color:#64748b; margin:4px 0 0;">↑ Books (57) is filtered OUT because HAVING runs after GROUP BY.</p>
+</div>
+
+<p><strong>CASE WHEN</strong> &mdash; <em>&ldquo;Bucket each order into a value tier&rdquo;</em>:</p>
+
+<div style="background:#f8fafc; border-radius:6px; padding:12px 16px; margin:12px 0;">
+<pre style="background:#1e293b; color:#e2e8f0; padding:10px 14px; border-radius:5px; font-size:0.88em; overflow-x:auto;"><code>SELECT order_id, amount,
+  CASE
+    WHEN amount &gt;= 200 THEN 'high'
+    WHEN amount &gt;= 100 THEN 'medium'
+    ELSE 'low'
+  END AS tier
+FROM orders;</code></pre>
+<p style="font-size:0.85em; color:#64748b; margin:8px 0 4px;"><strong>Result:</strong></p>
+<table style="border-collapse:collapse; width:auto; font-size:0.92em;">
+<thead><tr>
+<th style="text-align:left; padding:4px 12px; border-bottom:2px solid #6366f1;">order_id</th>
+<th style="text-align:right; padding:4px 12px; border-bottom:2px solid #6366f1;">amount</th>
+<th style="text-align:left; padding:4px 12px; border-bottom:2px solid #6366f1;">tier</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0;">1</td><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0; text-align:right;">250</td><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0;">high</td></tr>
+<tr><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0;">2</td><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0; text-align:right;">35</td><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0;">low</td></tr>
+<tr><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0;">3</td><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0; text-align:right;">180</td><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0;">medium</td></tr>
+<tr><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0;">4</td><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0; text-align:right;">90</td><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0;">low</td></tr>
+<tr><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0;">5</td><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0; text-align:right;">410</td><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0;">high</td></tr>
+<tr><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0;">6</td><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0; text-align:right;">22</td><td style="padding:3px 12px; border-bottom:1px solid #e2e8f0;">low</td></tr>
+<tr><td style="padding:3px 12px;">7</td><td style="padding:3px 12px; text-align:right;">150</td><td style="padding:3px 12px;">medium</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="basic-queries">15.2.3 Basic queries</h3>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb421-1"><a href="#cb421-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- All orders over 100</span></span>
+<span id="cb421-2"><a href="#cb421-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> order_id, customer_id, amount</span>
+<span id="cb421-3"><a href="#cb421-3" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> orders</span>
+<span id="cb421-4"><a href="#cb421-4" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> amount <span class="op">&gt;</span> <span class="dv">100</span></span>
+<span id="cb421-5"><a href="#cb421-5" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> amount <span class="kw">DESC</span></span>
+<span id="cb421-6"><a href="#cb421-6" aria-hidden="true" tabindex="-1"></a><span class="kw">LIMIT</span> <span class="dv">10</span>;</span>
+<span id="cb421-7"><a href="#cb421-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb421-8"><a href="#cb421-8" aria-hidden="true" tabindex="-1"></a><span class="co">-- Distinct values</span></span>
+<span id="cb421-9"><a href="#cb421-9" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="kw">DISTINCT</span> status <span class="kw">FROM</span> orders;</span>
+<span id="cb421-10"><a href="#cb421-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb421-11"><a href="#cb421-11" aria-hidden="true" tabindex="-1"></a><span class="co">-- Null handling</span></span>
+<span id="cb421-12"><a href="#cb421-12" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="op">*</span> <span class="kw">FROM</span> customers <span class="kw">WHERE</span> email <span class="kw">IS</span> <span class="kw">NULL</span>;</span>
+<span id="cb421-13"><a href="#cb421-13" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="op">*</span> <span class="kw">FROM</span> customers <span class="kw">WHERE</span> email <span class="kw">IS</span> <span class="kw">NOT</span> <span class="kw">NULL</span>;</span></code></pre></div>
+
+<h3 id="aggregation-with-group-by">15.2.4 Aggregation with GROUP BY</h3>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb422-1"><a href="#cb422-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Revenue by product category</span></span>
+<span id="cb422-2"><a href="#cb422-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb422-3"><a href="#cb422-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">category</span>,</span>
+<span id="cb422-4"><a href="#cb422-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">COUNT</span>(<span class="op">*</span>)        <span class="kw">AS</span> order_count,</span>
+<span id="cb422-5"><a href="#cb422-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">SUM</span>(revenue)    <span class="kw">AS</span> total_revenue,</span>
+<span id="cb422-6"><a href="#cb422-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">AVG</span>(revenue)    <span class="kw">AS</span> avg_revenue,</span>
+<span id="cb422-7"><a href="#cb422-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">MIN</span>(revenue)    <span class="kw">AS</span> min_revenue,</span>
+<span id="cb422-8"><a href="#cb422-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">MAX</span>(revenue)    <span class="kw">AS</span> max_revenue</span>
+<span id="cb422-9"><a href="#cb422-9" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> orders</span>
+<span id="cb422-10"><a href="#cb422-10" aria-hidden="true" tabindex="-1"></a><span class="kw">GROUP</span> <span class="kw">BY</span> <span class="kw">category</span></span>
+<span id="cb422-11"><a href="#cb422-11" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> total_revenue <span class="kw">DESC</span>;</span></code></pre></div>
+
+<p><strong>Common aggregation functions:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Function</th>
+
+<th>Returns</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><code>COUNT(*)</code></td>
+
+<td>Total number of rows</td>
+
+</tr>
+
+<tr>
+
+<td><code>COUNT(col)</code></td>
+
+<td>Non-null values in column</td>
+
+</tr>
+
+<tr>
+
+<td><code>SUM(col)</code></td>
+
+<td>Sum of values</td>
+
+</tr>
+
+<tr>
+
+<td><code>AVG(col)</code></td>
+
+<td>Mean of values</td>
+
+</tr>
+
+<tr>
+
+<td><code>MIN(col)</code></td>
+
+<td>Minimum value</td>
+
+</tr>
+
+<tr>
+
+<td><code>MAX(col)</code></td>
+
+<td>Maximum value</td>
+
+</tr>
+
+<tr>
+
+<td><code>STDDEV(col)</code></td>
+
+<td>Standard deviation</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="having-filtering-after-aggregation">15.2.5 HAVING: filtering after
+
+aggregation</h3>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb423-1"><a href="#cb423-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Categories with more than 100 orders and revenue over 50,000</span></span>
+<span id="cb423-2"><a href="#cb423-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb423-3"><a href="#cb423-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">category</span>,</span>
+<span id="cb423-4"><a href="#cb423-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">COUNT</span>(<span class="op">*</span>)     <span class="kw">AS</span> order_count,</span>
+<span id="cb423-5"><a href="#cb423-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">SUM</span>(revenue) <span class="kw">AS</span> total_revenue</span>
+<span id="cb423-6"><a href="#cb423-6" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> orders</span>
+<span id="cb423-7"><a href="#cb423-7" aria-hidden="true" tabindex="-1"></a><span class="kw">GROUP</span> <span class="kw">BY</span> <span class="kw">category</span></span>
+<span id="cb423-8"><a href="#cb423-8" aria-hidden="true" tabindex="-1"></a><span class="kw">HAVING</span> <span class="fu">COUNT</span>(<span class="op">*</span>) <span class="op">&gt;</span> <span class="dv">100</span></span>
+<span id="cb423-9"><a href="#cb423-9" aria-hidden="true" tabindex="-1"></a>   <span class="kw">AND</span> <span class="fu">SUM</span>(revenue) <span class="op">&gt;</span> <span class="dv">50000</span></span>
+<span id="cb423-10"><a href="#cb423-10" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> total_revenue <span class="kw">DESC</span>;</span></code></pre></div>
+
+<h3 id="string-date-and-conditional-expressions">15.2.6 String, date, and
+
+conditional expressions</h3>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb424-1"><a href="#cb424-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- String functions</span></span>
+<span id="cb424-2"><a href="#cb424-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="fu">UPPER</span>(name), <span class="fu">LOWER</span>(email), <span class="fu">LENGTH</span>(description)</span>
+<span id="cb424-3"><a href="#cb424-3" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> customers;</span>
+<span id="cb424-4"><a href="#cb424-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb424-5"><a href="#cb424-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- Date functions</span></span>
+<span id="cb424-6"><a href="#cb424-6" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb424-7"><a href="#cb424-7" aria-hidden="true" tabindex="-1"></a>    DATE_TRUNC(<span class="st">&#39;month&#39;</span>, created_at) <span class="kw">AS</span> <span class="dt">month</span>,</span>
+<span id="cb424-8"><a href="#cb424-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">COUNT</span>(<span class="op">*</span>)                        <span class="kw">AS</span> new_users</span>
+<span id="cb424-9"><a href="#cb424-9" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> users</span>
+<span id="cb424-10"><a href="#cb424-10" aria-hidden="true" tabindex="-1"></a><span class="kw">GROUP</span> <span class="kw">BY</span> <span class="dv">1</span></span>
+<span id="cb424-11"><a href="#cb424-11" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> <span class="dv">1</span>;</span>
+<span id="cb424-12"><a href="#cb424-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb424-13"><a href="#cb424-13" aria-hidden="true" tabindex="-1"></a><span class="co">-- CASE WHEN (conditional logic)</span></span>
+<span id="cb424-14"><a href="#cb424-14" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb424-15"><a href="#cb424-15" aria-hidden="true" tabindex="-1"></a>    customer_id,</span>
+<span id="cb424-16"><a href="#cb424-16" aria-hidden="true" tabindex="-1"></a>    total_spend,</span>
+<span id="cb424-17"><a href="#cb424-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">CASE</span></span>
+<span id="cb424-18"><a href="#cb424-18" aria-hidden="true" tabindex="-1"></a>        <span class="cf">WHEN</span> total_spend <span class="op">&gt;=</span> <span class="dv">1000</span> <span class="cf">THEN</span> <span class="st">&#39;high&#39;</span></span>
+<span id="cb424-19"><a href="#cb424-19" aria-hidden="true" tabindex="-1"></a>        <span class="cf">WHEN</span> total_spend <span class="op">&gt;=</span> <span class="dv">200</span>  <span class="cf">THEN</span> <span class="st">&#39;medium&#39;</span></span>
+<span id="cb424-20"><a href="#cb424-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">ELSE</span> <span class="st">&#39;low&#39;</span></span>
+<span id="cb424-21"><a href="#cb424-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">END</span> <span class="kw">AS</span> value_tier</span>
+<span id="cb424-22"><a href="#cb424-22" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> customers;</span></code></pre></div>
+
+<h3 id="distinct-limit-and-subqueries">15.2.7 DISTINCT, LIMIT, and
+
+subqueries</h3>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb425-1"><a href="#cb425-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Subquery: customers who placed an order in the last 30 days</span></span>
+<span id="cb425-2"><a href="#cb425-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="op">*</span></span>
+<span id="cb425-3"><a href="#cb425-3" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> customers</span>
+<span id="cb425-4"><a href="#cb425-4" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> customer_id <span class="kw">IN</span> (</span>
+<span id="cb425-5"><a href="#cb425-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SELECT</span> <span class="kw">DISTINCT</span> customer_id</span>
+<span id="cb425-6"><a href="#cb425-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">FROM</span> orders</span>
+<span id="cb425-7"><a href="#cb425-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">WHERE</span> created_at <span class="op">&gt;=</span> <span class="fu">CURRENT_DATE</span> <span class="op">-</span> <span class="dt">INTERVAL</span> <span class="st">&#39;30 days&#39;</span></span>
+<span id="cb425-8"><a href="#cb425-8" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb425-9"><a href="#cb425-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb425-10"><a href="#cb425-10" aria-hidden="true" tabindex="-1"></a><span class="co">-- EXISTS: more efficient for large subqueries</span></span>
+<span id="cb425-11"><a href="#cb425-11" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="op">*</span></span>
+<span id="cb425-12"><a href="#cb425-12" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> customers c</span>
+<span id="cb425-13"><a href="#cb425-13" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> <span class="kw">EXISTS</span> (</span>
+<span id="cb425-14"><a href="#cb425-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SELECT</span> <span class="dv">1</span></span>
+<span id="cb425-15"><a href="#cb425-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">FROM</span> orders o</span>
+<span id="cb425-16"><a href="#cb425-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">WHERE</span> o.customer_id <span class="op">=</span> c.customer_id</span>
+<span id="cb425-17"><a href="#cb425-17" aria-hidden="true" tabindex="-1"></a>      <span class="kw">AND</span> o.created_at <span class="op">&gt;=</span> <span class="fu">CURRENT_DATE</span> <span class="op">-</span> <span class="dt">INTERVAL</span> <span class="st">&#39;30 days&#39;</span></span>
+<span id="cb425-18"><a href="#cb425-18" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div>
+
+<hr />
+
+<h2 id="sql-joins">15.3 SQL JOINs</h2>
+
+<p>JOINs combine rows from two or more tables based on a related
+
+column.</p>
+
+<h3 id="join-types">15.3.1 Join types</h3>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">Table A (left)</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Table B (right)</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">INNER JOIN</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">rows that match in both A and B</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">LEFT JOIN:</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">all rows from A, matching rows from B (NULL if no match)</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">RIGHT JOIN</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">all rows from B, matching rows from A (NULL if no match)</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">FULL JOIN:</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">all rows from both, NULL where no match</td>
+</tr>
+<tr>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">CROSS JOIN</td>
+  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">every combination of rows from A and B (Cartesian product)</td>
+</tr>
+</table>
+
+
+<h3 id="visual-reference">15.3.2 Visual reference</h3>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/13_data_and_sql/sql_joins.svg" alt="SQL JOIN types — Venn diagram showing INNER, LEFT, RIGHT, FULL OUTER, CROSS, SELF, and ANTI joins">
+
+<figcaption>
+
+SQL JOIN types — shaded regions show which rows each join returns
+
+</figcaption>
+
+</figure>
+
+<h3 id="joins-in-action">15.3.3 JOINs in action: a practical walkthrough</h3>
+
+<p>All examples below use these two tiny tables:</p>
+
+<div style="display:flex; gap:24px; flex-wrap:wrap; margin:12px 0;">
+<div>
+<p style="font-size:0.85em; color:#64748b; margin:0 0 4px;"><strong>customers</strong></p>
+<table style="border-collapse:collapse; width:auto; font-size:0.88em;">
+<thead><tr><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">customer_id</th><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">name</th></tr></thead>
+<tbody>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">1</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">Alice</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">Bob</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">3</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">Carol</td></tr>
+<tr><td style="padding:2px 10px;">4</td><td style="padding:2px 10px;">Dave <span style="color:#f59e0b; font-size:0.85em;">← no orders</span></td></tr>
+</tbody></table>
+</div>
+<div>
+<p style="font-size:0.85em; color:#64748b; margin:0 0 4px;"><strong>orders</strong></p>
+<table style="border-collapse:collapse; width:auto; font-size:0.88em;">
+<thead><tr><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">order_id</th><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">customer_id</th><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">amount</th></tr></thead>
+<tbody>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">1</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">250</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">102</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">1</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">180</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">103</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">90</td></tr>
+<tr><td style="padding:2px 10px;">104</td><td style="padding:2px 10px;">5 <span style="color:#ef4444; font-size:0.85em;">← not in customers</span></td><td style="padding:2px 10px; text-align:right;">60</td></tr>
+</tbody></table>
+</div>
+</div>
+
+<p><strong>INNER JOIN</strong> &mdash; <em>only rows that match in both tables</em>:</p>
+
+<div style="background:#f8fafc; border-radius:6px; padding:12px 16px; margin:12px 0;">
+<pre style="background:#1e293b; color:#e2e8f0; padding:10px 14px; border-radius:5px; font-size:0.88em; overflow-x:auto;"><code>SELECT c.name, o.order_id, o.amount
+FROM customers c
+INNER JOIN orders o ON c.customer_id = o.customer_id;</code></pre>
+<p style="font-size:0.85em; color:#64748b; margin:8px 0 4px;"><strong>Result:</strong></p>
+<table style="border-collapse:collapse; width:auto; font-size:0.92em;">
+<thead><tr>
+<th style="text-align:left; padding:4px 10px; border-bottom:2px solid #6366f1;">name</th>
+<th style="text-align:left; padding:4px 10px; border-bottom:2px solid #6366f1;">order_id</th>
+<th style="text-align:right; padding:4px 10px; border-bottom:2px solid #6366f1;">amount</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">Alice</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">250</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">Alice</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">102</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">180</td></tr>
+<tr><td style="padding:3px 10px;">Bob</td><td style="padding:3px 10px;">103</td><td style="padding:3px 10px; text-align:right;">90</td></tr>
+</tbody>
+</table>
+<p style="font-size:0.8em; color:#64748b; margin:4px 0 0;">✗ Dave dropped — no matching order<br>✗ Order 104 dropped — customer_id 5 not in customers</p>
+</div>
+
+<p><strong>LEFT JOIN</strong> &mdash; <em>all customers, even if they never ordered</em>:</p>
+
+<div style="background:#f8fafc; border-radius:6px; padding:12px 16px; margin:12px 0;">
+<pre style="background:#1e293b; color:#e2e8f0; padding:10px 14px; border-radius:5px; font-size:0.88em; overflow-x:auto;"><code>SELECT c.name, o.order_id, o.amount
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id;</code></pre>
+<p style="font-size:0.85em; color:#64748b; margin:8px 0 4px;"><strong>Result:</strong></p>
+<table style="border-collapse:collapse; width:auto; font-size:0.92em;">
+<thead><tr>
+<th style="text-align:left; padding:4px 10px; border-bottom:2px solid #6366f1;">name</th>
+<th style="text-align:left; padding:4px 10px; border-bottom:2px solid #6366f1;">order_id</th>
+<th style="text-align:right; padding:4px 10px; border-bottom:2px solid #6366f1;">amount</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">Alice</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">250</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">Alice</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">102</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">180</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">Bob</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">103</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">90</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">Carol</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">NULL</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right; color:#64748b;">NULL</td></tr>
+<tr><td style="padding:3px 10px;">Dave</td><td style="padding:3px 10px;">NULL</td><td style="padding:3px 10px; text-align:right; color:#64748b;">NULL</td></tr>
+</tbody>
+</table>
+<p style="font-size:0.8em; color:#64748b; margin:4px 0 0;">← no order, but Carol and Dave still appear<br>✗ Order 104 still dropped — only LEFT table is preserved</p>
+</div>
+
+<p><strong>FULL OUTER JOIN</strong> &mdash; <em>all rows from both, NULL where no match</em>:</p>
+
+<div style="background:#f8fafc; border-radius:6px; padding:12px 16px; margin:12px 0;">
+<pre style="background:#1e293b; color:#e2e8f0; padding:10px 14px; border-radius:5px; font-size:0.88em; overflow-x:auto;"><code>SELECT c.name, o.order_id, o.amount
+FROM customers c
+FULL OUTER JOIN orders o ON c.customer_id = o.customer_id;</code></pre>
+<p style="font-size:0.85em; color:#64748b; margin:8px 0 4px;"><strong>Result:</strong></p>
+<table style="border-collapse:collapse; width:auto; font-size:0.92em;">
+<thead><tr>
+<th style="text-align:left; padding:4px 10px; border-bottom:2px solid #6366f1;">name</th>
+<th style="text-align:left; padding:4px 10px; border-bottom:2px solid #6366f1;">order_id</th>
+<th style="text-align:right; padding:4px 10px; border-bottom:2px solid #6366f1;">amount</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">Alice</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">250</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">Alice</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">102</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">180</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">Bob</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">103</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">90</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; color:#64748b;">Carol</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; color:#64748b;">NULL</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right; color:#64748b;">NULL</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; color:#64748b;">Dave</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; color:#64748b;">NULL</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right; color:#64748b;">NULL</td></tr>
+<tr><td style="padding:3px 10px; color:#64748b;">NULL</td><td style="padding:3px 10px;">104</td><td style="padding:3px 10px; text-align:right;">60</td></tr>
+</tbody>
+</table>
+<p style="font-size:0.8em; color:#64748b; margin:4px 0 0;">← customer with no order (Carol, Dave) + orphan order 104 (customer 5 missing)</p>
+</div>
+
+<p><strong>LEFT ANTI JOIN</strong> &mdash; <em>customers who have NEVER ordered</em>:</p>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span class="kw">SELECT</span> c.name
+<span class="kw">FROM</span> customers c
+<span class="kw">LEFT</span> <span class="kw">JOIN</span> orders o <span class="kw">ON</span> c.customer_id <span class="op">=</span> o.customer_id
+<span class="kw">WHERE</span> o.customer_id <span class="kw">IS</span> <span class="kw">NULL</span>;</code></pre></div>
+<div style="margin:8px 0 16px;">
+<table style="border-collapse:collapse; font-size:0.88rem; min-width:120px;">
+<thead><tr><th style="text-align:left; padding:6px 16px; border-bottom:2px solid #6366f1; color:#4f46e5;">name</th></tr></thead>
+<tbody>
+<tr><td style="padding:5px 16px; border-bottom:1px solid #e2e8f0;">Carol</td></tr>
+<tr><td style="padding:5px 16px;">Dave</td></tr>
+</tbody>
+</table>
+<p style="font-size:0.8em; color:#64748b; margin:4px 0 0;">↑ This pattern is critical for finding churn, inactive users, missing data.</p>
+</div>
+
+
+<h3 id="inner-join">15.3.4 INNER JOIN</h3>
+
+<p>Returns only rows where the join condition matches in both
+
+tables.</p>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb428-1"><a href="#cb428-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Orders with customer names (only matched customers)</span></span>
+<span id="cb428-2"><a href="#cb428-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb428-3"><a href="#cb428-3" aria-hidden="true" tabindex="-1"></a>    o.order_id,</span>
+<span id="cb428-4"><a href="#cb428-4" aria-hidden="true" tabindex="-1"></a>    c.name        <span class="kw">AS</span> customer_name,</span>
+<span id="cb428-5"><a href="#cb428-5" aria-hidden="true" tabindex="-1"></a>    o.amount,</span>
+<span id="cb428-6"><a href="#cb428-6" aria-hidden="true" tabindex="-1"></a>    o.created_at</span>
+<span id="cb428-7"><a href="#cb428-7" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> orders o</span>
+<span id="cb428-8"><a href="#cb428-8" aria-hidden="true" tabindex="-1"></a><span class="kw">INNER</span> <span class="kw">JOIN</span> customers c <span class="kw">ON</span> o.customer_id <span class="op">=</span> c.customer_id;</span></code></pre></div>
+
+<h3 id="left-join">15.3.5 LEFT JOIN</h3>
+
+<p>Returns all rows from the left table plus matched rows from the
+
+right. Unmatched right-side rows become NULL.</p>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb429-1"><a href="#cb429-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- All customers, plus their last order date (NULL if they never ordered)</span></span>
+<span id="cb429-2"><a href="#cb429-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb429-3"><a href="#cb429-3" aria-hidden="true" tabindex="-1"></a>    c.customer_id,</span>
+<span id="cb429-4"><a href="#cb429-4" aria-hidden="true" tabindex="-1"></a>    c.name,</span>
+<span id="cb429-5"><a href="#cb429-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">MAX</span>(o.created_at) <span class="kw">AS</span> last_order_date</span>
+<span id="cb429-6"><a href="#cb429-6" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> customers c</span>
+<span id="cb429-7"><a href="#cb429-7" aria-hidden="true" tabindex="-1"></a><span class="kw">LEFT</span> <span class="kw">JOIN</span> orders o <span class="kw">ON</span> c.customer_id <span class="op">=</span> o.customer_id</span>
+<span id="cb429-8"><a href="#cb429-8" aria-hidden="true" tabindex="-1"></a><span class="kw">GROUP</span> <span class="kw">BY</span> c.customer_id, c.name;</span>
+<span id="cb429-9"><a href="#cb429-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb429-10"><a href="#cb429-10" aria-hidden="true" tabindex="-1"></a><span class="co">-- Customers who have NEVER ordered (anti-join pattern)</span></span>
+<span id="cb429-11"><a href="#cb429-11" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> c.<span class="op">*</span></span>
+<span id="cb429-12"><a href="#cb429-12" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> customers c</span>
+<span id="cb429-13"><a href="#cb429-13" aria-hidden="true" tabindex="-1"></a><span class="kw">LEFT</span> <span class="kw">JOIN</span> orders o <span class="kw">ON</span> c.customer_id <span class="op">=</span> o.customer_id</span>
+<span id="cb429-14"><a href="#cb429-14" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> o.customer_id <span class="kw">IS</span> <span class="kw">NULL</span>;</span></code></pre></div>
+
+<h3 id="self-join">15.3.6 Self join</h3>
+
+<p>A table joined to itself. Used when rows in a table have
+
+relationships with other rows in the same table.</p>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb430-1"><a href="#cb430-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Find all pairs of customers in the same city</span></span>
+<span id="cb430-2"><a href="#cb430-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb430-3"><a href="#cb430-3" aria-hidden="true" tabindex="-1"></a>    a.customer_id <span class="kw">AS</span> customer_1,</span>
+<span id="cb430-4"><a href="#cb430-4" aria-hidden="true" tabindex="-1"></a>    b.customer_id <span class="kw">AS</span> customer_2,</span>
+<span id="cb430-5"><a href="#cb430-5" aria-hidden="true" tabindex="-1"></a>    a.city</span>
+<span id="cb430-6"><a href="#cb430-6" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> customers a</span>
+<span id="cb430-7"><a href="#cb430-7" aria-hidden="true" tabindex="-1"></a><span class="kw">JOIN</span> customers b <span class="kw">ON</span> a.city <span class="op">=</span> b.city</span>
+<span id="cb430-8"><a href="#cb430-8" aria-hidden="true" tabindex="-1"></a>               <span class="kw">AND</span> a.customer_id <span class="op">&lt;</span> b.customer_id;</span></code></pre></div>
+
+<h3 id="multi-table-joins">15.3.7 Multi-table joins</h3>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb431-1"><a href="#cb431-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Orders with customer name and product category</span></span>
+<span id="cb431-2"><a href="#cb431-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb431-3"><a href="#cb431-3" aria-hidden="true" tabindex="-1"></a>    o.order_id,</span>
+<span id="cb431-4"><a href="#cb431-4" aria-hidden="true" tabindex="-1"></a>    c.name           <span class="kw">AS</span> customer,</span>
+<span id="cb431-5"><a href="#cb431-5" aria-hidden="true" tabindex="-1"></a>    p.<span class="kw">category</span>       <span class="kw">AS</span> product_category,</span>
+<span id="cb431-6"><a href="#cb431-6" aria-hidden="true" tabindex="-1"></a>    o.amount</span>
+<span id="cb431-7"><a href="#cb431-7" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> orders o</span>
+<span id="cb431-8"><a href="#cb431-8" aria-hidden="true" tabindex="-1"></a><span class="kw">JOIN</span> customers c <span class="kw">ON</span> o.customer_id <span class="op">=</span> c.customer_id</span>
+<span id="cb431-9"><a href="#cb431-9" aria-hidden="true" tabindex="-1"></a><span class="kw">JOIN</span> products  p <span class="kw">ON</span> o.product_id  <span class="op">=</span> p.product_id</span>
+<span id="cb431-10"><a href="#cb431-10" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> o.created_at <span class="op">&gt;=</span> <span class="st">&#39;2024-01-01&#39;</span></span>
+<span id="cb431-11"><a href="#cb431-11" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> o.amount <span class="kw">DESC</span>;</span></code></pre></div>
+
+<h3 id="join-on-multiple-conditions">15.3.8 Join on multiple conditions</h3>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb432-1"><a href="#cb432-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Join on composite key or range condition</span></span>
+<span id="cb432-2"><a href="#cb432-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> a.<span class="op">*</span>, b.rate</span>
+<span id="cb432-3"><a href="#cb432-3" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> transactions a</span>
+<span id="cb432-4"><a href="#cb432-4" aria-hidden="true" tabindex="-1"></a><span class="kw">JOIN</span> fx_rates b</span>
+<span id="cb432-5"><a href="#cb432-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">ON</span> a.currency_from <span class="op">=</span> b.from_currency</span>
+<span id="cb432-6"><a href="#cb432-6" aria-hidden="true" tabindex="-1"></a> <span class="kw">AND</span> a.currency_to   <span class="op">=</span> b.to_currency</span>
+<span id="cb432-7"><a href="#cb432-7" aria-hidden="true" tabindex="-1"></a> <span class="kw">AND</span> a.transaction_date <span class="kw">BETWEEN</span> b.valid_from <span class="kw">AND</span> b.valid_to;</span></code></pre></div>
+
+<blockquote>
+
+<p><strong>Key:</strong> JOINs are the most powerful SQL tool. Master
+
+inner and left joins first; the rest follow the same logic.</p>
+
+</blockquote>
+
+<hr />
+
+<h2 id="window-functions">15.4 Window Functions</h2>
+
+<p>Window functions compute aggregate-like values without collapsing
+
+rows. The result is added as a new column alongside the original
+
+row.</p>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-family:system-ui, sans-serif; line-height:1.8;">
+<strong style="color:#334155;">GROUP BY:</strong> &nbsp; many rows → <span style="color:#22c55e; font-weight:600;">one row per group</span><br>
+<strong style="color:#334155;">Window function:</strong> &nbsp; many rows → <span style="color:#8b5cf6; font-weight:600;">same number of rows</span>, with new computed column
+</div>
+
+<h3 id="syntax">15.4.1 Syntax</h3>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb434-1"><a href="#cb434-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb434-2"><a href="#cb434-2" aria-hidden="true" tabindex="-1"></a>    col1,</span>
+<span id="cb434-3"><a href="#cb434-3" aria-hidden="true" tabindex="-1"></a>    col2,</span>
+<span id="cb434-4"><a href="#cb434-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">FUNCTION</span>() <span class="kw">OVER</span> (</span>
+<span id="cb434-5"><a href="#cb434-5" aria-hidden="true" tabindex="-1"></a>        <span class="kw">PARTITION</span> <span class="kw">BY</span> partition_col</span>
+<span id="cb434-6"><a href="#cb434-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">ORDER</span> <span class="kw">BY</span> order_col</span>
+<span id="cb434-7"><a href="#cb434-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">ROWS</span> <span class="kw">BETWEEN</span> frame_start <span class="kw">AND</span> frame_end</span>
+<span id="cb434-8"><a href="#cb434-8" aria-hidden="true" tabindex="-1"></a>    ) <span class="kw">AS</span> computed_col</span>
+<span id="cb434-9"><a href="#cb434-9" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> <span class="kw">table</span>;</span></code></pre></div>
+
+<ul>
+
+<li><code>PARTITION BY</code> — restart computation for each group (like
+
+GROUP BY, but rows stay)</li>
+
+<li><code>ORDER BY</code> — defines row ordering within the
+
+partition</li>
+
+<li><code>ROWS BETWEEN</code> — frame specification (which rows are
+
+included in the calculation)</li>
+
+</ul>
+
+<h3 id="ranking-functions">15.4.2 Ranking functions</h3>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb435-1"><a href="#cb435-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb435-2"><a href="#cb435-2" aria-hidden="true" tabindex="-1"></a>    customer_id,</span>
+<span id="cb435-3"><a href="#cb435-3" aria-hidden="true" tabindex="-1"></a>    product_id,</span>
+<span id="cb435-4"><a href="#cb435-4" aria-hidden="true" tabindex="-1"></a>    revenue,</span>
+<span id="cb435-5"><a href="#cb435-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ROW_NUMBER</span>() <span class="kw">OVER</span> (<span class="kw">PARTITION</span> <span class="kw">BY</span> customer_id <span class="kw">ORDER</span> <span class="kw">BY</span> revenue <span class="kw">DESC</span>) <span class="kw">AS</span> row_num,</span>
+<span id="cb435-6"><a href="#cb435-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">RANK</span>()       <span class="kw">OVER</span> (<span class="kw">PARTITION</span> <span class="kw">BY</span> customer_id <span class="kw">ORDER</span> <span class="kw">BY</span> revenue <span class="kw">DESC</span>) <span class="kw">AS</span> <span class="fu">rank</span>,</span>
+<span id="cb435-7"><a href="#cb435-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">DENSE_RANK</span>() <span class="kw">OVER</span> (<span class="kw">PARTITION</span> <span class="kw">BY</span> customer_id <span class="kw">ORDER</span> <span class="kw">BY</span> revenue <span class="kw">DESC</span>) <span class="kw">AS</span> <span class="fu">dense_rank</span>,</span>
+<span id="cb435-8"><a href="#cb435-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">NTILE</span>(<span class="dv">4</span>)     <span class="kw">OVER</span> (<span class="kw">ORDER</span> <span class="kw">BY</span> revenue <span class="kw">DESC</span>)                         <span class="kw">AS</span> quartile</span>
+<span id="cb435-9"><a href="#cb435-9" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> orders;</span></code></pre></div>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Function</th>
+
+<th>Tie behavior</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><code>ROW_NUMBER()</code></td>
+
+<td>Always unique, arbitrary tie-breaking</td>
+
+</tr>
+
+<tr>
+
+<td><code>RANK()</code></td>
+
+<td>Ties get same rank; next rank skips (1,1,3)</td>
+
+</tr>
+
+<tr>
+
+<td><code>DENSE_RANK()</code></td>
+
+<td>Ties get same rank; next rank does not skip (1,1,2)</td>
+
+</tr>
+
+<tr>
+
+<td><code>NTILE(n)</code></td>
+
+<td>Divides rows into n equal buckets</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="running-totals-and-moving-averages">15.4.3 Running totals and moving
+
+averages</h3>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb436-1"><a href="#cb436-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Cumulative revenue over time per customer</span></span>
+<span id="cb436-2"><a href="#cb436-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb436-3"><a href="#cb436-3" aria-hidden="true" tabindex="-1"></a>    customer_id,</span>
+<span id="cb436-4"><a href="#cb436-4" aria-hidden="true" tabindex="-1"></a>    created_at,</span>
+<span id="cb436-5"><a href="#cb436-5" aria-hidden="true" tabindex="-1"></a>    amount,</span>
+<span id="cb436-6"><a href="#cb436-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">SUM</span>(amount) <span class="kw">OVER</span> (</span>
+<span id="cb436-7"><a href="#cb436-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">PARTITION</span> <span class="kw">BY</span> customer_id</span>
+<span id="cb436-8"><a href="#cb436-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">ORDER</span> <span class="kw">BY</span> created_at</span>
+<span id="cb436-9"><a href="#cb436-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">ROWS</span> <span class="kw">BETWEEN</span> <span class="kw">UNBOUNDED</span> <span class="kw">PRECEDING</span> <span class="kw">AND</span> <span class="kw">CURRENT</span> <span class="kw">ROW</span></span>
+<span id="cb436-10"><a href="#cb436-10" aria-hidden="true" tabindex="-1"></a>    ) <span class="kw">AS</span> cumulative_revenue,</span>
+<span id="cb436-11"><a href="#cb436-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb436-12"><a href="#cb436-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">AVG</span>(amount) <span class="kw">OVER</span> (</span>
+<span id="cb436-13"><a href="#cb436-13" aria-hidden="true" tabindex="-1"></a>        <span class="kw">PARTITION</span> <span class="kw">BY</span> customer_id</span>
+<span id="cb436-14"><a href="#cb436-14" aria-hidden="true" tabindex="-1"></a>        <span class="kw">ORDER</span> <span class="kw">BY</span> created_at</span>
+<span id="cb436-15"><a href="#cb436-15" aria-hidden="true" tabindex="-1"></a>        <span class="kw">ROWS</span> <span class="kw">BETWEEN</span> <span class="dv">6</span> <span class="kw">PRECEDING</span> <span class="kw">AND</span> <span class="kw">CURRENT</span> <span class="kw">ROW</span></span>
+<span id="cb436-16"><a href="#cb436-16" aria-hidden="true" tabindex="-1"></a>    ) <span class="kw">AS</span> rolling_7row_avg</span>
+<span id="cb436-17"><a href="#cb436-17" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> orders;</span></code></pre></div>
+
+<h3 id="lag-and-lead-accessing-adjacent-rows">15.4.4 LAG and LEAD: accessing
+
+adjacent rows</h3>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb437-1"><a href="#cb437-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Month-over-month revenue growth</span></span>
+<span id="cb437-2"><a href="#cb437-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb437-3"><a href="#cb437-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">month</span>,</span>
+<span id="cb437-4"><a href="#cb437-4" aria-hidden="true" tabindex="-1"></a>    revenue,</span>
+<span id="cb437-5"><a href="#cb437-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">LAG</span>(revenue, <span class="dv">1</span>)  <span class="kw">OVER</span> (<span class="kw">ORDER</span> <span class="kw">BY</span> <span class="dt">month</span>) <span class="kw">AS</span> prev_month_revenue,</span>
+<span id="cb437-6"><a href="#cb437-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">LEAD</span>(revenue, <span class="dv">1</span>) <span class="kw">OVER</span> (<span class="kw">ORDER</span> <span class="kw">BY</span> <span class="dt">month</span>) <span class="kw">AS</span> next_month_revenue,</span>
+<span id="cb437-7"><a href="#cb437-7" aria-hidden="true" tabindex="-1"></a>    revenue <span class="op">-</span> <span class="fu">LAG</span>(revenue, <span class="dv">1</span>) <span class="kw">OVER</span> (<span class="kw">ORDER</span> <span class="kw">BY</span> <span class="dt">month</span>) <span class="kw">AS</span> mom_change,</span>
+<span id="cb437-8"><a href="#cb437-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ROUND</span>(</span>
+<span id="cb437-9"><a href="#cb437-9" aria-hidden="true" tabindex="-1"></a>        <span class="fl">100.0</span> <span class="op">*</span> (revenue <span class="op">-</span> <span class="fu">LAG</span>(revenue, <span class="dv">1</span>) <span class="kw">OVER</span> (<span class="kw">ORDER</span> <span class="kw">BY</span> <span class="dt">month</span>))</span>
+<span id="cb437-10"><a href="#cb437-10" aria-hidden="true" tabindex="-1"></a>              <span class="op">/</span> <span class="fu">NULLIF</span>(<span class="fu">LAG</span>(revenue, <span class="dv">1</span>) <span class="kw">OVER</span> (<span class="kw">ORDER</span> <span class="kw">BY</span> <span class="dt">month</span>), <span class="dv">0</span>),</span>
+<span id="cb437-11"><a href="#cb437-11" aria-hidden="true" tabindex="-1"></a>        <span class="dv">1</span></span>
+<span id="cb437-12"><a href="#cb437-12" aria-hidden="true" tabindex="-1"></a>    ) <span class="kw">AS</span> mom_pct_change</span>
+<span id="cb437-13"><a href="#cb437-13" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> monthly_revenue</span>
+<span id="cb437-14"><a href="#cb437-14" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> <span class="dt">month</span>;</span></code></pre></div>
+
+<h3 id="first_value-and-last_value">15.4.5 FIRST_VALUE and LAST_VALUE</h3>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb438-1"><a href="#cb438-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- First and last purchase per customer</span></span>
+<span id="cb438-2"><a href="#cb438-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb438-3"><a href="#cb438-3" aria-hidden="true" tabindex="-1"></a>    customer_id,</span>
+<span id="cb438-4"><a href="#cb438-4" aria-hidden="true" tabindex="-1"></a>    order_id,</span>
+<span id="cb438-5"><a href="#cb438-5" aria-hidden="true" tabindex="-1"></a>    created_at,</span>
+<span id="cb438-6"><a href="#cb438-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">FIRST_VALUE</span>(created_at) <span class="kw">OVER</span> (<span class="kw">PARTITION</span> <span class="kw">BY</span> customer_id <span class="kw">ORDER</span> <span class="kw">BY</span> created_at) <span class="kw">AS</span> first_purchase,</span>
+<span id="cb438-7"><a href="#cb438-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">LAST_VALUE</span>(created_at)  <span class="kw">OVER</span> (</span>
+<span id="cb438-8"><a href="#cb438-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">PARTITION</span> <span class="kw">BY</span> customer_id</span>
+<span id="cb438-9"><a href="#cb438-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">ORDER</span> <span class="kw">BY</span> created_at</span>
+<span id="cb438-10"><a href="#cb438-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">ROWS</span> <span class="kw">BETWEEN</span> <span class="kw">UNBOUNDED</span> <span class="kw">PRECEDING</span> <span class="kw">AND</span> <span class="kw">UNBOUNDED</span> <span class="kw">FOLLOWING</span></span>
+<span id="cb438-11"><a href="#cb438-11" aria-hidden="true" tabindex="-1"></a>    ) <span class="kw">AS</span> last_purchase</span>
+<span id="cb438-12"><a href="#cb438-12" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> orders;</span></code></pre></div>
+
+<h3 id="window-functions-in-action">15.4.6 Window functions in action: a
+practical walkthrough</h3>
+
+<p>Window functions click once you see the same rows with new columns
+appended. Here is a concrete <code>orders</code> table and what each
+window function produces.</p>
+
+<p><strong>Source data — <code>orders</code> table:</strong></p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto; font-size:0.92em;">
+<thead><tr>
+<th style="text-align:left; padding:4px 10px; border-bottom:2px solid #6366f1;">customer_id</th>
+<th style="text-align:left; padding:4px 10px; border-bottom:2px solid #6366f1;">order_id</th>
+<th style="text-align:left; padding:4px 10px; border-bottom:2px solid #6366f1;">created_at</th>
+<th style="text-align:right; padding:4px 10px; border-bottom:2px solid #6366f1;">amount</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">A1</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">2024-01-05</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">80</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">A2</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">2024-02-12</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">120</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">A3</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">2024-03-20</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">120</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">A4</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">2024-04-08</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">200</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">102</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">B1</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">2024-01-15</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">300</td></tr>
+<tr><td style="padding:3px 10px;">102</td><td style="padding:3px 10px;">B2</td><td style="padding:3px 10px;">2024-02-28</td><td style="padding:3px 10px; text-align:right;">150</td></tr>
+</tbody>
+</table>
+
+<p><strong>ROW_NUMBER vs RANK vs DENSE_RANK</strong> — ranking each
+customer's orders by amount descending:</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto; font-size:0.92em;">
+<thead><tr>
+<th style="text-align:left; padding:4px 10px; border-bottom:2px solid #6366f1;">customer</th>
+<th style="text-align:left; padding:4px 10px; border-bottom:2px solid #6366f1;">order</th>
+<th style="text-align:right; padding:4px 10px; border-bottom:2px solid #6366f1;">amount</th>
+<th style="text-align:right; padding:4px 10px; border-bottom:2px solid #6366f1;">row_number</th>
+<th style="text-align:right; padding:4px 10px; border-bottom:2px solid #6366f1;">rank</th>
+<th style="text-align:right; padding:4px 10px; border-bottom:2px solid #6366f1;">dense_rank</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">A4</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">200</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">1</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">1</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">1</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">A2</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">120</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">2</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">2</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">2</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">A3</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">120</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">3</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">2</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">2</td></tr>
+<tr style="background:#fef3c7;"><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">A1</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">80</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">4</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">4</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">3</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">102</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">B1</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">300</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">1</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">1</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">1</td></tr>
+<tr><td style="padding:3px 10px;">102</td><td style="padding:3px 10px;">B2</td><td style="padding:3px 10px; text-align:right;">150</td><td style="padding:3px 10px; text-align:right;">2</td><td style="padding:3px 10px; text-align:right;">2</td><td style="padding:3px 10px; text-align:right;">2</td></tr>
+</tbody>
+</table>
+<p style="font-size:0.8em; color:#64748b; margin:4px 0;">Highlighted row: rank skips (4), dense_rank doesn’t (3) — ties at A2/A3</p>
+
+<p><strong>Running total (cumulative SUM)</strong> — cumulative revenue
+per customer over time:</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto; font-size:0.92em;">
+<thead><tr>
+<th style="text-align:left; padding:4px 10px; border-bottom:2px solid #6366f1;">customer</th>
+<th style="text-align:left; padding:4px 10px; border-bottom:2px solid #6366f1;">created_at</th>
+<th style="text-align:right; padding:4px 10px; border-bottom:2px solid #6366f1;">amount</th>
+<th style="text-align:right; padding:4px 10px; border-bottom:2px solid #6366f1;">cumulative_revenue</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">2024-01-05</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">80</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">80</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">2024-02-12</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">120</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">200</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">2024-03-20</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">120</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">320</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">2024-04-08</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">200</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">520</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">102</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">2024-01-15</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">300</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">300</td></tr>
+<tr><td style="padding:3px 10px;">102</td><td style="padding:3px 10px;">2024-02-28</td><td style="padding:3px 10px; text-align:right;">150</td><td style="padding:3px 10px; text-align:right;">450</td></tr>
+</tbody>
+</table>
+<p style="font-size:0.8em; color:#64748b; margin:4px 0;">↑ Each row shows the running total UP TO that row within the partition.</p>
+
+<p><strong>LAG — month-over-month comparison:</strong></p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto; font-size:0.92em;">
+<thead><tr>
+<th style="text-align:left; padding:4px 10px; border-bottom:2px solid #6366f1;">customer</th>
+<th style="text-align:left; padding:4px 10px; border-bottom:2px solid #6366f1;">created_at</th>
+<th style="text-align:right; padding:4px 10px; border-bottom:2px solid #6366f1;">amount</th>
+<th style="text-align:right; padding:4px 10px; border-bottom:2px solid #6366f1;">prev_amount</th>
+<th style="text-align:right; padding:4px 10px; border-bottom:2px solid #6366f1;">change</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">2024-01-05</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">80</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right; color:#64748b;">NULL</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right; color:#64748b;">NULL</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">2024-02-12</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">120</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">80</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right; color:#22c55e;">+40</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">2024-03-20</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">120</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">120</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">0</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">2024-04-08</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">200</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">120</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right; color:#22c55e;">+80</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">102</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">2024-01-15</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">300</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right; color:#64748b;">NULL</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right; color:#64748b;">NULL</td></tr>
+<tr><td style="padding:3px 10px;">102</td><td style="padding:3px 10px;">2024-02-28</td><td style="padding:3px 10px; text-align:right;">150</td><td style="padding:3px 10px; text-align:right;">300</td><td style="padding:3px 10px; text-align:right; color:#ef4444;">−150</td></tr>
+</tbody>
+</table>
+
+<p><strong>Percent of total</strong> — each order as a percentage of
+that customer's total spend:</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto; font-size:0.92em;">
+<thead><tr>
+<th style="text-align:left; padding:4px 10px; border-bottom:2px solid #6366f1;">customer</th>
+<th style="text-align:left; padding:4px 10px; border-bottom:2px solid #6366f1;">order</th>
+<th style="text-align:right; padding:4px 10px; border-bottom:2px solid #6366f1;">amount</th>
+<th style="text-align:right; padding:4px 10px; border-bottom:2px solid #6366f1;">cust_total</th>
+<th style="text-align:right; padding:4px 10px; border-bottom:2px solid #6366f1;">pct_of_total</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">A1</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">80</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">520</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">15.4%</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">A2</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">120</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">520</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">23.1%</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">A3</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">120</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">520</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">23.1%</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">A4</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">200</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">520</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">38.5%</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">102</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">B1</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">300</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">450</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">66.7%</td></tr>
+<tr><td style="padding:3px 10px;">102</td><td style="padding:3px 10px;">B2</td><td style="padding:3px 10px; text-align:right;">150</td><td style="padding:3px 10px; text-align:right;">450</td><td style="padding:3px 10px; text-align:right;">33.3%</td></tr>
+</tbody>
+</table>
+<p style="font-size:0.85em; color:#64748b; margin:4px 0;">Query: <code>SUM(amount) OVER (PARTITION BY customer_id) AS cust_total</code><br><code>100.0 * amount / SUM(amount) OVER (PARTITION BY customer_id) AS pct_of_total</code></ping:3px 10px; border-bottom:1px solid #e2e8f0;">A3</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">120</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">520</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">23.1%</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">101</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">A4</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">200</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">520</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">38.5%</td></tr>
+<tr><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">102</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0;">B1</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">300</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">450</td><td style="padding:3px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">66.7%</td></tr>
+<tr><td style="padding:3px 10px;">102</td><td style="padding:3px 10px;">B2</td><td style="padding:3px 10px; text-align:right;">150</td><td style="padding:3px 10px; text-align:right;">450</td><td style="padding:3px 10px; text-align:right;">33.3%</td></tr>
+</tbody>
+</table>
+<p style="font-size:0.85em; color:#64748b; margin:4px 0;">Query: <code>SUM(amount) OVER (PARTITION BY customer_id) AS cust_total</code><br><code>100.0 * amount / SUM(amount) OVER (PARTITION BY customer_id) AS pct_of_total</code></p>
+
+<blockquote>
+
+<p><strong>Key:</strong> Window functions are the most powerful SQL tool
+
+for analytics. They eliminate the need for many complex subqueries and
+
+self-joins.</p>
+
+</blockquote>
+
+<hr />
+
+<h2 id="common-data-science-sql-patterns">15.5 Common Data Science SQL
+
+Patterns</h2>
+
+<h3 id="cohort-analysis">15.5.1 Cohort analysis</h3>
+
+<p>Track how a group of users (cohort) behaves over time relative to
+
+when they joined.</p>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb439-1"><a href="#cb439-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Monthly retention cohort</span></span>
+<span id="cb439-2"><a href="#cb439-2" aria-hidden="true" tabindex="-1"></a><span class="kw">WITH</span> cohorts <span class="kw">AS</span> (</span>
+<span id="cb439-3"><a href="#cb439-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SELECT</span></span>
+<span id="cb439-4"><a href="#cb439-4" aria-hidden="true" tabindex="-1"></a>        customer_id,</span>
+<span id="cb439-5"><a href="#cb439-5" aria-hidden="true" tabindex="-1"></a>        DATE_TRUNC(<span class="st">&#39;month&#39;</span>, <span class="fu">MIN</span>(created_at)) <span class="kw">AS</span> cohort_month</span>
+<span id="cb439-6"><a href="#cb439-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">FROM</span> orders</span>
+<span id="cb439-7"><a href="#cb439-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">GROUP</span> <span class="kw">BY</span> customer_id</span>
+<span id="cb439-8"><a href="#cb439-8" aria-hidden="true" tabindex="-1"></a>),</span>
+<span id="cb439-9"><a href="#cb439-9" aria-hidden="true" tabindex="-1"></a>activity <span class="kw">AS</span> (</span>
+<span id="cb439-10"><a href="#cb439-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SELECT</span></span>
+<span id="cb439-11"><a href="#cb439-11" aria-hidden="true" tabindex="-1"></a>        o.customer_id,</span>
+<span id="cb439-12"><a href="#cb439-12" aria-hidden="true" tabindex="-1"></a>        DATE_TRUNC(<span class="st">&#39;month&#39;</span>, o.created_at) <span class="kw">AS</span> activity_month</span>
+<span id="cb439-13"><a href="#cb439-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">FROM</span> orders o</span>
+<span id="cb439-14"><a href="#cb439-14" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb439-15"><a href="#cb439-15" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb439-16"><a href="#cb439-16" aria-hidden="true" tabindex="-1"></a>    c.cohort_month,</span>
+<span id="cb439-17"><a href="#cb439-17" aria-hidden="true" tabindex="-1"></a>    a.activity_month,</span>
+<span id="cb439-18"><a href="#cb439-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">COUNT</span>(<span class="kw">DISTINCT</span> a.customer_id)                 <span class="kw">AS</span> active_users,</span>
+<span id="cb439-19"><a href="#cb439-19" aria-hidden="true" tabindex="-1"></a>    DATEDIFF(<span class="st">&#39;month&#39;</span>, c.cohort_month, a.activity_month) <span class="kw">AS</span> months_since_join</span>
+<span id="cb439-20"><a href="#cb439-20" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> cohorts c</span>
+<span id="cb439-21"><a href="#cb439-21" aria-hidden="true" tabindex="-1"></a><span class="kw">JOIN</span> activity a <span class="kw">ON</span> c.customer_id <span class="op">=</span> a.customer_id</span>
+<span id="cb439-22"><a href="#cb439-22" aria-hidden="true" tabindex="-1"></a><span class="kw">GROUP</span> <span class="kw">BY</span> <span class="dv">1</span>, <span class="dv">2</span></span>
+<span id="cb439-23"><a href="#cb439-23" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> <span class="dv">1</span>, <span class="dv">3</span>;</span></code></pre></div>
+
+<h3 id="funnel-analysis">15.5.2 Funnel analysis</h3>
+
+<p>Measure how many users complete each step of a conversion funnel.</p>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb440-1"><a href="#cb440-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb440-2"><a href="#cb440-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">COUNT</span>(<span class="kw">DISTINCT</span> <span class="cf">CASE</span> <span class="cf">WHEN</span> step <span class="op">=</span> <span class="st">&#39;view&#39;</span>     <span class="cf">THEN</span> user_id <span class="cf">END</span>) <span class="kw">AS</span> views,</span>
+<span id="cb440-3"><a href="#cb440-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">COUNT</span>(<span class="kw">DISTINCT</span> <span class="cf">CASE</span> <span class="cf">WHEN</span> step <span class="op">=</span> <span class="st">&#39;add_cart&#39;</span> <span class="cf">THEN</span> user_id <span class="cf">END</span>) <span class="kw">AS</span> add_to_cart,</span>
+<span id="cb440-4"><a href="#cb440-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">COUNT</span>(<span class="kw">DISTINCT</span> <span class="cf">CASE</span> <span class="cf">WHEN</span> step <span class="op">=</span> <span class="st">&#39;checkout&#39;</span> <span class="cf">THEN</span> user_id <span class="cf">END</span>) <span class="kw">AS</span> checkouts,</span>
+<span id="cb440-5"><a href="#cb440-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">COUNT</span>(<span class="kw">DISTINCT</span> <span class="cf">CASE</span> <span class="cf">WHEN</span> step <span class="op">=</span> <span class="st">&#39;purchase&#39;</span> <span class="cf">THEN</span> user_id <span class="cf">END</span>) <span class="kw">AS</span> purchases</span>
+<span id="cb440-6"><a href="#cb440-6" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> <span class="kw">events</span></span>
+<span id="cb440-7"><a href="#cb440-7" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> event_date <span class="op">&gt;=</span> <span class="st">&#39;2024-01-01&#39;</span>;</span></code></pre></div>
+
+<h3 id="handling-missing-dates-in-time-series">15.5.3 Handling missing dates in
+
+time series</h3>
+
+<p>When building daily reports, dates with no events produce gaps. Use a
+
+date spine to fill them.</p>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb441-1"><a href="#cb441-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Generate a date spine</span></span>
+<span id="cb441-2"><a href="#cb441-2" aria-hidden="true" tabindex="-1"></a><span class="kw">WITH</span> date_spine <span class="kw">AS</span> (</span>
+<span id="cb441-3"><a href="#cb441-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SELECT</span></span>
+<span id="cb441-4"><a href="#cb441-4" aria-hidden="true" tabindex="-1"></a>        GENERATE_SERIES(</span>
+<span id="cb441-5"><a href="#cb441-5" aria-hidden="true" tabindex="-1"></a>            <span class="st">&#39;2024-01-01&#39;</span>:<span class="ch">:DATE</span>,</span>
+<span id="cb441-6"><a href="#cb441-6" aria-hidden="true" tabindex="-1"></a>            <span class="st">&#39;2024-12-31&#39;</span>:<span class="ch">:DATE</span>,</span>
+<span id="cb441-7"><a href="#cb441-7" aria-hidden="true" tabindex="-1"></a>            <span class="st">&#39;1 day&#39;</span>:<span class="ch">:INTERVAL</span></span>
+<span id="cb441-8"><a href="#cb441-8" aria-hidden="true" tabindex="-1"></a>        ):<span class="ch">:DATE</span> <span class="kw">AS</span> <span class="dt">date</span></span>
+<span id="cb441-9"><a href="#cb441-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb441-10"><a href="#cb441-10" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb441-11"><a href="#cb441-11" aria-hidden="true" tabindex="-1"></a>    ds.<span class="dt">date</span>,</span>
+<span id="cb441-12"><a href="#cb441-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">COALESCE</span>(o.order_count, <span class="dv">0</span>)    <span class="kw">AS</span> order_count,</span>
+<span id="cb441-13"><a href="#cb441-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">COALESCE</span>(o.total_revenue, <span class="dv">0</span>)  <span class="kw">AS</span> total_revenue</span>
+<span id="cb441-14"><a href="#cb441-14" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> date_spine ds</span>
+<span id="cb441-15"><a href="#cb441-15" aria-hidden="true" tabindex="-1"></a><span class="kw">LEFT</span> <span class="kw">JOIN</span> (</span>
+<span id="cb441-16"><a href="#cb441-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SELECT</span> <span class="dt">DATE</span>(created_at) <span class="kw">AS</span> <span class="dt">date</span>, <span class="fu">COUNT</span>(<span class="op">*</span>) <span class="kw">AS</span> order_count, <span class="fu">SUM</span>(amount) <span class="kw">AS</span> total_revenue</span>
+<span id="cb441-17"><a href="#cb441-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">FROM</span> orders</span>
+<span id="cb441-18"><a href="#cb441-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">GROUP</span> <span class="kw">BY</span> <span class="dv">1</span></span>
+<span id="cb441-19"><a href="#cb441-19" aria-hidden="true" tabindex="-1"></a>) o <span class="kw">ON</span> ds.<span class="dt">date</span> <span class="op">=</span> o.<span class="dt">date</span></span>
+<span id="cb441-20"><a href="#cb441-20" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> ds.<span class="dt">date</span>;</span></code></pre></div>
+
+<h3 id="pivot-rows-to-columns">15.5.4 Pivot: rows to columns</h3>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb442-1"><a href="#cb442-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Monthly revenue per product category as columns</span></span>
+<span id="cb442-2"><a href="#cb442-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb442-3"><a href="#cb442-3" aria-hidden="true" tabindex="-1"></a>    DATE_TRUNC(<span class="st">&#39;month&#39;</span>, created_at) <span class="kw">AS</span> <span class="dt">month</span>,</span>
+<span id="cb442-4"><a href="#cb442-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">SUM</span>(<span class="cf">CASE</span> <span class="cf">WHEN</span> <span class="kw">category</span> <span class="op">=</span> <span class="st">&#39;Electronics&#39;</span> <span class="cf">THEN</span> revenue <span class="cf">ELSE</span> <span class="dv">0</span> <span class="cf">END</span>) <span class="kw">AS</span> electronics,</span>
+<span id="cb442-5"><a href="#cb442-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">SUM</span>(<span class="cf">CASE</span> <span class="cf">WHEN</span> <span class="kw">category</span> <span class="op">=</span> <span class="st">&#39;Books&#39;</span>       <span class="cf">THEN</span> revenue <span class="cf">ELSE</span> <span class="dv">0</span> <span class="cf">END</span>) <span class="kw">AS</span> books,</span>
+<span id="cb442-6"><a href="#cb442-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">SUM</span>(<span class="cf">CASE</span> <span class="cf">WHEN</span> <span class="kw">category</span> <span class="op">=</span> <span class="st">&#39;Clothing&#39;</span>    <span class="cf">THEN</span> revenue <span class="cf">ELSE</span> <span class="dv">0</span> <span class="cf">END</span>) <span class="kw">AS</span> clothing</span>
+<span id="cb442-7"><a href="#cb442-7" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> orders</span>
+<span id="cb442-8"><a href="#cb442-8" aria-hidden="true" tabindex="-1"></a><span class="kw">GROUP</span> <span class="kw">BY</span> <span class="dv">1</span></span>
+<span id="cb442-9"><a href="#cb442-9" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> <span class="dv">1</span>;</span></code></pre></div>
+
+<h3 id="top-n-per-group">15.5.5 Top N per group</h3>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb443-1"><a href="#cb443-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Top 3 products by revenue per category</span></span>
+<span id="cb443-2"><a href="#cb443-2" aria-hidden="true" tabindex="-1"></a><span class="kw">WITH</span> ranked <span class="kw">AS</span> (</span>
+<span id="cb443-3"><a href="#cb443-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SELECT</span></span>
+<span id="cb443-4"><a href="#cb443-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">category</span>,</span>
+<span id="cb443-5"><a href="#cb443-5" aria-hidden="true" tabindex="-1"></a>        product_id,</span>
+<span id="cb443-6"><a href="#cb443-6" aria-hidden="true" tabindex="-1"></a>        <span class="fu">SUM</span>(revenue) <span class="kw">AS</span> total_revenue,</span>
+<span id="cb443-7"><a href="#cb443-7" aria-hidden="true" tabindex="-1"></a>        <span class="fu">RANK</span>() <span class="kw">OVER</span> (<span class="kw">PARTITION</span> <span class="kw">BY</span> <span class="kw">category</span> <span class="kw">ORDER</span> <span class="kw">BY</span> <span class="fu">SUM</span>(revenue) <span class="kw">DESC</span>) <span class="kw">AS</span> rnk</span>
+<span id="cb443-8"><a href="#cb443-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">FROM</span> orders</span>
+<span id="cb443-9"><a href="#cb443-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">GROUP</span> <span class="kw">BY</span> <span class="kw">category</span>, product_id</span>
+<span id="cb443-10"><a href="#cb443-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb443-11"><a href="#cb443-11" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="kw">category</span>, product_id, total_revenue</span>
+<span id="cb443-12"><a href="#cb443-12" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> ranked</span>
+<span id="cb443-13"><a href="#cb443-13" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> rnk <span class="op">&lt;=</span> <span class="dv">3</span></span>
+<span id="cb443-14"><a href="#cb443-14" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> <span class="kw">category</span>, rnk;</span></code></pre></div>
+
+<h3 id="sessionization">15.5.6 Sessionization</h3>
+
+<p>Group events into sessions based on a time gap threshold.</p>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb444-1"><a href="#cb444-1" aria-hidden="true" tabindex="-1"></a><span class="kw">WITH</span> with_gaps <span class="kw">AS</span> (</span>
+<span id="cb444-2"><a href="#cb444-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SELECT</span></span>
+<span id="cb444-3"><a href="#cb444-3" aria-hidden="true" tabindex="-1"></a>        user_id,</span>
+<span id="cb444-4"><a href="#cb444-4" aria-hidden="true" tabindex="-1"></a>        event_time,</span>
+<span id="cb444-5"><a href="#cb444-5" aria-hidden="true" tabindex="-1"></a>        <span class="fu">LAG</span>(event_time) <span class="kw">OVER</span> (<span class="kw">PARTITION</span> <span class="kw">BY</span> user_id <span class="kw">ORDER</span> <span class="kw">BY</span> event_time) <span class="kw">AS</span> prev_event_time</span>
+<span id="cb444-6"><a href="#cb444-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">FROM</span> <span class="kw">events</span></span>
+<span id="cb444-7"><a href="#cb444-7" aria-hidden="true" tabindex="-1"></a>),</span>
+<span id="cb444-8"><a href="#cb444-8" aria-hidden="true" tabindex="-1"></a>with_session_flag <span class="kw">AS</span> (</span>
+<span id="cb444-9"><a href="#cb444-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SELECT</span></span>
+<span id="cb444-10"><a href="#cb444-10" aria-hidden="true" tabindex="-1"></a>        user_id,</span>
+<span id="cb444-11"><a href="#cb444-11" aria-hidden="true" tabindex="-1"></a>        event_time,</span>
+<span id="cb444-12"><a href="#cb444-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">CASE</span></span>
+<span id="cb444-13"><a href="#cb444-13" aria-hidden="true" tabindex="-1"></a>            <span class="cf">WHEN</span> prev_event_time <span class="kw">IS</span> <span class="kw">NULL</span></span>
+<span id="cb444-14"><a href="#cb444-14" aria-hidden="true" tabindex="-1"></a>              <span class="kw">OR</span> <span class="fu">EXTRACT</span>(EPOCH <span class="kw">FROM</span> (event_time <span class="op">-</span> prev_event_time)) <span class="op">&gt;</span> <span class="dv">1800</span> <span class="cf">THEN</span> <span class="dv">1</span></span>
+<span id="cb444-15"><a href="#cb444-15" aria-hidden="true" tabindex="-1"></a>            <span class="cf">ELSE</span> <span class="dv">0</span></span>
+<span id="cb444-16"><a href="#cb444-16" aria-hidden="true" tabindex="-1"></a>        <span class="cf">END</span> <span class="kw">AS</span> new_session</span>
+<span id="cb444-17"><a href="#cb444-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">FROM</span> with_gaps</span>
+<span id="cb444-18"><a href="#cb444-18" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb444-19"><a href="#cb444-19" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb444-20"><a href="#cb444-20" aria-hidden="true" tabindex="-1"></a>    user_id,</span>
+<span id="cb444-21"><a href="#cb444-21" aria-hidden="true" tabindex="-1"></a>    event_time,</span>
+<span id="cb444-22"><a href="#cb444-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">SUM</span>(new_session) <span class="kw">OVER</span> (<span class="kw">PARTITION</span> <span class="kw">BY</span> user_id <span class="kw">ORDER</span> <span class="kw">BY</span> event_time) <span class="kw">AS</span> session_id</span>
+<span id="cb444-23"><a href="#cb444-23" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> with_session_flag;</span></code></pre></div>
+
+<h3 id="sql-patterns-in-action">15.5.7 Common patterns in action: a practical
+walkthrough</h3>
+div style="background:#f8fafc; border-radius:6px; padding:12px 16px; margin:12px 0;">
+<p style="font-size:0.85em; color:#64748b; margin:0 0 6px;"><strong>orders (raw):</strong></p>
+<table style="border-collapse:collapse; width:auto; font-size:0.88em;">
+<thead><tr><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">customer_id</th><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">created_at</th><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">note</th></tr></thead>
+<tbody>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">1</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2024-01-05</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; color:#64748b; font-size:0.9em;">first order → Jan cohort</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">1</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2024-02-12</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; color:#64748b; font-size:0.9em;">returning in Feb</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">1</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2024-03-20</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; color:#64748b; font-size:0.9em;">returning in Mar</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2024-01-15</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; color:#64748b; font-size:0.9em;">first order → Jan cohort</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2024-03-08</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; color:#64748b; font-size:0.9em;">returning in Mar (skipped Feb)</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">3</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2024-02-01</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; color:#64748b; font-size:0.9em;">first order → Feb cohort</td></tr>
+<tr><td style="padding:2px 10px;">3</td><td style="padding:2px 10px;">2024-02-20</td><td style="padding:2px 10px; color:#64748b; font-size:0.9em;">returning in Feb (same month)</td></tr>
+</tbody></table>
+<p style="font-size:0.85em; color:#64748b; margin:10px 0 4px;"><strong>After cohort query:</strong></p>
+<table style="border-collapse:collapse; width:auto; font-size:0.88em;">
+<thead><tr><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">cohort_month</th><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">months_since_join</th><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">active_users</th></tr></thead>
+<tbody>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2024-01</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; text-align:center;">0</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">2</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2024-01</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; text-align:center;">1</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">1</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2024-01</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; text-align:center;">2</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">2</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2024-02</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; text-align:center;">0</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; text-align:right;">1</td></tr>
+<tr><td style="padding:2px 10px;">2024-02</td><td style="padding:2px 10px; text-align:center;">1</td><td style="padding:2px 10px; text-align:right;">0</td></tr>
+</tbody></table>
+<p style="font-size:0.85em; color:#64748b; margin:6px 0 0;">Read as: “Of the 2 users who joined in Jan, 1 (50%) returned in month 1, 2 (100%) were active in month 2.”</p>
+</div     ← only customer 1 returned in Feb
+  2024-01      │        2          │     2          ← both returned in Mar
+  2024-02      │        0          │     1          ← customer 3 joined in Feb
+  2024-02      │        1          │     0          ← customer 3 didn't return in Mar
+div style="background:#f8fafc; border-radius:6px; padding:12px 16px; margin:12px 0;">
+<p style="font-size:0.85em; color:#64748b; margin:0 0 6px;"><strong>events (raw):</strong></p>
+<table style="border-collapse:collapse; width:auto; font-size:0.88em;">
+<thead><tr><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">user_id</th><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">event_time</th><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">note</th></tr></thead>
+<tbody>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">A</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2024-01-10 09:00</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; color:#64748b; font-size:0.9em;">start of session 1</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">A</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2024-01-10 09:05</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; color:#64748b; font-size:0.9em;">5 min gap → same session</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">A</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2024-01-10 09:12</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; color:#64748b; font-size:0.9em;">7 min gap → same session</td></tr>
+<tr style="background:#fef3c7;"><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">A</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2024-01-10 10:45</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; color:#92400e; font-size:0.9em;">93 min gap → NEW session</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">A</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2024-01-10 10:50</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; color:#64748b; font-size:0.9em;">5 min gap → same session</td></tr>
+<tr><td style="padding:2px 10px;">B</td><td style="padding:2px 10px;">2024-01-10 14:00</td><td style="padding:2px 10px; color:#64748b; font-size:0.9em;">user B, start of session 1</td></tr>
+</tbody></table>
+<p style="font-size:0.85em; color:#64748b; margin:10px 0 4px;"><strong>After sessionization query:</strong></p>
+<table style="border-collapse:collapse; width:auto; font-size:0.88em;">
+<thead><tr><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">user_id</th><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">event_time</th><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">session_id</th></tr></thead>
+<tbody>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">A</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2024-01-10 09:00</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; text-align:center;">1</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">A</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2024-01-10 09:05</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; text-align:center;">1</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">A</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2024-01-10 09:12</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; text-align:center;">1</td></tr>
+<tr style="background:#fef3c7;"><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">A</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2024-01-10 10:45</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; text-align:center;">2</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">A</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">2024-01-10 10:50</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; text-align:center;">2</td></tr>
+<tr><td style="padding:2px 10px;">B</td><td style="padding:2px 10px;">2024-01-10 14:00</td><td style="padding:2px 10px; text-align:center;">1</td></tr>
+</tbody></table>
+<p style="font-size:0.85em; color:#64748b; margin:6px 0 0;">How it works: LAG computes gap between consecutive events per user. If gap &gt; 30 min (or is NULL), mark new_session = 1. Cumulative SUM of the flag becomes session_id.</p>
+</divmin gap)
+  A       │ 2024-01-10 10:50    │     2
+  B       │ 2024-01-10 14:00    │     1       ← partition resets per user
+
+ div style="background:#f8fafc; border-radius:6px; padding:12px 16px; margin:12px 0;">
+<p style="font-size:0.85em; color:#64748b; margin:0 0 6px;"><strong>events:</strong></p>
+<table style="border-collapse:collapse; width:auto; font-size:0.88em;">
+<thead><tr><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">user_id</th><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">step</th><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">note</th></tr></thead>
+<tbody>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">A</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">view → add_cart → checkout → purchase</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; color:#22c55e;">completed</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">B</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">view → add_cart</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; color:#f59e0b;">dropped at cart</td></tr>
+<tr><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">C</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0;">view</td><td style="padding:2px 10px; border-bottom:1px solid #e2e8f0; color:#ef4444;">only viewed</td></tr>
+<tr><td style="padding:2px 10px;">D</td><td style="padding:2px 10px;">view → add_cart → checkout → purchase</td><td style="padding:2px 10px; color:#22c55e;">completed</td></tr>
+</tbody></table>
+<p style="font-size:0.85em; color:#64748b; margin:10px 0 4px;"><strong>After funnel query:</strong></p>
+<table style="border-collapse:collapse; width:auto; font-size:0.88em;">
+<thead><tr><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">views</th><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">add_to_cart</th><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">checkouts</th><th style="padding:3px 10px; border-bottom:2px solid #6366f1;">purchases</th></tr></thead>
+<tbody><tr><td style="padding:3px 10px; text-align:center;">4</td><td style="padding:3px 10px; text-align:center;">3</td><td style="padding:3px 10px; text-align:center;">2</td><td style="padding:3px 10px; text-align:center;">2</td></tr></tbody>
+</table>
+<p style="font-size:0.85em; color:#64748b; margin:6px 0 0;"><strong>Conversion rates:</strong> view → cart: 75% (3/4) &middot; cart → checkout: 67% (2/3) &middot; checkout → buy: 100% (2/2) &middot; overall: 50% (2/4)</p>
+</div
+
+  Conversion rates:
+  view → cart:     75%  (3/4)
+  cart → checkout: 67%  (2/3)
+  checkout → buy: 100%  (2/2)
+  overall:         50%  (2/4)</code></pre>
+
+<hr />
+
+<h2 id="warehouse-schema-design">15.6 Warehouse Schema Design</h2>
+
+<h3 id="star-schema">15.6.1 Star schema</h3>
+
+<p>The star schema is the most common analytics data model. A central
+
+fact table contains the measurable events; dimension tables contain
+
+descriptive attributes.</p>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/13_data_and_sql/star_schema.svg" alt="Star schema — central fact table surrounded by dimension tables">
+
+<figcaption>
+
+Star schema — central fact table (yellow) holds foreign keys and numeric measures; dimension tables (blue) hold descriptive attributes
+
+</figcaption>
+
+</figure>
+
+<p><strong>Fact table:</strong> one row per business event. Contains foreign keys referencing each dimension plus numeric measures (amount, quantity, discount). This is where aggregation happens.</p>
+
+<p><strong>Dimension tables:</strong> descriptive lookup tables — who (customer), what (product), where (store), when (date), why (promo). Analysts JOIN dimensions to the fact table to slice and dice measures.</p>
+
+<p><strong>Why &ldquo;star&rdquo;?</strong> The diagram looks like a star: one central fact with dimensions radiating outward. This shape is optimized for analytics — most queries touch one fact table and several dimensions.</p>
+
+<h3 id="snowflake-schema">15.6.2 Snowflake schema</h3>
+
+<p>A normalized variant where dimension tables are further split:</p>
+
+<svg viewBox="0 0 380 36" style="display:block; margin:16px auto; max-width:370px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Snowflake schema: product to category to department">
+<rect x="5" y="4" width="115" height="28" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="62" y="23" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#1e40af">DIM_PRODUCT</text>
+<line x1="125" y1="18" x2="140" y2="18" stroke="#6366f1" stroke-width="2"/>
+<rect x="145" y="4" width="115" height="28" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="202" y="23" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#5b21b6">DIM_CATEGORY</text>
+<line x1="265" y1="18" x2="280" y2="18" stroke="#6366f1" stroke-width="2"/>
+<rect x="285" y="4" width="90" height="28" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="330" y="23" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#166534">DIM_DEPT</text>
+</svg>
+
+
+<p><strong>Star vs snowflake:</strong></p>
+
+<ul>
+<li>Star: faster queries (fewer  joins), more storage</li>
+<li>Snowflake: less redundancy, more joins  required</li>
+</ul>
+
+<h3 id="partitioning-and-clustering">15.6.3 Partitioning and clustering</h3>
+
+<p>For large tables in BigQuery, Redshift, or Snowflake, partitioning
+
+and clustering dramatically improve query performance and cost.</p>
+
+<p><strong>Partitioning:</strong> divide the table into physical
+
+segments by a column (typically a date).</p>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb447-1"><a href="#cb447-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- BigQuery: create partitioned table</span></span>
+<span id="cb447-2"><a href="#cb447-2" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> `project.dataset.orders`</span>
+<span id="cb447-3"><a href="#cb447-3" aria-hidden="true" tabindex="-1"></a><span class="kw">PARTITION</span> <span class="kw">BY</span> <span class="dt">DATE</span>(created_at)</span>
+<span id="cb447-4"><a href="#cb447-4" aria-hidden="true" tabindex="-1"></a><span class="kw">AS</span> <span class="kw">SELECT</span> <span class="op">*</span> <span class="kw">FROM</span> `project.dataset.raw_orders`;</span>
+<span id="cb447-5"><a href="#cb447-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb447-6"><a href="#cb447-6" aria-hidden="true" tabindex="-1"></a><span class="co">-- Query hits only the relevant partition</span></span>
+<span id="cb447-7"><a href="#cb447-7" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="fu">SUM</span>(amount)</span>
+<span id="cb447-8"><a href="#cb447-8" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> `project.dataset.orders`</span>
+<span id="cb447-9"><a href="#cb447-9" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> created_at <span class="kw">BETWEEN</span> <span class="st">&#39;2024-01-01&#39;</span> <span class="kw">AND</span> <span class="st">&#39;2024-01-31&#39;</span>;</span>
+<span id="cb447-10"><a href="#cb447-10" aria-hidden="true" tabindex="-1"></a><span class="co">-- scans only January partition, not the full table</span></span></code></pre></div>
+
+<p><strong>Clustering:</strong> physically co-locate rows with the same
+
+column values.</p>
+
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb448-1"><a href="#cb448-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Redshift: define sort key</span></span>
+<span id="cb448-2"><a href="#cb448-2" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> orders (</span>
+<span id="cb448-3"><a href="#cb448-3" aria-hidden="true" tabindex="-1"></a>    order_id    BIGINT,</span>
+<span id="cb448-4"><a href="#cb448-4" aria-hidden="true" tabindex="-1"></a>    customer_id BIGINT,</span>
+<span id="cb448-5"><a href="#cb448-5" aria-hidden="true" tabindex="-1"></a>    created_at  <span class="dt">DATE</span>,</span>
+<span id="cb448-6"><a href="#cb448-6" aria-hidden="true" tabindex="-1"></a>    amount      <span class="dt">DECIMAL</span>(<span class="dv">12</span>,<span class="dv">2</span>)</span>
+<span id="cb448-7"><a href="#cb448-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb448-8"><a href="#cb448-8" aria-hidden="true" tabindex="-1"></a>SORTKEY (created_at, customer_id);</span></code></pre></div>
+
+<blockquote>
+
+<p><strong>Key:</strong> Partition on the column you filter most
+
+(usually date). Cluster on the column you join most (usually an entity
+
+ID). Getting this right can reduce query cost by 10–100×.</p>
+
+</blockquote>
+
+<hr />
+
+<h2 id="nosql-when-relational-is-not-enough">15.7 NoSQL: When Relational
+Is Not Enough</h2>
+
+<svg viewBox="0 0 460 110" style="display:block; margin:20px auto; max-width:440px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="NoSQL taxonomy: Key-value, Document, Wide-column, Graph">
+<rect x="165" y="5" width="130" height="28" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="230" y="23" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="700" fill="#5b21b6">NoSQL</text>
+<line x1="140" y1="33" x2="60" y2="55" stroke="#6366f1" stroke-width="1.2"/>
+<line x1="200" y1="33" x2="170" y2="55" stroke="#6366f1" stroke-width="1.2"/>
+<line x1="260" y1="33" x2="290" y2="55" stroke="#6366f1" stroke-width="1.2"/>
+<line x1="320" y1="33" x2="400" y2="55" stroke="#6366f1" stroke-width="1.2"/>
+<rect x="5" y="58" width="110" height="40" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="60" y="74" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#1e40af">Key-value</text>
+<text x="60" y="90" text-anchor="middle" font-family="system-ui" font-size="8" fill="#3b82f6">Redis, DynamoDB</text>
+<rect x="120" y="58" width="110" height="40" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="175" y="74" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#166534">Document</text>
+<text x="175" y="90" text-anchor="middle" font-family="system-ui" font-size="8" fill="#22c55e">MongoDB, Firestore</text>
+<rect x="235" y="58" width="110" height="40" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="290" y="74" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#92400e">Wide-column</text>
+<text x="290" y="90" text-anchor="middle" font-family="system-ui" font-size="8" fill="#f59e0b">Cassandra, HBase</text>
+<rect x="350" y="58" width="105" height="40" rx="6" fill="#fce7f3" stroke="#ec4899" stroke-width="1.5"/>
+<text x="402" y="74" text-anchor="middle" font-family="system-ui" font-size="10" font-weight="600" fill="#9d174d">Graph</text>
+<text x="402" y="90" text-anchor="middle" font-family="system-ui" font-size="8" fill="#ec4899">Neo4j, Neptune</text>
+</svg>
+
+<h3 id="why-nosql-emerged">15.7.1 Why NoSQL emerged</h3>
+
+<p>Relational databases excel at structured data with complex joins and  ACID transactions. They struggle when:</p>
+
+<ul>
+<li>Schemas need to evolve rapidly</li>
+<li>Write throughput needs to scale horizontally across many nodes</li>
+<li>Data  is semi-structured (JSON-like) or has variable fields</li>
+<li>Geographic  distribution requires tunable consistency</li>
+</ul>
+
+<h3 id="cap-theorem">15.7.2 CAP theorem</h3>
+
+<p>During a network partition, a distributed system can guarantee at  most two of:</p>
+
+<ul>
+<li><strong>Consistency (C):</strong> all reads see the  latest write</li>
+<li><strong>Availability (A):</strong> every request receives  a non-error response</li>
+<li><strong>Partition tolerance (P):</strong> the  system survives network failures</li>
+</ul>
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-family:system-ui, sans-serif; line-height:1.8;">
+<strong style="color:#334155;">Network partition</strong> <span style="color:#64748b;">(always possible)</span><br>
+<span style="color:#334155;">&nbsp;&nbsp;→ Sacrifice <strong style="color:#3b82f6;">Consistency</strong> → favor <strong style="color:#22c55e;">Availability</strong> <em style="color:#64748b;">(BASE: eventually consistent)</em></span><br>
+<span style="color:#334155;">&nbsp;&nbsp;→ Sacrifice <strong style="color:#22c55e;">Availability</strong> → favor <strong style="color:#3b82f6;">Consistency</strong> <em style="color:#64748b;">(wait for all nodes to agree)</em></span>
+</div>
+
+<h3 id="nosql-types-and-ml-use-cases">15.7.3 NoSQL types and ML use cases</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Type</th>
+
+<th>Data model</th>
+
+<th>Best for</th>
+
+<th>ML use case</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>Key-value</strong></td>
+
+<td>key → value</td>
+
+<td>Ultra-fast lookup by ID</td>
+
+<td>Online feature serving</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Document</strong></td>
+
+<td>JSON-like records</td>
+
+<td>Semi-structured entities</td>
+
+<td>User profiles, catalogs</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Wide-column</strong></td>
+
+<td>Rows + column families</td>
+
+<td>High-write distributed</td>
+
+<td>Event logs, time-series</td>
+
+</tr>
+
+<tr>
+
+<td><strong>Graph</strong></td>
+
+<td>Nodes + edges</td>
+
+<td>Relationship queries</td>
+
+<td>Fraud detection, recommendations</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="key-value-stores">15.7.4 Key-value stores</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb451-1"><a href="#cb451-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Conceptual: fetching features from an online feature store (backed by Redis)</span></span>
+<span id="cb451-2"><a href="#cb451-2" aria-hidden="true" tabindex="-1"></a>feature_store <span class="op">=</span> {</span>
+<span id="cb451-3"><a href="#cb451-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;user:1001&quot;</span>: {<span class="st">&quot;age&quot;</span>: <span class="dv">29</span>, <span class="st">&quot;clicks_7d&quot;</span>: <span class="dv">14</span>, <span class="st">&quot;country&quot;</span>: <span class="st">&quot;US&quot;</span>},</span>
+<span id="cb451-4"><a href="#cb451-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;user:1002&quot;</span>: {<span class="st">&quot;age&quot;</span>: <span class="dv">41</span>, <span class="st">&quot;clicks_7d&quot;</span>: <span class="dv">3</span>,  <span class="st">&quot;country&quot;</span>: <span class="st">&quot;IN&quot;</span>},</span>
+<span id="cb451-5"><a href="#cb451-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb451-6"><a href="#cb451-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb451-7"><a href="#cb451-7" aria-hidden="true" tabindex="-1"></a>user_features <span class="op">=</span> feature_store[<span class="st">&quot;user:1001&quot;</span>]</span>
+<span id="cb451-8"><a href="#cb451-8" aria-hidden="true" tabindex="-1"></a>score <span class="op">=</span> model.predict([<span class="bu">list</span>(user_features.values())])</span></code></pre></div>
+
+<h3 id="document-databases">15.7.5 Document databases</h3>
+
+<div class="sourceCode"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb452-1"><a href="#cb452-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb452-2"><a href="#cb452-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;user_id&quot;</span><span class="fu">:</span> <span class="dv">1001</span><span class="fu">,</span></span>
+<span id="cb452-3"><a href="#cb452-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;Ava&quot;</span><span class="fu">,</span></span>
+<span id="cb452-4"><a href="#cb452-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;interests&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;ml&quot;</span><span class="ot">,</span> <span class="st">&quot;sql&quot;</span><span class="ot">,</span> <span class="st">&quot;nlp&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb452-5"><a href="#cb452-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;subscription&quot;</span><span class="fu">:</span> <span class="fu">{</span><span class="dt">&quot;plan&quot;</span><span class="fu">:</span> <span class="st">&quot;pro&quot;</span><span class="fu">,</span> <span class="dt">&quot;renewal_date&quot;</span><span class="fu">:</span> <span class="st">&quot;2026-01-15&quot;</span><span class="fu">}</span></span>
+<span id="cb452-6"><a href="#cb452-6" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+
+<p>Documents may have different fields — no strict schema required. This
+
+flexibility is powerful during development but adds downstream data
+
+quality burden.</p>
+
+<h3 id="graph-databases">15.7.6 Graph databases</h3>
+
+<p>Best when the primary question is about relationships between
+
+entities:</p>
+
+<svg viewBox="0 0 360 200" style="display:block; margin:20px auto; max-width:340px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Graph database: User A follows User B, buys Item X; User B likes Item Y; Items are similar">
+<defs>
+<marker id="gd-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker>
+<marker id="gd-b" markerWidth="8" markerHeight="6" refX="0" refY="3" orient="auto"><polygon points="8 0,0 3,8 6" fill="#22c55e"/></marker>
+</defs>
+<rect x="30" y="20" width="100" height="36" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="80" y="43" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="600" fill="#1e40af">User A</text>
+<rect x="230" y="20" width="100" height="36" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="280" y="43" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="600" fill="#1e40af">User B</text>
+<line x1="130" y1="38" x2="225" y2="38" stroke="#6366f1" stroke-width="1.5" marker-end="url(#gd-a)"/>
+<text x="178" y="32" text-anchor="middle" font-family="system-ui" font-size="10" fill="#6366f1">follows</text>
+<rect x="30" y="140" width="100" height="36" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="80" y="163" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="600" fill="#166534">Item X</text>
+<rect x="230" y="140" width="100" height="36" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="280" y="163" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="600" fill="#166534">Item Y</text>
+<line x1="80" y1="56" x2="80" y2="135" stroke="#6366f1" stroke-width="1.5" marker-end="url(#gd-a)"/>
+<text x="94" y="98" font-family="system-ui" font-size="10" fill="#6366f1">buys</text>
+<line x1="280" y1="56" x2="280" y2="135" stroke="#6366f1" stroke-width="1.5" marker-end="url(#gd-a)"/>
+<text x="294" y="98" font-family="system-ui" font-size="10" fill="#6366f1">likes</text>
+<line x1="130" y1="158" x2="225" y2="158" stroke="#22c55e" stroke-width="1.5" marker-end="url(#gd-a)"/>
+<line x1="230" y1="158" x2="135" y2="158" stroke="#22c55e" stroke-width="1.5" marker-end="url(#gd-b)"/>
+<text x="178" y="152" text-anchor="middle" font-family="system-ui" font-size="10" fill="#22c55e">similar</text>
+</svg>
+
+<p>Graph databases power fraud detection (finding connected accounts),
+
+recommendation systems (finding item co-occurrence paths), and knowledge
+
+graphs.</p>
+
+<h3 id="when-to-choose-what">15.7.7 When to choose what</h3>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Choose SQL / relational when you need</th>
+
+<th>Choose NoSQL when you need</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Complex joins and ad hoc analytics</td>
+
+<td>Massive horizontal write scale</td>
+
+</tr>
+
+<tr>
+
+<td>Strong ACID transactions</td>
+
+<td>Flexible/evolving schemas</td>
+
+</tr>
+
+<tr>
+
+<td>Mature BI tooling compatibility</td>
+
+<td>Ultra-low-latency key access</td>
+
+</tr>
+
+<tr>
+
+<td>Strict schema enforcement</td>
+
+<td>Geographic distribution</td>
+
+</tr>
+
+<tr>
+
+<td>Data warehouse analytics</td>
+
+<td>Specialized access patterns</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="polyglot-architectures-in-practice">15.7.8 Polyglot architectures in
+
+practice</h3>
+
+<p>Real production ML systems rarely use just one database type:</p>
+
+<svg viewBox="0 0 520 160" style="display:block; margin:20px auto; max-width:500px;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Polyglot architecture: PostgreSQL for OLTP, DynamoDB/Redis for online features, Snowflake/BigQuery for analytics">
+<defs><marker id="pa-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+<rect x="10" y="10" width="150" height="60" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="85" y="32" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="700" fill="#1e40af">PostgreSQL</text>
+<text x="85" y="47" text-anchor="middle" font-family="system-ui" font-size="10" fill="#3b82f6">OLTP: orders</text>
+<text x="85" y="60" text-anchor="middle" font-family="system-ui" font-size="10" fill="#3b82f6">transactions</text>
+<rect x="185" y="10" width="150" height="60" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+<text x="260" y="32" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="700" fill="#166534">DynamoDB / Redis</text>
+<text x="260" y="47" text-anchor="middle" font-family="system-ui" font-size="10" fill="#22c55e">Online features</text>
+<text x="260" y="60" text-anchor="middle" font-family="system-ui" font-size="10" fill="#22c55e">user sessions</text>
+<rect x="360" y="10" width="150" height="60" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+<text x="435" y="32" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="700" fill="#5b21b6">Snowflake / BigQ</text>
+<text x="435" y="47" text-anchor="middle" font-family="system-ui" font-size="10" fill="#8b5cf6">Analytics + ML</text>
+<text x="435" y="60" text-anchor="middle" font-family="system-ui" font-size="10" fill="#8b5cf6">training data</text>
+<line x1="85" y1="70" x2="85" y2="105" stroke="#6366f1" stroke-width="1.5"/>
+<line x1="260" y1="70" x2="260" y2="105" stroke="#6366f1" stroke-width="1.5"/>
+<line x1="435" y1="70" x2="435" y2="105" stroke="#6366f1" stroke-width="1.5"/>
+<line x1="85" y1="105" x2="435" y2="105" stroke="#6366f1" stroke-width="1.5"/>
+<circle cx="260" cy="105" r="3" fill="#6366f1"/>
+<text x="260" y="130" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="600" fill="#334155">polyglot architecture</text>
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> Match the database to the workload. There is no
+
+single best database — only the right tool for the access pattern.</p>
+
+</blockquote>
+
+<hr />
+
+
+
+<!-- Big Data & Data Engineering (merged into Chapter 15) -->
+
+
+
+<h2 id="data-pipelines-etl-vs-elt-intro">15.8 Big Data Concepts for Data Scientists</h2>
+
+
+
+<p>You don&rsquo;t need to build pipelines from scratch &mdash; but you need to understand the architecture
+
+well enough to collaborate with data engineers and debug ML pipeline failures. This section covers
+
+the three recurring design decisions you will encounter in every data-intensive ML system.</p>
+
+<h3 id="three-design-decisions">15.8.1 Three Design Decisions</h3>
+
+<table>
+
+<thead><tr><th>Decision</th><th>Option A</th><th>Option B</th><th>Rule of thumb</th></tr></thead>
+
+<tbody>
+
+<tr><td><strong>When data moves</strong></td><td>Batch (scheduled)</td><td>Streaming (continuous)</td><td>Default to batch; use streaming only when freshness is critical (fraud, live ranking)</td></tr>
+
+<tr><td><strong>When to transform</strong></td><td>ETL (transform before load)</td><td>ELT (load raw, transform later)</td><td>ELT is standard for ML &mdash; raw data lets you replay and rebuild training sets</td></tr>
+
+<tr><td><strong>Where data lives</strong></td><td>Data lake (raw files)</td><td>Data warehouse (structured tables)</td><td>Lake for raw storage; warehouse for curated analytics. Many teams use both</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<figure class="rich-figure">
+
+<img src="figures/generated/14_big_data_and_data_engineering/etl_vs_elt_v2.svg" alt="ETL (transform before loading) vs ELT (load raw, transform inside warehouse) — when to use each">
+
+<figcaption>
+
+ETL (transform before loading) vs ELT (load raw, transform inside warehouse) — when to use each
+
+</figcaption>
+
+</figure>
+
+
+
+<blockquote>
+
+<p><strong>Key:</strong> ELT fits ML well because keeping raw data lets you replay, backfill,
+
+and rebuild datasets when feature logic changes.</p>
+
+</blockquote>
+
+<h3 id="batch-vs-streaming-ds">15.8.2 Batch vs Streaming</h3>
+
+
+
+<table>
+
+<thead><tr><th></th><th>Batch</th><th>Streaming</th></tr></thead>
+
+<tbody>
+
+<tr><td><strong>Question it answers</strong></td><td>&ldquo;What happened in the last hour/day?&rdquo;</td><td>&ldquo;What is happening right now?&rdquo;</td></tr>
+
+<tr><td><strong>Best for</strong></td><td>Training data, daily features, reports</td><td>Fraud alerts, live ranking, real-time features</td></tr>
+
+<tr><td><strong>Complexity</strong></td><td>Low &mdash; easier to debug and backfill</td><td>High &mdash; state management, late events, ordering</td></tr>
+
+<tr><td><strong>Cost</strong></td><td>Lower</td><td>Higher</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<p><strong>Example:</strong> A bank needs (1) daily transaction totals by region &rarr; <em>batch</em>, and
+
+(2) suspicious card activity within seconds &rarr; <em>streaming</em>. Most ML training pipelines are batch;
+
+only the serving side needs streaming when latency matters.</p>
+
+
+
+<blockquote>
+
+<p><strong>Key:</strong> Default to batch. Use streaming only when you genuinely need sub-minute freshness.</p>
+
+</blockquote>
+
+<h3 id="hadoop-historical">15.8.3 Hadoop (Historical Context)</h3>
+
+
+
+<p>Hadoop (HDFS + MapReduce) was the dominant big-data platform of the 2010s. You likely won&rsquo;t
+
+write MapReduce code, but it helps to know the lineage: <strong>Spark replaced MapReduce</strong> for most
+
+workloads (10&ndash;100&times; faster via in-memory processing), and cloud object storage (S3, GCS) replaced
+
+HDFS for most new projects. Hive (SQL over HDFS) is still used in legacy environments.</p>
+
+
+
+<p><strong>Interview distinction:</strong> <em>Schema-on-read</em> (data lake) stores raw data first, applies
+
+schema at query time. <em>Schema-on-write</em> (RDBMS/warehouse) enforces schema before loading.</p>
+
+<h3 id="apache-spark-ds">15.8.4 Apache Spark</h3>
+
+
+
+<p><strong>Apache Spark</strong> is the standard distributed processing engine for large-scale ML.
+
+It processes data in-memory across a cluster, making it 10&ndash;100&times; faster than the MapReduce
+
+model it replaced.</p>
+
+
+
+<p><strong>Key concepts for data scientists:</strong></p>
+
+<ul>
+
+<li><strong>Spark DataFrame</strong> &mdash; a distributed, schema-aware table. Think of it as pandas but
+
+spread across many machines. Supports SQL-like operations.</li>
+
+<li><strong>MLlib</strong> &mdash; Spark&rsquo;s built-in ML library for classification, regression, clustering,
+
+and recommendation at scale.</li>
+
+<li><strong>Pipeline API</strong> &mdash; chains preprocessing and model stages together. Built on two
+
+abstractions: <strong>Transformers</strong> (<code>transform()</code> maps DataFrame &rarr; DataFrame) and
+
+<strong>Estimators</strong> (<code>fit()</code> maps DataFrame &rarr; Model).</li>
+
+</ul>
+
+
+
+<p><strong>When to use Spark:</strong></p>
+
+<table>
+
+<thead><tr><th>Scenario</th><th>Use Spark?</th></tr></thead>
+
+<tbody>
+
+<tr><td>Data fits in memory on one machine (&lt; 50 GB)</td><td>No &mdash; pandas is simpler and faster</td></tr>
+
+<tr><td>Data is 50 GB&ndash;10 TB, structured</td><td>Yes &mdash; Spark&rsquo;s sweet spot</td></tr>
+
+<tr><td>Need distributed feature engineering before model training</td><td>Yes &mdash; use Spark for prep, export features for training in scikit-learn/PyTorch</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<h3 id="dask-ds">15.8.5 Dask</h3>
+
+
+
+<p><strong>Dask</strong> is a Python-native alternative to Spark. It mirrors the pandas/NumPy API but
+
+distributes work across cores or machines. Use Dask when your data is too large for pandas but you
+
+want to stay in pure Python without setting up a Spark cluster. For most DS work, if pandas is too
+
+slow, try Dask first; reach for Spark when you need a full cluster.</p>
+
+
+
+<blockquote>
+
+<p><strong>Key:</strong> Spark = cluster-scale, JVM-based, enterprise standard. Dask = Python-native,
+
+easier setup, good for single-machine scale-out. Both solve &ldquo;data too big for pandas.&rdquo;</p>
+
+</blockquote>
+
+<hr />
+
+<h2 id="chapter-15-summary">Chapter 15 Summary</h2>
+
+<p>Data and SQL are the foundation that everything else in ML rests
+
+on.</p>
+
+<p><strong>The architecture decisions:</strong></p>
+
+<ul>
+<li>OLTP for operational  writes; OLAP/warehouse for analytics — never mix these workloads</li>
+<li>Data  lakes for raw, flexible storage; warehouses for curated, queryable  analytics</li>
+<li>NoSQL when relational does not fit the access pattern or  scale requirement</li>
+</ul>
+
+<p><strong>The SQL hierarchy:</strong> 1. <code>SELECT</code>,
+
+<code>WHERE</code>, <code>GROUP BY</code>, <code>ORDER BY</code> —
+
+master these first 2. JOINs — INNER for matches, LEFT for all-from-left,
+
+self-join for row relationships 3. Window functions — the most powerful
+
+analytical tool in SQL 4. Analytics patterns — cohorts, funnels,
+
+sessions, pivots, top-N per group</p>
+
+<p><strong>The warehouse design decisions:</strong></p>
+
+<ul>
+<li>Star schema for  most analytics workloads — simple, fast</li>
+<li>Partition on date;  cluster/sort on join keys — 10–100× query cost reduction</li>
+</ul>
+
+<p><strong>Common mistakes:</strong> - Running analytical queries on
+
+OLTP databases (slow + risky) - Using NoSQL for flexibility without
+
+designing for the actual access pattern - Forgetting to partition large
+
+tables (paying for full scans unnecessarily) - Using <code>HAVING</code>
+
+when <code>WHERE</code> would filter earlier and cheaper</p>
+
+<hr />
+
+<h2 id="ch15-interview-qa">Chapter 15 Interview Q&amp;A</h2>
+
+
+
+<h3>Q1. What is the difference between OLTP and OLAP systems?</h3>
+
+<p><strong>A.</strong></p>
+
+<table>
+
+<thead><tr><th></th><th>OLTP</th><th>OLAP</th></tr></thead>
+
+<tbody>
+
+<tr><td><strong>Purpose</strong></td><td>Transactional: insert, update, delete</td><td>Analytical: aggregate, slice, trend</td></tr>
+
+<tr><td><strong>Query pattern</strong></td><td>Point lookups; few rows per query</td><td>Full table scans; billions of rows aggregated</td></tr>
+
+<tr><td><strong>Storage</strong></td><td>Row-oriented (PostgreSQL, MySQL)</td><td>Column-oriented (BigQuery, Redshift, Snowflake)</td></tr>
+
+<tr><td><strong>Normalization</strong></td><td>Highly normalized (3NF) to avoid write anomalies</td><td>Denormalized (star/snowflake schema) for fast reads</td></tr>
+
+<tr><td><strong>Users</strong></td><td>Application backend; many concurrent writes</td><td>Analysts, data scientists; fewer concurrent reads</td></tr>
+
+</tbody>
+
+</table>
+
+<p>ML pipelines almost always read from OLAP systems (data warehouses) because analytical queries (aggregations, joins at scale) are far faster in column-oriented storage.</p>
+
+
+
+<h3>Q2. Explain window functions. How do they differ from GROUP BY?</h3>
+
+<p><strong>A.</strong> <strong>GROUP BY</strong> collapses rows into one row per group and discards non-aggregated columns. <strong>Window functions</strong> perform calculations over a &ldquo;window&rdquo; of rows related to the current row, but retain all original rows in the output. Syntax: <code>FUNC() OVER (PARTITION BY . ORDER BY . ROWS/RANGE BETWEEN .)</code>. Common uses: <code>ROW_NUMBER()</code> (rank within partition), <code>LAG(col, 1)</code>/<code>LEAD</code> (previous/next row value), <code>SUM() OVER (PARTITION BY user ORDER BY date ROWS UNBOUNDED PRECEDING)</code> (running total). Use for: computing moving averages directly in SQL, ranking records within groups, computing period-over-period changes &mdash; all without self-joins.</p>
+
+
+
+<h3>Q3. What is the difference between INNER JOIN, LEFT JOIN, and FULL OUTER JOIN?</h3>
+
+<p><strong>A.</strong> <strong>INNER JOIN</strong>: returns only rows where the join key exists in both tables. Rows with no match are dropped. <strong>LEFT JOIN</strong>: returns all rows from the left table; for rows with no match in the right table, right columns are NULL. Useful for: find users who never made a purchase (filter WHERE right_key IS NULL). <strong>FULL OUTER JOIN</strong>: returns all rows from both tables; NULLs fill in on whichever side has no match. Useful for: reconciliation (find records in A but not B, or B but not A). <strong>CROSS JOIN</strong>: Cartesian product; every row of A paired with every row of B (use with caution &mdash; m&times;n rows). For ML: LEFT JOIN is most common when enriching a fact table with dimension attributes; always check join cardinality (1:1, 1:N, M:N) to avoid row duplication.</p>
+
+
+
+<h3>Q4. What are CTEs and why are they useful?</h3>
+
+<p><strong>A.</strong> A CTE (Common Table Expression) defines a named, temporary result set that exists only within the scope of a single SQL statement: <code>WITH cte_name AS (SELECT .) SELECT * FROM cte_name</code>. Benefits: (1) <strong>Readability</strong>: breaks complex queries into named logical steps rather than nested subqueries. (2) <strong>Reusability</strong>: a CTE can be referenced multiple times in the same query (though most engines recompute it each time &mdash; materialisation depends on the engine). (3) <strong>Recursive CTEs</strong>: handle hierarchical data (org trees, graph traversal) that subqueries cannot express. Use CTEs for multi-step feature engineering in SQL: compute aggregates in one CTE, join back in the next, then filter in the final SELECT.</p>
+
+
+
+<h3>Q5. How does indexing work in a relational database? What types exist?</h3>
+
+<p><strong>A.</strong> An index is a separate data structure that maps column values to row locations, enabling fast lookups without full table scans. <strong>B-tree index</strong> (default): balanced tree; O(log n) for equality and range queries; good for high-cardinality columns used in WHERE, JOIN, ORDER BY. <strong>Hash index</strong>: O(1) for equality only; no range queries; rare in practice (PostgreSQL hash, MemSQL). <strong>Bitmap index</strong>: stores one bit per row per distinct value; excellent for low-cardinality columns (gender, status) in OLAP; fast AND/OR across multiple columns. <strong>Partial index</strong>: index only rows satisfying a condition (e.g., WHERE status=&rsquo;active&rsquo;); smaller and faster for filtered queries. Downsides: indexes add write overhead (INSERT/UPDATE must maintain all indexes) and take storage. Rule of thumb: index columns in WHERE, JOIN, and ORDER BY clauses of frequent queries.</p>
+
+
+
+<h3>Q6. What is a star schema? How does it differ from a snowflake schema?</h3>
+
+<p><strong>A.</strong> A <strong>star schema</strong> has one central <strong>fact table</strong> (e.g., sales: order_id, product_id, user_id, date_id, amount) surrounded by fully denormalized <strong>dimension tables</strong> (Product, User, Date). Each dimension is one table. Simple joins, fast analytical queries. A <strong>snowflake schema</strong> normalizes the dimension tables further &mdash; e.g., Product references a Category table, which references a Department table. Reduces redundancy and storage, but requires more joins, making queries slower and more complex. For data warehouses, star schemas are preferred for query performance; snowflake schemas are used when dimensions have large redundant hierarchies. ML feature pipelines almost always use star schemas or wide denormalized tables to minimize join complexity at training time.</p>
+
+
+
+<h3>Q7. How would you detect and handle NULL values in a SQL-based feature pipeline?</h3>
+
+<p><strong>A.</strong> Detect: <code>SELECT col, COUNT(*) FROM t WHERE col IS NULL GROUP BY col</code> or <code>SELECT COUNT(*) - COUNT(col) AS nulls FROM t</code>. Handle in SQL: (1) <code>COALESCE(col, default_value)</code> &mdash; fill with constant or column. (2) <code>NULLIF(col, 0)</code> &mdash; turn 0 into NULL for division safety. (3) <code>AVG(col) OVER (PARTITION BY group)</code> &mdash; impute with group average using window functions. (4) Filter with <code>WHERE col IS NOT NULL</code> if NULLs mean &ldquo;unknown and unusable.&rdquo; For ML: NULLs in features must be handled before model training. In pandas downstream: use <code>fillna</code> or <code>SimpleImputer</code>. Always distinguish MCAR (missing completely at random) vs. MNAR (missing not at random &mdash; missingness itself is informative, so add a &ldquo;was_null&rdquo; indicator).</p>
+
+
+
+<h3>Q8. Write a SQL query to find the top-3 products by revenue for each category.</h3>
+
+<p><strong>A.</strong></p>
+
+<pre class="sql"><code>WITH product_revenue AS (
+
+    SELECT
+
+        p.category,
+
+        p.product_name,
+
+        SUM(o.amount) AS total_revenue
+
+    FROM orders o
+
+    JOIN products p ON o.product_id = p.product_id
+
+    GROUP BY p.category, p.product_name
+
+),
+
+ranked AS (
+
+    SELECT
+
+        category,
+
+        product_name,
+
+        total_revenue,
+
+        ROW_NUMBER() OVER (PARTITION BY category ORDER BY total_revenue DESC) AS rn
+
+    FROM product_revenue
+
+)
+
+SELECT category, product_name, total_revenue
+
+FROM ranked
+
+WHERE rn &lt;= 3
+
+ORDER BY category, rn;
+
+</code></pre>
+
+<p>Use <code>RANK()</code> instead of <code>ROW_NUMBER()</code> if you want ties to share a rank (and potentially return more than 3 rows when there are ties).</p>
+
+
+
+<h3>Q9. What is query optimization? What steps do you take when a SQL query is slow?</h3>
+
+<p><strong>A.</strong> Query optimization is the process of choosing the most efficient execution plan. Steps when a query is slow: (1) <strong>EXPLAIN / EXPLAIN ANALYZE</strong>: inspect the execution plan &mdash; look for sequential scans on large tables, nested loop joins, high estimated vs. actual row counts. (2) <strong>Add or fix indexes</strong>: ensure join keys and WHERE-clause columns are indexed. (3) <strong>Rewrite correlated subqueries</strong>: replace with JOINs or window functions. (4) <strong>Filter early</strong>: push WHERE conditions as close to the raw data as possible; avoid functions on indexed columns (e.g., <code>WHERE YEAR(date_col) = 2023</code> bypasses the index). (5) <strong>Partition pruning</strong>: if the table is partitioned by date, filter on the partition key so only relevant partitions are scanned. (6) <strong>Materialise intermediate results</strong>: if a CTE is reused many times, materialise it as a temporary table.</p>
+
+
+
+<h3>Q10. What is the difference between RANK(), DENSE_RANK(), and ROW_NUMBER()?</h3>
+
+<p><strong>A.</strong> All three are window functions that assign a position to each row within a partition, but handle ties differently:</p>
+
+<table>
+
+<thead><tr><th>Function</th><th>Tie handling</th><th>Example (scores: 100, 100, 90)</th></tr></thead>
+
+<tbody>
+
+<tr><td><code>ROW_NUMBER()</code></td><td>Arbitrary unique rank for ties (non-deterministic)</td><td>1, 2, 3</td></tr>
+
+<tr><td><code>RANK()</code></td><td>Same rank for ties; next rank skips</td><td>1, 1, 3</td></tr>
+
+<tr><td><code>DENSE_RANK()</code></td><td>Same rank for ties; next rank is consecutive</td><td>1, 1, 2</td></tr>
+
+</tbody>
+
+</table>
+
+<p>Use <code>ROW_NUMBER()</code> when you need exactly one row per group (deduplication, top-N). Use <code>RANK()</code> or <code>DENSE_RANK()</code> when ties should be treated equally. <code>DENSE_RANK()</code> is usually preferred over <code>RANK()</code> to avoid gaps that confuse reporting.</p>
+
+<h2 id="key-takeaways-13">Key Takeaways</h2>
+
+<ul>
+
+<li>SQL is the lingua franca of data work. Window functions (<code>ROW_NUMBER</code>, <code>LAG</code>, <code>SUM OVER</code>) are the single skill that separates junior from mid-level DS in SQL interviews.</li>
+
+<li>Know your join types cold: INNER returns intersection; LEFT keeps all left rows; FULL OUTER keeps all rows from both; a self-join compares rows within the same table.</li>
+
+<li>Indexes are the primary tool for query performance. A query that scans 100M rows when 100K are needed is a missing index, not a slow database.</li>
+
+<li>Query execution order: FROM &rarr; JOIN &rarr; WHERE &rarr; GROUP BY &rarr; HAVING &rarr; SELECT &rarr; ORDER BY &rarr; LIMIT. You cannot reference a SELECT alias in a WHERE clause because WHERE runs first.</li>
+
+<li>CTEs (WITH clauses) make complex queries readable and testable; they are not magic for performance but greatly aid maintainability.</li>
+
+<li>NULL propagates: <code>NULL = NULL</code> is <code>NULL</code>, not TRUE. Use <code>IS NULL</code> / <code>IS NOT NULL</code> and <code>COALESCE</code> to handle missing values explicitly.</li>
+
+<li>Data modeling (star schema, fact/dimension tables) determines whether your analytical queries are fast or painful at scale.</li>
+
+</ul>
+
+
+
+<h2 id="common-pitfalls-ch14">Common Pitfalls</h2>
+
+<table>
+
+<thead><tr><th>Mistake</th><th>What goes wrong</th><th>Fix</th></tr></thead>
+
+<tbody>
+
+<tr><td>Using <code>SELECT *</code> in production queries</td><td>Reads unnecessary columns; breaks when schema changes</td><td>Always specify column names explicitly</td></tr>
+
+<tr><td>Filtering after a JOIN instead of before</td><td>Joins millions of rows then discards most</td><td>Pre-filter in a subquery or CTE before the join</td></tr>
+
+<tr><td>Comparing NULLs with <code>=</code></td><td>Expression evaluates to NULL; rows silently disappear</td><td>Use <code>IS NULL</code> or <code>IS NOT NULL</code></td></tr>
+
+<tr><td>Fan-out joins (joining a fact table to a many-many relationship)</td><td>Row counts multiply unexpectedly &mdash; aggregates are inflated</td><td>Aggregate one side to the correct grain before joining</td></tr>
+
+<tr><td>Using <code>HAVING</code> when <code>WHERE</code> is sufficient</td><td>HAVING filters after grouping; WHERE filters before &mdash; the latter is faster</td><td>Filter raw rows in WHERE; use HAVING only to filter on aggregates</td></tr>
+
+<tr><td>Not deduplicating before grouping</td><td>Duplicate rows in source inflate SUM/COUNT</td><td>Deduplicate with <code>DISTINCT</code> or a CTE with <code>ROW_NUMBER()</code> first</td></tr>
+
+</tbody>
+
+</table>
+
+
+
+<h2 id="further-reading-13">Further Reading</h2>
+
+<ul>
+
+<li><strong>Mode SQL Tutorial</strong> (mode.com/sql-tutorial) &mdash; free, interactive SQL from basic to window functions; best quick reference</li>
+
+<li><strong>SQL Performance Explained</strong> (Markus Winand, use-the-index-luke.com) &mdash; the definitive guide to indexes and query plans; free online</li>
+
+<li><strong>The Art of PostgreSQL</strong> (Dimitri Fontaine) &mdash; advanced SQL techniques including arrays, JSON, full-text search</li>
+
+<li><strong>dbt documentation</strong> (docs.getdbt.com) &mdash; the standard for SQL-based data transformation pipelines in production</li>
+
+<li><strong>Designing Data-Intensive Applications</strong> (Kleppmann) &mdash; Ch 2&ndash;3 cover data models and storage engines; essential context for understanding databases</li>
+
+</ul>
+
+
+<div class="chapter-nav">
+  <a href="chapter-14.html">&larr; Chapter 14: Operational Research</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-16.html">Chapter 16: ML Systems and MLOps &rarr;</a>
+</div>
+<div class="site-footer">
+  <p>&copy; 2026 Hariram Subramanian Gopal &middot; <a href="index.html">Data to Decisions</a></p>
+</div>
+</body>
+</html>

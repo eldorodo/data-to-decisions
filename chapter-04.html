@@ -1,0 +1,4124 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Hariram Subramanian Gopal" />
+  <title>Chapter 04: Feature Engineering and EDA | Data to Decisions</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</head>
+<body>
+<div class="chapter-nav">
+  <a href="chapter-03.html">&larr; Chapter 03: Python for Data Science</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-05.html">Chapter 05: Supervised Learning &rarr;</a>
+</div>
+<h1 id="chapter-04-feature-engineering-and-eda">Chapter 04: Feature
+
+Engineering and EDA</h1>
+
+<h2 id="chapter-scope-3">4.0 Chapter Scope</h2>
+
+<p>Every ML project starts with messy raw data. This chapter covers the
+
+end-to-end data preparation workflow: understanding your data before
+
+modeling, engineering features that give models useful signal, and
+
+building pipelines that avoid the silent leakage bugs that cause
+
+production failures.</p>
+
+<p><strong>What you will learn:</strong></p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Section</th>
+
+<th>Topic</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>4.1</td>
+
+<td>EDA workflow: inspect before you model</td>
+
+</tr>
+
+<tr>
+
+<td>4.2</td>
+
+<td>Handling missing values</td>
+
+</tr>
+
+<tr>
+
+<td>4.3</td>
+
+<td>Feature encoding: categoricals to numbers</td>
+
+</tr>
+
+<tr>
+
+<td>4.4</td>
+
+<td>Feature scaling and normalization</td>
+
+</tr>
+
+<tr>
+
+<td>4.5</td>
+
+<td>Feature selection and importance</td>
+
+</tr>
+
+<tr>
+
+<td>4.6</td>
+
+<td>Dimensionality reduction (PCA, t-SNE, UMAP)</td>
+
+</tr>
+
+<tr>
+
+<td>4.7</td>
+
+<td>Handling class imbalance</td>
+
+</tr>
+
+<tr>
+
+<td>4.8</td>
+
+<td>Data leakage prevention</td>
+
+</tr>
+
+<tr>
+
+<td>4.9</td>
+
+<td>Feature creation: new features from existing data</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<p><strong>Prerequisites:</strong> Python/pandas basics (Chapter 3),
+
+basic statistics (Chapter 1).</p>
+
+<hr />
+
+<p>Every ML project starts with messy raw data. Your job in this chapter
+
+is to learn how to look at data <em>before</em> you model it, extract
+
+the useful signal, and avoid the silent bugs that make models fail in
+
+production.</p>
+
+<p>The most common way to waste a month of ML work is to accidentally
+
+leak future information into your training features. We’ll show you how
+
+to prevent that.</p>
+
+<blockquote>
+
+<p><strong>Rule #1 of ML pipelines:</strong> Fit all preprocessing on
+
+training data only. Apply to val/test.</p>
+
+</blockquote>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="110" viewBox="0 0 520 110" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .rd-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .rd-step { font: 11px system-ui, sans-serif; fill: #6366f1; font-weight: 600; }
+    .rd-note { font: italic 11px system-ui, sans-serif; fill: #64748b; }
+  </style>
+  <defs><marker id="rd-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <rect x="10" y="14" width="110" height="40" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="65" y="39" text-anchor="middle" class="rd-lbl">Raw data</text>
+  <line x1="120" y1="34" x2="180" y2="34" stroke="#6366f1" stroke-width="2" marker-end="url(#rd-a)"/>
+  <text x="150" y="26" text-anchor="middle" class="rd-step">inspect</text>
+  <rect x="188" y="14" width="130" height="40" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="253" y="39" text-anchor="middle" class="rd-lbl">EDA + checks</text>
+  <line x1="318" y1="34" x2="378" y2="34" stroke="#6366f1" stroke-width="2" marker-end="url(#rd-a)"/>
+  <text x="348" y="26" text-anchor="middle" class="rd-step">transform</text>
+  <rect x="386" y="14" width="120" height="40" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="446" y="39" text-anchor="middle" class="rd-lbl">Features</text>
+  <!-- Warning band -->
+  <rect x="50" y="70" width="420" height="28" rx="6" fill="#fef2f2" stroke="#ef4444" stroke-width="1"/>
+  <text x="260" y="89" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#dc2626" font-weight="600">Watch for: missingness, skew, outliers, leakage</text>
+</svg>
+
+<ul>
+
+<li><strong>EDA:</strong> inspect distributions, missingness, outliers,
+
+leakage risks.</li>
+
+<li><strong>Feature engineering:</strong> convert raw columns into
+
+useful model inputs.</li>
+
+<li><strong>Preprocessing:</strong> clean/scale/encode safely inside
+
+pipelines.</li>
+
+<li><strong>Selection:</strong> keep informative features; drop
+
+noisy/redundant ones.</li>
+
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> Inspect first, transform second, and fit all
+
+preprocessing leakage-safe.</p>
+
+</blockquote>
+
+<h2 id="exploratory-data-analysis-workflow">4.1 Exploratory Data
+
+Analysis Workflow</h2>
+
+<p>EDA = inspect data before modeling: distributions, missingness,
+
+outliers, relationships, preprocessing needs.</p>
+
+<p>EDA begins once you have identified the <strong>business problem statement</strong>, pinpointed your <strong>data sources</strong>, and completed the necessary <strong>data engineering work</strong> — ingesting raw data, cleaning schemas, and building reliable pipelines. Without that foundation, EDA is premature: you'd be exploring data whose quality and scope you don't yet understand. For the data engineering prerequisites, see <strong>Chapter 15 (Data &amp; SQL)</strong>.</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> EDA is reconnaissance: detect transformations
+
+needed and modeling risks early.</p>
+
+</blockquote>
+
+<h3 id="practical-workflow">4.1.1 Practical workflow</h3>
+
+<figure class="rich-figure">
+
+<img src="figures/generated/04_feature_engineering_and_eda/eda_workflow.svg" alt="EDA workflow: inspect structure → check quality → explore distributions → plan transformations → implement leakage-safe">
+
+<figcaption>
+
+EDA workflow: inspect structure → check quality → explore distributions → plan transformations → implement leakage-safe
+
+</figcaption>
+
+</figure>
+
+<p>The diagram above summarizes the seven-step workflow. Two quick rules of thumb: a skewed feature → log transform; high-cardinality categorical → target encoding or hashing.</p>
+
+<h3 id="typical-eda-questions">4.1.2 Typical EDA Questions</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 50%" />
+
+<col style="width: 50%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Area</th>
+
+<th>Questions</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Types</td>
+
+<td>Which columns are numeric, categorical, ordinal, datetime,
+
+text?</td>
+
+</tr>
+
+<tr>
+
+<td>Missingness</td>
+
+<td>Is missingness informative or structured?</td>
+
+</tr>
+
+<tr>
+
+<td>Distribution</td>
+
+<td>Are variables skewed or heavy-tailed?</td>
+
+</tr>
+
+<tr>
+
+<td>Target signal</td>
+
+<td>Which features correlate with target?</td>
+
+</tr>
+
+<tr>
+
+<td>Redundancy</td>
+
+<td>Are features highly collinear?</td>
+
+</tr>
+
+<tr>
+
+<td>Imbalance</td>
+
+<td>Is class imbalance present?</td>
+
+</tr>
+
+<tr>
+
+<td>Leakage</td>
+
+<td>Any leakage-prone variables?</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> EDA should directly map observations to
+
+preprocessing decisions.</p>
+
+</blockquote>
+
+<h3 id="example-python-eda-checklist">4.1.3 Example Python EDA Checklist</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb136-1"><a href="#cb136-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb136-2"><a href="#cb136-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb136-3"><a href="#cb136-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb136-4"><a href="#cb136-4" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.read_csv(<span class="st">&quot;data.csv&quot;</span>)</span>
+<span id="cb136-5"><a href="#cb136-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb136-6"><a href="#cb136-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(df.shape)</span>
+<span id="cb136-7"><a href="#cb136-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(df.head())</span>
+<span id="cb136-8"><a href="#cb136-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(df.info())</span>
+<span id="cb136-9"><a href="#cb136-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(df.describe(include<span class="op">=</span><span class="st">&quot;all&quot;</span>).T)</span>
+<span id="cb136-10"><a href="#cb136-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb136-11"><a href="#cb136-11" aria-hidden="true" tabindex="-1"></a>missing_pct <span class="op">=</span> df.isna().mean().sort_values(ascending<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb136-12"><a href="#cb136-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(missing_pct.head(<span class="dv">20</span>))</span>
+<span id="cb136-13"><a href="#cb136-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb136-14"><a href="#cb136-14" aria-hidden="true" tabindex="-1"></a>duplicate_count <span class="op">=</span> df.duplicated().<span class="bu">sum</span>()</span>
+<span id="cb136-15"><a href="#cb136-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">&quot;Duplicates:&quot;</span>, duplicate_count)</span>
+<span id="cb136-16"><a href="#cb136-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb136-17"><a href="#cb136-17" aria-hidden="true" tabindex="-1"></a>numeric_cols <span class="op">=</span> df.select_dtypes(include<span class="op">=</span>np.number).columns</span>
+<span id="cb136-18"><a href="#cb136-18" aria-hidden="true" tabindex="-1"></a>categorical_cols <span class="op">=</span> df.select_dtypes(exclude<span class="op">=</span>np.number).columns</span>
+<span id="cb136-19"><a href="#cb136-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb136-20"><a href="#cb136-20" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">&quot;Numeric columns:&quot;</span>, <span class="bu">list</span>(numeric_cols))</span>
+<span id="cb136-21"><a href="#cb136-21" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">&quot;Categorical columns:&quot;</span>, <span class="bu">list</span>(categorical_cols))</span></code></pre></div>
+
+<p><strong>Further Reading</strong></p>
+
+<ul>
+<li>Pandas user guide:  https://pandas.pydata.org/docs/user_guide/</li>
+<li>Seaborn tutorial for  statistical visualization: https://seaborn.pydata.org/tutorial.html</li>
+</ul>
+
+<hr />
+
+<h2 id="handling-missing-values">4.2 Handling Missing Values</h2>
+
+<p>Missing data is common: sensor failure, skipped forms, schema drift,
+
+bad joins. First ask: <strong>why is it missing?</strong></p>
+
+<h3 id="types-of-missingness">4.2.1 Types of Missingness</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 20%" />
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+<col style="width: 30%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Type</th>
+
+<th>Full form &amp; meaning</th>
+
+<th>Implication</th>
+
+<th>Example</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td><strong>MCAR</strong></td>
+
+<td><strong>Missing Completely At Random.</strong> Missingness is unrelated to any observed or unobserved data — purely accidental.</td>
+
+<td>Simple methods (drop, mean/median) are often safe; no systematic bias introduced.</td>
+
+<td>A lab technician accidentally drops 5 blood samples — the lost results have nothing to do with the patients' health status.</td>
+
+</tr>
+
+<tr>
+
+<td><strong>MAR</strong></td>
+
+<td><strong>Missing At Random.</strong> Missingness depends on <em>other observed</em> variables, but not on the missing value itself.</td>
+
+<td>Can model and impute reliably using the observed predictors (e.g. MICE).</td>
+
+<td>Younger survey respondents skip the "income" field more often — missingness correlates with age (observed), not with income itself.</td>
+
+</tr>
+
+<tr>
+
+<td><strong>MNAR</strong></td>
+
+<td><strong>Missing Not At Random.</strong> Missingness depends on the missing value itself or an unobserved factor.</td>
+
+<td>Standard imputation can introduce bias. May need domain heuristics, sensitivity analysis, or a missingness indicator feature.</td>
+
+<td>High-income individuals refuse to report their salary — the reason for missingness <em>is</em> the value. Similarly, severely ill patients may miss follow-up visits <em>because</em> of their condition.</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Missingness mechanism determines how risky
+
+imputation is.</p>
+
+</blockquote>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="260" height="200" viewBox="0 0 260 200" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .mv-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .mv-note { font: italic 11px system-ui, sans-serif; fill: #64748b; }
+  </style>
+  <defs><marker id="mv-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <rect x="60" y="8" width="140" height="36" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="130" y="31" text-anchor="middle" class="mv-lbl">Missing value</text>
+  <line x1="130" y1="44" x2="130" y2="66" stroke="#6366f1" stroke-width="2" marker-end="url(#mv-a)"/>
+  <text x="210" y="60" class="mv-note">ask: why missing?</text>
+  <rect x="40" y="74" width="180" height="46" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="130" y="95" text-anchor="middle" class="mv-lbl">MCAR / MAR / MNAR</text>
+  <text x="130" y="112" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#64748b">(mechanism determines risk)</text>
+  <line x1="130" y1="120" x2="130" y2="142" stroke="#6366f1" stroke-width="2" marker-end="url(#mv-a)"/>
+  <rect x="50" y="150" width="160" height="36" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="130" y="173" text-anchor="middle" class="mv-lbl">Pick method</text>
+</svg>
+
+<h3 id="common-strategies">4.2.2 Common Strategies</h3>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Strategy</th>
+
+<th>Best when</th>
+
+<th>Main risk</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Drop rows/columns</td>
+
+<td>Few bad rows / mostly empty column</td>
+
+<td>Lose signal</td>
+
+</tr>
+
+<tr>
+
+<td>Mean/median/mode</td>
+
+<td>Fast baseline</td>
+
+<td>Distorts structure</td>
+
+</tr>
+
+<tr>
+
+<td>Constant value</td>
+
+<td>Missing has meaning</td>
+
+<td>Artificial value/category</td>
+
+</tr>
+
+<tr>
+
+<td>Missing indicator</td>
+
+<td>Missingness is informative</td>
+
+<td>More features</td>
+
+</tr>
+
+<tr>
+
+<td>KNN / iterative</td>
+
+<td>Complex feature relationships</td>
+
+<td>Slow, tuning-heavy</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h4 id="drop-rows-or-columns">1. Drop rows or columns</h4>
+
+<p>Use when:</p>
+
+<ul>
+<li>Few rows affected</li>
+<li>Column mostly missing</li>
+<li>Column  unimportant</li>
+</ul>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb138-1"><a href="#cb138-1" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df.dropna(subset<span class="op">=</span>[<span class="st">&quot;age&quot;</span>])</span>
+<span id="cb138-2"><a href="#cb138-2" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df.drop(columns<span class="op">=</span>[<span class="st">&quot;mostly_missing_column&quot;</span>])</span></code></pre></div>
+
+<h4 id="mean-median-mode-imputation">2. Mean / median / mode
+
+imputation</h4>
+
+<ul>
+
+<li><strong>Mean:</strong> outlier-sensitive</li>
+
+<li><strong>Median:</strong> better for skewed numeric data</li>
+
+<li><strong>Mode:</strong> categorical baseline</li>
+
+</ul>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb139-1"><a href="#cb139-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.impute <span class="im">import</span> SimpleImputer</span>
+<span id="cb139-2"><a href="#cb139-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb139-3"><a href="#cb139-3" aria-hidden="true" tabindex="-1"></a>num_imputer <span class="op">=</span> SimpleImputer(strategy<span class="op">=</span><span class="st">&quot;median&quot;</span>)</span>
+<span id="cb139-4"><a href="#cb139-4" aria-hidden="true" tabindex="-1"></a>cat_imputer <span class="op">=</span> SimpleImputer(strategy<span class="op">=</span><span class="st">&quot;most_frequent&quot;</span>)</span></code></pre></div>
+
+<h4 id="constant-value-imputation">3. Constant-value imputation</h4>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb140-1"><a href="#cb140-1" aria-hidden="true" tabindex="-1"></a>cat_imputer <span class="op">=</span> SimpleImputer(strategy<span class="op">=</span><span class="st">&quot;constant&quot;</span>, fill_value<span class="op">=</span><span class="st">&quot;Unknown&quot;</span>)</span></code></pre></div>
+
+<p>Use when missing means <strong>unknown</strong> / <strong>not
+
+applicable</strong>.</p>
+
+<h4 id="missing-indicator-features">4. Missing-indicator features</h4>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb141-1"><a href="#cb141-1" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;income_missing&quot;</span>] <span class="op">=</span> df[<span class="st">&quot;income&quot;</span>].isna().astype(<span class="bu">int</span>)</span></code></pre></div>
+
+<p>Use when the fact of missingness may carry signal.</p>
+
+<h4 id="knn-or-model-based-imputation">5. KNN or model-based
+
+imputation</h4>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb142-1"><a href="#cb142-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.impute <span class="im">import</span> KNNImputer</span>
+<span id="cb142-2"><a href="#cb142-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb142-3"><a href="#cb142-3" aria-hidden="true" tabindex="-1"></a>imputer <span class="op">=</span> KNNImputer(n_neighbors<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb142-4"><a href="#cb142-4" aria-hidden="true" tabindex="-1"></a>X_imputed <span class="op">=</span> imputer.fit_transform(X_train)</span></code></pre></div>
+
+<h4 id="mice-imputation">6. MICE — Multiple Imputation by Chained Equations</h4>
+
+<p><strong>MICE (Multiple Imputation by Chained Equations)</strong> is the gold standard for complex missingness. The idea: treat each missing feature as the target of a regression model trained on all other features, then iterate until convergence.</p>
+
+<p><strong>How MICE works (one cycle):</strong></p>
+
+<ol type="1">
+
+<li>Fill all missing values with a simple placeholder (e.g. column mean).</li>
+
+<li>For each column with missing values: train a regression/classification model on rows where it is <em>observed</em>, using all other columns as inputs.</li>
+
+<li>Predict and fill the missing values for that column.</li>
+
+<li>Repeat steps 2–3 for every column with missing values (one "chain").</li>
+
+<li>Repeat the full cycle for <em>n</em> iterations until estimates stabilize.</li>
+
+</ol>
+
+<p>The diagram below shows one full MICE cycle. sklearn's <code>IterativeImputer</code> implements this principle:</p>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="380" viewBox="0 0 780 380" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .mice-title { font: bold 16px system-ui, sans-serif; fill: #1e293b; }
+    .mice-lbl  { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .mice-sub  { font: 11px system-ui, sans-serif; fill: #334155; }
+    .mice-step { font: bold 11px system-ui, sans-serif; fill: #6366f1; }
+    .mice-note { font: italic 11px system-ui, sans-serif; fill: #64748b; }
+  </style>
+  <defs>
+    <marker id="mice-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker>
+    <marker id="mice-g" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#22c55e"/></marker>
+  </defs>
+
+  <text x="390" y="24" text-anchor="middle" class="mice-title">MICE Cycle (Multiple Imputation by Chained Equations)</text>
+
+  <!-- Step 0: Initialize -->
+  <rect x="280" y="40" width="220" height="44" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="390" y="58" text-anchor="middle" class="mice-lbl">Step 0: Initialize</text>
+  <text x="390" y="74" text-anchor="middle" class="mice-sub">Fill all NaNs with column mean</text>
+  <line x1="390" y1="84" x2="390" y2="112" stroke="#6366f1" stroke-width="2" marker-end="url(#mice-a)"/>
+
+  <!-- Cycle box -->
+  <rect x="80" y="120" width="620" height="170" rx="14" fill="#fefce8" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6,3"/>
+  <text x="390" y="146" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#b45309">One Cycle (repeat for each iteration)</text>
+
+  <!-- A: Pick next feature with NaNs -->
+  <rect x="100" y="162" width="180" height="50" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="110" y="182" class="mice-step">A</text>
+  <text x="190" y="182" text-anchor="middle" class="mice-lbl">Pick next feature</text>
+  <text x="190" y="198" text-anchor="middle" class="mice-sub">that still has NaNs</text>
+  <line x1="280" y1="187" x2="318" y2="187" stroke="#6366f1" stroke-width="2" marker-end="url(#mice-a)"/>
+
+  <!-- B: Fit model -->
+  <rect x="326" y="162" width="180" height="50" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="336" y="182" class="mice-step">B</text>
+  <text x="416" y="182" text-anchor="middle" class="mice-lbl">Fit regression model</text>
+  <text x="416" y="198" text-anchor="middle" class="mice-sub">using all other columns</text>
+  <line x1="506" y1="187" x2="544" y2="187" stroke="#6366f1" stroke-width="2" marker-end="url(#mice-a)"/>
+
+  <!-- C: Predict & replace NaNs -->
+  <rect x="552" y="162" width="130" height="50" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="562" y="182" class="mice-step">C</text>
+  <text x="617" y="182" text-anchor="middle" class="mice-lbl">Predict &amp;</text>
+  <text x="617" y="198" text-anchor="middle" class="mice-lbl">replace NaNs</text>
+
+  <!-- Loop arrow: C back down and around to A -->
+  <line x1="617" y1="212" x2="617" y2="248" stroke="#8b5cf6" stroke-width="2"/>
+  <line x1="190" y1="248" x2="617" y2="248" stroke="#8b5cf6" stroke-width="2"/>
+  <line x1="190" y1="248" x2="190" y2="212" stroke="#8b5cf6" stroke-width="2" marker-end="url(#mice-a)"/>
+  <text x="400" y="264" text-anchor="middle" class="mice-note">repeat A → B → C for every feature with NaNs</text>
+
+  <!-- Arrow out of cycle box -->
+  <line x1="390" y1="290" x2="390" y2="318" stroke="#22c55e" stroke-width="2" marker-end="url(#mice-g)"/>
+
+  <!-- Converge -->
+  <rect x="260" y="326" width="260" height="40" rx="10" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+  <text x="390" y="346" text-anchor="middle" class="mice-lbl">Converged? Done. Else repeat cycle.</text>
+  <text x="390" y="358" text-anchor="middle" class="mice-note">(typically 5–10 iterations suffice)</text>
+</svg>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb143-1"><a href="#cb143-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.experimental <span class="im">import</span> enable_iterative_imputer</span>
+<span id="cb143-2"><a href="#cb143-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.impute <span class="im">import</span> IterativeImputer</span>
+<span id="cb143-3"><a href="#cb143-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb143-4"><a href="#cb143-4" aria-hidden="true" tabindex="-1"></a>imputer <span class="op">=</span> IterativeImputer(max_iter<span class="op">=</span><span class="dv">10</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb143-5"><a href="#cb143-5" aria-hidden="true" tabindex="-1"></a>X_imputed <span class="op">=</span> imputer.fit_transform(X_train)  <span class="co"># fit on train only</span></span></code></pre></div>
+
+<table>
+
+<thead><tr><th>Method</th><th>When to use</th><th>Cost</th></tr></thead>
+
+<tbody>
+
+<tr><td>KNN imputation</td><td>Small–medium datasets, spatial/demographic data</td><td>Medium (scales with k × rows)</td></tr>
+
+<tr><td>MICE / Iterative</td><td>Complex feature interactions; MAR data; clinical/survey data</td><td>High (multiple model fits)</td></tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> MICE respects relationships between features when filling gaps — it imputes income using age, education, and job role together, not in isolation. Start with mean/median for quick baselines; upgrade to MICE when validation shows it helps.</p>
+
+</blockquote>
+
+<h3 id="practical-guidance">4.2.3 Practical Guidance</h3>
+
+<ul>
+
+<li>Numeric, skewed: <strong>median</strong></li>
+
+<li>Categorical: <strong>most_frequent</strong> or
+
+<strong>“Unknown”</strong></li>
+
+<li>Add indicators if missingness may be predictive</li>
+
+<li><strong>Fit imputers on train only</strong></li>
+
+<li>Compare strategies via validation</li>
+
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> Imputers learn from data, so fitting on full
+
+data causes leakage.</p>
+
+</blockquote>
+
+<h3 id="example-with-columntransformer">4.2.4 Example with
+
+ColumnTransformer</h3>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="380" height="180" viewBox="0 0 380 180" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .ct-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .ct-sub { font: 11px system-ui, sans-serif; fill: #334155; }
+  </style>
+  <defs><marker id="ct-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <rect x="120" y="6" width="140" height="34" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="190" y="28" text-anchor="middle" class="ct-lbl">Raw features</text>
+  <line x1="190" y1="40" x2="190" y2="62" stroke="#6366f1" stroke-width="2" marker-end="url(#ct-a)"/>
+  <!-- ColumnTransformer container -->
+  <rect x="30" y="70" width="320" height="100" rx="10" fill="#f8fafc" stroke="#6366f1" stroke-width="2"/>
+  <text x="190" y="90" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#6366f1">ColumnTransformer</text>
+  <!-- Numeric pipe -->
+  <rect x="50" y="100" width="130" height="56" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+  <text x="115" y="118" text-anchor="middle" class="ct-lbl">Numeric</text>
+  <text x="115" y="134" text-anchor="middle" class="ct-sub">median impute</text>
+  <text x="115" y="150" text-anchor="middle" class="ct-sub">→ StandardScaler</text>
+  <!-- Categorical pipe -->
+  <rect x="200" y="100" width="130" height="56" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="265" y="118" text-anchor="middle" class="ct-lbl">Categorical</text>
+  <text x="265" y="134" text-anchor="middle" class="ct-sub">most_frequent impute</text>
+  <text x="265" y="150" text-anchor="middle" class="ct-sub">→ OneHotEncoder</text>
+</svg>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb145-1"><a href="#cb145-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.compose <span class="im">import</span> ColumnTransformer</span>
+<span id="cb145-2"><a href="#cb145-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.pipeline <span class="im">import</span> Pipeline</span>
+<span id="cb145-3"><a href="#cb145-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> OneHotEncoder, StandardScaler</span>
+<span id="cb145-4"><a href="#cb145-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.impute <span class="im">import</span> SimpleImputer</span>
+<span id="cb145-5"><a href="#cb145-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb145-6"><a href="#cb145-6" aria-hidden="true" tabindex="-1"></a>numeric_features <span class="op">=</span> [<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>]</span>
+<span id="cb145-7"><a href="#cb145-7" aria-hidden="true" tabindex="-1"></a>categorical_features <span class="op">=</span> [<span class="st">&quot;city&quot;</span>, <span class="st">&quot;segment&quot;</span>]</span>
+<span id="cb145-8"><a href="#cb145-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb145-9"><a href="#cb145-9" aria-hidden="true" tabindex="-1"></a>numeric_pipeline <span class="op">=</span> Pipeline([</span>
+<span id="cb145-10"><a href="#cb145-10" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&quot;imputer&quot;</span>, SimpleImputer(strategy<span class="op">=</span><span class="st">&quot;median&quot;</span>)),</span>
+<span id="cb145-11"><a href="#cb145-11" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&quot;scaler&quot;</span>, StandardScaler())</span>
+<span id="cb145-12"><a href="#cb145-12" aria-hidden="true" tabindex="-1"></a>])</span>
+<span id="cb145-13"><a href="#cb145-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb145-14"><a href="#cb145-14" aria-hidden="true" tabindex="-1"></a>categorical_pipeline <span class="op">=</span> Pipeline([</span>
+<span id="cb145-15"><a href="#cb145-15" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&quot;imputer&quot;</span>, SimpleImputer(strategy<span class="op">=</span><span class="st">&quot;most_frequent&quot;</span>)),</span>
+<span id="cb145-16"><a href="#cb145-16" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&quot;encoder&quot;</span>, OneHotEncoder(handle_unknown<span class="op">=</span><span class="st">&quot;ignore&quot;</span>))</span>
+<span id="cb145-17"><a href="#cb145-17" aria-hidden="true" tabindex="-1"></a>])</span>
+<span id="cb145-18"><a href="#cb145-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb145-19"><a href="#cb145-19" aria-hidden="true" tabindex="-1"></a>preprocessor <span class="op">=</span> ColumnTransformer([</span>
+<span id="cb145-20"><a href="#cb145-20" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&quot;num&quot;</span>, numeric_pipeline, numeric_features),</span>
+<span id="cb145-21"><a href="#cb145-21" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&quot;cat&quot;</span>, categorical_pipeline, categorical_features)</span>
+<span id="cb145-22"><a href="#cb145-22" aria-hidden="true" tabindex="-1"></a>])</span></code></pre></div>
+
+<p><strong>Further Reading</strong> - Scikit-learn imputation
+
+documentation: https://scikit-learn.org/stable/modules/impute.html -
+
+Little &amp; Rubin overview of missing data concepts:
+
+https://en.wikipedia.org/wiki/Missing_data</p>
+
+<hr />
+
+<h2 id="feature-encoding">4.3 Feature Encoding</h2>
+
+<p>Most ML models require numeric input, but real-world data is full of categories — cities, product types, colour names. Feature encoding converts these categories into numbers the model can use. The right encoding depends on three things: whether the categories have a natural <strong>order</strong>, how many unique values there are (<strong>cardinality</strong>), and what <strong>model</strong> you're training. Getting this wrong can introduce false ordinal relationships or blow up the feature space.</p>
+
+<p>This section covers six encoding methods — from simple label encoding to the hashing trick — along with how to handle unknown categories in production and leakage risks with target encoding.</p>
+
+<h3 id="common-encoding-methods">4.3.1 Common Encoding Methods</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Method</th>
+
+<th>Best for</th>
+
+<th>Strength</th>
+
+<th>Risk</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Label encoding</td>
+
+<td>Targets, some ordinal/tree cases</td>
+
+<td>Simple</td>
+
+<td>False order</td>
+
+</tr>
+
+<tr>
+
+<td>Ordinal encoding</td>
+
+<td>True ordered categories</td>
+
+<td>Preserves rank</td>
+
+<td>Wrong for nominal data</td>
+
+</tr>
+
+<tr>
+
+<td>One-hot encoding</td>
+
+<td>Low-cardinality nominal features</td>
+
+<td>Safe, interpretable</td>
+
+<td>Wide matrices</td>
+
+</tr>
+
+<tr>
+
+<td>Frequency/count</td>
+
+<td>High-cardinality categories</td>
+
+<td>Compact</td>
+
+<td>Loses identity</td>
+
+</tr>
+
+<tr>
+
+<td>Target encoding</td>
+
+<td>Predictive high-cardinality categories</td>
+
+<td>Strong signal</td>
+
+<td>Leakage</td>
+
+</tr>
+
+<tr>
+
+<td>Hashing trick</td>
+
+<td>Very high-cardinality / large-scale</td>
+
+<td>Fixed size</td>
+
+<td>Collisions</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="170" viewBox="0 0 420 170" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .ce-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .ce-leaf { font: 12px system-ui, sans-serif; fill: #334155; }
+  </style>
+  <defs><marker id="ce-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <rect x="120" y="6" width="180" height="34" rx="8" fill="#6366f1"/>
+  <text x="210" y="28" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#fff">Categorical feature</text>
+  <!-- branches -->
+  <line x1="160" y1="40" x2="60" y2="72" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ce-a)"/>
+  <line x1="210" y1="40" x2="210" y2="72" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ce-a)"/>
+  <line x1="260" y1="40" x2="360" y2="72" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ce-a)"/>
+  <!-- Nominal -->
+  <rect x="10" y="80" width="100" height="34" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="60" y="101" text-anchor="middle" class="ce-lbl">Nominal</text>
+  <rect x="10" y="124" width="100" height="26" rx="5" fill="#f0f9ff" stroke="#93c5fd" stroke-width="1"/>
+  <text x="60" y="141" text-anchor="middle" class="ce-leaf">one-hot</text>
+  <line x1="60" y1="114" x2="60" y2="124" stroke="#3b82f6" stroke-width="1" marker-end="url(#ce-a)"/>
+  <!-- Ordinal -->
+  <rect x="160" y="80" width="100" height="34" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="210" y="101" text-anchor="middle" class="ce-lbl">Ordinal</text>
+  <rect x="160" y="124" width="100" height="26" rx="5" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1"/>
+  <text x="210" y="141" text-anchor="middle" class="ce-leaf">ordinal enc</text>
+  <line x1="210" y1="114" x2="210" y2="124" stroke="#8b5cf6" stroke-width="1" marker-end="url(#ce-a)"/>
+  <!-- High-card -->
+  <rect x="310" y="80" width="100" height="34" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="360" y="101" text-anchor="middle" class="ce-lbl">High-card</text>
+  <rect x="290" y="124" width="130" height="26" rx="5" fill="#fffbeb" stroke="#fcd34d" stroke-width="1"/>
+  <text x="355" y="141" text-anchor="middle" class="ce-leaf">freq / target / hash</text>
+  <line x1="360" y1="114" x2="355" y2="124" stroke="#f59e0b" stroke-width="1" marker-end="url(#ce-a)"/>
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> Match encoding to category meaning, feature
+
+cardinality, and model sensitivity to numeric order.</p>
+
+</blockquote>
+
+<h4 id="label-encoding">1. Label Encoding</h4>
+
+<p>Map each category to an arbitrary integer. Use for target labels, ordinal data, or tree models. Risk: linear and distance-based models may infer a false numeric ordering.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb147-1"><a href="#cb147-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> LabelEncoder</span>
+<span id="cb147-2"><a href="#cb147-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb147-3"><a href="#cb147-3" aria-hidden="true" tabindex="-1"></a>le <span class="op">=</span> LabelEncoder()</span>
+<span id="cb147-4"><a href="#cb147-4" aria-hidden="true" tabindex="-1"></a>y_encoded <span class="op">=</span> le.fit_transform(y)</span></code></pre></div>
+
+<table>
+
+<thead><tr><th>Before — <code>color</code></th><th>After — <code>color_enc</code></th></tr></thead>
+
+<tbody>
+
+<tr><td>Red</td><td>2</td></tr>
+
+<tr><td>Blue</td><td>0</td></tr>
+
+<tr><td>Green</td><td>1</td></tr>
+
+<tr><td>Red</td><td>2</td></tr>
+
+</tbody>
+
+</table>
+
+<h4 id="ordinal-encoding">2. Ordinal Encoding</h4>
+
+<p>Use only when category order is genuinely meaningful (low &lt; medium &lt; high; bronze &lt; silver &lt; gold). You specify the order explicitly so the model sees the right numeric spacing.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb148-1"><a href="#cb148-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> OrdinalEncoder</span>
+<span id="cb148-2"><a href="#cb148-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb148-3"><a href="#cb148-3" aria-hidden="true" tabindex="-1"></a>enc <span class="op">=</span> OrdinalEncoder(categories<span class="op">=</span>[[<span class="st">&quot;low&quot;</span>, <span class="st">&quot;medium&quot;</span>, <span class="st">&quot;high&quot;</span>]])</span>
+<span id="cb148-4"><a href="#cb148-4" aria-hidden="true" tabindex="-1"></a>X_ord <span class="op">=</span> enc.fit_transform(df[[<span class="st">&quot;priority&quot;</span>]])</span></code></pre></div>
+
+<table>
+
+<thead><tr><th>Before — <code>priority</code></th><th>After — <code>priority_enc</code></th></tr></thead>
+
+<tbody>
+
+<tr><td>low</td><td>0</td></tr>
+
+<tr><td>high</td><td>2</td></tr>
+
+<tr><td>medium</td><td>1</td></tr>
+
+<tr><td>low</td><td>0</td></tr>
+
+</tbody>
+
+</table>
+
+<h4 id="one-hot-encoding">3. One-Hot Encoding</h4>
+
+<p>Creates one binary column per category value. Safe for nominal data with linear models and neural networks. Width explodes for high-cardinality features (e.g. 10,000 cities → 10,000 columns).</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb149-1"><a href="#cb149-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> OneHotEncoder</span>
+<span id="cb149-2"><a href="#cb149-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb149-3"><a href="#cb149-3" aria-hidden="true" tabindex="-1"></a>ohe <span class="op">=</span> OneHotEncoder(handle_unknown<span class="op">=</span><span class="st">&quot;ignore&quot;</span>, sparse_output<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb149-4"><a href="#cb149-4" aria-hidden="true" tabindex="-1"></a>X_cat <span class="op">=</span> ohe.fit_transform(df[[<span class="st">&quot;city&quot;</span>]])</span></code></pre></div>
+
+<table>
+
+<thead><tr><th>Before — <code>city</code></th><th><code>city_NY</code></th><th><code>city_LA</code></th><th><code>city_SF</code></th></tr></thead>
+
+<tbody>
+
+<tr><td>NY</td><td>1</td><td>0</td><td>0</td></tr>
+
+<tr><td>LA</td><td>0</td><td>1</td><td>0</td></tr>
+
+<tr><td>NY</td><td>1</td><td>0</td><td>0</td></tr>
+
+<tr><td>SF</td><td>0</td><td>0</td><td>1</td></tr>
+
+</tbody>
+
+</table>
+
+<h4 id="frequency-count-encoding">4. Frequency / Count Encoding</h4>
+
+<p>Replace each category with its frequency (or raw count) in the training set. Compact — only one column output. Good for tree models and high-cardinality features. Loses category identity (two categories with the same frequency become identical).</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb150-1"><a href="#cb150-1" aria-hidden="true" tabindex="-1"></a>freq <span class="op">=</span> df[<span class="st">&quot;city&quot;</span>].value_counts(normalize<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb150-2"><a href="#cb150-2" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;city_freq&quot;</span>] <span class="op">=</span> df[<span class="st">&quot;city&quot;</span>].<span class="bu">map</span>(freq)</span></code></pre></div>
+
+<table>
+
+<thead><tr><th>Before — <code>city</code></th><th>After — <code>city_freq</code></th><th>Note</th></tr></thead>
+
+<tbody>
+
+<tr><td>NY</td><td>0.50</td><td>NY appears 50% of the time</td></tr>
+
+<tr><td>NY</td><td>0.50</td><td></td></tr>
+
+<tr><td>LA</td><td>0.25</td><td></td></tr>
+
+<tr><td>SF</td><td>0.25</td><td></td></tr>
+
+</tbody>
+
+</table>
+
+<h4 id="target-encoding">5. Target Encoding</h4>
+
+<p>Replace each category with the mean target value for that category, computed on training data only. Strong signal for high-cardinality categorical features. Leakage-prone unless computed out-of-fold.</p>
+
+<p>For binary classification: \(\text{Enc}(c) = \mathbb{E}[y \mid x_{\text{cat}} = c]\)</p>
+
+<table>
+
+<thead><tr><th>Before — <code>neighbourhood</code></th><th>Target <code>y</code></th><th>After — <code>neighbourhood_enc</code></th></tr></thead>
+
+<tbody>
+
+<tr><td>Mayfair</td><td>1 (expensive)</td><td>0.80 (80% expensive)</td></tr>
+
+<tr><td>Mayfair</td><td>0</td><td>0.80</td></tr>
+
+<tr><td>Hackney</td><td>0</td><td>0.20 (20% expensive)</td></tr>
+
+<tr><td>Hackney</td><td>0</td><td>0.20</td></tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Always compute target encoding on the training fold only. Use sklearn's <code>TargetEncoder</code> (sklearn ≥ 1.3) or the <code>category_encoders</code> library which handle this correctly out-of-the-box.</p>
+
+</blockquote>
+
+<p>Strong, but leakage-prone unless <strong>out-of-fold</strong>.</p>
+
+<p><strong>Out-of-fold target encoding explained:</strong> The naive approach — compute the mean target per category on the full training set, then use it — leaks information because every row's own label influenced the encoding it receives. The fix is a K-fold approach:</p>
+
+<ol type="1">
+<li>Split training data into K folds.</li>
+<li>For each fold, compute the per-category target mean using only the <em>other K−1 folds</em>.</li>
+<li>Assign those means to the held-out fold.</li>
+<li>For test/production data, use the means computed on the entire training set.</li>
+</ol>
+
+<p>This mirrors cross-validation and ensures no row ever sees its own label during encoding.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span><span class="co"># sklearn ≥ 1.3 handles out-of-fold internally</span></span>
+<span><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> TargetEncoder</span>
+<span></span>
+<span>enc <span class="op">=</span> TargetEncoder(smooth<span class="op">=</span><span class="st">"auto"</span>)  <span class="co"># smoothing shrinks toward global mean</span></span>
+<span>X_train_enc <span class="op">=</span> enc.fit_transform(X_train[[<span class="st">"neighbourhood"</span>]], y_train)</span>
+<span>X_val_enc   <span class="op">=</span> enc.transform(X_val[[<span class="st">"neighbourhood"</span>]])</span></code></pre></div>
+
+<blockquote>
+<p><strong>Key:</strong> <code>TargetEncoder</code> uses internal cross-fitting during <code>fit_transform</code> on training data, preventing leakage automatically. The <code>smooth</code> parameter shrinks small-sample categories toward the global mean, acting as regularization.</p>
+</blockquote>
+
+<h4 id="hashing-trick">6. Hashing Trick</h4>
+
+<p>Hash categories into a fixed number of bins using a hash function. No need to store a vocabulary mapping. Used in very large-scale systems (e.g. text feature hashing in web ads). Risk: two distinct categories can hash to the same bin (collision).</p>
+
+<table>
+
+<thead><tr><th>Before — <code>product_id</code></th><th>After — <code>hash_bin</code> (8 bins)</th></tr></thead>
+
+<tbody>
+
+<tr><td>SKU-1042</td><td>3</td></tr>
+
+<tr><td>SKU-5871</td><td>7</td></tr>
+
+<tr><td>SKU-9934</td><td>3  ← collision with SKU-1042</td></tr>
+
+</tbody>
+
+</table>
+
+<p><strong>What happens when categories collide?</strong> When two categories hash to the same bin, their signals get mixed: the model sees one combined feature instead of two separate ones. This adds noise, but with enough bins (e.g. 2<sup>18</sup> = 262,144) collisions are rare and the noise is minor. A more advanced technique — <strong>signed hashing</strong> — assigns each category a random sign (+1 or −1) in addition to the bin index. Collisions partially cancel out rather than piling up, preserving more signal.</p>
+
+<p><strong>"But doesn't increasing bins just bring back the cardinality problem?"</strong> No — and here's why. Suppose you have 500,000 product IDs. One-hot encoding creates exactly 500,000 columns, one per ID, and any new ID the model has never seen gets no representation at all. Hashing to 2<sup>18</sup> (≈ 262K) bins creates a <em>fixed</em> 262K-column matrix regardless of whether you have 500K or 5 million categories. The key differences:</p>
+
+<ul>
+<li><strong>Fixed, bounded width:</strong> The feature matrix is always 262K columns — it never grows, even as new categories appear. One-hot grows with every new label.</li>
+<li><strong>No vocabulary needed:</strong> You don't need to store or look up a mapping table. Any category — including ones never seen in training — hashes to a valid bin instantly.</li>
+<li><strong>Sparse but shared:</strong> Most of those 262K bins are zero for any given row (each row lights up only a handful of bins). The matrix is extremely sparse, so memory and compute stay efficient. With one-hot at 500K columns the sparsity is similar, but you also pay the cost of building and maintaining the vocabulary.</li>
+</ul>
+
+<p>Think of it like a library with 262K shelves: you can shelve millions of books as long as you accept that two books <em>occasionally</em> share a shelf. That occasional sharing (collision) adds a tiny bit of noise, but you never need to build a new shelf for a new book.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span><span class="im">from</span> sklearn.feature_extraction <span class="im">import</span> FeatureHasher</span>
+<span></span>
+<span>hasher <span class="op">=</span> FeatureHasher(n_features<span class="op">=</span><span class="dv">2</span><span class="op">**</span><span class="dv">18</span>, input_type<span class="op">=</span><span class="st">"string"</span>)</span>
+<span>X_hashed <span class="op">=</span> hasher.transform(X_train[<span class="st">"product_id"</span>].apply(<span class="kw">lambda</span> x: [x]))</span>
+<span><span class="co"># Signed hashing is the default — collisions partially cancel</span></span></code></pre></div>
+
+<blockquote>
+<p><strong>Key:</strong> More bins → fewer collisions → less noise. Signed hashing (sklearn's default) lets collisions partially cancel each other's effect. For most practical purposes, 2<sup>16</sup> – 2<sup>20</sup> bins keep collision noise negligible.</p>
+</blockquote>
+
+<h3 id="choosing-an-encoding-strategy">4.3.2 Choosing an Encoding
+
+Strategy</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 50%" />
+
+<col style="width: 50%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Situation</th>
+
+<th>Default choice</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Nominal + low cardinality</td>
+
+<td>One-hot</td>
+
+</tr>
+
+<tr>
+
+<td>Ordinal</td>
+
+<td>Ordinal encoding</td>
+
+</tr>
+
+<tr>
+
+<td>High cardinality</td>
+
+<td>Frequency / Target / Hashing</td>
+
+</tr>
+
+<tr>
+
+<td>Tree-based models</td>
+
+<td>Can tolerate integer-like encodings better, but semantics still
+
+matter</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px;">Encoding quick-reference</caption>
+<thead><tr>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Feature type</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">→ Encoding</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Nominal + small cardinality</td>
+    <td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">One-hot</td></tr>
+<tr><td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Ordinal</td>
+    <td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">Ordinal</td></tr>
+<tr><td style="padding:6px 14px;">High cardinality</td>
+    <td style="padding:6px 14px; font-weight:600;">Frequency / Target / Hashing</td></tr>
+</tbody>
+</table>
+
+<h3 id="handling-unknown-labels">4.3.3 Handling Unknown / Unseen Labels at Prediction Time</h3>
+
+<p>In production, the model will encounter category values it never saw during training. Each encoding handles this differently:</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px;">Unknown-category behaviour by encoding method</caption>
+<thead><tr>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Encoding</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Default on unseen label</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Recommended handling</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Label / Ordinal</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Error</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Map unseen to a reserved "unknown" integer (e.g. −1) before encoding</td></tr>
+<tr><td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">One-Hot</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Error (default)</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);"><code>handle_unknown="ignore"</code> → all-zeros row</td></tr>
+<tr><td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Frequency</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">NaN (unmapped key)</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Fill with 0 or a small epsilon</td></tr>
+<tr><td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Target</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">NaN or global mean</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Map to global target mean (the "prior")</td></tr>
+<tr><td style="padding:6px 14px;">Hashing</td>
+    <td style="padding:6px 14px;">Works automatically</td>
+    <td style="padding:6px 14px;">Hash function handles any string — <strong>no vocabulary needed</strong></td></tr>
+</tbody>
+</table>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span># One-hot: handle unseen categories gracefully</span>
+<span><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> OneHotEncoder</span>
+<span></span>
+<span>ohe <span class="op">=</span> OneHotEncoder(handle_unknown<span class="op">=</span><span class="st">"ignore"</span>, sparse_output<span class="op">=</span><span class="va">False</span>)</span>
+<span>ohe.fit(X_train[[<span class="st">"city"</span>]])</span>
+<span><span class="co"># Unseen category "Boston" → all-zeros row, no crash</span></span>
+<span>ohe.transform(pd.DataFrame({<span class="st">"city"</span>: [<span class="st">"Boston"</span>]}))</span></code></pre></div>
+
+<blockquote>
+<p><strong>Key:</strong> Always plan for unseen labels. In production, new categories appear constantly. <code>handle_unknown="ignore"</code> for one-hot and the hashing trick are the most robust options.</p>
+</blockquote>
+
+<h3 id="example-with-pandas">4.3.4 Quick One-Hot with Pandas</h3>
+
+<p>For quick prototyping, <code>pd.get_dummies</code> is the simplest way to one-hot encode:</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb152-1"><a href="#cb152-1" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.get_dummies(df, columns<span class="op">=</span>[<span class="st">&quot;city&quot;</span>], drop_first<span class="op">=</span><span class="va">False</span>)</span></code></pre></div>
+
+<h3 id="leakage-warning-for-target-encoding">4.3.5 Leakage Warning for Target
+
+Encoding</h3>
+
+<p>Correct workflow:</p>
+
+<ul>
+<li>Split first</li>
+<li>Compute category-target stats on  training folds only</li>
+<li>Apply to validation/test</li>
+</ul>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="60" viewBox="0 0 460 60" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .sp-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+  </style>
+  <defs><marker id="sp-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <rect x="10" y="12" width="110" height="36" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="65" y="35" text-anchor="middle" class="sp-lbl">Split train/val</text>
+  <line x1="120" y1="30" x2="162" y2="30" stroke="#6366f1" stroke-width="2" marker-end="url(#sp-a)"/>
+  <rect x="170" y="12" width="130" height="36" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="235" y="27" text-anchor="middle" class="sp-lbl">Fit encoding</text>
+  <text x="235" y="42" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#92400e">on train only</text>
+  <line x1="300" y1="30" x2="342" y2="30" stroke="#6366f1" stroke-width="2" marker-end="url(#sp-a)"/>
+  <rect x="350" y="12" width="100" height="36" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="400" y="27" text-anchor="middle" class="sp-lbl">Apply to</text>
+  <text x="400" y="42" text-anchor="middle" class="sp-lbl">val / test</text>
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> Never compute target encoding on the full
+
+dataset before splitting.</p>
+
+</blockquote>
+
+<p>Encoding can interact with scaling, especially for distance-based or
+
+gradient-based models.</p>
+
+<p><strong>Further Reading</strong> - Scikit-learn preprocessing
+
+encoders: https://scikit-learn.org/stable/modules/preprocessing.html -
+
+Category Encoders library:
+
+https://contrib.scikit-learn.org/category_encoders/</p>
+
+<hr />
+
+<h2 id="feature-scaling-normalization">4.4 Feature Scaling</h2>
+
+<p>Imagine you're building a KNN model with two features: <strong>Age</strong> (20–70) and <strong>Income</strong> (30,000–200,000). When the model measures "distance" between two customers, Income swamps Age by a factor of thousands — the model effectively ignores Age entirely. <strong>Scaling</strong> fixes this by putting every feature on a comparable range so no single feature dominates just because of its units.</p>
+
+<p>This section covers <strong>four scaling methods</strong> and <strong>two transform techniques</strong>:</p>
+
+<h3 id="lay-of-the-land-scaling">4.4.1 Lay of the Land</h3>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px;">Scaling &amp; transform methods at a glance</caption>
+<thead><tr>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Method</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">One-liner</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Reach for when</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">StandardScaler</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Mean 0, std 1</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Default for most models</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">MinMaxScaler</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Map to [0, 1]</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Neural nets, bounded inputs</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">RobustScaler</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Median + IQR</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Outlier-heavy data</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">Normalizer</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Unit norm per row</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Text / cosine similarity</td></tr>
+<tr style="background:#f8fafc;"><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">Log transform</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">log(1 + x)</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Right-skewed features (income, counts)</td></tr>
+<tr style="background:#f8fafc;"><td style="padding:6px 14px; font-weight:600;">Box-Cox / Yeo-Johnson</td>
+    <td style="padding:6px 14px;">Power transform to Gaussian</td>
+    <td style="padding:6px 14px;">Very skewed data; models that assume normality</td></tr>
+</tbody>
+</table>
+
+<p>The first three scale <strong>each column</strong> (feature-wise). <code>Normalizer</code> is different — it scales <strong>each row</strong> (sample-wise) to unit length.</p>
+
+<h3 id="why-scaling-matters">4.4.2 Why Scaling Matters</h3>
+
+<p><strong>Important for:</strong> KNN, K-Means, logistic regression,
+
+linear regression + regularization, SVMs, neural nets, PCA</p>
+
+<p><strong>Usually less critical for:</strong> decision trees, random
+
+forests, gradient-boosted trees</p>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="150" viewBox="0 0 420 150" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .rf-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .rf-sub { font: 11px system-ui, sans-serif; fill: #64748b; }
+  </style>
+  <defs><marker id="rf-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <rect x="10" y="12" width="130" height="46" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="75" y="33" text-anchor="middle" class="rf-lbl">Raw features</text>
+  <text x="75" y="49" text-anchor="middle" class="rf-sub">0–1, 0–1e6</text>
+  <line x1="140" y1="35" x2="192" y2="35" stroke="#6366f1" stroke-width="2" marker-end="url(#rf-a)"/>
+  <rect x="200" y="12" width="160" height="46" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="280" y="33" text-anchor="middle" class="rf-lbl">Unequal scales</text>
+  <text x="280" y="49" text-anchor="middle" class="rf-sub">big feature dominates</text>
+  <line x1="280" y1="58" x2="280" y2="80" stroke="#6366f1" stroke-width="2" marker-end="url(#rf-a)"/>
+  <rect x="200" y="88" width="160" height="46" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="280" y="109" text-anchor="middle" class="rf-lbl">Scale features</text>
+  <text x="280" y="125" text-anchor="middle" class="rf-sub">comparable range</text>
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> Scale when the model depends on distances, dot
+
+products, or gradients.</p>
+
+</blockquote>
+
+<h3 id="before-and-after-example">4.4.3 Standardization vs. Normalization: Key Concepts</h3>
+
+<p><strong>Standardization</strong> and <strong>Normalization</strong> are often confused, but they're quite different:</p>
+
+<ul>
+<li><strong>Standardization (z-score scaling):</strong> Transforms each <em>feature</em> (column) to have mean=0 and standard deviation=1. Formula: <code>z = (x − μ) / σ</code>. Used when you want features on a comparable statistical footing (especially for linear models, SVMs, PCA).</li>
+<li><strong>Normalization (range scaling):</strong> Transforming each <em>feature</em> (column) to a fixed range, typically [0, 1]. Formula: <code>x' = (x − min) / (max − min)</code>. Used when you need bounded values (neural networks, image processing).</li>
+</ul>
+
+<p>There's also a third concept: <strong>Row Normalization</strong> (via <code>Normalizer</code>), which operates on each <em>row</em> (sample) instead of columns, scaling to unit length. This is used for text and directional data.</p>
+
+<p><strong>Summary:</strong> Most algorithms in this section are <em>column-wise scaling techniques</em> (Standardization and Normalization both scale features). The <em>Normalizer</em> operates row-wise. See the table below:</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px;">Scaling techniques at a glance</caption>
+<thead><tr>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Technique</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Type</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Operation</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Result Range</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">StandardScaler</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);"><strong>Standardization</strong></td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">(x − μ) / σ</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">approx. −3 to +3</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">MinMaxScaler</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);"><strong>Normalization</strong></td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">(x − min) / (max − min)</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">0 to 1</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">RobustScaler</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);"><strong>Standardization</strong> (robust variant)</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">(x − median) / IQR</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">approx. −2 to +2</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600;">Normalizer</td>
+    <td style="padding:6px 14px;"><strong>Row Normalization</strong></td>
+    <td style="padding:6px 14px;">x / ||x||₂ (per row)</td>
+    <td style="padding:6px 14px;">unit norm (L2=1)</td></tr>
+</tbody>
+</table>
+
+<h3 id="common-methods">4.4.4 Methods in Detail: Data Examples</h3>
+
+<p>Let's walk through each method with concrete before/after examples. Consider three features with very different raw ranges:</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px;">Raw data (sample 4 rows)</caption>
+<thead><tr>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Feature</th>
+  <th style="padding:8px 14px; text-align:center; border-bottom:2px solid #6366f1;">Row 1</th>
+  <th style="padding:8px 14px; text-align:center; border-bottom:2px solid #6366f1;">Row 2</th>
+  <th style="padding:8px 14px; text-align:center; border-bottom:2px solid #6366f1;">Row 3</th>
+  <th style="padding:8px 14px; text-align:center; border-bottom:2px solid #6366f1;">Row 4</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">Age (20–70)</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">25</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">45</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">35</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">70</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">Income (30K–200K)</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">30,000</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">80,000</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">120,000</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">200,000</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600;">Rating (1–5)</td>
+    <td style="padding:6px 14px; text-align:center;">2</td>
+    <td style="padding:6px 14px; text-align:center;">5</td>
+    <td style="padding:6px 14px; text-align:center;">3</td>
+    <td style="padding:6px 14px; text-align:center;">4</td></tr>
+</tbody>
+</table>
+
+<h4 id="standardization">1. Standardization (StandardScaler) — Type: Standardization</h4>
+
+<p><strong>What it does:</strong> Subtracts the mean and divides by the standard deviation. Every feature ends up centered at zero with unit variance.</p>
+
+<p><span class="math display">\[
+z = \frac{x - \mu}{\sigma}
+\]</span></p>
+
+<p><strong>When to use:</strong> Default choice for most ML models. Especially important for logistic regression, SVMs, and PCA.</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px;">After StandardScaler (mean=0, std=1)</caption>
+<thead><tr>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Feature</th>
+  <th style="padding:8px 14px; text-align:center; border-bottom:2px solid #6366f1;">Row 1</th>
+  <th style="padding:8px 14px; text-align:center; border-bottom:2px solid #6366f1;">Row 2</th>
+  <th style="padding:8px 14px; text-align:center; border-bottom:2px solid #6366f1;">Row 3</th>
+  <th style="padding:8px 14px; text-align:center; border-bottom:2px solid #6366f1;">Row 4</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">Age</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">−1.05</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">0.00</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">−0.52</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">1.57</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">Income</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">−1.17</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">−0.39</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">0.24</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">1.49</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600;">Rating</td>
+    <td style="padding:6px 14px; text-align:center;">−1.26</td>
+    <td style="padding:6px 14px; text-align:center;">1.07</td>
+    <td style="padding:6px 14px; text-align:center;">−0.49</td>
+    <td style="padding:6px 14px; text-align:center;">0.29</td></tr>
+</tbody>
+</table>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="100" viewBox="0 0 520 100" style="display:block; margin:16px auto; max-width:100%;">
+  <style>.ss-lbl{font:bold 11px system-ui,sans-serif;fill:#1e293b}.ss-sub{font:11px system-ui,sans-serif;fill:#64748b}</style>
+  <defs><marker id="ss-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#3b82f6"/></marker></defs>
+  <rect x="10" y="20" width="140" height="55" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="80" y="42" text-anchor="middle" class="ss-lbl">Raw feature</text>
+  <text x="80" y="60" text-anchor="middle" class="ss-sub">mean=50K, std=40K</text>
+  <line x1="150" y1="47" x2="198" y2="47" stroke="#3b82f6" stroke-width="2" marker-end="url(#ss-a)"/>
+  <text x="174" y="40" text-anchor="middle" class="ss-sub">z = (x−&mu;)/&sigma;</text>
+  <rect x="206" y="20" width="140" height="55" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="276" y="42" text-anchor="middle" class="ss-lbl">Standardized</text>
+  <text x="276" y="60" text-anchor="middle" class="ss-sub">mean=0, std=1</text>
+  <text x="420" y="42" class="ss-sub">&#9888; Sensitive to outliers</text>
+</svg>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb155-1"><a href="#cb155-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> StandardScaler</span>
+<span id="cb155-2"><a href="#cb155-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb155-3"><a href="#cb155-3" aria-hidden="true" tabindex="-1"></a>scaler <span class="op">=</span> StandardScaler()</span>
+<span id="cb155-4"><a href="#cb155-4" aria-hidden="true" tabindex="-1"></a>X_scaled <span class="op">=</span> scaler.fit_transform(X_train)</span></code></pre></div>
+
+<h4 id="min-max-scaling">2. Min-Max Scaling (MinMaxScaler) — Type: Normalization</h4>
+
+<p><strong>What it does:</strong> Maps every value into the range [0, 1] (or any custom range). The minimum becomes 0 and the maximum becomes 1.</p>
+
+<p><span class="math display">\[
+x' = \frac{x - x_{\min}}{x_{\max} - x_{\min}}
+\]</span></p>
+
+<p><strong>When to use:</strong> Neural networks (activations expect bounded inputs), image pixel intensities, features that must stay non-negative.</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px;">After MinMaxScaler (range 0–1)</caption>
+<thead><tr>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Feature</th>
+  <th style="padding:8px 14px; text-align:center; border-bottom:2px solid #6366f1;">Row 1</th>
+  <th style="padding:8px 14px; text-align:center; border-bottom:2px solid #6366f1;">Row 2</th>
+  <th style="padding:8px 14px; text-align:center; border-bottom:2px solid #6366f1;">Row 3</th>
+  <th style="padding:8px 14px; text-align:center; border-bottom:2px solid #6366f1;">Row 4</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">Age</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">0.00</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">0.44</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">0.22</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">1.00</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">Income</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">0.00</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">0.29</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">0.53</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">1.00</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600;">Rating</td>
+    <td style="padding:6px 14px; text-align:center;">0.00</td>
+    <td style="padding:6px 14px; text-align:center;">1.00</td>
+    <td style="padding:6px 14px; text-align:center;">0.33</td>
+    <td style="padding:6px 14px; text-align:center;">0.67</td></tr>
+</tbody>
+</table>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="100" viewBox="0 0 520 100" style="display:block; margin:16px auto; max-width:100%;">
+  <style>.mm-lbl{font:bold 11px system-ui,sans-serif;fill:#1e293b}.mm-sub{font:11px system-ui,sans-serif;fill:#64748b}</style>
+  <defs><marker id="mm-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#3b82f6"/></marker></defs>
+  <rect x="10" y="20" width="140" height="55" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="80" y="42" text-anchor="middle" class="mm-lbl">Raw feature</text>
+  <text x="80" y="60" text-anchor="middle" class="mm-sub">range: 30K–200K</text>
+  <line x1="150" y1="47" x2="198" y2="47" stroke="#3b82f6" stroke-width="2" marker-end="url(#mm-a)"/>
+  <text x="174" y="40" text-anchor="middle" class="mm-sub">min-max</text>
+  <rect x="206" y="20" width="140" height="55" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="276" y="42" text-anchor="middle" class="mm-lbl">Scaled</text>
+  <text x="276" y="60" text-anchor="middle" class="mm-sub">range: 0.00–1.00</text>
+  <text x="420" y="42" class="mm-sub">&#9888; Sensitive to outliers</text>
+</svg>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb156-1"><a href="#cb156-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> MinMaxScaler</span>
+<span id="cb156-2"><a href="#cb156-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb156-3"><a href="#cb156-3" aria-hidden="true" tabindex="-1"></a>scaler <span class="op">=</span> MinMaxScaler()</span>
+<span id="cb156-4"><a href="#cb156-4" aria-hidden="true" tabindex="-1"></a>X_scaled <span class="op">=</span> scaler.fit_transform(X_train)</span></code></pre></div>
+
+<h4 id="robust-scaling">3. Robust Scaling (RobustScaler) — Type: Standardization (Robust Variant)</h4>
+
+<p><strong>What it does:</strong> Centers using the <em>median</em> and scales using the <em>interquartile range</em> (IQR = Q3 − Q1) instead of mean/std. Outliers have much less influence because median and IQR are inherently robust statistics.</p>
+
+<p><span class="math display">\[
+x' = \frac{x - \text{median}}{\text{IQR}}
+\]</span></p>
+
+<p><strong>When to use:</strong> Data with significant outliers — e.g. transaction amounts, sensor readings with spikes.</p>
+
+<p><em>For the same raw data above, RobustScaler produces results similar to StandardScaler but with less extreme values when outliers are present. With the Age/Income/Rating dataset shown, the scaled values would be close to StandardScaler's output since there are no strong outliers. The benefit becomes clear in datasets with extreme values.</em></p>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="100" viewBox="0 0 520 100" style="display:block; margin:16px auto; max-width:100%;">
+  <style>.rb-lbl{font:bold 11px system-ui,sans-serif;fill:#1e293b}.rb-sub{font:11px system-ui,sans-serif;fill:#64748b}</style>
+  <defs><marker id="rb-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#3b82f6"/></marker></defs>
+  <rect x="10" y="20" width="140" height="55" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="80" y="42" text-anchor="middle" class="rb-lbl">Raw + outliers</text>
+  <text x="80" y="60" text-anchor="middle" class="rb-sub">mean skewed by extremes</text>
+  <line x1="150" y1="47" x2="198" y2="47" stroke="#3b82f6" stroke-width="2" marker-end="url(#rb-a)"/>
+  <text x="174" y="40" text-anchor="middle" class="rb-sub">median/IQR</text>
+  <rect x="206" y="20" width="140" height="55" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="276" y="42" text-anchor="middle" class="rb-lbl">Robust-scaled</text>
+  <text x="276" y="60" text-anchor="middle" class="rb-sub">outliers less dominant</text>
+  <text x="420" y="42" class="rb-sub">&#10003; Lower outlier sensitivity</text>
+</svg>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb157-1"><a href="#cb157-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> RobustScaler</span>
+<span id="cb157-2"><a href="#cb157-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb157-3"><a href="#cb157-3" aria-hidden="true" tabindex="-1"></a>scaler <span class="op">=</span> RobustScaler()</span>
+<span id="cb157-4"><a href="#cb157-4" aria-hidden="true" tabindex="-1"></a>X_scaled <span class="op">=</span> scaler.fit_transform(X_train)</span></code></pre></div>
+
+<h4 id="normalization">4. Normalization (Normalizer) — Type: Row Normalization</h4>
+
+<p><strong>What it does:</strong> Unlike the other three, Normalizer operates on <em>rows</em> (samples), not columns (features). Each row is scaled to unit length (L2 norm = 1). This means what matters is the <em>direction</em> (proportions) of each sample's features, not their magnitude.</p>
+
+<p><strong>When to use:</strong> Text classification (TF-IDF vectors), cosine-similarity tasks, any setting where relative proportions matter more than absolute values.</p>
+
+<p><em>Example: If Row 1 is [25, 30000, 2], after L2 normalization it becomes [≈0.0008, ≈0.9999, ≈0.0001] — all magnitudes collapsed to a unit vector where the direction is preserved but raw scale is lost.</em></p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb158-1"><a href="#cb158-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> Normalizer</span>
+<span id="cb158-2"><a href="#cb158-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb158-3"><a href="#cb158-3" aria-hidden="true" tabindex="-1"></a>norm <span class="op">=</span> Normalizer(norm<span class="op">=</span><span class="st">&quot;l2&quot;</span>)</span>
+<span id="cb158-4"><a href="#cb158-4" aria-hidden="true" tabindex="-1"></a>X_norm <span class="op">=</span> norm.fit_transform(X_train)</span></code></pre></div>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="170" viewBox="0 0 340 170" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .sn-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .sn-sub { font: 11px system-ui, sans-serif; fill: #334155; }
+  </style>
+  <defs><marker id="sn-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <rect x="50" y="6" width="240" height="50" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="170" y="26" text-anchor="middle" class="sn-lbl">Feature scaling (each column)</text>
+  <text x="170" y="44" text-anchor="middle" class="sn-sub">Standard / MinMax / Robust</text>
+  <line x1="170" y1="56" x2="170" y2="86" stroke="#6366f1" stroke-width="2" marker-end="url(#sn-a)"/>
+  <rect x="50" y="94" width="240" height="60" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="170" y="118" text-anchor="middle" class="sn-lbl">Normalization (each row)</text>
+  <text x="170" y="138" text-anchor="middle" class="sn-sub">scale to unit norm (L2)</text>
+</svg>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="240" viewBox="0 0 800 240" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .ba-title { font: bold 13px system-ui, sans-serif; fill: #1e293b; }
+    .ba-lbl   { font: 11px system-ui, sans-serif; fill: #334155; }
+    .ba-val   { font: bold 11px system-ui, sans-serif; fill: #1e293b; }
+  </style>
+  <!-- RAW side -->
+  <text x="200" y="18" text-anchor="middle" class="ba-title">Raw values</text>
+  <!-- Age bar -->
+  <text x="10" y="48" class="ba-lbl">Age</text>
+  <rect x="60" y="34" width="4" height="20" rx="3" fill="#3b82f6"/>
+  <text x="70" y="48" class="ba-val">45</text>
+  <!-- Income bar -->
+  <text x="10" y="80" class="ba-lbl">Income</text>
+  <rect x="60" y="66" width="260" height="20" rx="3" fill="#ef4444"/>
+  <text x="326" y="80" class="ba-val">120,000</text>
+  <!-- Rating bar -->
+  <text x="10" y="112" class="ba-lbl">Rating</text>
+  <rect x="60" y="98" width="1" height="20" rx="3" fill="#22c55e"/>
+  <text x="67" y="112" class="ba-val">3</text>
+
+  <!-- Arrow -->
+  <line x1="400" y1="75" x2="430" y2="75" stroke="#6366f1" stroke-width="2" marker-end="url(#rf-a)"/>
+  <text x="415" y="65" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#6366f1" font-weight="600">scale</text>
+
+  <!-- SCALED side (StandardScaler) -->
+  <text x="620" y="18" text-anchor="middle" class="ba-title">After StandardScaler</text>
+  <!-- Age bar (−0.52 → shift from center) -->
+  <text x="440" y="48" class="ba-lbl">Age</text>
+  <rect x="579" y="34" width="0" height="20" rx="3" fill="#3b82f6"/>
+  <rect x="550" y="34" width="29" height="20" rx="3" fill="#3b82f6" opacity="0.6"/>
+  <line x1="579" y1="30" x2="579" y2="130" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,3"/>
+  <text x="583" y="48" class="ba-val">−0.52</text>
+  <!-- Income bar (0.24) -->
+  <text x="440" y="80" class="ba-lbl">Income</text>
+  <rect x="579" y="66" width="16" height="20" rx="3" fill="#ef4444" opacity="0.6"/>
+  <text x="600" y="80" class="ba-val">0.24</text>
+  <!-- Rating bar (−0.49) -->
+  <text x="440" y="112" class="ba-lbl">Rating</text>
+  <rect x="546" y="98" width="33" height="20" rx="3" fill="#22c55e" opacity="0.6"/>
+  <text x="550" y="112" class="ba-val" text-anchor="end">−0.49</text>
+  <text x="579" y="148" text-anchor="middle" class="ba-lbl">0 (mean)</text>
+
+  <!-- Caption -->
+  <text x="400" y="190" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" fill="#64748b" font-style="italic">Raw Income dwarfs others; after scaling all features have comparable magnitude.</text>
+</svg>
+
+<blockquote>
+
+<p><strong>Key takeaway:</strong> StandardScaler centers at 0 (is a <em>Standardization</em> method), MinMaxScaler bounds to [0,1] (is a <em>Normalization</em> method), RobustScaler is a <em>Standardization</em> variant for outlier-heavy data, and Normalizer operates on rows for directional tasks.</p>
+
+</blockquote>
+
+<h3 id="log-and-power-transforms">4.4.5 Log and Power Transforms</h3>
+
+<p>For heavily skewed positive features:</p>
+
+<p><span class="math display">\[
+
+x&#39; = \log(1 + x)
+
+\]</span></p>
+
+<ul>
+
+<li>Reduces right skew</li>
+
+<li>Can stabilize variance</li>
+
+</ul>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb160-1"><a href="#cb160-1" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;income_log&quot;</span>] <span class="op">=</span> np.log1p(df[<span class="st">&quot;income&quot;</span>])</span></code></pre></div>
+
+<p>Also useful:</p>
+
+<ul>
+<li>Box-Cox</li>
+<li>Yeo-Johnson</li>
+</ul>
+
+<h3 id="practical-advice">4.4.6 Practical Advice</h3>
+
+<ul>
+
+<li>Fit scalers on <strong>training data only</strong></li>
+
+<li>Reuse the <strong>same fitted scaler</strong> on
+
+validation/test</li>
+
+<li>Usually <strong>don’t scale one-hot binary columns</strong></li>
+
+<li>Prefer <strong>RobustScaler</strong> with strong outliers</li>
+
+<li>For <strong>PCA</strong>, scaling first is usually important</li>
+
+</ul>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="380" height="120" viewBox="0 0 380 120" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .sc-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .sc-step { font: 11px system-ui, sans-serif; fill: #6366f1; font-weight: 600; }
+  </style>
+  <defs><marker id="sc-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <rect x="10" y="30" width="90" height="36" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="55" y="53" text-anchor="middle" class="sc-lbl">X_train</text>
+  <line x1="100" y1="48" x2="145" y2="48" stroke="#6366f1" stroke-width="2" marker-end="url(#sc-a)"/>
+  <text x="123" y="40" text-anchor="middle" class="sc-step">fit</text>
+  <rect x="153" y="30" width="80" height="36" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="193" y="53" text-anchor="middle" class="sc-lbl">scaler</text>
+  <!-- train output -->
+  <line x1="55" y1="66" x2="55" y2="96" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#sc-a)"/>
+  <text x="55" y="112" text-anchor="middle" class="sc-lbl">train↓</text>
+  <!-- reuse arrow -->
+  <line x1="233" y1="48" x2="280" y2="48" stroke="#8b5cf6" stroke-width="2" marker-end="url(#sc-a)"/>
+  <text x="257" y="40" text-anchor="middle" class="sc-step">reuse</text>
+  <rect x="288" y="30" width="80" height="36" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="328" y="53" text-anchor="middle" class="sc-lbl">val/test</text>
+</svg>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb162-1"><a href="#cb162-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.pipeline <span class="im">import</span> Pipeline</span>
+<span id="cb162-2"><a href="#cb162-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> LogisticRegression</span>
+<span id="cb162-3"><a href="#cb162-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb162-4"><a href="#cb162-4" aria-hidden="true" tabindex="-1"></a>pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb162-5"><a href="#cb162-5" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&quot;scaler&quot;</span>, StandardScaler()),</span>
+<span id="cb162-6"><a href="#cb162-6" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&quot;model&quot;</span>, LogisticRegression(max_iter<span class="op">=</span><span class="dv">1000</span>))</span>
+<span id="cb162-7"><a href="#cb162-7" aria-hidden="true" tabindex="-1"></a>])</span></code></pre></div>
+
+<blockquote>
+
+<p><strong>Key:</strong> Put scaling inside a pipeline to avoid leakage
+
+and keep train/test transforms identical.</p>
+
+</blockquote>
+
+<p><strong>Further Reading</strong> - Scikit-learn preprocessing
+
+scalers: https://scikit-learn.org/stable/modules/preprocessing.html -
+
+Feature scaling overview:
+
+https://en.wikipedia.org/wiki/Feature_scaling</p>
+
+<hr />
+
+<h2 id="feature-selection-and-importance">4.5 Feature Selection and
+
+Importance</h2>
+
+<p>After encoding and scaling, you may still have dozens (or hundreds) of features — many redundant, noisy, or irrelevant. Feature selection trims these down to the subset that actually helps the model. Feature importance tells you <em>which</em> features contribute most to predictions. This section covers both — starting with why having too many features is dangerous in the first place.</p>
+
+<h3 id="curse-of-dimensionality">4.5.1 The Curse of Dimensionality</h3>
+
+<p>Before we look at selection methods, it helps to understand <em>why</em> having too many features is dangerous. As the number of features (dimensions) grows, the volume of the space grows exponentially. This creates three compounding problems:</p>
+
+<ol type="1">
+
+<li><strong>Sparsity:</strong> Any fixed dataset of <em>n</em> points becomes vanishingly sparse as dimensions increase. Nearest-neighbour methods lose meaning because almost all points become equidistant.</li>
+
+<li><strong>Exponential sample requirement:</strong> To maintain the same density in feature space, you need exponentially more training data. A rough rule: you need roughly 10 samples per feature as a minimum for linear models; much more for complex interactions.</li>
+
+<li><strong>Distance concentration:</strong> In high dimensions, the ratio of the maximum to minimum pairwise distance approaches 1. KNN, K-Means, SVMs, and any distance-based model degrade.</li>
+
+</ol>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px;">Curse of dimensionality: how volume &amp; sample needs grow</caption>
+<thead><tr>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Features</th>
+  <th style="padding:8px 14px; text-align:center; border-bottom:2px solid #6366f1;">2</th>
+  <th style="padding:8px 14px; text-align:center; border-bottom:2px solid #6366f1;">10</th>
+  <th style="padding:8px 14px; text-align:center; border-bottom:2px solid #6366f1;">100</th>
+  <th style="padding:8px 14px; text-align:center; border-bottom:2px solid #6366f1;">1,000</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">Volume ratio</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">1</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">10⁸</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">10¹⁰⁰</td>
+    <td style="padding:6px 14px; text-align:center; border-bottom:1px solid rgba(0,0,0,0.06);">…</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600;">Sample gap</td>
+    <td style="padding:6px 14px; text-align:center;">√n</td>
+    <td style="padding:6px 14px; text-align:center;">n⁵</td>
+    <td style="padding:6px 14px; text-align:center;">n⁵⁰</td>
+    <td style="padding:6px 14px; text-align:center;">n⁵⁰⁰</td></tr>
+</tbody>
+</table>
+<p style="font-style:italic; color:#64748b; font-size:0.9rem;">(to fill the same density)</p>
+
+<p><strong>Why feature selection matters:</strong> Fewer, more informative features → denser, more useful representation → better generalization. Dimensionality reduction (PCA, t-SNE, UMAP — covered in <strong>Section 4.6</strong>) and feature selection are both answers to the curse.</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> Adding irrelevant features doesn’t just add noise — it exponentially dilutes the signal space, forcing models to search a larger, emptier space with the same amount of data.</p>
+
+</blockquote>
+
+<h3 id="why-select-features">4.5.2 Why select features?</h3>
+
+<ul>
+
+<li>Lower dimensionality</li>
+
+<li>Better interpretability</li>
+
+<li>Less compute/storage</li>
+
+<li>Reduce multicollinearity</li>
+
+<li>Lower overfitting risk</li>
+
+<li>More stable models</li>
+
+</ul>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="60" viewBox="0 0 460 60" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .fs-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .fs-sub { font: 10px system-ui, sans-serif; fill: #64748b; }
+  </style>
+  <defs><marker id="fs-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <rect x="10" y="10" width="120" height="40" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="70" y="28" text-anchor="middle" class="fs-lbl">Raw features</text>
+  <text x="70" y="42" text-anchor="middle" class="fs-sub">many / noisy</text>
+  <line x1="130" y1="30" x2="172" y2="30" stroke="#6366f1" stroke-width="2" marker-end="url(#fs-a)"/>
+  <rect x="180" y="10" width="130" height="40" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="245" y="28" text-anchor="middle" class="fs-lbl">Select / rank</text>
+  <text x="245" y="42" text-anchor="middle" class="fs-sub">useful features</text>
+  <line x1="310" y1="30" x2="342" y2="30" stroke="#6366f1" stroke-width="2" marker-end="url(#fs-a)"/>
+  <rect x="350" y="10" width="100" height="40" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="400" y="28" text-anchor="middle" class="fs-lbl">Train model</text>
+  <text x="400" y="42" text-anchor="middle" class="fs-sub">simpler / stable</text>
+</svg>
+
+<h3 id="main-approaches">4.5.3 Main approaches</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Approach</th>
+
+<th>How it works</th>
+
+<th>Pros</th>
+
+<th>Cons</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Filter</td>
+
+<td>Score features independently</td>
+
+<td>Fast, model-agnostic</td>
+
+<td>Misses interactions</td>
+
+</tr>
+
+<tr>
+
+<td>Wrapper</td>
+
+<td>Evaluate feature subsets with model</td>
+
+<td>Realistic</td>
+
+<td>Expensive</td>
+
+</tr>
+
+<tr>
+
+<td>Embedded</td>
+
+<td>Select during training</td>
+
+<td>Efficient, task-aligned</td>
+
+<td>Model-dependent</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h4 id="filter-methods">1. Filter methods</h4>
+
+<p><strong>The story:</strong> Imagine you're building a customer-churn model with 200 features. Before training any model, you want a quick sanity check: which features even <em>correlate</em> with churn? Filter methods score each feature independently — fast, model-agnostic, and a great first pass. You run ANOVA F-tests and immediately discover that 80 features have near-zero variance or no statistical relationship with the target. You drop them, cutting your feature space by 40% before training begins.</p>
+
+<p>Common filter methods:</p>
+
+<ul>
+<li><strong>Variance threshold:</strong> Drop features with near-zero variance (they carry no information).</li>
+<li><strong>Correlation with target:</strong> Pearson/Spearman for numeric, chi-square for categorical.</li>
+<li><strong>ANOVA F-test:</strong> Compares group means across classes.</li>
+<li><strong>Mutual information:</strong> Captures non-linear dependencies — more general than correlation.</li>
+</ul>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb164-1"><a href="#cb164-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.feature_selection <span class="im">import</span> SelectKBest, f_classif</span>
+<span id="cb164-2"><a href="#cb164-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb164-3"><a href="#cb164-3" aria-hidden="true" tabindex="-1"></a>selector <span class="op">=</span> SelectKBest(score_func<span class="op">=</span>f_classif, k<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb164-4"><a href="#cb164-4" aria-hidden="true" tabindex="-1"></a>X_sel <span class="op">=</span> selector.fit_transform(X_train, y_train)</span></code></pre></div>
+
+<h4 id="wrapper-methods">2. Wrapper methods</h4>
+
+<p><strong>The story:</strong> After the filter pass, you still have 120 features. Now you want to find the <em>best subset</em> — features that work well <em>together</em>, not just individually. You use Recursive Feature Elimination (RFE): fit a logistic regression, drop the least-important feature, refit, repeat. It's expensive (you're training the model dozens of times), but it accounts for feature interactions that filter methods miss. After RFE, you're down to 30 features and your cross-validated F1 actually <em>improved</em> — fewer features, less noise.</p>
+
+<p>Common wrapper methods:</p>
+
+<ul>
+<li><strong>Forward selection:</strong> Start empty, add the best feature one at a time.</li>
+<li><strong>Backward elimination:</strong> Start with all, remove the worst one at a time.</li>
+<li><strong>Recursive Feature Elimination (RFE):</strong> Train model, drop least-important feature, repeat.</li>
+</ul>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb165-1"><a href="#cb165-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.feature_selection <span class="im">import</span> RFE</span>
+<span id="cb165-2"><a href="#cb165-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> LogisticRegression</span>
+<span id="cb165-3"><a href="#cb165-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb165-4"><a href="#cb165-4" aria-hidden="true" tabindex="-1"></a>selector <span class="op">=</span> RFE(LogisticRegression(max_iter<span class="op">=</span><span class="dv">1000</span>), n_features_to_select<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb165-5"><a href="#cb165-5" aria-hidden="true" tabindex="-1"></a>X_sel <span class="op">=</span> selector.fit_transform(X_train, y_train)</span></code></pre></div>
+
+<h4 id="embedded-methods">3. Embedded methods</h4>
+
+<p><strong>The story:</strong> The data scientist on the team says: "Why run selection separately? Let the model do it <em>during</em> training." She switches to an L1-regularized (Lasso) logistic regression. L1 drives irrelevant feature coefficients to exactly zero — the model itself performs feature selection as a side effect of fitting. After training, 18 of 30 features have non-zero coefficients, and she ships only those. No separate selection step, no extra compute.</p>
+
+<p>Common embedded methods:</p>
+
+<ul>
+<li><strong>L1 (Lasso) regularization:</strong> Drives coefficients to zero — automatic selection in linear models.</li>
+<li><strong>Tree-based importance:</strong> Random Forest / XGBoost rank features by how much they reduce impurity or gain.</li>
+</ul>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb166-1"><a href="#cb166-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> LogisticRegression</span>
+<span id="cb166-2"><a href="#cb166-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb166-3"><a href="#cb166-3" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> LogisticRegression(penalty<span class="op">=</span><span class="st">&quot;l1&quot;</span>, solver<span class="op">=</span><span class="st">&quot;liblinear&quot;</span>)</span>
+<span id="cb166-4"><a href="#cb166-4" aria-hidden="true" tabindex="-1"></a>model.fit(X_train, y_train)</span></code></pre></div>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="170" viewBox="0 0 340 170" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .fw-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .fw-sub { font: 11px system-ui, sans-serif; fill: #334155; }
+  </style>
+  <defs><marker id="fw-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <rect x="80" y="6" width="180" height="38" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="170" y="22" text-anchor="middle" class="fw-lbl">Filter</text>
+  <text x="170" y="38" text-anchor="middle" class="fw-sub">score each feature alone</text>
+  <line x1="170" y1="44" x2="170" y2="56" stroke="#6366f1" stroke-width="2" marker-end="url(#fw-a)"/>
+  <rect x="80" y="60" width="180" height="38" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="170" y="76" text-anchor="middle" class="fw-lbl">Wrapper</text>
+  <text x="170" y="92" text-anchor="middle" class="fw-sub">search subsets + validate model</text>
+  <line x1="170" y1="98" x2="170" y2="110" stroke="#6366f1" stroke-width="2" marker-end="url(#fw-a)"/>
+  <rect x="80" y="114" width="180" height="38" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="170" y="130" text-anchor="middle" class="fw-lbl">Embedded</text>
+  <text x="170" y="146" text-anchor="middle" class="fw-sub">selection during fit</text>
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> Filter = fastest, Wrapper = most expensive,
+
+Embedded = best integrated with model.</p>
+
+</blockquote>
+
+<h3 id="feature-importance-types">4.5.4 Feature importance types</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Type</th>
+
+<th>Works for</th>
+
+<th>Caveat</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Coefficient-based</td>
+
+<td>Linear models</td>
+
+<td>Compare only after scaling</td>
+
+</tr>
+
+<tr>
+
+<td>Tree-based</td>
+
+<td>Tree ensembles</td>
+
+<td>Bias toward high-cardinality / continuous features</td>
+
+</tr>
+
+<tr>
+
+<td>Permutation importance</td>
+
+<td>Any trained model</td>
+
+<td>Slower; needs validation data</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h4 id="coefficient-based-importance">Coefficient-based importance</h4>
+
+<ul>
+
+<li>In linear models, larger <span
+
+class="math inline">\(|\text{coef}|\)</span> ⇒ potentially more
+
+important</li>
+
+<li>Meaningful comparison usually requires feature scaling</li>
+
+</ul>
+
+<h4 id="tree-based-importance">Tree-based importance</h4>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb168-1"><a href="#cb168-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.ensemble <span class="im">import</span> RandomForestClassifier</span>
+<span id="cb168-2"><a href="#cb168-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb168-3"><a href="#cb168-3" aria-hidden="true" tabindex="-1"></a>rf <span class="op">=</span> RandomForestClassifier(random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb168-4"><a href="#cb168-4" aria-hidden="true" tabindex="-1"></a>rf.fit(X_train, y_train)</span>
+<span id="cb168-5"><a href="#cb168-5" aria-hidden="true" tabindex="-1"></a>importances <span class="op">=</span> rf.feature_importances_</span></code></pre></div>
+
+<h4 id="permutation-importance">Permutation importance</h4>
+
+<ul>
+
+<li>Shuffle one feature at a time</li>
+
+<li>Measure held-out performance drop</li>
+
+</ul>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb169-1"><a href="#cb169-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.inspection <span class="im">import</span> permutation_importance</span>
+<span id="cb169-2"><a href="#cb169-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb169-3"><a href="#cb169-3" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> permutation_importance(rf, X_val, y_val, n_repeats<span class="op">=</span><span class="dv">10</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span></code></pre></div>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="280" height="210" viewBox="0 0 280 210" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .pi-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .pi-note { font: italic 11px system-ui, sans-serif; fill: #6366f1; font-weight: 600; }
+  </style>
+  <defs><marker id="pi-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <rect x="60" y="6" width="160" height="34" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="140" y="28" text-anchor="middle" class="pi-lbl">Trained model</text>
+  <line x1="140" y1="40" x2="140" y2="58" stroke="#6366f1" stroke-width="2" marker-end="url(#pi-a)"/>
+  <rect x="50" y="66" width="180" height="34" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="140" y="88" text-anchor="middle" class="pi-lbl">Shuffle feature</text>
+  <line x1="140" y1="100" x2="140" y2="118" stroke="#6366f1" stroke-width="2" marker-end="url(#pi-a)"/>
+  <rect x="50" y="126" width="180" height="34" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="140" y="148" text-anchor="middle" class="pi-lbl">Re-evaluate performance</text>
+  <line x1="140" y1="160" x2="140" y2="172" stroke="#6366f1" stroke-width="2" marker-end="url(#pi-a)"/>
+  <text x="140" y="192" text-anchor="middle" class="pi-note">Drop in score = importance</text>
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> Permutation importance is often more
+
+trustworthy than impurity-based tree importance.</p>
+
+</blockquote>
+
+<h3 id="collinearity-caveat">4.5.5 Collinearity caveat</h3>
+
+<p>With highly correlated features:</p>
+
+<ul>
+<li>One feature can absorb another’s  signal</li>
+<li>Coefficients become unstable/misleading</li>
+<li>Importance rankings  may change across runs</li>
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> Correlated features make importance unstable;
+
+use validation + domain knowledge.</p>
+
+</blockquote>
+
+<h3 id="selection-within-pipelines">4.5.6 Selection within pipelines</h3>
+
+<p>Feature selection must occur <strong>inside</strong>
+
+cross-validation.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb171-1"><a href="#cb171-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.pipeline <span class="im">import</span> Pipeline</span>
+<span id="cb171-2"><a href="#cb171-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.feature_selection <span class="im">import</span> SelectKBest, f_classif</span>
+<span id="cb171-3"><a href="#cb171-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> LogisticRegression</span>
+<span id="cb171-4"><a href="#cb171-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb171-5"><a href="#cb171-5" aria-hidden="true" tabindex="-1"></a>pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb171-6"><a href="#cb171-6" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&quot;select&quot;</span>, SelectKBest(f_classif, k<span class="op">=</span><span class="dv">20</span>)),</span>
+<span id="cb171-7"><a href="#cb171-7" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&quot;model&quot;</span>, LogisticRegression(max_iter<span class="op">=</span><span class="dv">1000</span>))</span>
+<span id="cb171-8"><a href="#cb171-8" aria-hidden="true" tabindex="-1"></a>])</span></code></pre></div>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="280" height="200" viewBox="0 0 280 200" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .cv-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+  </style>
+  <defs><marker id="cv-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <rect x="60" y="6" width="160" height="34" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="140" y="28" text-anchor="middle" class="cv-lbl">CV split fold</text>
+  <line x1="140" y1="40" x2="140" y2="58" stroke="#6366f1" stroke-width="2" marker-end="url(#cv-a)"/>
+  <rect x="50" y="66" width="180" height="34" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="140" y="81" text-anchor="middle" class="cv-lbl">Fit selector</text>
+  <text x="140" y="94" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#92400e">on train fold</text>
+  <line x1="140" y1="100" x2="140" y2="112" stroke="#6366f1" stroke-width="2" marker-end="url(#cv-a)"/>
+  <rect x="60" y="120" width="160" height="34" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="140" y="142" text-anchor="middle" class="cv-lbl">Train model</text>
+  <line x1="140" y1="154" x2="140" y2="166" stroke="#6366f1" stroke-width="2" marker-end="url(#cv-a)"/>
+  <rect x="60" y="174" width="160" height="34" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="140" y="196" text-anchor="middle" class="cv-lbl">Validate fold</text>
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> Selection outside the pipeline leaks validation
+
+information.</p>
+
+</blockquote>
+
+<h3 id="business-context-and-sme-input">4.5.7 Business Context and Domain Expert (SME) Input</h3>
+
+<p>Statistical methods score features against the target — but they can't know that a feature is operationally unavailable at prediction time, legally prohibited, or only meaningful because of domain knowledge accumulated over years. Subject Matter Experts (SMEs) are irreplaceable here.</p>
+
+<p><strong>What SMEs contribute to feature selection:</strong></p>
+
+<ul>
+
+<li><strong>Availability at inference time:</strong> A feature that is only known after the event you're predicting (e.g. surgery duration predicting post-op complications) is leakage — only a clinician knows this.</li>
+
+<li><strong>Business cost of features:</strong> Some signals require expensive data collection. An SME can tell you whether a 0.5% accuracy gain is worth the data pipeline cost.</li>
+
+<li><strong>Regulatory restrictions:</strong> In credit and hiring, age, race, and ZIP code may be legally restricted. Legal teams and SMEs set those boundaries.</li>
+
+<li><strong>Compound signals:</strong> SMEs propose features that statistics alone won't derive — e.g. "ratio of transactions at night vs. total transactions" for fraud detection.</li>
+
+<li><strong>Proxies and spurious correlations:</strong> A feature that correlates with the target only in your historical data (e.g. "year of record" correlates with label due to data collection change) needs SME scrutiny.</li>
+
+</ul>
+
+<blockquote>
+
+<p><strong>Practical rule:</strong> Run your data-driven importance ranking, then review the top features and any feature drops with a domain expert before finalizing. Build a feature registry that documents each feature's source, availability, and business rationale.</p>
+
+</blockquote>
+
+<p><strong>Further Reading</strong> - Scikit-learn feature selection:
+
+https://scikit-learn.org/stable/modules/feature_selection.html -
+
+Interpretable ML on feature importance:
+
+https://christophm.github.io/interpretable-ml-book/feature-importance.html</p>
+
+<hr />
+
+<h2 id="dimensionality-reduction-pca-t-sne-umap">4.6 Dimensionality
+
+Reduction (PCA, t-SNE, UMAP)</h2>
+
+<p>When feature selection (Section 4.5) isn't enough — or when you need to visualize high-dimensional data — dimensionality reduction projects features into a lower-dimensional space while preserving the most important structure. This section introduces three widely used methods, each suited to different goals.</p>
+
+<h3 id="why-dimensionality-reduction">4.6.1 Why Dimensionality Reduction?</h3>
+
+<p>High-dimensional data has two problems: the “curse of dimensionality”
+
+(distances become meaningless in high dims — see the explanation in <strong>Section 4.5</strong>), and it’s impossible to
+
+visualize. Dimensionality reduction solves both.</p>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px;">Three tools, three purposes</caption>
+<thead><tr>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Method</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Purpose</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Preserves</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">PCA</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Linear compression for training</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Global variance</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06);">t-SNE</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Visualize clusters in 2D/3D</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Local neighbourhoods</td></tr>
+<tr><td style="padding:6px 14px; font-weight:600;">UMAP</td>
+    <td style="padding:6px 14px;">Visualize + sometimes training</td>
+    <td style="padding:6px 14px;">Local + some global</td></tr>
+</tbody>
+</table>
+<p style="font-style:italic; color:#64748b; font-size:0.9rem;">Use PCA when you need the transformation for downstream ML. Use t-SNE or UMAP when you want to explore/visualize.</p>
+
+<p>Maps high-dimensional data to fewer dimensions by <strong>creating
+
+new features</strong>.</p>
+
+<p>Useful for:</p>
+
+<ul>
+<li>Visualization</li>
+<li>Noise reduction</li>
+<li>Compression</li>
+<li>Faster  downstream models</li>
+<li>Reducing multicollinearity</li>
+</ul>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="60" viewBox="0 0 420 60" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .or-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .or-sub { font: 10px 'Consolas', monospace; fill: #64748b; }
+  </style>
+  <defs><marker id="or-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <rect x="10" y="10" width="170" height="40" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="95" y="28" text-anchor="middle" class="or-lbl">Original features</text>
+  <text x="95" y="42" text-anchor="middle" class="or-sub">x1 x2 x3 x4 x5 …</text>
+  <line x1="180" y1="30" x2="232" y2="30" stroke="#6366f1" stroke-width="2" marker-end="url(#or-a)"/>
+  <rect x="240" y="10" width="170" height="40" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="325" y="28" text-anchor="middle" class="or-lbl">Reduced features</text>
+  <text x="325" y="42" text-anchor="middle" class="or-sub">z1 z2 z3</text>
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> Dimensionality reduction builds new
+
+coordinates; feature selection keeps old ones.</p>
+
+</blockquote>
+
+<h3 id="pca-principal-component-analysis">4.6.2 PCA: Principal Component
+
+Analysis</h3>
+
+<p>Finds <strong>orthogonal directions of maximum variance</strong>.</p>
+
+<p>If <span class="math inline">\(X\)</span> is centered data, PCA finds
+
+directions <span class="math inline">\(w\)</span> maximizing:</p>
+
+<p><span class="math display">\[
+
+\max_{\|w\|=1} \mathrm{Var}(Xw)
+
+\]</span></p>
+
+<ul>
+
+<li>Components = linear combinations of original features</li>
+
+<li>Ordered by explained variance</li>
+
+<li>Components are orthogonal</li>
+
+<li>Sensitive to scale → usually standardize first</li>
+
+</ul>
+
+<blockquote>
+<p><strong>Deep dive:</strong> For a full visual walkthrough of PCA — shadow analogy, eigenvectors vs regular vectors, eigenvalues as variance, and a step-by-step numerical example — see <a href="#dimensionality-reduction">Section 8.2 Dimensionality Reduction</a>.</p>
+</blockquote>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="60" viewBox="0 0 460 60" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .pa-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .pa-sub { font: 10px 'Consolas', monospace; fill: #64748b; }
+    .pa-step { font: 11px system-ui, sans-serif; fill: #6366f1; font-weight: 600; }
+  </style>
+  <defs><marker id="pa-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <rect x="10" y="10" width="110" height="40" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="65" y="28" text-anchor="middle" class="pa-lbl">X (center)</text>
+  <text x="65" y="42" text-anchor="middle" class="pa-sub">d dims</text>
+  <line x1="120" y1="30" x2="162" y2="30" stroke="#6366f1" stroke-width="2" marker-end="url(#pa-a)"/>
+  <text x="141" y="22" text-anchor="middle" class="pa-step">scale</text>
+  <rect x="170" y="10" width="100" height="40" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="220" y="28" text-anchor="middle" class="pa-lbl">PCA axes</text>
+  <text x="220" y="42" text-anchor="middle" class="pa-sub">w1, w2, …</text>
+  <line x1="270" y1="30" x2="322" y2="30" stroke="#6366f1" stroke-width="2" marker-end="url(#pa-a)"/>
+  <text x="296" y="22" text-anchor="middle" class="pa-step">project</text>
+  <rect x="330" y="10" width="120" height="40" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="390" y="28" text-anchor="middle" class="pa-lbl">PC scores</text>
+  <text x="390" y="42" text-anchor="middle" class="pa-sub">z1, z2, …</text>
+</svg>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb176-1"><a href="#cb176-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.decomposition <span class="im">import</span> PCA</span>
+<span id="cb176-2"><a href="#cb176-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> StandardScaler</span>
+<span id="cb176-3"><a href="#cb176-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb176-4"><a href="#cb176-4" aria-hidden="true" tabindex="-1"></a>X_scaled <span class="op">=</span> StandardScaler().fit_transform(X_train)</span>
+<span id="cb176-5"><a href="#cb176-5" aria-hidden="true" tabindex="-1"></a>pca <span class="op">=</span> PCA(n_components<span class="op">=</span><span class="fl">0.95</span>)  <span class="co"># keep 95% variance</span></span>
+<span id="cb176-6"><a href="#cb176-6" aria-hidden="true" tabindex="-1"></a>X_pca <span class="op">=</span> pca.fit_transform(X_scaled)</span>
+<span id="cb176-7"><a href="#cb176-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb176-8"><a href="#cb176-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(pca.explained_variance_ratio_)</span></code></pre></div>
+
+<h3 id="interpreting-explained-variance">4.6.3 Interpreting Explained
+
+Variance</h3>
+
+<ul>
+
+<li>High explained variance in few PCs ⇒ data may lie near a low-dim
+
+subspace</li>
+
+<li>High variance ≠ high predictive signal</li>
+
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> PCA keeps variance, not necessarily
+
+task-relevant information.</p>
+
+</blockquote>
+
+<h3 id="t-sne">4.6.4 t-SNE</h3>
+
+<p>Nonlinear method for <strong>2D/3D visualization</strong>; preserves
+
+<strong>local neighborhoods</strong>.</p>
+
+<p><strong>Pros</strong> - Often shows clusters clearly</p>
+
+<p><strong>Cons</strong></p>
+
+<ul>
+<li>Expensive</li>
+<li>Hyperparameter-sensitive -  Far-cluster distances can mislead</li>
+<li>Rarely used as preprocessing for  predictive models</li>
+</ul>
+
+<h3 id="umap">4.6.5 UMAP</h3>
+
+<p>Nonlinear method for visualization/embeddings; often preserves local
+
+structure and scales better than t-SNE.</p>
+
+<p><strong>Pros</strong></p>
+
+<ul>
+<li>Good visualization</li>
+<li>Often faster than t-SNE</li>
+<li>Can preserve some global structure better</li>
+</ul>
+
+<p><strong>Cons</strong></p>
+
+<ul>
+<li>Hyperparameter-sensitive</li>
+<li>Interpret  cautiously</li>
+</ul>
+
+<h3 id="choosing-between-them">4.6.6 Choosing Between Them</h3>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Method</th>
+
+<th>Type</th>
+
+<th>Best use</th>
+
+<th>Typical role</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>PCA</td>
+
+<td>Linear</td>
+
+<td>Compression, preprocessing</td>
+
+<td>Production-friendly</td>
+
+</tr>
+
+<tr>
+
+<td>t-SNE</td>
+
+<td>Nonlinear</td>
+
+<td>Visualization</td>
+
+<td>Exploratory only</td>
+
+</tr>
+
+<tr>
+
+<td>UMAP</td>
+
+<td>Nonlinear</td>
+
+<td>Visualization, embeddings</td>
+
+<td>Mostly exploratory</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="170" viewBox="0 0 400 170" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .dr2-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .dr2-sub { font: 11px system-ui, sans-serif; fill: #334155; }
+    .dr2-step { font: 11px system-ui, sans-serif; fill: #6366f1; font-weight: 600; }
+  </style>
+  <defs><marker id="dr2-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <!-- PCA -->
+  <rect x="10" y="10" width="80" height="34" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="50" y="32" text-anchor="middle" class="dr2-lbl">PCA</text>
+  <line x1="90" y1="27" x2="172" y2="27" stroke="#3b82f6" stroke-width="2" marker-end="url(#dr2-a)"/>
+  <text x="131" y="20" text-anchor="middle" class="dr2-step">linear</text>
+  <rect x="180" y="10" width="200" height="34" rx="6" fill="#f0f9ff" stroke="#93c5fd" stroke-width="1"/>
+  <text x="280" y="32" text-anchor="middle" class="dr2-sub">compression → preprocessing</text>
+  <!-- t-SNE -->
+  <rect x="10" y="60" width="80" height="34" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="50" y="82" text-anchor="middle" class="dr2-lbl">t-SNE</text>
+  <line x1="90" y1="77" x2="172" y2="77" stroke="#8b5cf6" stroke-width="2" marker-end="url(#dr2-a)"/>
+  <text x="131" y="70" text-anchor="middle" class="dr2-step">nonlinear</text>
+  <rect x="180" y="60" width="200" height="34" rx="6" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1"/>
+  <text x="280" y="82" text-anchor="middle" class="dr2-sub">2D/3D plots · local structure</text>
+  <!-- UMAP -->
+  <rect x="10" y="110" width="80" height="34" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="50" y="132" text-anchor="middle" class="dr2-lbl">UMAP</text>
+  <line x1="90" y1="127" x2="172" y2="127" stroke="#22c55e" stroke-width="2" marker-end="url(#dr2-a)"/>
+  <text x="131" y="120" text-anchor="middle" class="dr2-step">nonlinear</text>
+  <rect x="180" y="110" width="200" height="34" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1"/>
+  <text x="280" y="132" text-anchor="middle" class="dr2-sub">viz / embeddings</text>
+</svg>
+
+<h3 id="example-pca-pipeline">4.6.7 Example PCA Pipeline</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb178-1"><a href="#cb178-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.pipeline <span class="im">import</span> Pipeline</span>
+<span id="cb178-2"><a href="#cb178-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.decomposition <span class="im">import</span> PCA</span>
+<span id="cb178-3"><a href="#cb178-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> LogisticRegression</span>
+<span id="cb178-4"><a href="#cb178-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb178-5"><a href="#cb178-5" aria-hidden="true" tabindex="-1"></a>pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb178-6"><a href="#cb178-6" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&quot;scaler&quot;</span>, StandardScaler()),</span>
+<span id="cb178-7"><a href="#cb178-7" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&quot;pca&quot;</span>, PCA(n_components<span class="op">=</span><span class="dv">20</span>)),</span>
+<span id="cb178-8"><a href="#cb178-8" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&quot;model&quot;</span>, LogisticRegression(max_iter<span class="op">=</span><span class="dv">1000</span>))</span>
+<span id="cb178-9"><a href="#cb178-9" aria-hidden="true" tabindex="-1"></a>])</span></code></pre></div>
+
+<h3 id="important-cautions">4.6.8 Important Cautions</h3>
+
+<ul>
+
+<li>Fit dimensionality reduction on <strong>training data
+
+only</strong></li>
+
+<li>Don’t over-interpret t-SNE/UMAP cluster separation</li>
+
+<li>PCA components are less interpretable than original features</li>
+
+<li>Visualization ≠ quantitative evaluation</li>
+
+</ul>
+
+<blockquote>
+
+<p><strong>Key:</strong> Use PCA for modeling pipelines; use t-SNE/UMAP
+
+mainly for exploration.</p>
+
+</blockquote>
+
+<p>Next: class imbalance.</p>
+
+<p><strong>Further Reading</strong></p>
+
+<ul>
+<li>Scikit-learn PCA documentation:  https://scikit-learn.org/stable/modules/decomposition.html#pca</li>
+<li>UMAP  documentation: https://umap-learn.readthedocs.io/en/latest/</li>
+</ul>
+
+<hr />
+
+<h2 id="handling-class-imbalance">4.7 Handling Class Imbalance</h2>
+
+<p>Class imbalance: one class is rare (e.g. 1% fraud, 99%
+
+non-fraud).<br />
+
+Accuracy can look high while missing the class that matters.</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> High accuracy can still mean zero
+
+minority-class recall.</p>
+
+</blockquote>
+
+<h3 id="why-it-matters">4.7.1 Why It Matters</h3>
+
+<p>A majority-class-only model can score well on accuracy and fail
+
+completely on the minority class.</p>
+
+<p>More useful metrics: precision, recall, F1 score, Precision-Recall
+
+Area Under the Curve (PR-AUC), Receiver Operating Characteristic Area
+
+Under the Curve (ROC-AUC), and balanced accuracy.</p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Metric</th>
+
+<th>Full form / meaning</th>
+
+<th>Why it matters in imbalance</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Precision</td>
+
+<td>Of predicted positives, how many were truly positive?</td>
+
+<td>Important when false positives are costly</td>
+
+</tr>
+
+<tr>
+
+<td>Recall</td>
+
+<td>Of true positives, how many did the model catch?</td>
+
+<td>Important when missing the minority class is costly</td>
+
+</tr>
+
+<tr>
+
+<td>F1 score</td>
+
+<td>Harmonic mean of precision and recall</td>
+
+<td>Useful when you need one number that balances both</td>
+
+</tr>
+
+<tr>
+
+<td>PR-AUC</td>
+
+<td>Precision-Recall Area Under the Curve</td>
+
+<td>Usually more informative than ROC-AUC for rare-event detection</td>
+
+</tr>
+
+<tr>
+
+<td>ROC-AUC</td>
+
+<td>Receiver Operating Characteristic Area Under the Curve</td>
+
+<td>Good ranking summary, but can look overly optimistic under extreme imbalance</td>
+
+</tr>
+
+<tr>
+
+<td>Balanced accuracy</td>
+
+<td>Average of recall on each class</td>
+
+<td>Prevents the majority class from dominating the metric</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="70" viewBox="0 0 480 70" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .ib-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .ib-sub { font: 10px system-ui, sans-serif; fill: #64748b; }
+    .ib-note { font: italic 11px system-ui, sans-serif; fill: #dc2626; }
+  </style>
+  <defs><marker id="ib-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <rect x="10" y="10" width="130" height="44" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="75" y="30" text-anchor="middle" class="ib-lbl">Imbalanced y</text>
+  <text x="75" y="46" text-anchor="middle" class="ib-sub">1% / 99%</text>
+  <line x1="140" y1="32" x2="285" y2="32" stroke="#ef4444" stroke-width="2" marker-end="url(#ib-a)"/>
+  <text x="212" y="24" text-anchor="middle" class="ib-note">predicts majority only</text>
+  <rect x="293" y="10" width="170" height="44" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="378" y="30" text-anchor="middle" class="ib-lbl">High accuracy</text>
+  <text x="378" y="46" text-anchor="middle" class="ib-sub">Low recall ⚠️</text>
+</svg>
+
+<h3 id="common-strategies-1">4.7.2 Common Strategies</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+<col style="width: 25%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Strategy</th>
+
+<th>Effect</th>
+
+<th>Best when</th>
+
+<th>Main risk</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Oversampling</td>
+
+<td>Add minority samples</td>
+
+<td>Minority class very small</td>
+
+<td>Overfitting / synthetic noise</td>
+
+</tr>
+
+<tr>
+
+<td>Undersampling</td>
+
+<td>Remove majority samples</td>
+
+<td>Majority class huge</td>
+
+<td>Information loss</td>
+
+</tr>
+
+<tr>
+
+<td>Class weights</td>
+
+<td>Penalize minority errors more</td>
+
+<td>Strong baseline</td>
+
+<td>May be insufficient</td>
+
+</tr>
+
+<tr>
+
+<td>Threshold tuning</td>
+
+<td>Move decision cutoff</td>
+
+<td>Probabilities available</td>
+
+<td>Precision/recall tradeoff</td>
+
+</tr>
+
+<tr>
+
+<td>Stratified validation</td>
+
+<td>Preserve class ratio</td>
+
+<td>Almost always</td>
+
+<td>None</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h4 id="resampling-the-data">1. Resampling the Data</h4>
+
+<h5 id="oversampling">Oversampling</h5>
+
+<p>Three common approaches, from simple to sophisticated:</p>
+
+<ul>
+
+<li><strong>Random oversampling:</strong> Duplicate random minority samples. Simple but can overfit to exact copies.</li>
+
+<li><strong>SMOTE (Synthetic Minority Over-sampling TEchnique):</strong> Creates <em>new</em> synthetic samples along line segments between existing minority neighbours.</li>
+
+<li><strong>ADASYN (Adaptive Synthetic Sampling):</strong> Like SMOTE, but generates <em>more</em> samples in regions where the minority class is harder to learn (near the decision boundary).</li>
+
+</ul>
+
+<h5 id="smote-step-by-step">SMOTE Step-by-Step</h5>
+
+<ol type="1">
+<li>For each minority sample, find its <em>k</em> nearest minority neighbours (default k = 5).</li>
+<li>Randomly pick one of the <em>k</em> neighbours.</li>
+<li>Create a new synthetic point at a random position on the line segment between the original sample and the chosen neighbour: <br/><code>x_new = x_i + &lambda; &times; (x_neighbour &minus; x_i)</code>, where &lambda; &isin; [0, 1].</li>
+<li>Repeat until the desired class balance is achieved.</li>
+</ol>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="310" viewBox="0 0 700 310" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .sm-title { font: bold 13px system-ui, sans-serif; fill: #1e293b; }
+    .sm-lbl   { font: bold 11px system-ui, sans-serif; fill: #334155; }
+    .sm-note  { font: italic 10px system-ui, sans-serif; fill: #64748b; }
+  </style>
+
+  <!-- Panel 1: Before -->
+  <rect x="10" y="10" width="210" height="290" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="115" y="32" text-anchor="middle" class="sm-title">Before</text>
+  <!-- Majority dots (blue) -->
+  <circle cx="40" cy="70" r="6" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="70" cy="90" r="6" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="55" cy="130" r="6" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="90" cy="110" r="6" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="80" cy="160" r="6" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="120" cy="80" r="6" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="140" cy="120" r="6" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="110" cy="150" r="6" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="160" cy="100" r="6" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="170" cy="140" r="6" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="50" cy="190" r="6" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="130" cy="180" r="6" fill="#3b82f6" opacity="0.5"/>
+  <!-- Minority dots (red) -->
+  <circle cx="150" cy="220" r="7" fill="#ef4444"/>
+  <circle cx="100" cy="240" r="7" fill="#ef4444"/>
+  <circle cx="170" cy="260" r="7" fill="#ef4444"/>
+  <!-- Legend -->
+  <circle cx="30" cy="284" r="5" fill="#3b82f6" opacity="0.5"/>
+  <text x="40" y="288" class="sm-note">Majority</text>
+  <circle cx="110" cy="284" r="5" fill="#ef4444"/>
+  <text x="120" y="288" class="sm-note">Minority</text>
+
+  <!-- Panel 2: SMOTE mechanism -->
+  <rect x="240" y="10" width="210" height="290" rx="10" fill="#fefce8" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="345" y="32" text-anchor="middle" class="sm-title">SMOTE Mechanism</text>
+  <!-- Three minority points -->
+  <circle cx="290" cy="160" r="7" fill="#ef4444"/>
+  <text x="275" y="152" class="sm-lbl">x₁</text>
+  <circle cx="380" cy="100" r="7" fill="#ef4444"/>
+  <text x="390" y="96" class="sm-lbl">x₂</text>
+  <circle cx="400" cy="220" r="7" fill="#ef4444"/>
+  <text x="410" y="216" class="sm-lbl">x₃</text>
+  <!-- Lines between neighbours -->
+  <line x1="290" y1="160" x2="380" y2="100" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <line x1="290" y1="160" x2="400" y2="220" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <!-- Synthetic points on the lines -->
+  <circle cx="326" cy="137" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="336" y="133" class="sm-note">new</text>
+  <circle cx="355" cy="195" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="365" y="191" class="sm-note">new</text>
+  <!-- Note -->
+  <text x="345" y="274" text-anchor="middle" class="sm-note">Interpolate between</text>
+  <text x="345" y="288" text-anchor="middle" class="sm-note">minority neighbours</text>
+
+  <!-- Panel 3: After -->
+  <rect x="470" y="10" width="220" height="290" rx="10" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="580" y="32" text-anchor="middle" class="sm-title">After SMOTE</text>
+  <!-- Majority dots (same) -->
+  <circle cx="500" cy="70" r="6" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="530" cy="90" r="6" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="515" cy="130" r="6" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="550" cy="110" r="6" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="540" cy="160" r="6" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="580" cy="80" r="6" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="600" cy="120" r="6" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="570" cy="150" r="6" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="620" cy="100" r="6" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="630" cy="140" r="6" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="510" cy="190" r="6" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="590" cy="180" r="6" fill="#3b82f6" opacity="0.5"/>
+  <!-- Original minority -->
+  <circle cx="610" cy="220" r="7" fill="#ef4444"/>
+  <circle cx="560" cy="240" r="7" fill="#ef4444"/>
+  <circle cx="630" cy="260" r="7" fill="#ef4444"/>
+  <!-- Synthetic minority -->
+  <circle cx="580" cy="225" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1.5"/>
+  <circle cx="595" cy="248" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1.5"/>
+  <circle cx="620" cy="235" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1.5"/>
+  <circle cx="555" cy="260" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1.5"/>
+  <circle cx="575" cy="255" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1.5"/>
+  <circle cx="540" cy="230" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1.5"/>
+  <circle cx="600" cy="260" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1.5"/>
+  <circle cx="615" cy="250" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1.5"/>
+  <circle cx="647" cy="245" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1.5"/>
+  <!-- Legend -->
+  <circle cx="490" cy="284" r="5" fill="#ef4444"/>
+  <text x="500" y="288" class="sm-note">Original</text>
+  <circle cx="560" cy="284" r="5" fill="#22c55e" stroke="#16a34a" stroke-width="1"/>
+  <text x="570" y="288" class="sm-note">Synthetic</text>
+</svg>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb180-1"><a href="#cb180-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> imblearn.over_sampling <span class="im">import</span> SMOTE</span>
+<span id="cb180-2"><a href="#cb180-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb180-3"><a href="#cb180-3" aria-hidden="true" tabindex="-1"></a>smote <span class="op">=</span> SMOTE(random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb180-4"><a href="#cb180-4" aria-hidden="true" tabindex="-1"></a>X_res, y_res <span class="op">=</span> smote.fit_resample(X_train, y_train)</span></code></pre></div>
+
+<h5 id="adasyn-adaptive-synthetic">ADASYN — Adaptive Synthetic Sampling</h5>
+
+<p><strong>ADASYN</strong> builds on SMOTE but adapts <em>where</em> it generates samples. Minority points that have more majority neighbours (i.e. they sit near the decision boundary) receive more synthetic samples. Points that are already surrounded by same-class neighbours receive fewer. This focuses the model's learning on the hard cases.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span><span class="im">from</span> imblearn.over_sampling <span class="im">import</span> ADASYN</span>
+<span></span>
+<span>ada <span class="op">=</span> ADASYN(random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span>X_res, y_res <span class="op">=</span> ada.fit_resample(X_train, y_train)</span></code></pre></div>
+
+<table style="border-collapse:collapse; margin:16px 0; width:auto;">
+<caption style="text-align:left; font-weight:700; padding-bottom:6px;">SMOTE vs. ADASYN</caption>
+<thead><tr>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">Aspect</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">SMOTE</th>
+  <th style="padding:8px 14px; text-align:left; border-bottom:2px solid #6366f1;">ADASYN</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Sample distribution</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Uniform across all minority points</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">More samples near decision boundary</td></tr>
+<tr><td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Focus</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">General rebalancing</td>
+    <td style="padding:6px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">Hard-to-learn regions</td></tr>
+<tr><td style="padding:6px 14px;">Risk</td>
+    <td style="padding:6px 14px;">May create samples in majority regions</td>
+    <td style="padding:6px 14px;">More noise near boundary if minority overlaps majority</td></tr>
+</tbody>
+</table>
+
+<blockquote>
+<p><strong>Key:</strong> SMOTE is the workhorse — start there. Switch to ADASYN when the minority class has pockets of high overlap with the majority class and you want the model to focus on the hard examples.</p>
+</blockquote>
+
+<h5 id="when-to-use-smote-carefully">When to Use SMOTE / ADASYN Carefully</h5>
+
+<p>Synthetic oversampling isn't always the right tool. Be cautious when:</p>
+
+<ul>
+<li><strong>Features are high-dimensional + sparse</strong> — SMOTE interpolates in Euclidean space; in very high dimensions, nearest neighbours become meaningless (curse of dimensionality), so synthetic points may land in unhelpful regions.</li>
+<li><strong>The minority class is noisy</strong> — SMOTE generates points <em>near</em> existing minority samples. If some minority samples are outliers or mislabelled, it amplifies the noise.</li>
+<li><strong>Data has categorical features</strong> — standard SMOTE interpolates numerically, which doesn't make sense for categories. Use <code>SMOTENC</code> (for mixed data) or <code>SMOTEN</code> (all categorical) from imbalanced-learn instead.</li>
+<li><strong>Synthetic samples cross class boundaries</strong> — when minority and majority classes overlap heavily, synthetic points may land in majority territory, confusing the classifier.</li>
+</ul>
+
+<h5 id="undersampling">Undersampling</h5>
+
+<p>Instead of creating more minority samples, undersampling <em>removes</em> majority samples to balance the ratio. This is most useful when the majority class is enormous (millions of rows) and training speed matters.</p>
+
+<p><strong>Pros:</strong> Much faster training; forces the model to focus on the minority class.</p>
+
+<p><strong>Cons:</strong> Discards potentially useful majority-class information. Can hurt performance if the majority class has important substructure that gets lost.</p>
+
+<p><strong>Tip:</strong> Combine with ensemble techniques — e.g. <code>BalancedRandomForestClassifier</code> from imbalanced-learn trains each tree on a different random subsample of the majority, so nothing is permanently discarded.</p>
+
+<h4 id="class-weights">2. Class Weights</h4>
+
+<p>Instead of changing the data, change how the model values each class. Setting <code>class_weight="balanced"</code> tells the model to penalize misclassification of the minority class more heavily — effectively multiplying the loss for minority samples by the inverse of the class frequency. This is the simplest imbalance fix: one parameter, no resampling, no synthetic data. It's often the best starting point before trying SMOTE.</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb181-1"><a href="#cb181-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> LogisticRegression</span>
+<span id="cb181-2"><a href="#cb181-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb181-3"><a href="#cb181-3" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> LogisticRegression(class_weight<span class="op">=</span><span class="st">&quot;balanced&quot;</span>, max_iter<span class="op">=</span><span class="dv">1000</span>)</span>
+<span id="cb181-4"><a href="#cb181-4" aria-hidden="true" tabindex="-1"></a>model.fit(X_train, y_train)</span></code></pre></div>
+
+<h4 id="threshold-tuning">3. Threshold Tuning</h4>
+
+<p>Most classifiers output a probability (e.g. "80% fraud"). The default decision threshold is 0.5: anything above is predicted positive. But with imbalanced data, lowering the threshold (e.g. to 0.3) catches more minority cases at the cost of more false positives. This is a <em>post-training</em> adjustment — no retraining needed. Use a precision-recall curve to pick the threshold that matches your business cost tradeoff.</p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Threshold</th>
+
+<th>Recall (Sensitivity)</th>
+
+<th>Precision (Positive Predictive Value)</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Lower</td>
+
+<td>Higher</td>
+
+<td>Lower</td>
+
+</tr>
+
+<tr>
+
+<td>Higher</td>
+
+<td>Lower</td>
+
+<td>Higher</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h4 id="appropriate-validation-strategy">4. Appropriate Validation
+
+Strategy</h4>
+
+<p>With imbalanced data, a random split can accidentally put <em>zero</em> minority samples in your validation fold. Stratified splitting preserves the class ratio in every fold, so your evaluation actually reflects minority-class performance. This isn't a fix for imbalance — it's a prerequisite for honestly measuring any other fix.</p>
+
+<p>Use:</p>
+
+<ul>
+<li>Stratified train/test split</li>
+<li>Stratified cross-validation</li>
+</ul>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb182-1"><a href="#cb182-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> StratifiedKFold</span>
+<span id="cb182-2"><a href="#cb182-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb182-3"><a href="#cb182-3" aria-hidden="true" tabindex="-1"></a>cv <span class="op">=</span> StratifiedKFold(n_splits<span class="op">=</span><span class="dv">5</span>, shuffle<span class="op">=</span><span class="va">True</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span></code></pre></div>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="80" viewBox="0 0 480 80" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .rs-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .rs-step { font: 11px system-ui, sans-serif; fill: #6366f1; font-weight: 600; }
+    .rs-note { font: italic 11px system-ui, sans-serif; fill: #64748b; }
+  </style>
+  <defs><marker id="rs-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <rect x="10" y="12" width="80" height="36" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="50" y="35" text-anchor="middle" class="rs-lbl">Data</text>
+  <line x1="90" y1="30" x2="150" y2="30" stroke="#6366f1" stroke-width="2" marker-end="url(#rs-a)"/>
+  <text x="120" y="22" text-anchor="middle" class="rs-step">split first</text>
+  <rect x="158" y="12" width="120" height="36" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="218" y="35" text-anchor="middle" class="rs-lbl">Train / Val</text>
+  <line x1="278" y1="30" x2="348" y2="30" stroke="#6366f1" stroke-width="2" marker-end="url(#rs-a)"/>
+  <text x="313" y="22" text-anchor="middle" class="rs-step">resample only</text>
+  <rect x="356" y="12" width="100" height="36" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="406" y="35" text-anchor="middle" class="rs-lbl">Model</text>
+  <text x="218" y="68" text-anchor="middle" class="rs-note">Val/Test untouched</text>
+</svg>
+
+<h3 id="pipeline-safety">4.7.3 Pipeline Safety</h3>
+
+<p>Resampling must happen <strong>only on training folds</strong>.</p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Incorrect</th>
+
+<th>Correct</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>SMOTE full dataset → split</td>
+
+<td>Split first</td>
+
+</tr>
+
+<tr>
+
+<td>Leakage into validation/test</td>
+
+<td>Resample training only</td>
+
+</tr>
+
+<tr>
+
+<td>Over-optimistic evaluation</td>
+
+<td>Evaluate on untouched val/test</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb184-1"><a href="#cb184-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> imblearn.pipeline <span class="im">import</span> Pipeline</span>
+<span id="cb184-2"><a href="#cb184-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> StandardScaler</span>
+<span id="cb184-3"><a href="#cb184-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> LogisticRegression</span>
+<span id="cb184-4"><a href="#cb184-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> imblearn.over_sampling <span class="im">import</span> SMOTE</span>
+<span id="cb184-5"><a href="#cb184-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb184-6"><a href="#cb184-6" aria-hidden="true" tabindex="-1"></a>pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb184-7"><a href="#cb184-7" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&quot;scaler&quot;</span>, StandardScaler()),</span>
+<span id="cb184-8"><a href="#cb184-8" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&quot;smote&quot;</span>, SMOTE(random_state<span class="op">=</span><span class="dv">42</span>)),</span>
+<span id="cb184-9"><a href="#cb184-9" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&quot;model&quot;</span>, LogisticRegression(max_iter<span class="op">=</span><span class="dv">1000</span>))</span>
+<span id="cb184-10"><a href="#cb184-10" aria-hidden="true" tabindex="-1"></a>])</span></code></pre></div>
+
+<blockquote>
+
+<p><strong>Key:</strong> Sample inside each training fold, never before
+
+the split.</p>
+
+</blockquote>
+
+<p><strong>Further Reading</strong></p>
+
+<ul>
+<li>imbalanced-learn documentation:  https://imbalanced-learn.org/stable/</li>
+<li>Scikit-learn metrics guide:  https://scikit-learn.org/stable/modules/model_evaluation.html</li>
+</ul>
+
+<hr />
+
+<h2 id="data-leakage-prevention">4.8 Data Leakage Prevention</h2>
+
+<p><strong>Data leakage</strong> = model sees info unavailable at
+
+prediction time → validation inflated, real-world performance drops.</p>
+
+<p>The diagram below contrasts two pipelines — the <span style="color:#dc2626;">wrong</span> approach that scales before splitting (leaking test statistics into training) and the <span style="color:#16a34a;">right</span> approach that keeps all preprocessing inside the training fold.</p>
+
+<!-- Data Leakage: Wrong vs Right SVG -->
+
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="200" viewBox="0 0 720 200" style="display:block; margin:16px auto;">
+
+  <defs>
+
+    <style>
+
+      .dl-h { font-family:'Segoe UI',Arial,sans-serif; font-size:13px; font-weight:bold; }
+
+      .dl-s { font-family:'Segoe UI',Arial,sans-serif; font-size:11px; fill:#475569; }
+
+      .dl-b { font-family:'Segoe UI',Arial,sans-serif; font-size:11.5px; font-weight:bold; }
+
+    </style>
+
+    <marker id="dla" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+
+      <polygon points="0 0, 7 2.5, 0 5" fill="#94a3b8"/>
+
+    </marker>
+
+  </defs>
+
+
+
+  <!-- WRONG row -->
+
+  <rect x="10" y="10" width="700" height="80" rx="10" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.3"/>
+
+  <text x="32" y="32" class="dl-h" fill="#dc2626">WRONG ✗</text>
+
+
+
+  <rect x="30" y="42" width="100" height="34" rx="7" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
+
+  <text x="80" y="64" text-anchor="middle" class="dl-b" fill="#dc2626">Full Data</text>
+
+
+
+  <line x1="130" y1="59" x2="162" y2="59" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#dla)"/>
+
+
+
+  <rect x="165" y="42" width="140" height="34" rx="7" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
+
+  <text x="235" y="64" text-anchor="middle" class="dl-b" fill="#dc2626">Fit Preprocess</text>
+
+  <text x="235" y="54" text-anchor="middle" class="dl-s" fill="#dc2626">(on ALL data)</text>
+
+
+
+  <line x1="305" y1="59" x2="337" y2="59" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#dla)"/>
+
+
+
+  <rect x="340" y="42" width="80" height="34" rx="7" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
+
+  <text x="380" y="64" text-anchor="middle" class="dl-b" fill="#dc2626">Split</text>
+
+
+
+  <line x1="420" y1="59" x2="452" y2="59" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#dla)"/>
+
+
+
+  <rect x="455" y="42" width="100" height="34" rx="7" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
+
+  <text x="505" y="64" text-anchor="middle" class="dl-b" fill="#dc2626">Train / Eval</text>
+
+
+
+  <text x="600" y="64" class="dl-s" fill="#dc2626" font-style="italic">Test sees training info → inflated metrics</text>
+
+
+
+  <!-- RIGHT row -->
+
+  <rect x="10" y="105" width="700" height="85" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="1.3"/>
+
+  <text x="32" y="127" class="dl-h" fill="#16a34a">RIGHT ✓</text>
+
+
+
+  <rect x="30" y="138" width="100" height="34" rx="7" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+
+  <text x="80" y="160" text-anchor="middle" class="dl-b" fill="#16a34a">Full Data</text>
+
+
+
+  <line x1="130" y1="155" x2="162" y2="155" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#dla)"/>
+
+
+
+  <rect x="165" y="138" width="80" height="34" rx="7" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+
+  <text x="205" y="160" text-anchor="middle" class="dl-b" fill="#16a34a">Split</text>
+
+
+
+  <line x1="245" y1="155" x2="277" y2="155" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#dla)"/>
+
+
+
+  <rect x="280" y="138" width="140" height="34" rx="7" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+
+  <text x="350" y="153" text-anchor="middle" class="dl-b" fill="#16a34a">Fit Preprocess</text>
+
+  <text x="350" y="166" text-anchor="middle" class="dl-s" fill="#16a34a">(train only)</text>
+
+
+
+  <line x1="420" y1="155" x2="452" y2="155" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#dla)"/>
+
+
+
+  <rect x="455" y="138" width="120" height="34" rx="7" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+
+  <text x="515" y="153" text-anchor="middle" class="dl-b" fill="#16a34a">Apply to</text>
+
+  <text x="515" y="166" text-anchor="middle" class="dl-s" fill="#16a34a">val / test</text>
+
+
+
+  <text x="610" y="160" class="dl-s" fill="#16a34a" font-style="italic">Clean separation ✓</text>
+
+</svg>
+
+<blockquote>
+
+<p><strong>Key:</strong> Any step that learns from data must be fit on
+
+training data only, within each fold.</p>
+
+</blockquote>
+
+<h3 id="common-sources-of-leakage">4.8.1 Common Sources of Leakage</h3>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+<col style="width: 33%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Type</th>
+
+<th>What leaks</th>
+
+<th>Examples</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Preprocessing leakage</td>
+
+<td>Full-dataset statistics</td>
+
+<td>scaling, imputation, feature selection, PCA before split</td>
+
+</tr>
+
+<tr>
+
+<td>Target leakage</td>
+
+<td>Feature contains target/future info</td>
+
+<td><code>account_closed</code> for churn, post-event treatment for
+
+diagnosis</td>
+
+</tr>
+
+<tr>
+
+<td>Time leakage</td>
+
+<td>Future leaks into past</td>
+
+<td>random split for time series, rolling stats using future values</td>
+
+</tr>
+
+<tr>
+
+<td>Group leakage</td>
+
+<td>Same entity in train + val</td>
+
+<td>user, patient, household, device overlap</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<blockquote>
+
+<p><strong>Key:</strong> Ask for every feature: <em>Would this be known
+
+at prediction time?</em></p>
+
+</blockquote>
+
+<h3 id="prevention-principles">4.8.2 Prevention Principles</h3>
+
+<ul>
+
+<li>Split <strong>before</strong> any fitted preprocessing.</li>
+
+<li>Use <strong>pipelines</strong> for preprocessing + model.</li>
+
+<li>Use <strong>time-aware splits</strong> for temporal data.</li>
+
+<li>Use <strong>group-aware splits</strong> when entities repeat.</li>
+
+<li>Investigate <strong>unrealistically strong validation</strong>.</li>
+
+</ul>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="190" viewBox="0 0 420 190" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .lk-lbl { font: bold 12px system-ui, sans-serif; fill: #1e293b; }
+    .lk-step { font: 11px system-ui, sans-serif; fill: #6366f1; font-weight: 600; }
+  </style>
+  <defs><marker id="lk-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+  <rect x="10" y="10" width="100" height="36" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="60" y="33" text-anchor="middle" class="lk-lbl">Raw data</text>
+  <line x1="110" y1="28" x2="155" y2="28" stroke="#6366f1" stroke-width="2" marker-end="url(#lk-a)"/>
+  <rect x="163" y="10" width="120" height="36" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="223" y="33" text-anchor="middle" class="lk-lbl">Train / Val</text>
+  <line x1="283" y1="28" x2="318" y2="28" stroke="#6366f1" stroke-width="2" marker-end="url(#lk-a)"/>
+  <rect x="326" y="10" width="90" height="36" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="371" y="33" text-anchor="middle" class="lk-lbl">Fit on train</text>
+  <!-- Arrow down from fit -->
+  <line x1="371" y1="46" x2="371" y2="76" stroke="#6366f1" stroke-width="2"/>
+  <text x="300" y="68" text-anchor="middle" class="lk-step">apply same transform</text>
+  <line x1="371" y1="76" x2="371" y2="96" stroke="#6366f1" stroke-width="2" marker-end="url(#lk-a)"/>
+  <rect x="310" y="104" width="120" height="36" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="370" y="127" text-anchor="middle" class="lk-lbl">Val / Test</text>
+</svg>
+
+<h3 id="safe-pipeline-example">4.8.3 Safe Pipeline Example</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb187-1"><a href="#cb187-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.pipeline <span class="im">import</span> Pipeline</span>
+<span id="cb187-2"><a href="#cb187-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.compose <span class="im">import</span> ColumnTransformer</span>
+<span id="cb187-3"><a href="#cb187-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.impute <span class="im">import</span> SimpleImputer</span>
+<span id="cb187-4"><a href="#cb187-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> OneHotEncoder, StandardScaler</span>
+<span id="cb187-5"><a href="#cb187-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> LogisticRegression</span>
+<span id="cb187-6"><a href="#cb187-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb187-7"><a href="#cb187-7" aria-hidden="true" tabindex="-1"></a>numeric_features <span class="op">=</span> [<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>]</span>
+<span id="cb187-8"><a href="#cb187-8" aria-hidden="true" tabindex="-1"></a>categorical_features <span class="op">=</span> [<span class="st">&quot;city&quot;</span>, <span class="st">&quot;segment&quot;</span>]</span>
+<span id="cb187-9"><a href="#cb187-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb187-10"><a href="#cb187-10" aria-hidden="true" tabindex="-1"></a>preprocessor <span class="op">=</span> ColumnTransformer([</span>
+<span id="cb187-11"><a href="#cb187-11" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&quot;num&quot;</span>, Pipeline([</span>
+<span id="cb187-12"><a href="#cb187-12" aria-hidden="true" tabindex="-1"></a>        (<span class="st">&quot;imputer&quot;</span>, SimpleImputer(strategy<span class="op">=</span><span class="st">&quot;median&quot;</span>)),</span>
+<span id="cb187-13"><a href="#cb187-13" aria-hidden="true" tabindex="-1"></a>        (<span class="st">&quot;scaler&quot;</span>, StandardScaler())</span>
+<span id="cb187-14"><a href="#cb187-14" aria-hidden="true" tabindex="-1"></a>    ]), numeric_features),</span>
+<span id="cb187-15"><a href="#cb187-15" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&quot;cat&quot;</span>, Pipeline([</span>
+<span id="cb187-16"><a href="#cb187-16" aria-hidden="true" tabindex="-1"></a>        (<span class="st">&quot;imputer&quot;</span>, SimpleImputer(strategy<span class="op">=</span><span class="st">&quot;most_frequent&quot;</span>)),</span>
+<span id="cb187-17"><a href="#cb187-17" aria-hidden="true" tabindex="-1"></a>        (<span class="st">&quot;encoder&quot;</span>, OneHotEncoder(handle_unknown<span class="op">=</span><span class="st">&quot;ignore&quot;</span>))</span>
+<span id="cb187-18"><a href="#cb187-18" aria-hidden="true" tabindex="-1"></a>    ]), categorical_features)</span>
+<span id="cb187-19"><a href="#cb187-19" aria-hidden="true" tabindex="-1"></a>])</span>
+<span id="cb187-20"><a href="#cb187-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb187-21"><a href="#cb187-21" aria-hidden="true" tabindex="-1"></a>pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb187-22"><a href="#cb187-22" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&quot;preprocessor&quot;</span>, preprocessor),</span>
+<span id="cb187-23"><a href="#cb187-23" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&quot;model&quot;</span>, LogisticRegression(max_iter<span class="op">=</span><span class="dv">1000</span>))</span>
+<span id="cb187-24"><a href="#cb187-24" aria-hidden="true" tabindex="-1"></a>])</span>
+<span id="cb187-25"><a href="#cb187-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb187-26"><a href="#cb187-26" aria-hidden="true" tabindex="-1"></a>pipe.fit(X_train, y_train)</span>
+<span id="cb187-27"><a href="#cb187-27" aria-hidden="true" tabindex="-1"></a>y_pred <span class="op">=</span> pipe.predict(X_test)</span></code></pre></div>
+
+<h3 id="leakage-detection-heuristics">4.8.4 Leakage Detection Heuristics</h3>
+
+<ul>
+
+<li>Validation score is <strong>far higher</strong> than expected</li>
+
+<li><strong>Tiny feature set</strong> gives near-perfect accuracy</li>
+
+<li>Top feature looks <strong>too directly tied</strong> to target</li>
+
+<li>Performance <strong>collapses on later time periods</strong></li>
+
+<li>Manual audit finds <strong>post-outcome variables</strong></li>
+
+</ul>
+
+<h3 id="time-and-group-split-examples">4.8.5 Time and Group Split
+
+Examples</h3>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb188-1"><a href="#cb188-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> TimeSeriesSplit, GroupKFold</span>
+<span id="cb188-2"><a href="#cb188-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb188-3"><a href="#cb188-3" aria-hidden="true" tabindex="-1"></a>tscv <span class="op">=</span> TimeSeriesSplit(n_splits<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb188-4"><a href="#cb188-4" aria-hidden="true" tabindex="-1"></a>gkf <span class="op">=</span> GroupKFold(n_splits<span class="op">=</span><span class="dv">5</span>)</span></code></pre></div>
+
+<h3 id="final-rule">4.8.6 Final Rule</h3>
+
+<p>Fit these <strong>inside each training fold only</strong>:</p>
+
+<ul>
+<li>imputers</li>
+<li>scalers</li>
+<li>encoders</li>
+<li>feature selectors</li>
+<li>dimensionality reduction -  samplers such as SMOTE</li>
+</ul>
+
+<blockquote>
+
+<p><strong>Key rule:</strong> If a step computes statistics, selects
+
+features, estimates components, or synthesizes samples, keep it inside
+
+the training fold.</p>
+
+</blockquote>
+
+<p><strong>Further Reading</strong></p>
+
+<ul>
+<li>Scikit-learn common pitfalls:  https://scikit-learn.org/stable/common_pitfalls.html</li>
+<li>Kaggle  micro-course on data leakage:  https://www.kaggle.com/learn/data-leakage</li>
+</ul>
+
+<hr />
+
+<h2 id="feature-creation">4.9 Feature Creation</h2>
+
+<p>Feature selection and scaling work with existing columns. Feature
+
+creation generates <strong>new</strong> columns by combining,
+
+transforming, or aggregating existing ones. This is often where the
+
+biggest ML gains come from.</p>
+
+<blockquote>
+
+<p><strong>Key:</strong> Models learn from features they are given. If
+
+the signal exists in the data but not in the current features, adding
+
+derived features is the fastest path to improvement.</p>
+
+</blockquote>
+
+<h3 id="numeric-transformations">4.9.1 Numeric Transformations</h3>
+
+<p><strong>Log transform</strong> for right-skewed features (income,
+
+page views, transaction amounts):</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb189-1"><a href="#cb189-1" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;log_income&quot;</span>] <span class="op">=</span> np.log1p(df[<span class="st">&quot;income&quot;</span>])  <span class="co"># log(1 + x) handles zeros</span></span></code></pre></div>
+
+<p><strong>Binning / discretization</strong> when non-linear thresholds
+
+exist:</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb190-1"><a href="#cb190-1" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;age_group&quot;</span>] <span class="op">=</span> pd.cut(df[<span class="st">&quot;age&quot;</span>], bins<span class="op">=</span>[<span class="dv">0</span>, <span class="dv">18</span>, <span class="dv">35</span>, <span class="dv">55</span>, <span class="dv">100</span>],</span>
+<span id="cb190-2"><a href="#cb190-2" aria-hidden="true" tabindex="-1"></a>                          labels<span class="op">=</span>[<span class="st">&quot;under_18&quot;</span>, <span class="st">&quot;18_35&quot;</span>, <span class="st">&quot;35_55&quot;</span>, <span class="st">&quot;55+&quot;</span>])</span></code></pre></div>
+
+<p><strong>Ratio features</strong> when the relationship between two
+
+measures matters more than either alone:</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb191-1"><a href="#cb191-1" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;debt_to_income&quot;</span>] <span class="op">=</span> df[<span class="st">&quot;total_debt&quot;</span>] <span class="op">/</span> (df[<span class="st">&quot;income&quot;</span>] <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb191-2"><a href="#cb191-2" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;clicks_per_impression&quot;</span>] <span class="op">=</span> df[<span class="st">&quot;clicks&quot;</span>] <span class="op">/</span> (df[<span class="st">&quot;impressions&quot;</span>] <span class="op">+</span> <span class="dv">1</span>)</span></code></pre></div>
+
+<h3 id="interaction-features">4.9.2 Interaction Features</h3>
+
+<p>Polynomial and cross-product features capture non-additive
+
+relationships:</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb192-1"><a href="#cb192-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> PolynomialFeatures</span>
+<span id="cb192-2"><a href="#cb192-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb192-3"><a href="#cb192-3" aria-hidden="true" tabindex="-1"></a>poly <span class="op">=</span> PolynomialFeatures(degree<span class="op">=</span><span class="dv">2</span>, interaction_only<span class="op">=</span><span class="va">True</span>, include_bias<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb192-4"><a href="#cb192-4" aria-hidden="true" tabindex="-1"></a>X_interactions <span class="op">=</span> poly.fit_transform(X_train[[<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>, <span class="st">&quot;tenure&quot;</span>]])</span></code></pre></div>
+
+<blockquote>
+
+<p><strong>Warning:</strong> Degree-2 polynomial features grow as <span
+
+class="math inline">\(O(n^2)\)</span>. With 100 input features, you get
+
+~5,000 interaction terms. Use sparingly or with feature selection.</p>
+
+</blockquote>
+
+<h3 id="temporal-features">4.9.3 Temporal Features</h3>
+
+<p>Date and time columns contain multiple independent signals:</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb193-1"><a href="#cb193-1" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;event_date&quot;</span>] <span class="op">=</span> pd.to_datetime(df[<span class="st">&quot;event_date&quot;</span>])</span>
+<span id="cb193-2"><a href="#cb193-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb193-3"><a href="#cb193-3" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;hour&quot;</span>]         <span class="op">=</span> df[<span class="st">&quot;event_date&quot;</span>].dt.hour</span>
+<span id="cb193-4"><a href="#cb193-4" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;day_of_week&quot;</span>]  <span class="op">=</span> df[<span class="st">&quot;event_date&quot;</span>].dt.dayofweek</span>
+<span id="cb193-5"><a href="#cb193-5" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;is_weekend&quot;</span>]   <span class="op">=</span> df[<span class="st">&quot;day_of_week&quot;</span>].isin([<span class="dv">5</span>, <span class="dv">6</span>]).astype(<span class="bu">int</span>)</span>
+<span id="cb193-6"><a href="#cb193-6" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;month&quot;</span>]        <span class="op">=</span> df[<span class="st">&quot;event_date&quot;</span>].dt.month</span>
+<span id="cb193-7"><a href="#cb193-7" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;week_of_year&quot;</span>] <span class="op">=</span> df[<span class="st">&quot;event_date&quot;</span>].dt.isocalendar().week</span>
+<span id="cb193-8"><a href="#cb193-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb193-9"><a href="#cb193-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Cyclical encoding (prevents 23 and 0 being &quot;far apart&quot;)</span></span>
+<span id="cb193-10"><a href="#cb193-10" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;hour_sin&quot;</span>] <span class="op">=</span> np.sin(<span class="dv">2</span> <span class="op">*</span> np.pi <span class="op">*</span> df[<span class="st">&quot;hour&quot;</span>] <span class="op">/</span> <span class="dv">24</span>)</span>
+<span id="cb193-11"><a href="#cb193-11" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;hour_cos&quot;</span>] <span class="op">=</span> np.cos(<span class="dv">2</span> <span class="op">*</span> np.pi <span class="op">*</span> df[<span class="st">&quot;hour&quot;</span>] <span class="op">/</span> <span class="dv">24</span>)</span></code></pre></div>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-family:'Consolas',monospace; font-size:0.9rem; line-height:1.8;">
+<strong>raw:</strong> 2024-01-15 22:00:00<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+hour=22, day_of_week=1, is_weekend=0, month=1<br>
+hour_sin=sin(2π×22/24), hour_cos=cos(2π×22/24)
+</div>
+
+<p><strong>Days since events</strong> (recency signals):</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb195-1"><a href="#cb195-1" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;days_since_last_purchase&quot;</span>] <span class="op">=</span> (</span>
+<span id="cb195-2"><a href="#cb195-2" aria-hidden="true" tabindex="-1"></a>    pd.Timestamp(<span class="st">&quot;today&quot;</span>) <span class="op">-</span> pd.to_datetime(df[<span class="st">&quot;last_purchase_date&quot;</span>])</span>
+<span id="cb195-3"><a href="#cb195-3" aria-hidden="true" tabindex="-1"></a>).dt.days</span></code></pre></div>
+
+<h3 id="aggregation-and-window-features">4.9.4 Aggregation and Window
+
+Features</h3>
+
+<p>For entity-level data (user, product, merchant), aggregate behavior
+
+over time:</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb196-1"><a href="#cb196-1" aria-hidden="true" tabindex="-1"></a><span class="co"># User-level aggregations (fit on train, apply to all)</span></span>
+<span id="cb196-2"><a href="#cb196-2" aria-hidden="true" tabindex="-1"></a>user_stats <span class="op">=</span> X_train.groupby(<span class="st">&quot;user_id&quot;</span>).agg(</span>
+<span id="cb196-3"><a href="#cb196-3" aria-hidden="true" tabindex="-1"></a>    user_avg_order_value<span class="op">=</span>(<span class="st">&quot;order_value&quot;</span>, <span class="st">&quot;mean&quot;</span>),</span>
+<span id="cb196-4"><a href="#cb196-4" aria-hidden="true" tabindex="-1"></a>    user_order_count<span class="op">=</span>(<span class="st">&quot;order_id&quot;</span>, <span class="st">&quot;count&quot;</span>),</span>
+<span id="cb196-5"><a href="#cb196-5" aria-hidden="true" tabindex="-1"></a>    user_max_order<span class="op">=</span>(<span class="st">&quot;order_value&quot;</span>, <span class="st">&quot;max&quot;</span>)</span>
+<span id="cb196-6"><a href="#cb196-6" aria-hidden="true" tabindex="-1"></a>).reset_index()</span>
+<span id="cb196-7"><a href="#cb196-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb196-8"><a href="#cb196-8" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df.merge(user_stats, on<span class="op">=</span><span class="st">&quot;user_id&quot;</span>, how<span class="op">=</span><span class="st">&quot;left&quot;</span>)</span></code></pre></div>
+
+<p><strong>Rolling window features for time series:</strong></p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb197-1"><a href="#cb197-1" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df.sort_values([<span class="st">&quot;user_id&quot;</span>, <span class="st">&quot;date&quot;</span>])</span>
+<span id="cb197-2"><a href="#cb197-2" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;rolling_7d_spend&quot;</span>] <span class="op">=</span> (</span>
+<span id="cb197-3"><a href="#cb197-3" aria-hidden="true" tabindex="-1"></a>    df.groupby(<span class="st">&quot;user_id&quot;</span>)[<span class="st">&quot;spend&quot;</span>]</span>
+<span id="cb197-4"><a href="#cb197-4" aria-hidden="true" tabindex="-1"></a>    .transform(<span class="kw">lambda</span> x: x.rolling(<span class="dv">7</span>, min_periods<span class="op">=</span><span class="dv">1</span>).mean())</span>
+<span id="cb197-5"><a href="#cb197-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+
+<blockquote>
+
+<p><strong>Leakage warning:</strong> For temporal data, compute all
+
+window features using only past data relative to the prediction point.
+
+Never use future rows in a rolling window.</p>
+
+</blockquote>
+
+<h3 id="text-derived-features">4.9.5 Text-Derived Features</h3>
+
+<p>Even when not building an NLP model, text columns can yield useful
+
+structured features:</p>
+
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb198-1"><a href="#cb198-1" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;description_word_count&quot;</span>] <span class="op">=</span> df[<span class="st">&quot;description&quot;</span>].<span class="bu">str</span>.split().<span class="bu">str</span>.<span class="bu">len</span>()</span>
+<span id="cb198-2"><a href="#cb198-2" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;has_discount_keyword&quot;</span>]   <span class="op">=</span> df[<span class="st">&quot;title&quot;</span>].<span class="bu">str</span>.contains(<span class="vs">r&quot;sale</span><span class="cf">|</span><span class="vs">discount</span><span class="cf">|</span><span class="vs">off&quot;</span>,</span>
+<span id="cb198-3"><a href="#cb198-3" aria-hidden="true" tabindex="-1"></a>                                                          case<span class="op">=</span><span class="va">False</span>).astype(<span class="bu">int</span>)</span>
+<span id="cb198-4"><a href="#cb198-4" aria-hidden="true" tabindex="-1"></a>df[<span class="st">&quot;description_char_count&quot;</span>] <span class="op">=</span> df[<span class="st">&quot;description&quot;</span>].<span class="bu">str</span>.<span class="bu">len</span>()</span></code></pre></div>
+
+<h3 id="domain-specific-feature-creation">4.9.6 Domain-Specific Feature
+
+Creation</h3>
+
+<p>The highest-value features usually come from <strong>domain
+
+knowledge</strong>, not automatic transformations:</p>
+
+<table>
+
+<colgroup>
+
+<col style="width: 22%" />
+
+<col style="width: 77%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Domain</th>
+
+<th>Example engineered features</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>E-commerce</td>
+
+<td>Days since last purchase, purchase frequency, average basket
+
+size</td>
+
+</tr>
+
+<tr>
+
+<td>Fraud</td>
+
+<td>Velocity (5 transactions in last hour), new device flag, distance
+
+from home</td>
+
+</tr>
+
+<tr>
+
+<td>Healthcare</td>
+
+<td>BMI from height/weight, days since last visit, medication adherence
+
+rate</td>
+
+</tr>
+
+<tr>
+
+<td>Credit risk</td>
+
+<td>Debt-to-income ratio, credit utilization, months since last
+
+delinquency</td>
+
+</tr>
+
+<tr>
+
+<td>Marketing</td>
+
+<td>Recency-Frequency-Monetary (RFM) score, engagement rate</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-family:'Consolas',monospace; font-size:0.9rem; line-height:1.8;">
+<strong>Raw columns:</strong> height, weight<br>
+&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+<strong>Engineered:</strong> BMI = weight_kg / height_m²<br><br>
+<strong>Raw columns:</strong> signup_date, last_login_date<br>
+&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+<strong>Engineered:</strong> days_inactive = today − last_login<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;account_age_days = today − signup_date
+</div>
+
+<h3 id="practical-feature-engineering-workflow">4.9.7 Practical Feature
+
+Engineering Workflow</h3>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.9rem; line-height:1.8;">
+<strong>1. Start with raw columns</strong><br>
+&nbsp;&nbsp;&nbsp;├── Check which features have predictive signal (EDA, correlation with target)<br>
+&nbsp;&nbsp;&nbsp;└── Identify obvious gaps (temporal patterns, ratios, entity behavior)<br>
+<strong>2. Add numeric transformations</strong><br>
+&nbsp;&nbsp;&nbsp;├── Log-transform skewed positive features<br>
+&nbsp;&nbsp;&nbsp;├── Bin continuous features if threshold effects likely<br>
+&nbsp;&nbsp;&nbsp;└── Normalize ratios<br>
+<strong>3. Add temporal features</strong> from date/time columns<br>
+<strong>4. Add aggregations</strong> for entity-level behavior<br>
+<strong>5. Test each feature:</strong> does cross-validation score improve?<br>
+&nbsp;&nbsp;&nbsp;└── Remove features that don't improve val performance (reduces noise, speeds training)
+</div>
+
+<hr />
+
+<h2 id="key-takeaways-8">Key Takeaways</h2>
+
+<ul>
+
+<li><strong>EDA comes first:</strong> Understand distributions,
+
+missingness, outliers, and leakage risks before writing any model
+
+code.</li>
+
+<li><strong>Pipeline rule:</strong> Fit all preprocessing (imputers,
+
+scalers, encoders, selectors) on training data only. Use
+
+<code>sklearn.pipeline.Pipeline</code> to enforce this
+
+automatically.</li>
+
+<li><strong>Missingness is not random:</strong> Diagnose why values are
+
+missing (MCAR/MAR/MNAR) before choosing an imputation strategy. Add a
+
+missing indicator when missingness itself carries signal.</li>
+
+<li><strong>Encoding choice matters:</strong> One-hot for
+
+low-cardinality nominal; ordinal encoding for true ordinal;
+
+frequency/target encoding for high-cardinality features. Target encoding
+
+requires out-of-fold computation to avoid leakage.</li>
+
+<li><strong>Scale selectively:</strong> Distance-based models (KNN,
+
+SVM), gradient-based models (linear regression, NNs), and PCA need
+
+scaling. Tree ensembles generally do not.</li>
+
+<li><strong>Leakage kills production models:</strong> Any feature that
+
+contains future information or is computed from the full dataset before
+
+splitting will produce inflated validation scores and production
+
+failures.</li>
+
+<li><strong>Feature creation is the highest-leverage step:</strong> Log
+
+transforms, ratios, temporal features, and domain-specific aggregations
+
+often matter more than model choice.</li>
+
+<li><strong>Class imbalance requires both metric and method
+
+changes:</strong> Use Precision-Recall Area Under the Curve (PR-AUC) or
+
+F1 score as your metric; apply class weights,
+
+SMOTE, or threshold tuning as appropriate. Resample only inside training
+
+folds.</li>
+
+<li><strong>Permutation importance is more reliable than impurity-based
+
+importance:</strong> It evaluates actual held-out performance impact
+
+rather than internal tree statistics.</li>
+
+</ul>
+
+<hr />
+
+<h2 id="ch4-case-study">Case Study: Credit Card Fraud Detection</h2>
+
+<p>Fraud detection is a canonical feature engineering problem: extreme class imbalance (~0.1% fraud), mixed feature types, temporal ordering constraints, and high business cost of both false negatives (missed fraud) and false positives (blocked legitimate customers).</p>
+
+<h3 id="raw-data">4.9.8 Step 1 — Understand the raw data</h3>
+
+<p>Typical features available in a card transaction dataset:</p>
+
+<table>
+
+<thead><tr><th>Feature</th><th>Type</th><th>Notes</th></tr></thead>
+
+<tbody>
+
+<tr><td><code>transaction_id</code></td><td>ID</td><td>Drop — no signal</td></tr>
+
+<tr><td><code>timestamp</code></td><td>Datetime</td><td>Engineer: hour, day-of-week, days-since-last-txn</td></tr>
+
+<tr><td><code>amount</code></td><td>Numeric</td><td>Log-transform (heavy right skew)</td></tr>
+
+<tr><td><code>merchant_category</code></td><td>Nominal (50+ categories)</td><td>Target encode or frequency encode</td></tr>
+
+<tr><td><code>country</code></td><td>Nominal (200+)</td><td>High-cardinality → frequency or target encode</td></tr>
+
+<tr><td><code>card_present</code></td><td>Binary</td><td>Use as-is</td></tr>
+
+<tr><td><code>customer_id</code></td><td>ID</td><td>Use to aggregate history features, then drop raw ID</td></tr>
+
+</tbody>
+
+</table>
+
+<h3 id="fraud-eda">4.9.9 Step 2 — EDA discoveries</h3>
+
+<ul>
+
+<li><strong>Imbalance:</strong> 99.9% legitimate, 0.1% fraud → accuracy is misleading; use Precision-Recall Area Under the Curve (PR-AUC)</li>
+
+<li><strong>Amount distribution:</strong> Right-skewed with long tail; fraudulent transactions cluster at both very low (card-testing) and very high (cash-out) amounts</li>
+
+<li><strong>Temporal patterns:</strong> Fraud spikes 2–5 AM local time; legitimate usage peaks 12–6 PM</li>
+
+<li><strong>Missing values:</strong> <code>merchant_zip</code> missing for 12% of online transactions (MCAR — safe to impute with a constant like &ldquo;UNKNOWN&rdquo;)</li>
+
+</ul>
+
+<h3 id="fraud-features">4.9.10 Step 3 — Feature engineering decisions</h3>
+
+<table>
+
+<thead><tr><th>Engineered Feature</th><th>Rationale</th></tr></thead>
+
+<tbody>
+
+<tr><td><code>log_amount</code></td><td>Normalize right skew; log(amount+1) handles zeros</td></tr>
+
+<tr><td><code>hour_of_day</code>, <code>is_night</code></td><td>Capture temporal fraud pattern</td></tr>
+
+<tr><td><code>days_since_last_txn</code></td><td>Account dormancy is a fraud signal</td></tr>
+
+<tr><td><code>txn_count_7d</code></td><td>Velocity feature: unusual spending spike</td></tr>
+
+<tr><td><code>amount_vs_customer_mean</code></td><td>Deviation from personal baseline (ratio)</td></tr>
+
+<tr><td><code>is_foreign_country</code></td><td>Binary flag: different country from home country</td></tr>
+
+<tr><td><code>merchant_cat_enc</code></td><td>Target encoding (out-of-fold) on merchant category</td></tr>
+
+</tbody>
+
+</table>
+
+<h3 id="fraud-pipeline">4.9.11 Step 4 — Pipeline (leakage-safe)</h3>
+
+<div style="border-left:4px solid #6366f1; padding:12px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.9rem; line-height:1.8;">
+<strong>temporal split</strong> ─▶ train (months 1–9) / test (months 10–12)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+aggregate features (txn_count_7d, amount_vs_customer_mean)<br>
+&nbsp;&nbsp;→ computed ONLY from rows with timestamp &lt; current row<br>
+&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+target encode merchant_cat → out-of-fold within train folds<br>
+&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+StandardScaler on numeric → fit on train fold only<br>
+&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+SMOTE oversampling → applied inside each training fold only
+</div>
+
+<h3 id="fraud-gotchas">4.9.12 Key gotchas in fraud feature engineering</h3>
+
+<ul>
+
+<li><strong>Temporal leakage:</strong> Aggregates like "txn_count_7d" must only look backward in time — never include the current transaction or future rows</li>
+
+<li><strong>Target leakage:</strong> Never include any field that is only known <em>after</em> the fraud label is applied (e.g. chargeback reason code, dispute date)</li>
+
+<li><strong>Identity leakage:</strong> <code>customer_id</code> must be dropped before the model; use it only to compute history features</li>
+
+<li><strong>Class imbalance metric:</strong> Monitor Precision-Recall Area Under the Curve (PR-AUC), not accuracy or standard Receiver Operating Characteristic Area Under the Curve (ROC-AUC) — a 99.9% accuracy model that predicts all legitimate gets a deceptively strong overall score but zero recall for fraud</li>
+
+</ul>
+
+<hr />
+
+<h2 id="ch4-interview-questions">Chapter 4 — Interview Questions</h2>
+
+<ol type="1">
+
+<li><p><strong>Your model achieves 99% accuracy on a fraud detection dataset. Should you be happy?</strong><br>
+
+Almost certainly not. If only 1% of transactions are fraudulent, a model that predicts "legitimate" for everything achieves 99% accuracy with zero fraud caught. Always check precision, recall, and Precision-Recall Area Under the Curve (PR-AUC) on the minority class. Accuracy is misleading for imbalanced problems.</p></li>
+
+<li><p><strong>You have a categorical feature with 50,000 unique values (e.g. product SKU). What encoding would you use and why?</strong><br>
+
+One-hot encoding is out — it creates 50,000 columns. Frequency encoding (replace with relative frequency in training set) works for tree models and is fast. Target encoding (replace with mean target, out-of-fold) captures predictive signal and handles high cardinality well, but requires careful out-of-fold computation to avoid leakage. Hashing tricks are used in large-scale online systems.</p></li>
+
+<li><p><strong>What is target leakage and how would you detect it?</strong><br>
+
+Target leakage occurs when a feature contains information about the target that would not be available at prediction time. Classic signs: a model with suspiciously high validation metrics that degrades drastically on production data; a feature that is near-perfect predictor on its own; features derived from the label or from events that happen after the prediction window. Detection: check feature timestamps, trace data provenance, and review with domain experts.</p></li>
+
+<li><p><strong>You are asked to impute missing values in an income field (15% missing). Walk through your decision process.</strong><br>
+
+First, diagnose the missingness mechanism: is it MCAR (random), MAR (depends on age or job type), or MNAR (high earners refused to answer)? If MAR: use MICE or KNN imputation and add a binary missing-indicator column. If MNAR: consider domain-specific fill (e.g. "0" for unemployed respondents) + indicator flag. Always fit the imputer on training data only, and include the imputer inside the sklearn Pipeline.</p></li>
+
+<li><p><strong>What is the Curse of Dimensionality, and how does it affect a KNN model?</strong><br>
+
+As the number of features grows, the feature space volume grows exponentially. Any fixed dataset becomes increasingly sparse. For KNN, this means that the "nearest" neighbours become almost as far away as all other points — distances concentrate and the notion of proximity breaks down. In practice, KNN degrades sharply beyond ~20 meaningful features. Solutions: feature selection, PCA before KNN, or switch to a tree-based algorithm that handles high dimensions better.</p></li>
+
+<li><p><strong>You have customer transaction history and want to compute a "7-day spend velocity" feature. What must you be careful about during training?</strong><br>
+
+This is a time-series aggregation with a temporal leakage risk. Each training row must only look at transactions in the 7 days <em>before</em> its own timestamp — never at transactions after it. In practice this means computing the feature with a time-aware window join, applying a temporal train/test split (not random), and validating that no future rows are included in any lookback window.</p></li>
+
+<li><p><strong>What is the difference between filter, wrapper, and embedded feature selection? When would you use each?</strong><br>
+
+Filter methods (mutual information, correlation) score features independently of any model — fast, model-agnostic, good for removing obvious garbage first. Wrapper methods (RFE, forward selection) train the actual model on candidate subsets — more accurate but expensive, only feasible with fast models. Embedded methods (Lasso, tree feature importances) select features during training itself — efficient and task-aligned but model-specific. In practice: start with a filter pass to cut obviously useless features, then use embedded importance from a tree model; use wrapper (RFE) only for final tuning of a small feature set.</p></li>
+
+<li><p><strong>A domain expert tells you that a feature you were planning to drop is "very important clinically." Your permutation importance ranks it 47th out of 50. What do you do?</strong><br>
+
+Don't drop it immediately. First, check whether it is correlated with higher-ranked features (collinearity can suppress its individual importance). Second, test a model with vs. without it and compare validation metrics. Third, understand the expert's reasoning — it may be important in certain patient subgroups (interaction effect) that the global importance misses. The right answer is empirical: validate both ways, and document the decision.</p></li>
+
+<li><p><strong>You fit a StandardScaler on the entire dataset before doing a train/test split. What is the problem?</strong><br>
+
+This is preprocessing leakage. The scaler's mean and standard deviation are computed using test-set statistics. When you later evaluate on the "test set," the model has indirectly seen the test distribution. In practice the effect is usually small, but it violates the principle of honest evaluation and can be more serious with other transformers (e.g. target encoding, PCA). The fix: always split first, then fit the scaler on the training set only and use <code>transform()</code> on validation and test.</p></li>
+
+<li><p><strong>What are the three MICE iteration steps, and why is it better than mean imputation for a dataset where features are correlated?</strong><br>
+
+MICE (Multiple Imputation by Chained Equations): (1) Initialize all missing values with column means. (2) For each column with missingness, train a regression/classification model using all other columns as inputs, then predict and fill the missing values. (3) Cycle through all missing columns repeatedly until the imputed values converge. Better than mean imputation because it respects the joint distribution of features — if income is correlated with age and education, MICE imputes income using both, rather than replacing it with the unconditional mean which narrows the distribution and biases downstream coefficients.</p></li>
+
+</ol>
+
+<hr />
+
+<h2 id="common-pitfalls-10">Common Pitfalls</h2>
+
+<table>
+
+<colgroup>
+
+<col style="width: 33%" />
+
+<col style="width: 48%" />
+
+<col style="width: 18%" />
+
+</colgroup>
+
+<thead>
+
+<tr>
+
+<th>Pitfall</th>
+
+<th>Consequence</th>
+
+<th>Fix</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>Fitting scaler on full dataset before splitting</td>
+
+<td>Leakage — val statistics polluted by test data</td>
+
+<td>Fit inside pipeline, on train only</td>
+
+</tr>
+
+<tr>
+
+<td>SMOTE before splitting</td>
+
+<td>Synthetic test-set neighbors inflate validation</td>
+
+<td>Resample inside each training fold</td>
+
+</tr>
+
+<tr>
+
+<td>Target encoding without out-of-fold</td>
+
+<td>Target mean computed with the current row’s label included</td>
+
+<td>Use cross_val encoding or dedicated library</td>
+
+</tr>
+
+<tr>
+
+<td>Using <code>= NULL</code> in SQL for missing values</td>
+
+<td>Returns no rows (always false)</td>
+
+<td>Use <code>IS NULL</code></td>
+
+</tr>
+
+<tr>
+
+<td>High accuracy on imbalanced data without checking recall</td>
+
+<td>Majority-class classifier masquerades as good model</td>
+
+<td>Always check confusion matrix and F1 score</td>
+
+</tr>
+
+<tr>
+
+<td>Discarding all rows with any missing value</td>
+
+<td>Loses most of your data</td>
+
+<td>Investigate missingness pattern; impute</td>
+
+</tr>
+
+<tr>
+
+<td>Collinear features causing unstable importance</td>
+
+<td>Feature A and B share signal; one absorbs the other</td>
+
+<td>Drop one correlated feature or use regularization</td>
+
+</tr>
+
+<tr>
+
+<td>Log transform on zero or negative values</td>
+
+<td>NaN or error</td>
+
+<td>Use <code>log1p(x)</code> or clip to positive range first</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<hr />
+
+
+<div class="chapter-nav">
+  <a href="chapter-03.html">&larr; Chapter 03: Python for Data Science</a>
+  <a href="index.html" class="nav-home">Home</a>
+  <a href="chapter-05.html">Chapter 05: Supervised Learning &rarr;</a>
+</div>
+<div class="site-footer">
+  <p>&copy; 2026 Hariram Subramanian Gopal &middot; <a href="index.html">Data to Decisions</a></p>
+</div>
+</body>
+</html>
