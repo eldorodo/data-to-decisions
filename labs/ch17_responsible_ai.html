@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Responsible AI: bias, fairness, explainability — interactive visualizations.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 17 · Responsible AI — The ML Field Guide</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f1117; color: #e2e8f0; font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; padding: 0 0 60px 0; }
+  .page-header { background: linear-gradient(135deg, #1e2130 0%, #0f1117 100%); border-bottom: 1px solid #2d3147; padding: 32px 40px 24px; }
+  .chapter-label { font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #7dd3fc; margin-bottom: 6px; }
+  .page-title { font-size: 28px; font-weight: 700; color: #e2e8f0; margin-bottom: 4px; }
+  .page-subtitle { font-size: 14px; color: #94a3b8; }
+  .tab-nav { display: flex; gap: 4px; padding: 20px 40px 0; border-bottom: 1px solid #2d3147; background: #0f1117; }
+  .tab-btn { padding: 10px 22px; border: 1px solid transparent; border-bottom: none; background: transparent; color: #94a3b8; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; border-radius: 8px 8px 0 0; transition: all 0.2s; position: relative; bottom: -1px; }
+  .tab-btn:hover { color: #e2e8f0; background: #1e2130; }
+  .tab-btn.active { color: #7dd3fc; background: #1e2130; border-color: #2d3147; border-bottom-color: #1e2130; }
+  .tab-panel { display: none; padding: 32px 40px; }
+  .tab-panel.active { display: block; }
+  .section-title { font-size: 20px; font-weight: 700; color: #e2e8f0; margin-bottom: 8px; }
+  .section-sub { font-size: 13px; color: #94a3b8; margin-bottom: 24px; }
+  .panel { background: #1e2130; border: 1px solid #2d3147; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .btn { padding: 8px 16px; border: 1px solid #2d3147; border-radius: 8px; background: #0f172a; color: #e2e8f0; font-family: inherit; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+  .btn:hover { border-color: #7dd3fc; color: #7dd3fc; }
+  .btn.active { background: #0369a1; border-color: #7dd3fc; color: #7dd3fc; }
+  .code-block { background: #0f172a; border: 1px solid #2d3147; border-radius: 8px; padding: 16px; font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 12px; color: #86efac; line-height: 1.6; white-space: pre; overflow-x: auto; }
+  .label { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #94a3b8; margin-bottom: 8px; }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .insight-box { background: #0f172a; border-left: 3px solid #7dd3fc; border-radius: 0 8px 8px 0; padding: 12px 16px; font-size: 13px; color: #94a3b8; }
+  .insight-box strong { color: #7dd3fc; }
+  .bar-chart-container { margin-top: 8px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .bar-label { font-size: 12px; color: #94a3b8; width: 100px; flex-shrink: 0; text-align: right; }
+  .bar-outer { flex: 1; background: #0f172a; border-radius: 4px; height: 22px; overflow: hidden; }
+  .bar-inner { height: 100%; border-radius: 4px; transition: width 0.6s, background 0.4s; display: flex; align-items: center; padding-left: 8px; font-size: 11px; font-weight: 700; }
+  .bar-val { font-size: 12px; color: #94a3b8; width: 40px; flex-shrink: 0; }
+  .slider-container { margin: 12px 0; }
+  .slider-container label { font-size: 12px; color: #94a3b8; display: flex; justify-content: space-between; margin-bottom: 4px; }
+  input[type="range"] { width: 100%; accent-color: #7dd3fc; cursor: pointer; }
+  .fairness-metric-card { background: #0f172a; border: 1px solid #2d3147; border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+  .fairness-metric-card .fm-title { font-weight: 700; color: #7dd3fc; font-size: 13px; margin-bottom: 6px; }
+  .fairness-metric-card .fm-formula { font-family: monospace; font-size: 12px; color: #fbbf24; margin-bottom: 6px; }
+  .fairness-metric-card .fm-desc { font-size: 12px; color: #94a3b8; }
+  .shap-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .shap-name { font-size: 12px; color: #94a3b8; width: 140px; flex-shrink: 0; text-align: right; }
+  .shap-track { flex: 1; height: 20px; background: #0f172a; border-radius: 4px; position: relative; display: flex; align-items: center; }
+  .shap-pos { height: 100%; background: #f87171; border-radius: 0 4px 4px 0; transition: width 0.5s; }
+  .shap-neg { height: 100%; background: #7dd3fc; border-radius: 4px 0 0 4px; transition: width 0.5s; position: absolute; right: 50%; }
+  .shap-center { position: absolute; left: 50%; width: 1px; height: 100%; background: #2d3147; }
+  .shap-val { font-size: 11px; font-weight: 700; width: 50px; }
+  select.styled { background: #0f172a; border: 1px solid #2d3147; border-radius: 8px; color: #e2e8f0; padding: 7px 12px; font-family: inherit; font-size: 13px; cursor: pointer; }
+  .counterfactual { background: #0f172a; border: 1px solid #2d3147; border-radius: 8px; padding: 12px; margin-top: 10px; }
+  .cf-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; }
+
+  /* ── Shared improvements ── */
+  body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important; }
+  code, pre, .code-block, .formula, .mono, [style*="monospace"], [style*="Courier"] { font-family: 'JetBrains Mono', 'Cascadia Code', 'Courier New', monospace !important; }
+
+  /* Smoother scrolling */
+  html { scroll-behavior: smooth; }
+
+  /* Focus ring for accessibility */
+  button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid #7dd3fc;
+    outline-offset: 2px;
+  }
+
+  /* Improve tab-nav overflow on small screens */
+  .tab-nav, .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .tab-nav::-webkit-scrollbar, .tabs::-webkit-scrollbar { display: none; }
+
+  /* Mobile responsive improvements */
+  @media (max-width: 768px) {
+    .page-header { padding: 24px 20px 18px !important; }
+    .tab-panel { padding: 20px !important; }
+    .tab-nav { padding: 16px 20px 0 !important; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
+    .grid2, .grid3 { grid-template-columns: 1fr !important; }
+    .page-title { font-size: 22px !important; }
+    h1 { font-size: 1.4rem !important; }
+  }
+  @media (max-width: 480px) {
+    body { padding: 0 0 40px 0 !important; }
+    .tab-btn { padding: 8px 14px !important; font-size: 12px !important; }
+    .btn { padding: 6px 12px !important; font-size: 12px !important; }
+  }
+
+  /* Better selection color */
+  ::selection { background: #1d4ed880; color: #e0f2fe; }
+
+  /* Smoother canvas rendering */
+  canvas { image-rendering: -webkit-optimize-contrast; }
+
+  /* Tooltip z-index fix */
+  .tooltip { z-index: 9999 !important; }
+
+  /* Code block horizontal scroll indicator */
+  .code-block { overflow-x: auto; }
+</style>
+</head>
+<body>
+<div class="page-header">
+  <div class="chapter-label">Chapter 17</div>
+  <div class="page-title">Responsible AI</div>
+  <div class="page-subtitle">Bias, fairness metrics, and model explainability — building trustworthy ML systems</div>
+</div>
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('bias')">Bias Visualizer</button>
+  <button class="tab-btn" onclick="switchTab('fairness')">Fairness Metrics</button>
+  <button class="tab-btn" onclick="switchTab('explain')">Model Explainability</button>
+</div>
+
+<!-- TAB 1: BIAS VISUALIZER -->
+<div class="tab-panel active" id="tab-bias">
+  <div class="section-title">Bias Visualizer — Loan Approval Dataset</div>
+  <div class="section-sub">See how bias appears in model outputs and how mitigation techniques affect fairness</div>
+  <div class="grid-2" style="align-items:start">
+    <div>
+      <div class="panel">
+        <div class="label">Approval Rates by Demographic Group</div>
+        <div id="bias-bars"></div>
+      </div>
+      <div class="panel">
+        <div class="label">Type of Bias</div>
+        <div class="btn-row" style="flex-direction:column;gap:6px">
+          <button class="btn active" id="bias-hist" onclick="selectBiasType('historical')">Historical Bias</button>
+          <button class="btn" id="bias-meas" onclick="selectBiasType('measurement')">Measurement Bias</button>
+          <button class="btn" id="bias-agg" onclick="selectBiasType('aggregation')">Aggregation Bias</button>
+          <button class="btn" id="bias-eval" onclick="selectBiasType('evaluation')">Evaluation Bias</button>
+        </div>
+        <div class="panel" id="bias-type-desc" style="margin-top:12px;background:#0f172a;border-color:#2d3147"></div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <div class="label">Mitigation Technique</div>
+        <div class="btn-row" style="flex-direction:column;gap:6px">
+          <button class="btn active" id="mit-none" onclick="selectMitigation('none')">No Mitigation (baseline)</button>
+          <button class="btn" id="mit-reweight" onclick="selectMitigation('reweight')">Reweighting</button>
+          <button class="btn" id="mit-adversarial" onclick="selectMitigation('adversarial')">Adversarial Debiasing</button>
+          <button class="btn" id="mit-threshold" onclick="selectMitigation('threshold')">Threshold Adjustment</button>
+          <button class="btn" id="mit-causal" onclick="selectMitigation('causal')">Causal ML</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="label">Fairness Metrics — Before vs After</div>
+        <table style="width:100%;font-size:12px;border-collapse:collapse" id="fairness-before-after">
+        </table>
+      </div>
+      <div class="insight-box">
+        <strong>Key insight:</strong> Removing the protected attribute (gender, race) from features does NOT remove bias. Models learn proxies — zip code correlates with race, name correlates with gender. Fairness requires active intervention.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 2: FAIRNESS METRICS -->
+<div class="tab-panel" id="tab-fairness">
+  <div class="section-title">Fairness Metrics</div>
+  <div class="section-sub">Four leading fairness criteria — and why you can't satisfy all of them simultaneously</div>
+  <div class="grid-2" style="align-items:start">
+    <div>
+      <div class="panel">
+        <div class="label">Model Output Table</div>
+        <table style="width:100%;font-size:12px;border-collapse:collapse" id="fm-table">
+          <thead>
+            <tr>
+              <th style="color:#7dd3fc;padding:6px 8px;border-bottom:1px solid #2d3147;text-align:left">Group</th>
+              <th style="color:#7dd3fc;padding:6px 8px;border-bottom:1px solid #2d3147;text-align:right">TP</th>
+              <th style="color:#7dd3fc;padding:6px 8px;border-bottom:1px solid #2d3147;text-align:right">FP</th>
+              <th style="color:#7dd3fc;padding:6px 8px;border-bottom:1px solid #2d3147;text-align:right">TN</th>
+              <th style="color:#7dd3fc;padding:6px 8px;border-bottom:1px solid #2d3147;text-align:right">FN</th>
+              <th style="color:#7dd3fc;padding:6px 8px;border-bottom:1px solid #2d3147;text-align:right">Threshold</th>
+            </tr>
+          </thead>
+          <tbody id="fm-tbody"></tbody>
+        </table>
+        <div class="slider-container" style="margin-top:12px">
+          <label><span>Group A threshold</span><span id="thr-a-label">0.50</span></label>
+          <input type="range" id="thr-a" min="0.1" max="0.9" step="0.05" value="0.5" oninput="updateFairness()">
+          <label><span>Group B threshold</span><span id="thr-b-label">0.50</span></label>
+          <input type="range" id="thr-b" min="0.1" max="0.9" step="0.05" value="0.5" oninput="updateFairness()">
+        </div>
+      </div>
+      <div class="panel">
+        <div class="label">COMPAS Case Study</div>
+        <div style="font-size:13px;color:#94a3b8">
+          The COMPAS recidivism algorithm was studied by ProPublica (2016). It was simultaneously:<br>
+          <ul style="margin:8px 0 0 16px;line-height:2">
+            <li>Calibrated (equal accuracy across races)</li>
+            <li>But violated Equal Opportunity (Black defendants had 2× FPR)</li>
+          </ul>
+          <div style="margin-top:8px;font-weight:600;color:#f87171">This is mathematically unavoidable when base rates differ between groups.</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="fairness-metric-card" id="fm-dp">
+        <div class="fm-title">1. Demographic Parity</div>
+        <div class="fm-formula">P(Ŷ=1 | A=0) = P(Ŷ=1 | A=1)</div>
+        <div class="fm-desc">Equal approval rates across groups. Ignores whether each prediction is correct.</div>
+        <div id="dp-value" style="font-size:14px;font-weight:700;margin-top:8px;color:#7dd3fc"></div>
+      </div>
+      <div class="fairness-metric-card" id="fm-eo">
+        <div class="fm-title">2. Equal Opportunity</div>
+        <div class="fm-formula">P(Ŷ=1 | Y=1, A=0) = P(Ŷ=1 | Y=1, A=1)</div>
+        <div class="fm-desc">Equal TPR (recall) for qualified applicants across groups.</div>
+        <div id="eo-value" style="font-size:14px;font-weight:700;margin-top:8px;color:#7dd3fc"></div>
+      </div>
+      <div class="fairness-metric-card" id="fm-eodds">
+        <div class="fm-title">3. Equalized Odds</div>
+        <div class="fm-formula">Equal TPR AND FPR across groups</div>
+        <div class="fm-desc">Stricter — requires both qualified AND unqualified applicants to be treated equally.</div>
+        <div id="eodds-value" style="font-size:14px;font-weight:700;margin-top:8px;color:#7dd3fc"></div>
+      </div>
+      <div class="fairness-metric-card" id="fm-cal">
+        <div class="fm-title">4. Calibration</div>
+        <div class="fm-formula">P(Y=1 | Ŷ=p, A=a) = p for all groups a</div>
+        <div class="fm-desc">Score means the same thing for all groups: a 70% score = 70% actual positive rate.</div>
+        <div id="cal-value" style="font-size:14px;font-weight:700;margin-top:8px;color:#7dd3fc"></div>
+      </div>
+      <div class="insight-box">
+        <strong>Impossibility theorem:</strong> When base rates differ across groups, Calibration and Equalized Odds cannot both be satisfied. You must choose — and document your choice.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 3: EXPLAINABILITY -->
+<div class="tab-panel" id="tab-explain">
+  <div class="section-title">Model Explainability</div>
+  <div class="section-sub">SHAP values show which features drove a prediction — globally and for individual instances</div>
+  <div class="btn-row">
+    <button class="btn active" id="exp-global" onclick="selectExplain('global')">Global Explanation</button>
+    <button class="btn" id="exp-local" onclick="selectExplain('local')">Local (per prediction)</button>
+    <button class="btn" id="exp-lime" onclick="selectExplain('lime')">LIME</button>
+  </div>
+  <div class="grid-2" style="align-items:start">
+    <div>
+      <div class="panel">
+        <div class="label" id="shap-title">SHAP Feature Importances</div>
+        <div id="shap-bars"></div>
+      </div>
+      <div class="panel" id="explain-panel">
+        <div class="label">Explanation Method</div>
+        <div id="explain-desc" style="font-size:13px;color:#94a3b8"></div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <div class="label">Sample Prediction — Loan Application</div>
+        <div style="margin-bottom:12px">
+          <div class="slider-container">
+            <label><span>Age</span><span id="cf-age-val">35</span></label>
+            <input type="range" id="cf-age" min="20" max="70" value="35" oninput="updateCounterfactual()">
+          </div>
+          <div class="slider-container">
+            <label><span>Income ($k)</span><span id="cf-income-val">45</span></label>
+            <input type="range" id="cf-income" min="20" max="150" value="45" oninput="updateCounterfactual()">
+          </div>
+          <div class="slider-container">
+            <label><span>Credit Score</span><span id="cf-credit-val">620</span></label>
+            <input type="range" id="cf-credit" min="300" max="850" value="620" oninput="updateCounterfactual()">
+          </div>
+          <div class="slider-container">
+            <label><span>Debt Ratio (%)</span><span id="cf-debt-val">45</span></label>
+            <input type="range" id="cf-debt" min="0" max="100" value="45" oninput="updateCounterfactual()">
+          </div>
+          <div class="slider-container">
+            <label><span>Employment Years</span><span id="cf-emp-val">3</span></label>
+            <input type="range" id="cf-emp" min="0" max="30" value="3" oninput="updateCounterfactual()">
+          </div>
+        </div>
+        <div class="counterfactual" id="prediction-box">
+        </div>
+        <div class="counterfactual" id="cf-advice" style="margin-top:10px;border-color:#a78bfa">
+          <div class="label" style="color:#a78bfa">Counterfactual — What would flip the decision?</div>
+          <div id="cf-text" style="font-size:13px;color:#94a3b8"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── TABS ──
+function switchTab(t) {
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['bias','fairness','explain'][i]===t));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  if(t==='fairness') updateFairness();
+  if(t==='explain') { selectExplain('global'); updateCounterfactual(); }
+}
+
+// ── BIAS ──
+const biasData = {
+  none:{ groups:['Male','Female','White','Black','Hispanic','Asian'], rates:[0.72,0.54,0.71,0.48,0.55,0.68], dp:0.24, eo:0.22, ifair:0.18 },
+  reweight:{ groups:['Male','Female','White','Black','Hispanic','Asian'], rates:[0.68,0.62,0.67,0.60,0.63,0.66], dp:0.08, eo:0.06, ifair:0.07 },
+  adversarial:{ groups:['Male','Female','White','Black','Hispanic','Asian'], rates:[0.65,0.63,0.66,0.61,0.64,0.65], dp:0.05, eo:0.04, ifair:0.05 },
+  threshold:{ groups:['Male','Female','White','Black','Hispanic','Asian'], rates:[0.67,0.67,0.68,0.67,0.67,0.68], dp:0.01, eo:0.02, ifair:0.08 },
+  causal:{ groups:['Male','Female','White','Black','Hispanic','Asian'], rates:[0.66,0.65,0.67,0.64,0.65,0.66], dp:0.03, eo:0.03, ifair:0.03 }
+};
+
+const biasTypes = {
+  historical:'<strong style="color:#f87171">Historical Bias:</strong> Bias in historical data reflects past discrimination. If loans were denied to women at higher rates historically, a model trained on that data perpetuates the pattern — even without intent.',
+  measurement:'<strong style="color:#fbbf24">Measurement Bias:</strong> Proxies used as features encode protected attributes. Credit score correlates with race; zip code correlates with ethnicity. Dropping protected attributes does not remove these correlations.',
+  aggregation:'<strong style="color:#a78bfa">Aggregation Bias:</strong> A single model trained on all groups ignores that the relationship between features and outcome may differ by group. One-size-fits-all can systematically disadvantage subgroups.',
+  evaluation:'<strong style="color:#86efac">Evaluation Bias:</strong> Benchmark datasets used for evaluation may underrepresent certain groups. A model with high overall accuracy can still have poor performance for minority subgroups.'
+};
+
+let currentMitigation='none';
+function selectBiasType(t) {
+  ['hist','meas','agg','eval'].forEach(k=>document.getElementById('bias-'+k).classList.remove('active'));
+  const map={historical:'hist',measurement:'meas',aggregation:'agg',evaluation:'eval'};
+  document.getElementById('bias-'+map[t]).classList.add('active');
+  document.getElementById('bias-type-desc').innerHTML=biasTypes[t];
+}
+
+function selectMitigation(m) {
+  currentMitigation=m;
+  ['none','reweight','adversarial','threshold','causal'].forEach(k=>document.getElementById('mit-'+k).classList.remove('active'));
+  document.getElementById('mit-'+m).classList.add('active');
+  renderBiasBars();
+}
+
+function renderBiasBars() {
+  const base=biasData.none; const curr=biasData[currentMitigation];
+  let html='';
+  curr.groups.forEach((g,i)=>{
+    const val=curr.rates[i]; const orig=base.rates[i];
+    const color=val>=0.65?'#86efac':val>=0.55?'#fbbf24':'#f87171';
+    html+=`<div class="bar-row">
+      <div class="bar-label">${g}</div>
+      <div class="bar-outer">
+        <div class="bar-inner" style="width:${val*100}%;background:${color};color:#0f1117">${(val*100).toFixed(0)}%</div>
+      </div>
+      <div class="bar-val">${val>=orig?'▲':'▼'} ${Math.abs(val-orig)<0.001?'':((val-orig)*100).toFixed(0)+'%'}</div>
+    </div>`;
+  });
+  document.getElementById('bias-bars').innerHTML=html;
+  // Fairness table
+  const m=curr; const b=base;
+  const rows=[
+    ['Demographic Parity Gap', (b.dp*100).toFixed(0)+'%', (m.dp*100).toFixed(0)+'%', m.dp<0.05?'✅':'m.dp<0.1?⚠️':'❌'],
+    ['Equalized Odds Gap', (b.eo*100).toFixed(0)+'%', (m.eo*100).toFixed(0)+'%', m.eo<0.05?'✅':'m.eo<0.1?⚠️':'❌'],
+    ['Individual Fairness', (b.ifair*100).toFixed(0)+'%', (m.ifair*100).toFixed(0)+'%', m.ifair<0.05?'✅':'m.ifair<0.1?⚠️':'❌'],
+  ];
+  let th='<tr><th style="color:#7dd3fc;padding:7px 8px;text-align:left;border-bottom:1px solid #2d3147">Metric</th><th style="color:#7dd3fc;padding:7px 8px;text-align:right;border-bottom:1px solid #2d3147">Before</th><th style="color:#7dd3fc;padding:7px 8px;text-align:right;border-bottom:1px solid #2d3147">After</th><th style="color:#7dd3fc;padding:7px 8px;text-align:right;border-bottom:1px solid #2d3147">Status</th></tr>';
+  let td=rows.map(([name,before,after,status])=>`<tr><td style="padding:7px 8px;color:#94a3b8">${name}</td><td style="padding:7px 8px;text-align:right;color:#f87171">${before}</td><td style="padding:7px 8px;text-align:right;color:#86efac">${after}</td><td style="padding:7px 8px;text-align:right">${status}</td></tr>`).join('');
+  document.getElementById('fairness-before-after').innerHTML=th+td;
+}
+
+selectBiasType('historical');
+renderBiasBars();
+
+// ── FAIRNESS METRICS ──
+function updateFairness() {
+  const thrA=parseFloat(document.getElementById('thr-a').value);
+  const thrB=parseFloat(document.getElementById('thr-b').value);
+  document.getElementById('thr-a-label').textContent=thrA.toFixed(2);
+  document.getElementById('thr-b-label').textContent=thrB.toFixed(2);
+
+  // Simulate group confusion matrices
+  const groupA = computeMatrix(0.6, thrA, 200);
+  const groupB = computeMatrix(0.4, thrB, 200);
+
+  const tbody=document.getElementById('fm-tbody');
+  tbody.innerHTML=[groupA,groupB].map((g,i)=>`<tr>
+    <td style="padding:6px 8px;color:${i===0?'#7dd3fc':'#a78bfa'};font-weight:700">Group ${i===0?'A':'B'}</td>
+    <td style="padding:6px 8px;text-align:right;color:#86efac">${g.tp}</td>
+    <td style="padding:6px 8px;text-align:right;color:#f87171">${g.fp}</td>
+    <td style="padding:6px 8px;text-align:right;color:#94a3b8">${g.tn}</td>
+    <td style="padding:6px 8px;text-align:right;color:#fbbf24">${g.fn}</td>
+    <td style="padding:6px 8px;text-align:right;color:#94a3b8">${(i===0?thrA:thrB).toFixed(2)}</td>
+  </tr>`).join('');
+
+  // Compute metrics
+  const approvalA=(groupA.tp+groupA.fp)/(groupA.tp+groupA.fp+groupA.tn+groupA.fn);
+  const approvalB=(groupB.tp+groupB.fp)/(groupB.tp+groupB.fp+groupB.tn+groupB.fn);
+  const tprA=groupA.tp/(groupA.tp+groupA.fn);
+  const tprB=groupB.tp/(groupB.tp+groupB.fn);
+  const fprA=groupA.fp/(groupA.fp+groupA.tn);
+  const fprB=groupB.fp/(groupB.fp+groupB.tn);
+
+  const dpGap=Math.abs(approvalA-approvalB);
+  const eoGap=Math.abs(tprA-tprB);
+  const eoddsGap=Math.max(Math.abs(tprA-tprB), Math.abs(fprA-fprB));
+
+  const c=v=>v<0.05?'#86efac':v<0.1?'#fbbf24':'#f87171';
+  document.getElementById('dp-value').innerHTML=`Gap: <span style="color:${c(dpGap)}">${(dpGap*100).toFixed(1)}%</span> ${dpGap<0.05?'✅ Satisfied':'❌ Violated'}`;
+  document.getElementById('eo-value').innerHTML=`TPR gap: <span style="color:${c(eoGap)}">${(eoGap*100).toFixed(1)}%</span> ${eoGap<0.05?'✅ Satisfied':'❌ Violated'}`;
+  document.getElementById('eodds-value').innerHTML=`Max gap: <span style="color:${c(eoddsGap)}">${(eoddsGap*100).toFixed(1)}%</span> ${eoddsGap<0.05?'✅ Satisfied':'❌ Violated'}`;
+  document.getElementById('cal-value').innerHTML=`Calibration is a property of score distributions — requires probability outputs. Threshold-only view: <span style="color:#fbbf24">Not evaluable here</span>`;
+}
+
+function computeMatrix(baseRate, threshold, n) {
+  const positives=Math.round(n*baseRate);
+  const negatives=n-positives;
+  const tpr=Math.max(0,Math.min(1,1.2-threshold*1.5));
+  const fpr=Math.max(0,Math.min(1,0.4-threshold*0.5));
+  const tp=Math.round(positives*tpr);
+  const fn=positives-tp;
+  const fp=Math.round(negatives*fpr);
+  const tn=negatives-fp;
+  return {tp,fp,tn,fn};
+}
+
+// ── EXPLAINABILITY ──
+const shapGlobal=[
+  {name:'Credit Score',val:0.42,dir:'neg'},
+  {name:'Income',val:0.31,dir:'neg'},
+  {name:'Debt Ratio',val:0.28,dir:'pos'},
+  {name:'Employment Years',val:0.19,dir:'neg'},
+  {name:'Age',val:0.12,dir:'neg'},
+  {name:'Loan Amount',val:0.10,dir:'pos'},
+  {name:'Zip Code',val:0.08,dir:'pos'},
+];
+
+const shapLocal={
+  features:{credit_score:620,income:45,debt_ratio:45,emp_years:3,age:35},
+  shap:[
+    {name:'Credit Score (620)',val:-0.18,dir:'pos'},
+    {name:'Debt Ratio (45%)',val:0.22,dir:'pos'},
+    {name:'Income ($45k)',val:-0.12,dir:'pos'},
+    {name:'Employment (3yr)',val:-0.08,dir:'pos'},
+    {name:'Age (35)',val:-0.03,dir:'neg'},
+  ]
+};
+
+let explainMode='global';
+function selectExplain(m) {
+  explainMode=m;
+  ['global','local','lime'].forEach(k=>document.getElementById('exp-'+k).classList.remove('active'));
+  document.getElementById('exp-'+m).classList.add('active');
+  renderShap();
+}
+
+function renderShap() {
+  const data=explainMode==='global'?shapGlobal:shapLocal.shap;
+  const maxVal=Math.max(...data.map(d=>Math.abs(d.val)));
+  let html='';
+  data.forEach(d=>{
+    const width=(Math.abs(d.val)/maxVal*45).toFixed(1);
+    const color=d.dir==='pos'?'#f87171':'#7dd3fc';
+    const sign=d.dir==='pos'?'+':'-';
+    html+=`<div class="shap-bar">
+      <div class="shap-name">${d.name}</div>
+      <div class="shap-track">
+        <div class="shap-center"></div>
+        ${d.dir==='pos'
+          ?`<div class="shap-pos" style="width:${width}%;margin-left:50%"></div>`
+          :`<div class="shap-neg" style="width:${width}%"></div>`
+        }
+      </div>
+      <div class="shap-val" style="color:${color}">${sign}${Math.abs(d.val).toFixed(2)}</div>
+    </div>`;
+  });
+  document.getElementById('shap-bars').innerHTML=html;
+
+  const descs={
+    global:'<strong>Global SHAP:</strong> Average absolute SHAP values across all training samples. Shows which features are most important overall. Red = pushes prediction up (increases approval), Blue = pushes prediction down.',
+    local:'<strong>Local SHAP (this applicant):</strong> SHAP values for a single prediction. Each bar shows how much that feature pushed the prediction up or down from the base rate. The sum of all SHAP values = model output.',
+    lime:'<strong>LIME (Local Interpretable Model-Agnostic Explanations):</strong> Fits a simple linear model in the neighborhood of this prediction. Less precise than SHAP but faster. Perturbs input features and measures how the prediction changes.'
+  };
+  document.getElementById('explain-desc').innerHTML=descs[explainMode];
+  document.getElementById('shap-title').textContent=explainMode==='global'?'SHAP Feature Importances (Global)':explainMode==='local'?'SHAP Waterfall (Local — this applicant)':'LIME Local Explanation';
+}
+
+function updateCounterfactual() {
+  const age=parseInt(document.getElementById('cf-age').value);
+  const income=parseInt(document.getElementById('cf-income').value);
+  const credit=parseInt(document.getElementById('cf-credit').value);
+  const debt=parseInt(document.getElementById('cf-debt').value);
+  const emp=parseInt(document.getElementById('cf-emp').value);
+  document.getElementById('cf-age-val').textContent=age;
+  document.getElementById('cf-income-val').textContent=income;
+  document.getElementById('cf-credit-val').textContent=credit;
+  document.getElementById('cf-debt-val').textContent=debt+'%';
+  document.getElementById('cf-emp-val').textContent=emp;
+
+  // Simple score model
+  const score=(credit-300)/550*0.4 + (income/150)*0.25 + (1-debt/100)*0.2 + Math.min(emp/20,1)*0.1 + (age-20)/50*0.05;
+  const approved=score>0.5;
+  const pct=(score*100).toFixed(0);
+
+  document.getElementById('prediction-box').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div class="label" style="margin:0">Prediction</div>
+      <div style="font-size:20px;font-weight:700;color:${approved?'#86efac':'#f87171'}">${approved?'APPROVED ✅':'DENIED ❌'}</div>
+    </div>
+    <div style="background:#0f1117;border-radius:6px;height:8px;margin-bottom:4px">
+      <div style="width:${pct}%;background:${approved?'#86efac':'#f87171'};height:8px;border-radius:6px;transition:width 0.4s"></div>
+    </div>
+    <div style="font-size:12px;color:#64748b">Approval probability: ${pct}%</div>
+  `;
+
+  // Counterfactual advice
+  let advice=[];
+  if(!approved) {
+    if(credit<700) advice.push(`Raise credit score to 700+ (currently ${credit})`);
+    if(debt>35) advice.push(`Reduce debt ratio to below 35% (currently ${debt}%)`);
+    if(income<60) advice.push(`Income above $60k would help (currently $${income}k)`);
+  } else {
+    advice.push('Application looks strong. Maintain current credit profile.');
+  }
+  document.getElementById('cf-text').innerHTML=advice.map(a=>`• ${a}`).join('<br>');
+
+  // Update local SHAP
+  if(explainMode==='local') renderShap();
+}
+
+// Init
+renderBiasBars();
+updateCounterfactual();
+</script>
+
+
+<style>
+/* ── Chapter sidenav ── */
+.chap-sidenav {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 8888;
+}
+.chap-sidenav-toggle {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  color: #7dd3fc;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px #00000060;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+.chap-sidenav-toggle:hover { background: #0369a1; border-color: #7dd3fc; }
+.chap-sidenav-menu {
+  position: absolute;
+  bottom: 52px;
+  right: 0;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  border-radius: 14px;
+  padding: 10px 6px;
+  min-width: 220px;
+  max-height: 70vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 40px #00000080;
+  display: none;
+  scrollbar-width: thin;
+  scrollbar-color: #2d3147 transparent;
+}
+.chap-sidenav-menu.open { display: block; }
+.chap-sidenav-menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #94a3b8;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.chap-sidenav-menu a:hover { background: #0f172a; color: #e2e8f0; }
+.chap-sidenav-menu a.current { background: #0369a133; color: #7dd3fc; font-weight: 600; }
+.chap-sidenav-menu .chap-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #4b5563;
+  min-width: 28px;
+}
+.chap-sidenav-menu .menu-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #4b5563;
+  padding: 4px 12px 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+@media (max-width: 480px) {
+  .chap-sidenav { bottom: 12px; right: 12px; }
+  .chap-sidenav-menu { right: 0; min-width: 180px; }
+}
+</style>
+
+<div class="chap-sidenav">
+  <div class="chap-sidenav-menu" id="chapMenu">
+    <div class="menu-header">ML Field Guide</div>
+      <a href="ch01_math_foundations.html"><span class="chap-num">Ch 01</span>Math Foundations</a>
+      <a href="ch02_statistics.html"><span class="chap-num">Ch 02</span>Statistics</a>
+      <a href="ch03_python.html"><span class="chap-num">Ch 03</span>Python for ML</a>
+      <a href="ch04_feature_engineering.html"><span class="chap-num">Ch 04</span>Feature Engineering</a>
+      <a href="ch05_supervised_learning.html"><span class="chap-num">Ch 05</span>Supervised Learning</a>
+      <a href="ch06_model_evaluation.html"><span class="chap-num">Ch 06</span>Model Evaluation</a>
+      <a href="ch07_unsupervised.html"><span class="chap-num">Ch 07</span>Unsupervised Learning</a>
+      <a href="ch08_recommendations.html"><span class="chap-num">Ch 08</span>Recommendations</a>
+      <a href="ch09_neural_networks.html"><span class="chap-num">Ch 09a</span>Neural Networks</a>
+      <a href="ch09_cnn_architectures.html"><span class="chap-num">Ch 09b</span>CNN Architectures</a>
+      <a href="ch10_nlp_transformers.html"><span class="chap-num">Ch 10</span>NLP & Transformers</a>
+      <a href="ch11_reinforcement_learning.html"><span class="chap-num">Ch 11</span>Reinforcement Learning</a>
+      <a href="ch12_time_series.html"><span class="chap-num">Ch 12</span>Time Series</a>
+      <a href="ch13_sql.html"><span class="chap-num">Ch 13</span>SQL for ML</a>
+      <a href="ch14_big_data.html"><span class="chap-num">Ch 14</span>Big Data</a>
+      <a href="ch15_mlops.html"><span class="chap-num">Ch 15</span>MLOps</a>
+      <a href="ch16_aws.html"><span class="chap-num">Ch 16</span>AWS for ML</a>
+      <a href="ch17_responsible_ai.html" class="current"><span class="chap-num">Ch 17</span>Responsible AI</a>
+      <a href="ch18_interview_prep.html"><span class="chap-num">Ch 18</span>Interview Prep</a>
+  </div>
+  <button class="chap-sidenav-toggle" onclick="document.getElementById('chapMenu').classList.toggle('open')" title="Chapter navigation">☰</button>
+</div>
+
+</body>
+</html>

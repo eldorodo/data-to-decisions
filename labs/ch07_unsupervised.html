@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Unsupervised learning: K-means, DBSCAN, PCA, autoencoders — interactive demos.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 7 · Unsupervised Learning — The ML Field Guide</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0f1117;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;padding:24px}
+  h1{text-align:center;font-size:1.6rem;color:#7dd3fc;margin-bottom:6px}
+  .subtitle{text-align:center;color:#94a3b8;font-size:.9rem;margin-bottom:24px}
+  .tabs{display:flex;gap:4px;margin-bottom:20px;background:#1e2130;padding:6px;border-radius:12px;border:1px solid #2d3147}
+  .tab{flex:1;padding:10px 8px;background:transparent;border:none;color:#94a3b8;cursor:pointer;border-radius:8px;font-size:.85rem;font-family:inherit;transition:all .2s}
+  .tab.active{background:#0369a1;color:#e2e8f0;font-weight:600}
+  .tab:hover:not(.active){background:#2d3147;color:#e2e8f0}
+  .panel{display:none;animation:fadeIn .3s ease}
+  .panel.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .grid2{display:grid;grid-template-columns:340px 1fr;gap:16px}
+  .card{background:#1e2130;border:1px solid #2d3147;border-radius:12px;padding:16px}
+  .card-title{font-size:.8rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px}
+  label{font-size:.82rem;color:#94a3b8;display:block;margin-bottom:4px}
+  input[type=range]{width:100%;accent-color:#7dd3fc;cursor:pointer;margin-bottom:8px}
+  select{background:#0f172a;border:1px solid #2d3147;color:#e2e8f0;padding:6px 10px;border-radius:8px;font-size:.82rem;width:100%;cursor:pointer;margin-bottom:8px}
+  button{background:#0369a1;border:none;color:#e2e8f0;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:.8rem;font-family:inherit;transition:all .2s}
+  button:hover{background:#0284c7;transform:translateY(-1px)}
+  button.secondary{background:#2d3147}
+  button.secondary:hover{background:#3d4157}
+  button.success{background:#065f46}
+  button.success:hover{background:#047857}
+  .flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .info-box{background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:10px;font-size:.78rem;color:#94a3b8;margin-top:8px;line-height:1.5}
+  .formula{font-size:.75rem;color:#64748b;font-family:monospace;background:#0f172a;padding:4px 8px;border-radius:4px;margin-top:4px}
+  .stat-badge{display:inline-block;padding:4px 10px;border-radius:6px;font-size:.8rem;font-weight:700;margin:3px}
+  .metric-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .metric-bar-bg{flex:1;background:#0f172a;border-radius:4px;height:8px;overflow:hidden}
+  .metric-bar{height:100%;border-radius:4px;transition:width .4s ease}
+  .legend-item{display:flex;align-items:center;gap:6px;font-size:.75rem;color:#94a3b8;margin:2px 4px}
+  .legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+  .warn{background:#451a03;border:1px solid #92400e;border-radius:8px;padding:8px 12px;font-size:.75rem;color:#fbbf24;margin-top:8px}
+  .compare-box{background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:10px;font-size:.75rem;color:#94a3b8;margin-top:8px}
+  .toggle{display:flex;background:#0f172a;border-radius:8px;padding:3px;gap:2px;display:inline-flex}
+  .toggle-btn{padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:.75rem;font-family:inherit;color:#64748b;background:transparent;transition:all .2s}
+  .toggle-btn.active{background:#0369a1;color:#e2e8f0}
+  canvas{display:block;border-radius:8px;background:#1a1f2e}
+
+  /* ── Shared improvements ── */
+  body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important; }
+  code, pre, .code-block, .formula, .mono, [style*="monospace"], [style*="Courier"] { font-family: 'JetBrains Mono', 'Cascadia Code', 'Courier New', monospace !important; }
+
+  /* Smoother scrolling */
+  html { scroll-behavior: smooth; }
+
+  /* Focus ring for accessibility */
+  button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid #7dd3fc;
+    outline-offset: 2px;
+  }
+
+  /* Improve tab-nav overflow on small screens */
+  .tab-nav, .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .tab-nav::-webkit-scrollbar, .tabs::-webkit-scrollbar { display: none; }
+
+  /* Mobile responsive improvements */
+  @media (max-width: 768px) {
+    .page-header { padding: 24px 20px 18px !important; }
+    .tab-panel { padding: 20px !important; }
+    .tab-nav { padding: 16px 20px 0 !important; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
+    .grid2, .grid3 { grid-template-columns: 1fr !important; }
+    .page-title { font-size: 22px !important; }
+    h1 { font-size: 1.4rem !important; }
+  }
+  @media (max-width: 480px) {
+    body { padding: 0 0 40px 0 !important; }
+    .tab-btn { padding: 8px 14px !important; font-size: 12px !important; }
+    .btn { padding: 6px 12px !important; font-size: 12px !important; }
+  }
+
+  /* Better selection color */
+  ::selection { background: #1d4ed880; color: #e0f2fe; }
+
+  /* Smoother canvas rendering */
+  canvas { image-rendering: -webkit-optimize-contrast; }
+
+  /* Tooltip z-index fix */
+  .tooltip { z-index: 9999 !important; }
+
+  /* Code block horizontal scroll indicator */
+  .code-block { overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>Chapter 7 — Unsupervised Learning</h1>
+<p class="subtitle">K-Means, DBSCAN, PCA, and Anomaly Detection — interactive explorations</p>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab(0)">K-Means Clustering</button>
+  <button class="tab" onclick="switchTab(1)">DBSCAN Explorer</button>
+  <button class="tab" onclick="switchTab(2)">PCA Step-by-Step</button>
+  <button class="tab" onclick="switchTab(3)">Anomaly Detection</button>
+</div>
+
+<!-- ============================================================ TAB 1: K-MEANS -->
+<div class="panel active" id="tab0">
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="card">
+        <div class="card-title">K-Means Controls</div>
+        <label>Number of clusters (k): <strong id="k-val" style="color:#7dd3fc">3</strong></label>
+        <input type="range" id="k-slider" min="2" max="8" value="3" oninput="setK(this.value)">
+        <div class="flex" style="margin-top:4px">
+          <button onclick="generateData()">&#9634; Generate Data</button>
+          <button onclick="kmStep()" id="step-btn">Step &#9654;</button>
+          <button onclick="kmRun()" id="run-btn" class="success">Run &#8734;</button>
+          <button onclick="kmReset()" class="secondary">Reset</button>
+        </div>
+        <div id="km-status" class="info-box" style="margin-top:8px">Press "Generate Data" to start, then "Step" or "Run".</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Convergence (Elbow Method)</div>
+        <canvas id="elbow-canvas" width="300" height="160"></canvas>
+        <div style="font-size:.72rem;color:#64748b;margin-top:6px">WCSS decreases and flattens — pick the "elbow" k</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Legend</div>
+        <div id="km-legend" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+      </div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column">
+      <div class="card-title">Scatter Canvas — <span style="color:#94a3b8;font-size:.75rem">★ = centroids, ● = data points</span></div>
+      <canvas id="km-canvas" width="600" height="440"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ TAB 2: DBSCAN -->
+<div class="panel" id="tab1">
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="card">
+        <div class="card-title">DBSCAN Parameters</div>
+        <label>ε (epsilon) — neighborhood radius: <strong id="eps-val" style="color:#7dd3fc">40</strong>px</label>
+        <input type="range" id="eps-slider" min="10" max="120" value="40" oninput="updateDBSCAN()">
+        <label>min_samples — core point threshold: <strong id="minpts-val" style="color:#a78bfa">4</strong></label>
+        <input type="range" id="minpts-slider" min="2" max="12" value="4" oninput="updateDBSCAN()">
+        <div class="flex" style="margin-top:4px">
+          <button onclick="dbscanGenerate()">&#9634; Generate</button>
+          <div class="toggle" style="margin-top:0">
+            <button class="toggle-btn active" id="eps-circle-btn" onclick="toggleEpsCircles()">Show ε-circles</button>
+          </div>
+        </div>
+        <div class="info-box" style="margin-top:8px">
+          Hover over a point to see its ε-neighborhood. Core points have ≥ min_samples neighbors within ε.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Cluster Statistics</div>
+        <div id="dbscan-stats"></div>
+      </div>
+      <div class="compare-box">
+        <strong style="color:#7dd3fc">DBSCAN vs K-Means</strong><br>
+        ✓ DBSCAN handles arbitrary shapes<br>
+        ✓ DBSCAN detects noise/outliers<br>
+        ✓ No need to specify k<br>
+        ✗ Struggles with varying density<br>
+        ✗ Sensitive to ε and min_samples
+      </div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column">
+      <div class="card-title">DBSCAN Canvas — <span style="color:#94a3b8;font-size:.75rem">core=solid, border=lighter, noise=gray ×</span></div>
+      <canvas id="db-canvas" width="600" height="440"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ TAB 3: PCA -->
+<div class="panel" id="tab2">
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="card">
+        <div class="card-title">PCA Controls</div>
+        <label>Number of components: <strong id="ncomp-val" style="color:#7dd3fc">2</strong></label>
+        <input type="range" id="ncomp-slider" min="1" max="6" value="2" oninput="updatePCA()">
+        <div class="flex" style="margin-top:4px">
+          <div class="toggle">
+            <button class="toggle-btn active" id="show-orig-btn" onclick="setPCAView('original')">Original</button>
+            <button class="toggle-btn" id="show-pc-btn" onclick="setPCAView('pca')">PC Axes</button>
+            <button class="toggle-btn" id="show-proj-btn" onclick="setPCAView('projection')">Projection</button>
+          </div>
+        </div>
+        <div class="info-box" style="margin-top:8px" id="pca-view-info">
+          Showing original data with covariance ellipse.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Explained Variance (Scree Plot)</div>
+        <canvas id="scree-canvas" width="300" height="160"></canvas>
+        <div id="pca-var-info" style="font-size:.75rem;color:#94a3b8;margin-top:6px"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Math</div>
+        <div class="formula">Cov = Xᵀ X / (n-1)</div>
+        <div class="formula">Cov = V Λ Vᵀ</div>
+        <div class="formula">Projection = X V_k</div>
+        <div class="formula" style="margin-top:4px">Recon error = ‖X - X V_k Vᵀ_k‖²</div>
+        <div id="recon-error" style="font-size:.82rem;color:#fbbf24;margin-top:8px"></div>
+      </div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column">
+      <div class="card-title">PCA Visualization</div>
+      <canvas id="pca-canvas" width="600" height="440"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ TAB 4: ANOMALY -->
+<div class="panel" id="tab3">
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="card">
+        <div class="card-title">Detection Controls</div>
+        <label>Contamination %: <strong id="contam-val" style="color:#f87171">10</strong>%</label>
+        <input type="range" id="contam-slider" min="2" max="30" value="10" oninput="updateAnomaly()">
+        <div style="margin-top:8px">
+          <label style="margin-bottom:4px">Method:</label>
+          <div class="toggle">
+            <button class="toggle-btn active" id="method-if" onclick="setAnomalyMethod('if')">Isolation Forest</button>
+            <button class="toggle-btn" id="method-zscore" onclick="setAnomalyMethod('zscore')">Z-Score</button>
+            <button class="toggle-btn" id="method-iqr" onclick="setAnomalyMethod('iqr')">IQR</button>
+          </div>
+        </div>
+        <div class="flex" style="margin-top:8px">
+          <button onclick="generateAnomalyData()">&#9634; Generate</button>
+        </div>
+        <div class="info-box" style="margin-top:8px" id="anomaly-method-info">
+          Isolation Forest: anomalies are isolated faster in random binary splits.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Anomaly Scores</div>
+        <canvas id="score-canvas" width="300" height="200"></canvas>
+        <div id="anomaly-stats" style="margin-top:6px;font-size:.78rem;color:#94a3b8"></div>
+      </div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column">
+      <div class="card-title">Anomaly Detection Canvas — <span style="color:#f87171;font-size:.75rem">● detected anomalies</span></div>
+      <canvas id="anomaly-canvas" width="600" height="440"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// HELPERS
+// ============================================================
+const CLUSTER_COLORS=['#7dd3fc','#86efac','#fbbf24','#f87171','#a78bfa','#fb923c','#2dd4bf','#f472b6'];
+function rnd(min,max){return Math.random()*(max-min)+min;}
+function gauss(mu,sigma){
+  let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();
+  return mu+sigma*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+// ============================================================
+// TAB 1: K-MEANS
+// ============================================================
+let kmData=[], kmCentroids=[], kmAssign=[], kmK=3, kmIter=0, kmRunTimer=null, kmConverged=false;
+const elbowWCSS={};
+
+function setK(v){kmK=parseInt(v);document.getElementById('k-val').textContent=v;kmReset();}
+
+function generateData(){
+  kmData=[];
+  const presets=[
+    [{cx:150,cy:150,std:45},{cx:320,cy:280,std:40},{cx:460,cy:130,std:50},{cx:200,cy:360,std:35},{cx:500,cy:360,std:45}],
+  ];
+  const c=presets[0].slice(0,Math.max(3,kmK));
+  c.forEach(cl=>{
+    for(let i=0;i<30;i++) kmData.push({x:gauss(cl.cx,cl.std),y:gauss(cl.cy,cl.std)});
+  });
+  // Compute elbow
+  for(let k=2;k<=8;k++){
+    const cents=initCentroids(k,[...kmData]);
+    const assign=assignPoints(kmData,cents);
+    let wcss=0;
+    kmData.forEach((p,i)=>{wcss+=Math.pow(p.x-cents[assign[i]].x,2)+Math.pow(p.y-cents[assign[i]].y,2);});
+    elbowWCSS[k]=wcss;
+  }
+  kmReset();
+  drawElbow();
+}
+
+function initCentroids(k, data){
+  const indices=[];
+  while(indices.length<k){const i=Math.floor(Math.random()*data.length);if(!indices.includes(i))indices.push(i);}
+  return indices.map(i=>({x:data[i].x,y:data[i].y}));
+}
+
+function assignPoints(data, centroids){
+  return data.map(p=>{
+    let min=Infinity,idx=0;
+    centroids.forEach((c,j)=>{const d=(p.x-c.x)**2+(p.y-c.y)**2;if(d<min){min=d;idx=j;}});
+    return idx;
+  });
+}
+
+function moveCentroids(data,assign,k){
+  return Array.from({length:k},(_,i)=>{
+    const pts=data.filter((_,j)=>assign[j]===i);
+    if(!pts.length)return{x:rnd(50,550),y:rnd(50,400)};
+    return{x:pts.reduce((s,p)=>s+p.x,0)/pts.length,y:pts.reduce((s,p)=>s+p.y,0)/pts.length};
+  });
+}
+
+function kmReset(){
+  clearInterval(kmRunTimer);
+  kmCentroids=initCentroids(kmK,kmData.length?kmData:[{x:300,y:220}]);
+  kmAssign=Array(kmData.length).fill(0);
+  kmIter=0;kmConverged=false;
+  document.getElementById('km-status').textContent='Click "Step" to see one iteration, or "Run" to animate.';
+  updateKMLegend();
+  drawKM();
+}
+
+function kmStep(){
+  if(!kmData.length){generateData();return;}
+  if(kmConverged){document.getElementById('km-status').textContent='Converged! Press Reset to try again.';return;}
+  const newAssign=assignPoints(kmData,kmCentroids);
+  const newCents=moveCentroids(kmData,newAssign,kmK);
+  let wcss=0;
+  kmData.forEach((p,i)=>{wcss+=(p.x-newCents[newAssign[i]].x)**2+(p.y-newCents[newAssign[i]].y)**2;});
+  const delta=kmCentroids.reduce((s,c,i)=>s+Math.hypot(c.x-newCents[i].x,c.y-newCents[i].y),0);
+  kmConverged=delta<0.5;
+  kmCentroids=newCents;kmAssign=newAssign;kmIter++;
+  document.getElementById('km-status').textContent=
+    `Iteration ${kmIter} — WCSS: ${wcss.toFixed(0)} — Centroid shift: ${delta.toFixed(2)}${kmConverged?' → ✓ Converged!':''}`;
+  drawKM();
+}
+
+function kmRun(){
+  if(!kmData.length){generateData();return;}
+  clearInterval(kmRunTimer);
+  kmRunTimer=setInterval(()=>{
+    if(kmConverged){clearInterval(kmRunTimer);return;}
+    kmStep();
+  },600);
+}
+
+function drawKM(){
+  const canvas=document.getElementById('km-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#1a1f2e';ctx.fillRect(0,0,W,H);
+  if(!kmData.length){
+    ctx.fillStyle='#64748b';ctx.font='16px Segoe UI';ctx.textAlign='center';
+    ctx.fillText('Click "Generate Data" to begin',W/2,H/2);return;
+  }
+  // Points
+  kmData.forEach((p,i)=>{
+    const c=kmCentroids[kmAssign[i]];
+    ctx.beginPath();ctx.arc(p.x,p.y,5,0,Math.PI*2);
+    ctx.fillStyle=CLUSTER_COLORS[kmAssign[i]]+'cc';ctx.fill();
+    ctx.strokeStyle=CLUSTER_COLORS[kmAssign[i]];ctx.lineWidth=1;ctx.stroke();
+    // Connection line to centroid
+    ctx.beginPath();ctx.strokeStyle=CLUSTER_COLORS[kmAssign[i]]+'22';ctx.lineWidth=1;
+    ctx.moveTo(p.x,p.y);ctx.lineTo(c.x,c.y);ctx.stroke();
+  });
+  // Centroids as stars
+  kmCentroids.forEach((c,i)=>{
+    drawStar(ctx,c.x,c.y,14,CLUSTER_COLORS[i]);
+    ctx.fillStyle=CLUSTER_COLORS[i];ctx.font='bold 11px Segoe UI';ctx.textAlign='center';
+    ctx.fillText(`C${i+1}`,c.x,c.y+24);
+  });
+}
+
+function drawStar(ctx,x,y,r,color){
+  const n=5,inner=r/2.5;
+  ctx.save();ctx.translate(x,y);ctx.rotate(-Math.PI/2);
+  ctx.beginPath();
+  for(let i=0;i<n*2;i++){
+    const rad=i%2===0?r:inner,a=i*Math.PI/n;
+    i===0?ctx.moveTo(Math.cos(a)*rad,Math.sin(a)*rad):ctx.lineTo(Math.cos(a)*rad,Math.sin(a)*rad);
+  }
+  ctx.closePath();ctx.fillStyle=color;ctx.fill();
+  ctx.strokeStyle='#e2e8f0';ctx.lineWidth=1.5;ctx.stroke();ctx.restore();
+}
+
+function updateKMLegend(){
+  let h='';
+  for(let i=0;i<kmK;i++)
+    h+=`<div class="legend-item"><div class="legend-dot" style="background:${CLUSTER_COLORS[i]}"></div>Cluster ${i+1}</div>`;
+  document.getElementById('km-legend').innerHTML=h;
+}
+
+function drawElbow(){
+  const canvas=document.getElementById('elbow-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height,pad=30;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#1a1f2e';ctx.fillRect(0,0,W,H);
+  const ks=Object.keys(elbowWCSS).map(Number);
+  if(!ks.length)return;
+  const vals=ks.map(k=>elbowWCSS[k]);
+  const maxV=Math.max(...vals),minV=Math.min(...vals);
+  const sx=k=>(k-2)/6*(W-pad*2)+pad;
+  const sy=v=>(H-pad)-(v-minV)/(maxV-minV+1)*(H-pad*1.5);
+  ctx.beginPath();ctx.strokeStyle='#7dd3fc';ctx.lineWidth=2.5;
+  ks.forEach((k,i)=>{i===0?ctx.moveTo(sx(k),sy(vals[i])):ctx.lineTo(sx(k),sy(vals[i]));});
+  ctx.stroke();
+  ks.forEach((k,i)=>{
+    ctx.beginPath();ctx.arc(sx(k),sy(vals[i]),4,0,Math.PI*2);
+    ctx.fillStyle=k===kmK?'#fbbf24':'#7dd3fc';ctx.fill();
+    ctx.fillStyle='#94a3b8';ctx.font='10px Segoe UI';ctx.textAlign='center';
+    ctx.fillText('k='+k,sx(k),H-4);
+  });
+  // Annotation
+  const optK=3;
+  ctx.beginPath();ctx.strokeStyle='#fbbf24';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+  ctx.moveTo(sx(optK),pad);ctx.lineTo(sx(optK),H-pad);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#fbbf24';ctx.font='10px Segoe UI';ctx.fillText('elbow',sx(optK)+22,pad+10);
+  ctx.fillStyle='#64748b';ctx.textAlign='left';ctx.font='10px Segoe UI';ctx.fillText('WCSS',4,pad-4);
+}
+
+// ============================================================
+// TAB 2: DBSCAN
+// ============================================================
+let dbData=[], dbLabels=[], dbCoreFlags=[], showEpsCircles=true, hoverPt=-1, dbEps=40, dbMin=4;
+const DB_COLORS=['#7dd3fc','#86efac','#fbbf24','#f87171','#a78bfa','#fb923c','#2dd4bf','#f472b6'];
+
+function dbscanGenerate(){
+  dbData=[];
+  // Generate two crescent shapes + noise
+  const n=80;
+  for(let i=0;i<n/2;i++){
+    const a=Math.PI*i/(n/2);
+    dbData.push({x:200+Math.cos(a)*130+gauss(0,10),y:200+Math.sin(a)*120+gauss(0,10)});
+  }
+  for(let i=0;i<n/2;i++){
+    const a=Math.PI+Math.PI*i/(n/2);
+    dbData.push({x:300+Math.cos(a)*130+gauss(0,10),y:260+Math.sin(a)*120+gauss(0,10)});
+  }
+  for(let i=0;i<15;i++) dbData.push({x:rnd(60,560),y:rnd(60,400)});
+  updateDBSCAN();
+}
+
+function runDBSCAN(pts,eps,minPts){
+  const n=pts.length,labels=Array(n).fill(-2),visited=Array(n).fill(false);
+  let clusterID=0;
+  function neighborhood(i){return pts.map((_,j)=>j).filter(j=>j!==i&&Math.hypot(pts[i].x-pts[j].x,pts[i].y-pts[j].y)<=eps);}
+  for(let i=0;i<n;i++){
+    if(visited[i])continue;visited[i]=true;
+    const nb=neighborhood(i);
+    if(nb.length<minPts){labels[i]=-1;}
+    else{
+      labels[i]=clusterID;
+      const q=[...nb];
+      while(q.length){
+        const j=q.shift();
+        if(!visited[j]){visited[j]=true;const nb2=neighborhood(j);if(nb2.length>=minPts)q.push(...nb2);}
+        if(labels[j]===-2||labels[j]===-1)labels[j]=clusterID;
+      }
+      clusterID++;
+    }
+  }
+  const cores=pts.map((_,i)=>neighborhood(i).length>=minPts);
+  return{labels,cores};
+}
+
+function updateDBSCAN(){
+  dbEps=parseInt(document.getElementById('eps-slider').value);
+  dbMin=parseInt(document.getElementById('minpts-slider').value);
+  document.getElementById('eps-val').textContent=dbEps;
+  document.getElementById('minpts-val').textContent=dbMin;
+  if(!dbData.length)return;
+  const res=runDBSCAN(dbData,dbEps,dbMin);
+  dbLabels=res.labels;dbCoreFlags=res.cores;
+  const nClusters=Math.max(...dbLabels)+1;
+  const nNoise=dbLabels.filter(l=>l===-1).length;
+  const nCore=dbCoreFlags.filter(Boolean).length;
+  const nBorder=dbLabels.filter((l,i)=>l>=0&&!dbCoreFlags[i]).length;
+  document.getElementById('dbscan-stats').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="card" style="padding:10px"><div style="font-size:.7rem;color:#94a3b8">Clusters</div><div style="font-size:1.4rem;font-weight:700;color:#7dd3fc">${nClusters}</div></div>
+      <div class="card" style="padding:10px"><div style="font-size:.7rem;color:#94a3b8">Noise pts</div><div style="font-size:1.4rem;font-weight:700;color:#f87171">${nNoise}</div></div>
+      <div class="card" style="padding:10px"><div style="font-size:.7rem;color:#94a3b8">Core pts</div><div style="font-size:1.4rem;font-weight:700;color:#86efac">${nCore}</div></div>
+      <div class="card" style="padding:10px"><div style="font-size:.7rem;color:#94a3b8">Border pts</div><div style="font-size:1.4rem;font-weight:700;color:#fbbf24">${nBorder}</div></div>
+    </div>`;
+  drawDBSCAN();
+}
+
+function toggleEpsCircles(){
+  showEpsCircles=!showEpsCircles;
+  document.getElementById('eps-circle-btn').classList.toggle('active',showEpsCircles);
+  drawDBSCAN();
+}
+
+function drawDBSCAN(hoverIdx=-1){
+  const canvas=document.getElementById('db-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#1a1f2e';ctx.fillRect(0,0,W,H);
+  if(!dbData.length){
+    ctx.fillStyle='#64748b';ctx.font='16px Segoe UI';ctx.textAlign='center';
+    ctx.fillText('Click "Generate" to start',W/2,H/2);return;
+  }
+  // Hover circle
+  if(hoverIdx>=0&&showEpsCircles){
+    ctx.beginPath();ctx.arc(dbData[hoverIdx].x,dbData[hoverIdx].y,dbEps,0,Math.PI*2);
+    ctx.strokeStyle='#fbbf24';ctx.lineWidth=1.5;ctx.stroke();
+    ctx.fillStyle='#fbbf2411';ctx.fill();
+  }
+  dbData.forEach((p,i)=>{
+    const lbl=dbLabels[i];
+    const isNoise=lbl===-1;
+    const isCore=dbCoreFlags[i];
+    if(isNoise){
+      // Draw X
+      const r=5;
+      ctx.beginPath();ctx.moveTo(p.x-r,p.y-r);ctx.lineTo(p.x+r,p.y+r);
+      ctx.moveTo(p.x+r,p.y-r);ctx.lineTo(p.x-r,p.y+r);
+      ctx.strokeStyle='#64748b';ctx.lineWidth=2;ctx.stroke();
+    } else {
+      const color=DB_COLORS[lbl%DB_COLORS.length];
+      const alpha=isCore?'ff':'99';
+      const r=isCore?6:4.5;
+      ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);
+      ctx.fillStyle=color+alpha;ctx.fill();
+      ctx.strokeStyle=color;ctx.lineWidth=isCore?1.5:1;ctx.stroke();
+    }
+  });
+}
+
+function initDBSCANHover(){
+  const canvas=document.getElementById('db-canvas');
+  canvas.addEventListener('mousemove',e=>{
+    if(!dbData.length)return;
+    const rect=canvas.getBoundingClientRect();
+    const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+    let best=-1,bestD=25;
+    dbData.forEach((p,i)=>{const d=Math.hypot(p.x-mx,p.y-my);if(d<bestD){bestD=d;best=i;}});
+    hoverPt=best;drawDBSCAN(best);
+  });
+  canvas.addEventListener('mouseleave',()=>{hoverPt=-1;drawDBSCAN(-1);});
+}
+
+// ============================================================
+// TAB 3: PCA
+// ============================================================
+let pcaData=[], pcaView='original', pcaComponents=2;
+const PCA_N=80;
+
+function generatePCAData(){
+  pcaData=[];
+  // Correlated 2D data (6 features simulated)
+  for(let i=0;i<PCA_N;i++){
+    const t=rnd(-3,3);
+    pcaData.push([t+gauss(0,.5), t*0.8+gauss(0,.6), t*1.2+gauss(0,.4),
+                  t*0.6+gauss(0,.7), t*0.9+gauss(0,.5), t*1.1+gauss(0,.3)]);
+  }
+}
+
+function mean(arr){return arr.reduce((s,v)=>s+v,0)/arr.length;}
+function cov2D(X,i,j){
+  const n=X.length,mi=mean(X.map(r=>r[i])),mj=mean(X.map(r=>r[j]));
+  return X.reduce((s,r)=>s+(r[i]-mi)*(r[j]-mj),0)/(n-1);
+}
+function eigen2x2(a,b,c,d){
+  const tr=a+d,det=a*d-b*c;
+  const disc=Math.sqrt(Math.max(0,(tr/2)**2-det));
+  const l1=tr/2+disc,l2=tr/2-disc;
+  const v1=Math.abs(b)>1e-9?[b,l1-a]:[1,0];
+  const v2=Math.abs(b)>1e-9?[b,l2-a]:[0,1];
+  const n1=Math.hypot(...v1),n2=Math.hypot(...v2);
+  return{l:[l1,l2],v:[[v1[0]/n1,v1[1]/n1],[v2[0]/n2,v2[1]/n2]]};
+}
+
+function updatePCA(){
+  pcaComponents=parseInt(document.getElementById('ncomp-slider').value);
+  document.getElementById('ncomp-val').textContent=pcaComponents;
+  drawPCA();
+  drawScree();
+}
+
+function setPCAView(v){
+  pcaView=v;
+  ['original','pca','projection'].forEach(s=>{
+    document.getElementById('show-'+s.replace('original','orig').replace('projection','proj')+'-btn').classList.toggle('active',s===v);
+  });
+  const infos={
+    original:'Showing original data with covariance ellipse. The ellipse shows the spread direction.',
+    pca:'Showing principal component axes. PC1 points in direction of maximum variance.',
+    projection:'Showing projected (reduced) data. Points collapse onto PC axes.'
+  };
+  document.getElementById('pca-view-info').textContent=infos[v];
+  drawPCA();
+}
+
+function drawPCA(){
+  if(!pcaData.length)generatePCAData();
+  const canvas=document.getElementById('pca-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height,pad=50;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#1a1f2e';ctx.fillRect(0,0,W,H);
+  const cw=W-pad*2,ch=H-pad*2;
+
+  // Use first 2 features for display
+  const xs=pcaData.map(r=>r[0]),ys=pcaData.map(r=>r[1]);
+  const mx=mean(xs),my=mean(ys);
+  const sxv=Math.sqrt(cov2D(pcaData,0,0)),syv=Math.sqrt(cov2D(pcaData,1,1));
+  const covXY=cov2D(pcaData,0,1);
+
+  // Scale to canvas
+  const scaleF=80;
+  const toC=(x,y)=>({cx:pad+cw/2+(x-mx)/sxv*scaleF,cy:pad+ch/2-(y-my)/syv*scaleF});
+
+  // Draw ellipse
+  const eig=eigen2x2(cov2D(pcaData,0,0),covXY,covXY,cov2D(pcaData,1,1));
+  const angle=Math.atan2(eig.v[0][1],eig.v[0][0]);
+  const a=Math.sqrt(eig.l[0])*2*scaleF/sxv,b=Math.sqrt(Math.max(0,eig.l[1]))*2*scaleF/syv;
+  ctx.save();ctx.translate(pad+cw/2,pad+ch/2);ctx.rotate(angle);
+  ctx.beginPath();ctx.ellipse(0,0,a,b,0,0,Math.PI*2);
+  ctx.strokeStyle='#2dd4bf66';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.fillStyle='#2dd4bf11';ctx.fill();
+  ctx.restore();
+
+  // Data points
+  xs.forEach((x,i)=>{
+    const {cx,cy}=toC(x,ys[i]);
+    if(pcaView==='projection'){
+      // Project onto PC1
+      const dx=x-mx,dy=ys[i]-my;
+      const proj=dx*eig.v[0][0]+dy*eig.v[0][1];
+      const px=toC(mx+proj*eig.v[0][0]*sxv/scaleF,my+proj*eig.v[0][1]*syv/scaleF);
+      ctx.beginPath();ctx.arc(px.cx,px.cy,4,0,Math.PI*2);
+      ctx.fillStyle='#a78bfacc';ctx.fill();
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(px.cx,px.cy);
+      ctx.strokeStyle='#7dd3fc33';ctx.lineWidth=1;ctx.stroke();
+      ctx.beginPath();ctx.arc(cx,cy,2.5,0,Math.PI*2);
+      ctx.fillStyle='#7dd3fc55';ctx.fill();
+    } else {
+      ctx.beginPath();ctx.arc(cx,cy,3.5,0,Math.PI*2);
+      ctx.fillStyle='#7dd3fccc';ctx.fill();
+    }
+  });
+
+  // PC axes
+  if(pcaView==='pca'||pcaView==='projection'){
+    const arrowLen=180;
+    for(let pc=0;pc<Math.min(pcaComponents,2);pc++){
+      const v=eig.v[pc];
+      const scale=Math.sqrt(eig.l[pc]);
+      const ex=pad+cw/2+v[0]*arrowLen*scale/Math.max(sxv,syv)*35;
+      const ey=pad+ch/2-v[1]*arrowLen*scale/Math.max(sxv,syv)*35;
+      const color=pc===0?'#fbbf24':'#f87171';
+      ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=2.5;
+      ctx.moveTo(pad+cw/2,pad+ch/2);ctx.lineTo(ex,ey);ctx.stroke();
+      // Arrowhead
+      const ux=(ex-(pad+cw/2)),uy=(ey-(pad+ch/2)),ul=Math.hypot(ux,uy);
+      const nx=-uy/ul,ny=ux/ul;
+      ctx.beginPath();ctx.fillStyle=color;
+      ctx.moveTo(ex,ey);ctx.lineTo(ex-ux/ul*12+nx*6,ey-uy/ul*12+ny*6);
+      ctx.lineTo(ex-ux/ul*12-nx*6,ey-uy/ul*12-ny*6);ctx.closePath();ctx.fill();
+      ctx.fillStyle=color;ctx.font='bold 12px Segoe UI';ctx.textAlign='center';
+      ctx.fillText(`PC${pc+1}`,ex+(ex>pad+cw/2?16:-16),ey+(ey>pad+ch/2?16:-16));
+    }
+  }
+
+  // Axis labels
+  ctx.fillStyle='#64748b';ctx.font='11px Segoe UI';ctx.textAlign='center';
+  ctx.fillText('Feature 1 (standardized)',pad+cw/2,H-6);
+  ctx.save();ctx.translate(14,H/2);ctx.rotate(-Math.PI/2);ctx.fillText('Feature 2 (standardized)',0,0);ctx.restore();
+}
+
+function drawScree(){
+  if(!pcaData.length)generatePCAData();
+  const canvas=document.getElementById('scree-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height,pad=30;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#1a1f2e';ctx.fillRect(0,0,W,H);
+  // Simulated eigenvalues for 6 features
+  const eigVals=[3.8,1.4,0.6,0.3,0.15,0.08];
+  const total=eigVals.reduce((s,v)=>s+v,0);
+  const explained=eigVals.map(v=>v/total);
+  const cumExp=explained.reduce((acc,v,i)=>[...acc,(acc[i-1]||0)+v],[]);
+  const cw=W-pad*2,ch=H-pad*2;
+  const n=eigVals.length,bw=cw/n*0.55;
+  explained.forEach((v,i)=>{
+    const x=pad+i/n*cw+cw/n*0.2;
+    const bh=v*ch;
+    const isIncl=i<pcaComponents;
+    ctx.fillStyle=isIncl?'#0369a1':'#2d3147';ctx.fillRect(x,pad+ch-bh,bw,bh);
+    ctx.fillStyle=isIncl?'#7dd3fc':'#64748b';ctx.font='10px Segoe UI';ctx.textAlign='center';
+    ctx.fillText(`PC${i+1}`,x+bw/2,H-4);
+    ctx.fillText((v*100).toFixed(0)+'%',x+bw/2,pad+ch-bh-4);
+  });
+  // Cumulative line
+  ctx.beginPath();ctx.strokeStyle='#fbbf24';ctx.lineWidth=1.5;
+  cumExp.forEach((v,i)=>{
+    const x=pad+i/n*cw+cw/n*0.5;
+    const y=pad+ch-v*ch;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  cumExp.forEach((v,i)=>{
+    const x=pad+i/n*cw+cw/n*0.5,y=pad+ch-v*ch;
+    ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fillStyle='#fbbf24';ctx.fill();
+  });
+  const selExp=(cumExp[pcaComponents-1]*100).toFixed(1);
+  document.getElementById('pca-var-info').textContent=`${pcaComponents} component${pcaComponents>1?'s':''} explain ${selExp}% of variance`;
+  const reconErr=(100-parseFloat(selExp)).toFixed(1);
+  document.getElementById('recon-error').textContent=`Reconstruction error: ${reconErr}% variance lost`;
+}
+
+// ============================================================
+// TAB 4: ANOMALY DETECTION
+// ============================================================
+let anomData=[], anomScores=[], anomMethod='if', anomContam=0.1;
+
+function generateAnomalyData(){
+  anomData=[];
+  const n=80;
+  for(let i=0;i<n;i++) anomData.push({x:gauss(300,70),y:gauss(220,60)});
+  // Add anomalies
+  for(let i=0;i<8;i++){
+    const angle=rnd(0,Math.PI*2),dist=rnd(180,260);
+    anomData.push({x:300+Math.cos(angle)*dist,y:220+Math.sin(angle)*dist});
+  }
+  updateAnomaly();
+}
+
+function setAnomalyMethod(m){
+  anomMethod=m;
+  ['if','zscore','iqr'].forEach(s=>{
+    document.getElementById('method-'+s).classList.toggle('active',s===m);
+  });
+  const infos={
+    if:'Isolation Forest: anomalies are isolated faster in random binary splits. Works well in high dimensions.',
+    zscore:'Z-Score: flags points where |z| > threshold. Assumes Gaussian distribution.',
+    iqr:'IQR: flags points outside [Q1-1.5·IQR, Q3+1.5·IQR]. Robust non-parametric method.'
+  };
+  document.getElementById('anomaly-method-info').textContent=infos[m];
+  updateAnomaly();
+}
+
+function computeScores(){
+  if(!anomData.length)return[];
+  if(anomMethod==='if'){
+    // Simulated isolation forest scores based on distance from center
+    const cx=mean(anomData.map(p=>p.x)),cy=mean(anomData.map(p=>p.y));
+    const maxD=Math.max(...anomData.map(p=>Math.hypot(p.x-cx,p.y-cy)))+1;
+    return anomData.map(p=>Math.hypot(p.x-cx,p.y-cy)/maxD);
+  } else if(anomMethod==='zscore'){
+    const xs=anomData.map(p=>p.x),ys=anomData.map(p=>p.y);
+    const mx=mean(xs),my=mean(ys);
+    const sx=Math.sqrt(xs.reduce((s,v)=>s+(v-mx)**2,0)/xs.length);
+    const sy=Math.sqrt(ys.reduce((s,v)=>s+(v-my)**2,0)/ys.length);
+    const scores=anomData.map(p=>Math.sqrt(((p.x-mx)/sx)**2+((p.y-my)/sy)**2));
+    const maxS=Math.max(...scores)+1;
+    return scores.map(s=>s/maxS);
+  } else {
+    const xs=anomData.map(p=>p.x).sort((a,b)=>a-b);
+    const q1=xs[Math.floor(xs.length/4)],q3=xs[Math.floor(xs.length*3/4)];
+    const iqrV=q3-q1;
+    return anomData.map(p=>{
+      const dx=Math.max(0,Math.abs(p.x-mean(anomData.map(q=>q.x)))-1.5*iqrV);
+      const dy=Math.max(0,Math.abs(p.y-mean(anomData.map(q=>q.y)))-1.5*iqrV);
+      return Math.min(1,Math.sqrt(dx**2+dy**2)/150);
+    });
+  }
+}
+
+function updateAnomaly(){
+  anomContam=parseInt(document.getElementById('contam-slider').value)/100;
+  document.getElementById('contam-val').textContent=(anomContam*100).toFixed(0);
+  if(!anomData.length)return;
+  anomScores=computeScores();
+  const threshold=anomScores.slice().sort((a,b)=>b-a)[Math.floor(anomContam*anomData.length)];
+  const nAnom=anomScores.filter(s=>s>=threshold).length;
+  document.getElementById('anomaly-stats').textContent=`Detected: ${nAnom} anomalies (threshold: ${threshold.toFixed(3)})`;
+  drawAnomaly(threshold);
+  drawScoreChart(threshold);
+}
+
+function drawAnomaly(threshold){
+  const canvas=document.getElementById('anomaly-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#1a1f2e';ctx.fillRect(0,0,W,H);
+  if(!anomData.length){
+    ctx.fillStyle='#64748b';ctx.font='16px Segoe UI';ctx.textAlign='center';
+    ctx.fillText('Click "Generate" to start',W/2,H/2);return;
+  }
+  // Draw random partition boxes for Isolation Forest
+  if(anomMethod==='if'){
+    ctx.save();ctx.globalAlpha=0.08;
+    for(let i=0;i<6;i++){
+      ctx.fillStyle=CLUSTER_COLORS[i%CLUSTER_COLORS.length];
+      const x=rnd(50,400),y=rnd(40,360),w=rnd(80,200),h=rnd(60,150);
+      ctx.fillRect(x,y,w,h);
+    }
+    ctx.restore();
+  }
+  anomData.forEach((p,i)=>{
+    const isAnom=anomScores[i]>=threshold;
+    if(isAnom){
+      ctx.beginPath();ctx.arc(p.x,p.y,14,0,Math.PI*2);
+      ctx.strokeStyle='#f87171';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#f8717122';ctx.fill();
+    }
+    ctx.beginPath();ctx.arc(p.x,p.y,5,0,Math.PI*2);
+    ctx.fillStyle=isAnom?'#f87171':'#7dd3fc';ctx.fill();
+    ctx.strokeStyle=isAnom?'#fca5a5':'#0369a1';ctx.lineWidth=1;ctx.stroke();
+  });
+  // Legend
+  ctx.fillStyle='#7dd3fc';ctx.font='11px Segoe UI';ctx.textAlign='left';
+  ctx.beginPath();ctx.arc(30,H-30,5,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#94a3b8';ctx.fillText('Normal',42,H-26);
+  ctx.beginPath();ctx.arc(110,H-30,5,0,Math.PI*2);ctx.fillStyle='#f87171';ctx.fill();
+  ctx.beginPath();ctx.arc(110,H-30,12,0,Math.PI*2);ctx.strokeStyle='#f87171';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.fillStyle='#94a3b8';ctx.fillText('Anomaly',126,H-26);
+}
+
+function drawScoreChart(threshold){
+  const canvas=document.getElementById('score-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height,pad=24;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#1a1f2e';ctx.fillRect(0,0,W,H);
+  const n=anomScores.length;
+  const sorted=[...anomScores].map((s,i)=>({s,i})).sort((a,b)=>b.s-a.s);
+  const bw=Math.max(2,(W-pad*2)/n);
+  sorted.forEach(({s,i},j)=>{
+    const isAnom=s>=threshold;
+    const x=pad+j*bw;
+    const bh=(s*(H-pad*2));
+    const y=H-pad-bh;
+    ctx.fillStyle=isAnom?'#f87171':'#3b82f6';
+    ctx.fillRect(x,y,Math.max(1,bw-1),bh);
+  });
+  // Threshold line
+  const ty=H-pad-threshold*(H-pad*2);
+  ctx.beginPath();ctx.strokeStyle='#fbbf24';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);
+  ctx.moveTo(pad,ty);ctx.lineTo(W-pad,ty);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#fbbf24';ctx.font='10px Segoe UI';ctx.textAlign='left';
+  ctx.fillText('threshold',pad+4,ty-3);
+  ctx.fillStyle='#94a3b8';ctx.textAlign='center';
+  ctx.fillText('Points ranked by anomaly score',W/2,H-4);
+}
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+function switchTab(i){
+  document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('active',j===i));
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',j===i));
+  if(i===0){generateData();}
+  if(i===1){dbscanGenerate();}
+  if(i===2){generatePCAData();updatePCA();}
+  if(i===3){generateAnomalyData();}
+}
+
+// ============================================================
+// INIT
+// ============================================================
+generateData();
+initDBSCANHover();
+</script>
+
+
+<style>
+/* ── Chapter sidenav ── */
+.chap-sidenav {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 8888;
+}
+.chap-sidenav-toggle {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  color: #7dd3fc;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px #00000060;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+.chap-sidenav-toggle:hover { background: #0369a1; border-color: #7dd3fc; }
+.chap-sidenav-menu {
+  position: absolute;
+  bottom: 52px;
+  right: 0;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  border-radius: 14px;
+  padding: 10px 6px;
+  min-width: 220px;
+  max-height: 70vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 40px #00000080;
+  display: none;
+  scrollbar-width: thin;
+  scrollbar-color: #2d3147 transparent;
+}
+.chap-sidenav-menu.open { display: block; }
+.chap-sidenav-menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #94a3b8;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.chap-sidenav-menu a:hover { background: #0f172a; color: #e2e8f0; }
+.chap-sidenav-menu a.current { background: #0369a133; color: #7dd3fc; font-weight: 600; }
+.chap-sidenav-menu .chap-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #4b5563;
+  min-width: 28px;
+}
+.chap-sidenav-menu .menu-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #4b5563;
+  padding: 4px 12px 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+@media (max-width: 480px) {
+  .chap-sidenav { bottom: 12px; right: 12px; }
+  .chap-sidenav-menu { right: 0; min-width: 180px; }
+}
+</style>
+
+<div class="chap-sidenav">
+  <div class="chap-sidenav-menu" id="chapMenu">
+    <div class="menu-header">ML Field Guide</div>
+      <a href="ch01_math_foundations.html"><span class="chap-num">Ch 01</span>Math Foundations</a>
+      <a href="ch02_statistics.html"><span class="chap-num">Ch 02</span>Statistics</a>
+      <a href="ch03_python.html"><span class="chap-num">Ch 03</span>Python for ML</a>
+      <a href="ch04_feature_engineering.html"><span class="chap-num">Ch 04</span>Feature Engineering</a>
+      <a href="ch05_supervised_learning.html"><span class="chap-num">Ch 05</span>Supervised Learning</a>
+      <a href="ch06_model_evaluation.html"><span class="chap-num">Ch 06</span>Model Evaluation</a>
+      <a href="ch07_unsupervised.html" class="current"><span class="chap-num">Ch 07</span>Unsupervised Learning</a>
+      <a href="ch08_recommendations.html"><span class="chap-num">Ch 08</span>Recommendations</a>
+      <a href="ch09_neural_networks.html"><span class="chap-num">Ch 09a</span>Neural Networks</a>
+      <a href="ch09_cnn_architectures.html"><span class="chap-num">Ch 09b</span>CNN Architectures</a>
+      <a href="ch10_nlp_transformers.html"><span class="chap-num">Ch 10</span>NLP & Transformers</a>
+      <a href="ch11_reinforcement_learning.html"><span class="chap-num">Ch 11</span>Reinforcement Learning</a>
+      <a href="ch12_time_series.html"><span class="chap-num">Ch 12</span>Time Series</a>
+      <a href="ch13_sql.html"><span class="chap-num">Ch 13</span>SQL for ML</a>
+      <a href="ch14_big_data.html"><span class="chap-num">Ch 14</span>Big Data</a>
+      <a href="ch15_mlops.html"><span class="chap-num">Ch 15</span>MLOps</a>
+      <a href="ch16_aws.html"><span class="chap-num">Ch 16</span>AWS for ML</a>
+      <a href="ch17_responsible_ai.html"><span class="chap-num">Ch 17</span>Responsible AI</a>
+      <a href="ch18_interview_prep.html"><span class="chap-num">Ch 18</span>Interview Prep</a>
+  </div>
+  <button class="chap-sidenav-toggle" onclick="document.getElementById('chapMenu').classList.toggle('open')" title="Chapter navigation">☰</button>
+</div>
+
+</body>
+</html>

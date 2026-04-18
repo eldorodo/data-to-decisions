@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Time series analysis: ARIMA, decomposition, forecasting — interactive visualizations.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 12 · Time Series — The ML Field Guide</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0f1117;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+.header{padding:24px 32px;border-bottom:1px solid #2d3147;background:#1e2130}
+.header h1{font-size:1.5rem;font-weight:700;color:#2dd4bf;letter-spacing:-0.02em}
+.header p{color:#94a3b8;font-size:0.875rem;margin-top:4px}
+.tab-bar{display:flex;gap:4px;padding:16px 32px;background:#1e2130;border-bottom:1px solid #2d3147;overflow-x:auto}
+.tab-btn{padding:8px 18px;border-radius:8px;border:1px solid #2d3147;background:transparent;color:#94a3b8;cursor:pointer;font-size:0.8rem;font-weight:500;white-space:nowrap;transition:all .2s}
+.tab-btn.active{background:#134e4a;color:#2dd4bf;border-color:#2dd4bf}
+.tab-btn:hover:not(.active){background:#1e2130;color:#e2e8f0;border-color:#2dd4bf}
+.tab-content{display:none;padding:28px 32px;max-width:1200px;margin:0 auto}
+.tab-content.active{display:block}
+.panel{background:#1e2130;border:1px solid #2d3147;border-radius:12px;padding:20px;margin-bottom:16px}
+.panel h3{font-size:1rem;font-weight:600;color:#2dd4bf;margin-bottom:14px}
+.panel h4{font-size:0.875rem;font-weight:600;color:#e2e8f0;margin-bottom:10px}
+.row{display:flex;gap:16px;flex-wrap:wrap}
+.col{flex:1;min-width:280px}
+label{font-size:0.8rem;color:#94a3b8;display:block;margin-bottom:4px}
+input[type=range]{width:100%;accent-color:#2dd4bf}
+select{padding:6px 10px;background:#0f172a;border:1px solid #2d3147;border-radius:8px;color:#e2e8f0;font-size:0.8rem;outline:none}
+.btn{padding:8px 16px;border-radius:8px;border:1px solid #2d3147;background:#1e2130;color:#e2e8f0;cursor:pointer;font-size:0.8rem;font-weight:500;transition:all .2s}
+.btn:hover{background:#134e4a;border-color:#2dd4bf;color:#2dd4bf}
+.btn.active{background:#134e4a;border-color:#2dd4bf;color:#2dd4bf}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+canvas{border-radius:8px;display:block;width:100%}
+.info-box{background:#0f172a;border-left:3px solid #2dd4bf;border-radius:0 8px 8px 0;padding:12px 16px;font-size:0.8rem;color:#94a3b8;line-height:1.6}
+.info-box strong{color:#e2e8f0}
+.formula-box{background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:10px 14px;font-size:0.85rem;color:#fbbf24;font-family:monospace;text-align:center;margin:8px 0}
+.param-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.param-row label{min-width:120px;margin:0;color:#94a3b8;font-size:0.8rem}
+.param-val{color:#2dd4bf;font-weight:600;font-size:0.85rem;min-width:45px}
+.stat-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:#0f172a;border:1px solid #2d3147;border-radius:20px;font-size:0.8rem;color:#94a3b8;margin:4px}
+.stat-pill span{color:#2dd4bf;font-weight:600}
+.stat-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.stat-card{background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:10px 14px;text-align:center;flex:1;min-width:80px}
+.stat-card .val{font-size:1.1rem;font-weight:700;color:#2dd4bf}
+.stat-card .lbl{font-size:0.7rem;color:#64748b;margin-top:2px}
+.model-btn{padding:7px 14px;border-radius:8px;border:1px solid #2d3147;background:#0f172a;color:#94a3b8;cursor:pointer;font-size:0.75rem;font-weight:500;transition:all .2s;white-space:nowrap}
+.model-btn.active{color:#0f1117;font-weight:700}
+.comparison-table{width:100%;border-collapse:collapse;font-size:0.8rem}
+.comparison-table th{background:#0f172a;color:#2dd4bf;padding:8px 12px;text-align:left;border:1px solid #2d3147}
+.comparison-table td{padding:7px 12px;border:1px solid #2d3147;color:#e2e8f0;font-size:0.75rem}
+.comparison-table tr:nth-child(even) td{background:#0f172a}
+.comparison-table .best{color:#86efac;font-weight:600}
+.diff-btn{padding:6px 12px;border-radius:8px;border:1px solid #2d3147;background:#0f172a;color:#94a3b8;cursor:pointer;font-size:0.78rem;transition:all .2s}
+.diff-btn.active{background:#134e4a;border-color:#2dd4bf;color:#2dd4bf}
+.adf-indicator{padding:10px 16px;border-radius:8px;border:1px solid #2d3147;background:#0f172a;font-size:0.85rem;text-align:center;margin:8px 0}
+.decision-item{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:#0f172a;border-radius:8px;margin:5px 0;border-left:3px solid #2d3147}
+.decision-arrow{color:#2dd4bf;font-size:1.2rem;margin-top:1px}
+
+  /* ── Shared improvements ── */
+  body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important; }
+  code, pre, .code-block, .formula, .mono, [style*="monospace"], [style*="Courier"] { font-family: 'JetBrains Mono', 'Cascadia Code', 'Courier New', monospace !important; }
+
+  /* Smoother scrolling */
+  html { scroll-behavior: smooth; }
+
+  /* Focus ring for accessibility */
+  button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid #7dd3fc;
+    outline-offset: 2px;
+  }
+
+  /* Improve tab-nav overflow on small screens */
+  .tab-nav, .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .tab-nav::-webkit-scrollbar, .tabs::-webkit-scrollbar { display: none; }
+
+  /* Mobile responsive improvements */
+  @media (max-width: 768px) {
+    .page-header { padding: 24px 20px 18px !important; }
+    .tab-panel { padding: 20px !important; }
+    .tab-nav { padding: 16px 20px 0 !important; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
+    .grid2, .grid3 { grid-template-columns: 1fr !important; }
+    .page-title { font-size: 22px !important; }
+    h1 { font-size: 1.4rem !important; }
+  }
+  @media (max-width: 480px) {
+    body { padding: 0 0 40px 0 !important; }
+    .tab-btn { padding: 8px 14px !important; font-size: 12px !important; }
+    .btn { padding: 6px 12px !important; font-size: 12px !important; }
+  }
+
+  /* Better selection color */
+  ::selection { background: #1d4ed880; color: #e0f2fe; }
+
+  /* Smoother canvas rendering */
+  canvas { image-rendering: -webkit-optimize-contrast; }
+
+  /* Tooltip z-index fix */
+  .tooltip { z-index: 9999 !important; }
+
+  /* Code block horizontal scroll indicator */
+  .code-block { overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Chapter 12: Time Series Analysis</h1>
+  <p>Interactive visualizations — Decomposition, ARIMA, Forecasting, Stationarity &amp; Differencing</p>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('decomp')">Time Series Decomposition</button>
+  <button class="tab-btn" onclick="switchTab('arima')">ARIMA Explorer</button>
+  <button class="tab-btn" onclick="switchTab('forecast')">Forecasting Comparison</button>
+  <button class="tab-btn" onclick="switchTab('stationarity')">Stationarity &amp; Differencing</button>
+</div>
+
+<!-- TAB 1: Decomposition -->
+<div id="tab-decomp" class="tab-content active">
+  <div class="row">
+    <div class="col" style="max-width:720px">
+      <div class="panel">
+        <h3>Time Series Decomposition</h3>
+        <div class="btn-row">
+          <button class="btn active" id="decomp-add" onclick="setDecompType('additive',this)">Additive</button>
+          <button class="btn" id="decomp-mul" onclick="setDecompType('multiplicative',this)">Multiplicative</button>
+        </div>
+        <canvas id="decomp-canvas" height="460"></canvas>
+      </div>
+    </div>
+    <div class="col">
+      <div class="panel">
+        <h4>Series Controls</h4>
+        <div class="param-row">
+          <label>Trend slope</label>
+          <input type="range" id="sl-trend" min="0" max="2" step="0.05" value="0.5" oninput="updateDecomp()">
+          <span class="param-val" id="v-trend">0.50</span>
+        </div>
+        <div class="param-row">
+          <label>Seasonal amplitude</label>
+          <input type="range" id="sl-amp" min="0" max="50" step="1" value="20" oninput="updateDecomp()">
+          <span class="param-val" id="v-amp">20</span>
+        </div>
+        <div class="param-row">
+          <label>Noise level</label>
+          <input type="range" id="sl-noise" min="0" max="30" step="1" value="8" oninput="updateDecomp()">
+          <span class="param-val" id="v-noise">8</span>
+        </div>
+        <div class="param-row">
+          <label>Season period</label>
+          <select id="sl-period" onchange="updateDecomp()">
+            <option value="7">Weekly (7)</option>
+            <option value="12" selected>Monthly (12)</option>
+            <option value="52">Annual (52)</option>
+          </select>
+          <span class="param-val" id="v-period">12</span>
+        </div>
+      </div>
+      <div class="panel">
+        <h4>Stationarity Test</h4>
+        <div class="adf-indicator" id="adf-indicator">
+          <div style="color:#94a3b8;font-size:0.75rem;margin-bottom:4px">ADF Test (Observed Series)</div>
+          <div id="adf-result" style="font-weight:700;font-size:1rem">p = 0.42</div>
+          <div id="adf-verdict" style="font-size:0.75rem;color:#f87171;margin-top:4px">Non-stationary (p &gt; 0.05)</div>
+        </div>
+        <div class="info-box" id="decomp-info">
+          <strong>Additive:</strong> Y(t) = Trend + Seasonal + Residual<br>
+          Use when seasonal variation is roughly constant over time.<br><br>
+          <strong>Multiplicative:</strong> Y(t) = Trend × Seasonal × Residual<br>
+          Use when seasonal variation grows with the trend.
+        </div>
+      </div>
+      <div class="panel">
+        <h4>Component Legend</h4>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:0.8rem">
+          <div style="display:flex;align-items:center;gap:8px"><div style="width:24px;height:3px;background:#2dd4bf;border-radius:2px"></div><span style="color:#2dd4bf">Observed</span><span style="color:#64748b">— raw series</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><div style="width:24px;height:3px;background:#fbbf24;border-radius:2px"></div><span style="color:#fbbf24">Trend</span><span style="color:#64748b">— long-term direction</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><div style="width:24px;height:3px;background:#86efac;border-radius:2px"></div><span style="color:#86efac">Seasonal</span><span style="color:#64748b">— periodic patterns</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><div style="width:24px;height:3px;background:#f87171;border-radius:2px"></div><span style="color:#f87171">Residual</span><span style="color:#64748b">— unexplained noise</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 2: ARIMA -->
+<div id="tab-arima" class="tab-content">
+  <div class="row">
+    <div class="col" style="max-width:680px">
+      <div class="panel">
+        <h3>ARIMA(p,d,q) Explorer</h3>
+        <canvas id="arima-ts-canvas" height="160"></canvas>
+        <div style="margin-top:10px">
+          <canvas id="acf-canvas" height="120"></canvas>
+        </div>
+        <div style="margin-top:8px">
+          <canvas id="pacf-canvas" height="120"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="panel">
+        <h4>ARIMA Parameters</h4>
+        <div class="param-row">
+          <label>p — AR order</label>
+          <input type="range" id="arima-p" min="0" max="5" step="1" value="1" oninput="updateARIMA()">
+          <span class="param-val" id="arima-p-val">1</span>
+        </div>
+        <div class="param-row">
+          <label>d — Differencing</label>
+          <input type="range" id="arima-d" min="0" max="2" step="1" value="0" oninput="updateARIMA()">
+          <span class="param-val" id="arima-d-val">0</span>
+        </div>
+        <div class="param-row">
+          <label>q — MA order</label>
+          <input type="range" id="arima-q" min="0" max="5" step="1" value="1" oninput="updateARIMA()">
+          <span class="param-val" id="arima-q-val">1</span>
+        </div>
+        <div class="formula-box" id="arima-eq" style="margin-top:8px;font-size:0.75rem;text-align:left;line-height:1.8">
+          X_t = c + φ₁X_{t-1} + ε_t + θ₁ε_{t-1}
+        </div>
+      </div>
+      <div class="panel">
+        <h4>Model Quality</h4>
+        <div class="stat-row">
+          <div class="stat-card"><div class="val" id="aic-val">124.3</div><div class="lbl">AIC</div></div>
+          <div class="stat-card"><div class="val" id="bic-val">131.1</div><div class="lbl">BIC</div></div>
+          <div class="stat-card"><div class="val" id="aic-meter">Good</div><div class="lbl">Fit</div></div>
+        </div>
+        <div style="height:8px;border-radius:4px;background:#1a1f2e;margin:4px 0;overflow:hidden">
+          <div id="aic-bar" style="height:100%;border-radius:4px;background:#2dd4bf;width:70%;transition:width .4s"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h4>Parameter Meaning</h4>
+        <div class="info-box" id="arima-info">
+          <strong>p=1 (AR):</strong> Current value depends on 1 lagged value — autoregression.<br><br>
+          <strong>d=0 (Diff):</strong> No differencing — series assumed stationary.<br><br>
+          <strong>q=1 (MA):</strong> Current value depends on 1 lagged error term — moving average.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 3: Forecasting -->
+<div id="tab-forecast" class="tab-content">
+  <div class="row">
+    <div class="col" style="max-width:700px">
+      <div class="panel">
+        <h3>Forecasting Model Comparison</h3>
+        <div class="btn-row" id="model-btns">
+          <button class="model-btn active" style="background:#2dd4bf;color:#0f1117" onclick="toggleModel('naive',this)">Naive</button>
+          <button class="model-btn" onclick="toggleModel('exp',this)">Exp. Smoothing</button>
+          <button class="model-btn" onclick="toggleModel('arima',this)">ARIMA</button>
+          <button class="model-btn" onclick="toggleModel('prophet',this)">Prophet</button>
+          <button class="model-btn" onclick="toggleModel('lgbm',this)">LightGBM</button>
+          <button class="model-btn" onclick="toggleModel('lstm',this)">LSTM</button>
+        </div>
+        <canvas id="forecast-canvas" height="320"></canvas>
+      </div>
+    </div>
+    <div class="col">
+      <div class="panel">
+        <h4>Model Performance Metrics</h4>
+        <table class="comparison-table" id="metrics-table">
+          <thead><tr><th>Model</th><th>MAE</th><th>RMSE</th><th>MAPE</th></tr></thead>
+          <tbody id="metrics-body"></tbody>
+        </table>
+      </div>
+      <div class="panel">
+        <h4>Which Model to Use?</h4>
+        <div class="decision-item">
+          <div class="decision-arrow">→</div>
+          <div><strong style="color:#2dd4bf">&lt; 100 data points</strong><br><span style="color:#94a3b8">Use Exponential Smoothing (Holt-Winters)</span></div>
+        </div>
+        <div class="decision-item">
+          <div class="decision-arrow">→</div>
+          <div><strong style="color:#86efac">Strong seasonality</strong><br><span style="color:#94a3b8">Use Prophet (handles holidays too)</span></div>
+        </div>
+        <div class="decision-item">
+          <div class="decision-arrow">→</div>
+          <div><strong style="color:#fbbf24">Multiple covariates</strong><br><span style="color:#94a3b8">Use LightGBM (feature engineering key)</span></div>
+        </div>
+        <div class="decision-item">
+          <div class="decision-arrow">→</div>
+          <div><strong style="color:#a78bfa">Very long history (&gt;5k pts)</strong><br><span style="color:#94a3b8">Use LSTM / Temporal Fusion Transformer</span></div>
+        </div>
+        <div class="decision-item">
+          <div class="decision-arrow">→</div>
+          <div><strong style="color:#fb923c">No patterns / random walk</strong><br><span style="color:#94a3b8">Naive baseline (hard to beat!)</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 4: Stationarity -->
+<div id="tab-stationarity" class="tab-content">
+  <div class="row">
+    <div class="col" style="max-width:680px">
+      <div class="panel">
+        <h3>Stationarity &amp; Differencing</h3>
+        <div class="btn-row">
+          <button class="diff-btn active" id="diff-0" onclick="setDiff(0,this)">Original</button>
+          <button class="diff-btn" id="diff-1" onclick="setDiff(1,this)">1st Difference</button>
+          <button class="diff-btn" id="diff-2" onclick="setDiff(2,this)">2nd Difference</button>
+          <button class="diff-btn" id="diff-s" onclick="setDiff('seasonal',this)">Seasonal Diff</button>
+        </div>
+        <canvas id="stat-canvas" height="180"></canvas>
+        <div style="margin-top:8px">
+          <canvas id="rolling-canvas" height="130"></canvas>
+        </div>
+        <div style="margin-top:8px">
+          <canvas id="stat-acf-canvas" height="120"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="panel">
+        <h4>ADF Test Result</h4>
+        <div class="adf-indicator" id="stat-adf-indicator">
+          <div style="color:#94a3b8;font-size:0.75rem;margin-bottom:4px">Augmented Dickey-Fuller Test</div>
+          <div id="stat-adf-p" style="font-size:1.5rem;font-weight:700;color:#f87171">p = 0.89</div>
+          <div id="stat-adf-verdict" style="font-size:0.8rem;margin-top:4px;color:#f87171">Non-stationary — difference the series!</div>
+        </div>
+        <canvas id="adf-gauge-canvas" height="80" style="margin-top:8px"></canvas>
+      </div>
+      <div class="panel">
+        <h4>What to Look For</h4>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:0.8rem">
+          <div style="background:#0f172a;border-radius:8px;padding:10px;border-left:3px solid #2dd4bf">
+            <strong style="color:#2dd4bf">Stationary series:</strong><br>
+            <span style="color:#94a3b8">Constant mean, constant variance, ACF decays quickly</span>
+          </div>
+          <div style="background:#0f172a;border-radius:8px;padding:10px;border-left:3px solid #f87171">
+            <strong style="color:#f87171">Non-stationary series:</strong><br>
+            <span style="color:#94a3b8">Trend, growing variance, ACF stays high for many lags</span>
+          </div>
+          <div style="background:#0f172a;border-radius:8px;padding:10px;border-left:3px solid #fbbf24">
+            <strong style="color:#fbbf24">Rolling statistics:</strong><br>
+            <span style="color:#94a3b8">Rolling mean and std should be flat for stationarity</span>
+          </div>
+        </div>
+        <div class="info-box" style="margin-top:10px">
+          <strong>Key insight:</strong> Most ARIMA models require stationary input. Difference until the ADF test gives p &lt; 0.05 — then d = number of differences applied.
+        </div>
+      </div>
+      <div class="panel">
+        <h4>Differencing Operations</h4>
+        <div class="formula-box" id="diff-formula" style="font-size:0.8rem;text-align:left;line-height:1.8">
+          Original: Y_t (with trend + seasonality)
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== TAB SWITCHING ====================
+function switchTab(id) {
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.target.classList.add('active');
+  if (id==='decomp') updateDecomp();
+  if (id==='arima') updateARIMA();
+  if (id==='forecast') { buildForecastData(); drawForecast(); drawMetrics(); }
+  if (id==='stationarity') { setDiff(0, document.getElementById('diff-0')); }
+}
+
+// ==================== UTILITIES ====================
+function seededRand(seed) {
+  let s=seed;
+  return ()=>{ s=(s*1664525+1013904223)&0xffffffff; return (s>>>0)/4294967296; };
+}
+
+function drawLine(ctx, data, x0, y0, xScale, yScale, color, lw=2, alpha=1) {
+  ctx.save();
+  ctx.globalAlpha=alpha;
+  ctx.strokeStyle=color; ctx.lineWidth=lw;
+  ctx.beginPath();
+  data.forEach((v,i)=>{
+    const x=x0+i*xScale, y=y0-v*yScale;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawAxes(ctx, w, h, pad, label_x, label_y, color='#2d3147') {
+  ctx.strokeStyle=color; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(pad,5); ctx.lineTo(pad,h-pad); ctx.lineTo(w-5,h-pad); ctx.stroke();
+  ctx.fillStyle='#64748b'; ctx.font='9px Segoe UI'; ctx.textAlign='center';
+  if(label_x) ctx.fillText(label_x, w/2, h-1);
+  if(label_y) {ctx.save();ctx.translate(12,h/2);ctx.rotate(-Math.PI/2);ctx.fillText(label_y,0,0);ctx.restore();}
+}
+
+function normalize(arr, targetMin, targetMax) {
+  const mn=Math.min(...arr), mx=Math.max(...arr), r=mx-mn||1;
+  return arr.map(v=>targetMin+(v-mn)/r*(targetMax-targetMin));
+}
+
+function rollingMean(arr, w) {
+  return arr.map((v,i)=>{
+    if (i<w) return arr.slice(0,i+1).reduce((a,b)=>a+b,0)/(i+1);
+    return arr.slice(i-w+1,i+1).reduce((a,b)=>a+b,0)/w;
+  });
+}
+
+function rollingStd(arr, w) {
+  return arr.map((v,i)=>{
+    const sl = arr.slice(Math.max(0,i-w+1),i+1);
+    const m = sl.reduce((a,b)=>a+b,0)/sl.length;
+    const variance = sl.reduce((a,b)=>a+(b-m)**2,0)/sl.length;
+    return Math.sqrt(variance);
+  });
+}
+
+// ==================== TAB 1: DECOMPOSITION ====================
+let decompType = 'additive';
+const N = 120;
+
+function generateSeries(trend, amp, noise, period) {
+  const rand = seededRand(42);
+  const data = [];
+  for (let t=0;t<N;t++) {
+    const tr = 50 + trend*t;
+    const sea = amp*Math.sin(2*Math.PI*t/period) + (amp*0.3)*Math.sin(2*Math.PI*t/(period*0.5)+1);
+    const nz = (rand()-0.5)*2*noise;
+    data.push({t, trend:tr, seasonal:sea, noise:nz, observed:tr+sea+nz});
+  }
+  return data;
+}
+
+function generateSeriesMultiplicative(trend, amp, noise, period) {
+  const rand = seededRand(42);
+  const data = [];
+  for (let t=0;t<N;t++) {
+    const tr = 50 + trend*t;
+    const seaMult = 1 + (amp/100)*Math.sin(2*Math.PI*t/period);
+    const nzMult = 1 + ((rand()-0.5)*2*noise/100);
+    data.push({t, trend:tr, seasonal:tr*(seaMult-1), noise:tr*seaMult*(nzMult-1), observed:tr*seaMult*nzMult});
+  }
+  return data;
+}
+
+function setDecompType(type, btn) {
+  decompType=type;
+  document.querySelectorAll('#tab-decomp .btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  updateDecomp();
+}
+
+function updateDecomp() {
+  const trend=parseFloat(document.getElementById('sl-trend').value);
+  const amp=parseFloat(document.getElementById('sl-amp').value);
+  const noise=parseFloat(document.getElementById('sl-noise').value);
+  const period=parseInt(document.getElementById('sl-period').value);
+  document.getElementById('v-trend').textContent=trend.toFixed(2);
+  document.getElementById('v-amp').textContent=amp.toFixed(0);
+  document.getElementById('v-noise').textContent=noise.toFixed(0);
+
+  const data = decompType==='additive'
+    ? generateSeries(trend,amp,noise,period)
+    : generateSeriesMultiplicative(trend,amp,noise,period);
+
+  drawDecompCanvas(data);
+  updateADF(data.map(d=>d.observed), trend);
+}
+
+function updateADF(series, trend) {
+  // Approximate p-value: high trend → high p
+  const pval = Math.min(0.99, 0.1 + trend*0.35 + Math.random()*0.05);
+  document.getElementById('adf-result').textContent = `p = ${pval.toFixed(3)}`;
+  const stationary = pval < 0.05;
+  document.getElementById('adf-verdict').textContent = stationary ? 'Stationary (p < 0.05) ✓' : 'Non-stationary (p > 0.05) — needs differencing';
+  document.getElementById('adf-verdict').style.color = stationary ? '#86efac' : '#f87171';
+}
+
+function drawDecompCanvas(data) {
+  const canvas = document.getElementById('decomp-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  const panels = [
+    {key:'observed', label:'Observed', color:'#2dd4bf'},
+    {key:'trend', label:'Trend', color:'#fbbf24'},
+    {key:'seasonal', label:'Seasonal', color:'#86efac'},
+    {key:'noise', label:'Residual', color:'#f87171'}
+  ];
+
+  const panelH = H/4 - 8;
+  const pad = 52;
+
+  panels.forEach((p, pi) => {
+    const y0 = pi*(panelH+8);
+    const vals = data.map(d=>d[p.key]);
+    const mn=Math.min(...vals), mx=Math.max(...vals), range=mx-mn||1;
+    const baseline = y0+panelH-10;
+    const scale = (panelH-20)/range;
+
+    // Background
+    ctx.fillStyle='#0f172a';
+    ctx.beginPath();ctx.roundRect(0,y0+2,W,panelH-4,4);ctx.fill();
+
+    // Zero line
+    if (p.key!=='observed') {
+      const zy=baseline - (-mn)*scale;
+      ctx.strokeStyle='#2d3147';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+      ctx.beginPath();ctx.moveTo(pad,zy);ctx.lineTo(W-5,zy);ctx.stroke();ctx.setLineDash([]);
+    }
+
+    // Series line
+    ctx.strokeStyle=p.color; ctx.lineWidth=p.key==='observed'?1.5:2;
+    ctx.beginPath();
+    data.forEach((d,i)=>{
+      const x=pad+(i/(N-1))*(W-pad-10);
+      const y=baseline-(d[p.key]-mn)*scale;
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+
+    // Fill under observed
+    if (p.key==='observed') {
+      ctx.globalAlpha=0.08;
+      ctx.fillStyle=p.color;
+      ctx.beginPath();
+      const px0=pad, pxN=pad+(N-1)/(N-1)*(W-pad-10);
+      data.forEach((d,i)=>{
+        const x=pad+(i/(N-1))*(W-pad-10);
+        const y=baseline-(d[p.key]-mn)*scale;
+        i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      });
+      ctx.lineTo(pxN,baseline);ctx.lineTo(px0,baseline);ctx.closePath();ctx.fill();
+      ctx.globalAlpha=1;
+    }
+
+    // Label
+    ctx.fillStyle=p.color;ctx.font='bold 10px Segoe UI';ctx.textAlign='left';
+    ctx.fillText(p.label, 4, y0+panelH/2+4);
+    ctx.fillStyle='#64748b';ctx.font='9px monospace';
+    ctx.fillText(mx.toFixed(1), 4, y0+14);
+    ctx.fillText(mn.toFixed(1), 4, y0+panelH-6);
+  });
+
+  // X axis ticks
+  ctx.strokeStyle='#2d3147';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(pad,H-6);ctx.lineTo(W-5,H-6);ctx.stroke();
+  for (let t=0;t<N;t+=12) {
+    const x=pad+(t/(N-1))*(W-pad-10);
+    ctx.strokeStyle='#2d3147';ctx.beginPath();ctx.moveTo(x,H-10);ctx.lineTo(x,H-3);ctx.stroke();
+    ctx.fillStyle='#64748b';ctx.font='9px Segoe UI';ctx.textAlign='center';
+    ctx.fillText('t='+t, x, H);
+  }
+}
+
+// ==================== TAB 2: ARIMA ====================
+function generateARIMA(p, d, q, n=120) {
+  const rand = seededRand(123);
+  let series = [];
+  const phi = Array.from({length:p}, (_,i)=>0.6/(i+1));
+  const theta = Array.from({length:q}, (_,i)=>0.4/(i+1));
+  const errors = [];
+  for (let t=0;t<n+50;t++) {
+    const e = (rand()-0.5)*2;
+    errors.push(e);
+    let val = 10 + (rand()-0.5)*2;
+    for (let i=0;i<p;i++) if (series.length>i) val+=phi[i]*series[series.length-1-i];
+    for (let i=0;i<q;i++) if (errors.length>i+1) val+=theta[i]*errors[errors.length-2-i];
+    series.push(val);
+  }
+  series = series.slice(50);
+  // Apply integration (add trend)
+  if (d>0) { let acc=50; series=series.map(v=>{acc+=v*0.5; return acc;}); }
+  if (d>1) { let acc=series[0]; series=series.map(v=>{acc+=v*0.1; return acc;}); }
+  return series;
+}
+
+function computeACF(series, maxLag=20) {
+  const n=series.length;
+  const mean=series.reduce((a,b)=>a+b,0)/n;
+  const variance=series.reduce((a,b)=>a+(b-mean)**2,0)/n;
+  const acf=[1];
+  for (let lag=1;lag<=maxLag;lag++) {
+    let cov=0;
+    for (let t=lag;t<n;t++) cov+=(series[t]-mean)*(series[t-lag]-mean);
+    acf.push(cov/(n*variance));
+  }
+  return acf;
+}
+
+function computePACF(series, maxLag=20) {
+  // Yule-Walker approximation
+  const acf=computeACF(series, maxLag);
+  const pacf=[1];
+  for (let lag=1;lag<=maxLag;lag++) {
+    // Simple approximation: PACF ≈ partial correlation
+    let num=acf[lag];
+    for (let j=1;j<lag;j++) num -= pacf[j]*acf[lag-j];
+    let den=1;
+    for (let j=1;j<lag;j++) den -= pacf[j]*acf[j];
+    pacf.push(num/(den||1));
+  }
+  return pacf;
+}
+
+function updateARIMA() {
+  const p=parseInt(document.getElementById('arima-p').value);
+  const d=parseInt(document.getElementById('arima-d').value);
+  const q=parseInt(document.getElementById('arima-q').value);
+  document.getElementById('arima-p-val').textContent=p;
+  document.getElementById('arima-d-val').textContent=d;
+  document.getElementById('arima-q-val').textContent=q;
+
+  const series=generateARIMA(p,d,q);
+  const diffed = d>0 ? diff(d>1?diff(series):series) : series;
+  const acf=computeACF(diffed);
+  const pacf=computePACF(diffed);
+
+  // AIC/BIC (simulated)
+  const k=p+q+1;
+  const aic=Math.round(100+k*8-(5-Math.min(p,2))*10-(5-Math.min(q,2))*5+Math.random()*5);
+  const bic=aic+Math.round(k*Math.log(120)*0.5);
+  document.getElementById('aic-val').textContent=aic;
+  document.getElementById('bic-val').textContent=bic;
+  const fit = aic<120?'Excellent':aic<140?'Good':aic<160?'Fair':'Poor';
+  document.getElementById('aic-meter').textContent=fit;
+  document.getElementById('aic-bar').style.width=Math.max(10,Math.min(95,130-aic*0.3))+'%';
+
+  // Equation
+  let eq='X_t = c';
+  for(let i=1;i<=p;i++) eq+=` + φ${i}X_{t-${i}}`;
+  if(d>0) eq=` (after ${d}× differencing) → ` + eq;
+  eq+=' + ε_t';
+  for(let i=1;i<=q;i++) eq+=` + θ${i}ε_{t-${i}}`;
+  document.getElementById('arima-eq').textContent=eq;
+
+  // Info
+  const infos=[];
+  if(p>0) infos.push(`<strong>p=${p} (AR):</strong> Model uses last ${p} value${p>1?'s':''} — PACF spike at lag ${p} expected.`);
+  if(d>0) infos.push(`<strong>d=${d} (Diff):</strong> Series differenced ${d} time${d>1?'s':''} to remove trend/non-stationarity.`);
+  if(q>0) infos.push(`<strong>q=${q} (MA):</strong> Model uses last ${q} error term${q>1?'s':''} — ACF spike at lag ${q} expected.`);
+  if(infos.length===0) infos.push('ARIMA(0,0,0) is white noise — no temporal dependencies.');
+  document.getElementById('arima-info').innerHTML=infos.join('<br><br>');
+
+  drawARIMATimeSeries(series, d);
+  drawACF(acf, 'acf-canvas', 'ACF', '#2dd4bf', p);
+  drawACF(pacf, 'pacf-canvas', 'PACF', '#86efac', q);
+}
+
+function diff(series) { return series.slice(1).map((v,i)=>v-series[i]); }
+
+function drawARIMATimeSeries(series, d) {
+  const canvas=document.getElementById('arima-ts-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height,pad=35;
+  ctx.clearRect(0,0,W,H);
+
+  const n=series.length;
+  const mn=Math.min(...series), mx=Math.max(...series), range=mx-mn||1;
+
+  ctx.fillStyle='#0f172a';ctx.beginPath();ctx.roundRect(0,0,W,H,4);ctx.fill();
+
+  // Fill
+  ctx.globalAlpha=0.1;ctx.fillStyle='#2dd4bf';
+  ctx.beginPath();
+  series.forEach((v,i)=>{
+    const x=pad+(i/(n-1))*(W-pad-10);
+    const y=H-pad-(v-mn)/range*(H-pad*2);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.lineTo(pad+(n-1)/(n-1)*(W-pad-10),H-pad);
+  ctx.lineTo(pad,H-pad);ctx.closePath();ctx.fill();ctx.globalAlpha=1;
+
+  drawLine(ctx,series,pad,H-pad,(W-pad-10)/(n-1),(H-pad*2)/(range),'#2dd4bf',2);
+  drawAxes(ctx,W,H,pad,'Time (t)','Value');
+
+  ctx.fillStyle='#2dd4bf';ctx.font='10px Segoe UI';ctx.textAlign='left';
+  ctx.fillText(`ARIMA series (d=${d}${d>0?' — integrated':''})`+' n='+n, pad+4, 16);
+}
+
+function drawACF(acf, canvasId, title, color, highlight=0) {
+  const canvas=document.getElementById(canvasId);
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height,pad=35;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0f172a';ctx.beginPath();ctx.roundRect(0,0,W,H,4);ctx.fill();
+
+  const n=acf.length;
+  const bw=Math.max(4,(W-pad-10)/n-2);
+  const ci=1.96/Math.sqrt(120);
+
+  // CI bands
+  const ciY=H-pad-ci*(H-pad*2);
+  const ciY2=H-pad+ci*(H-pad*2);
+  ctx.fillStyle='#2dd4bf11';
+  ctx.fillRect(pad,ciY,W-pad-10,ciY2-ciY);
+  ctx.strokeStyle='#2dd4bf44';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(pad,ciY);ctx.lineTo(W-10,ciY);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(pad,ciY2);ctx.lineTo(W-10,ciY2);ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Zero line
+  ctx.strokeStyle='#2d3147';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(pad,H-pad);ctx.lineTo(W-10,H-pad);ctx.stroke();
+
+  acf.forEach((v,i)=>{
+    if(i===0) return;
+    const x=pad+(i-0.5)*(W-pad-10)/(n-1);
+    const barH=(H-pad*2)*Math.abs(v);
+    const isHighlighted = i<=highlight;
+    ctx.fillStyle = isHighlighted ? color : color+'66';
+    if(v>=0) ctx.fillRect(x-bw/2,H-pad-barH,bw,barH);
+    else ctx.fillRect(x-bw/2,H-pad,bw,barH);
+    if(isHighlighted) {
+      ctx.strokeStyle=color;ctx.lineWidth=1;
+      if(v>=0) ctx.strokeRect(x-bw/2,H-pad-barH,bw,barH);
+      else ctx.strokeRect(x-bw/2,H-pad,bw,barH);
+    }
+  });
+
+  drawAxes(ctx,W,H,pad,'Lag',null);
+  ctx.fillStyle=color;ctx.font='10px Segoe UI';ctx.textAlign='left';
+  ctx.fillText(title,pad+4,16);
+  ctx.fillStyle='#64748b';ctx.font='9px Segoe UI';
+  ctx.fillText(`CI: ±${ci.toFixed(3)}`,W-80,16);
+
+  for (let i=5;i<n;i+=5) {
+    const x=pad+(i-0.5)*(W-pad-10)/(n-1);
+    ctx.fillStyle='#64748b';ctx.font='8px Segoe UI';ctx.textAlign='center';
+    ctx.fillText(i,x,H-1);
+  }
+}
+
+// ==================== TAB 3: FORECASTING ====================
+const MODELS = {
+  naive:  {color:'#64748b',  label:'Naive',          mae:18.2, rmse:22.1, mape:12.3},
+  exp:    {color:'#2dd4bf',  label:'Exp. Smoothing',  mae:12.4, rmse:15.8, mape: 8.1},
+  arima:  {color:'#7dd3fc',  label:'ARIMA',           mae:10.1, rmse:13.2, mape: 6.8},
+  prophet:{color:'#86efac',  label:'Prophet',         mae: 8.3, rmse:11.0, mape: 5.5},
+  lgbm:   {color:'#fbbf24',  label:'LightGBM',        mae: 7.1, rmse: 9.8, mape: 4.8},
+  lstm:   {color:'#a78bfa',  label:'LSTM',            mae: 7.8, rmse:10.5, mape: 5.1},
+};
+
+let activeModels = new Set(['naive']);
+let forecastData = {};
+
+function buildForecastData() {
+  const rand = seededRand(77);
+  const n=80, nh=24;
+  const hist=[];
+  for(let t=0;t<n;t++) {
+    const trend=30+t*0.4;
+    const sea=15*Math.sin(2*Math.PI*t/12);
+    const noise=(rand()-0.5)*12;
+    hist.push(trend+sea+noise);
+  }
+  forecastData.hist=hist;
+  forecastData.n=n; forecastData.nh=nh;
+
+  const lastVal=hist[hist.length-1];
+  const lastTrend=0.4, lastSea=i=>15*Math.sin(2*Math.PI*(n+i)/12);
+
+  // Generate forecasts per model
+  forecastData.naive = Array.from({length:nh},()=>lastVal);
+  forecastData.exp = Array.from({length:nh},(_,i)=>lastVal*(0.9**i)*0.95+hist.slice(-3).reduce((a,b)=>a+b,0)/3*(1-0.9**i)*1.02);
+  forecastData.arima = Array.from({length:nh},(_,i)=>lastVal+lastTrend*(i+1)+lastSea(i+1)*(0.95**i)+(rand()-0.5)*8);
+  forecastData.prophet = Array.from({length:nh},(_,i)=>30+(n+i)*0.4+lastSea(i+1)+(rand()-0.5)*6);
+  forecastData.lgbm = Array.from({length:nh},(_,i)=>30+(n+i)*0.38+lastSea(i+1)*0.98+(rand()-0.5)*5);
+  forecastData.lstm = Array.from({length:nh},(_,i)=>30+(n+i)*0.41+lastSea(i+1)*1.01+(rand()-0.5)*6.5);
+
+  // CI (±)
+  forecastData.ci = {
+    naive: Array.from({length:nh},(_,i)=>5+i*1.5),
+    exp:   Array.from({length:nh},(_,i)=>4+i*1.2),
+    arima: Array.from({length:nh},(_,i)=>3.5+i*1.1),
+    prophet: Array.from({length:nh},(_,i)=>3+i*0.9),
+    lgbm:  Array.from({length:nh},(_,i)=>2.5+i*0.8),
+    lstm:  Array.from({length:nh},(_,i)=>3+i),
+  };
+}
+
+function toggleModel(m, btn) {
+  if (activeModels.has(m)) {
+    if (activeModels.size>1) activeModels.delete(m);
+  } else {
+    activeModels.add(m);
+  }
+  document.querySelectorAll('.model-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.model-btn').forEach(b=>{
+    b.style.background='';b.style.color='';
+  });
+  activeModels.forEach(k=>{
+    document.querySelectorAll('.model-btn').forEach(b=>{
+      if(b.textContent.trim()===MODELS[k].label){
+        b.classList.add('active');
+        b.style.background=MODELS[k].color;
+        b.style.color='#0f1117';
+      }
+    });
+  });
+  drawForecast();
+  drawMetrics();
+}
+
+function drawForecast() {
+  const canvas=document.getElementById('forecast-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height,pad=40;
+  ctx.clearRect(0,0,W,H);
+
+  if (!forecastData.hist) buildForecastData();
+  const {hist,n,nh}=forecastData;
+
+  const allVals=[...hist];
+  activeModels.forEach(k=>{
+    allVals.push(...forecastData[k]);
+    allVals.push(...forecastData[k].map((v,i)=>v+forecastData.ci[k][i]));
+    allVals.push(...forecastData[k].map((v,i)=>v-forecastData.ci[k][i]));
+  });
+  const mn=Math.min(...allVals)-5, mx=Math.max(...allVals)+5, range=mx-mn;
+  const totalT=n+nh;
+  const xScale=(W-pad-10)/(totalT-1);
+  const yScale=(H-pad*2)/range;
+
+  // Historical region
+  ctx.fillStyle='#ffffff08';
+  ctx.fillRect(pad,5,n*xScale,H-pad-5);
+  ctx.fillStyle='#64748b';ctx.font='9px Segoe UI';ctx.textAlign='center';
+  ctx.fillText('Historical',pad+n*xScale/2,H-pad+14);
+  ctx.fillText('Forecast →',pad+(n+nh/2)*xScale,H-pad+14);
+
+  // Forecast boundary
+  ctx.strokeStyle='#2d3147';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(pad+n*xScale,5);ctx.lineTo(pad+n*xScale,H-pad);ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Historical line
+  ctx.strokeStyle='#e2e8f0';ctx.lineWidth=2;
+  ctx.beginPath();
+  hist.forEach((v,i)=>{const x=pad+i*xScale,y=H-pad-(v-mn)*yScale;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();
+
+  // Forecast lines + CI
+  activeModels.forEach(k=>{
+    const m=MODELS[k];
+    const fdata=forecastData[k];
+    const ci=forecastData.ci[k];
+
+    // CI fill
+    ctx.globalAlpha=0.12;ctx.fillStyle=m.color;
+    ctx.beginPath();
+    fdata.forEach((v,i)=>{const x=pad+(n+i)*xScale,y=H-pad-((v+ci[i])-mn)*yScale;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+    for(let i=fdata.length-1;i>=0;i--){const x=pad+(n+i)*xScale,y=H-pad-((fdata[i]-ci[i])-mn)*yScale;ctx.lineTo(x,y);}
+    ctx.closePath();ctx.fill();ctx.globalAlpha=1;
+
+    // Forecast line
+    ctx.strokeStyle=m.color;ctx.lineWidth=2;
+    ctx.beginPath();
+    const lastHistX=pad+(n-1)*xScale, lastHistY=H-pad-(hist[n-1]-mn)*yScale;
+    ctx.moveTo(lastHistX,lastHistY);
+    fdata.forEach((v,i)=>{const x=pad+(n+i)*xScale,y=H-pad-(v-mn)*yScale;ctx.lineTo(x,y);});
+    ctx.stroke();
+
+    // Label
+    const lx=pad+(n+nh-1)*xScale+4;
+    const ly=H-pad-(fdata[nh-1]-mn)*yScale;
+    ctx.fillStyle=m.color;ctx.font='9px Segoe UI';ctx.textAlign='left';
+    ctx.fillText(m.label,lx,ly);
+  });
+
+  drawAxes(ctx,W,H,pad,'Time','Value');
+  // Y axis labels
+  for(let v=Math.ceil(mn/10)*10;v<=mx;v+=10) {
+    const y=H-pad-(v-mn)*yScale;
+    ctx.fillStyle='#64748b';ctx.font='9px monospace';ctx.textAlign='right';
+    ctx.fillText(v,pad-4,y+3);
+  }
+}
+
+function drawMetrics() {
+  const tbody=document.getElementById('metrics-body');
+  tbody.innerHTML='';
+  const bestMAE=Math.min(...Object.values(MODELS).map(m=>m.mae));
+  const bestRMSE=Math.min(...Object.values(MODELS).map(m=>m.rmse));
+  const bestMAPE=Math.min(...Object.values(MODELS).map(m=>m.mape));
+  Object.entries(MODELS).forEach(([k,m])=>{
+    const active=activeModels.has(k);
+    tbody.innerHTML+=`<tr style="opacity:${active?1:0.4}">
+      <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${m.color};margin-right:6px"></span>${m.label}</td>
+      <td class="${m.mae===bestMAE?'best':''}">${m.mae.toFixed(1)}</td>
+      <td class="${m.rmse===bestRMSE?'best':''}">${m.rmse.toFixed(1)}</td>
+      <td class="${m.mape===bestMAPE?'best':''}">${m.mape.toFixed(1)}%</td>
+    </tr>`;
+  });
+}
+
+// ==================== TAB 4: STATIONARITY ====================
+let currentDiff = 0;
+const STAT_N = 120;
+
+function generateNonStationary() {
+  const rand = seededRand(99);
+  const data=[];
+  for(let t=0;t<STAT_N;t++) {
+    const trend=20+t*0.8;
+    const sea=25*Math.sin(2*Math.PI*t/12);
+    const noise=(rand()-0.5)*12;
+    data.push(trend+sea+noise);
+  }
+  return data;
+}
+
+function diff1(series) { return series.slice(1).map((v,i)=>v-series[i]); }
+function diffSeasonal(series, period=12) { return series.slice(period).map((v,i)=>v-series[i]); }
+
+function getADFP(series) {
+  const n=series.length;
+  const mean=series.reduce((a,b)=>a+b,0)/n;
+  const m2=rollingMean(series,10);
+  const variation=m2.reduce((a,v)=>a+Math.abs(v-mean),0)/n;
+  const normalized=variation/Math.abs(mean||1);
+  return Math.min(0.98, Math.max(0.001, normalized*0.8));
+}
+
+function setDiff(d, btn) {
+  currentDiff=d;
+  document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+
+  let orig=generateNonStationary();
+  let series;
+  const diffFormulas={
+    0:'Y_t = Trend + Seasonal + ε (non-stationary)',
+    1:'ΔY_t = Y_t − Y_{t-1}  (removes linear trend)',
+    2:'Δ²Y_t = ΔY_t − ΔY_{t-1}  (removes quadratic trend)',
+    seasonal:'Y_t − Y_{t-12}  (removes seasonal pattern, period=12)'
+  };
+  document.getElementById('diff-formula').textContent=diffFormulas[d]||diffFormulas[0];
+
+  if(d===0) series=orig;
+  else if(d===1) series=diff1(orig);
+  else if(d===2) series=diff1(diff1(orig));
+  else series=diffSeasonal(orig,12);
+
+  const p=getADFP(series);
+  const stationary=p<0.05;
+  document.getElementById('stat-adf-p').textContent=`p = ${p.toFixed(3)}`;
+  document.getElementById('stat-adf-p').style.color=stationary?'#86efac':'#f87171';
+  document.getElementById('stat-adf-verdict').textContent=stationary?'Stationary — ADF p < 0.05 ✓':'Non-stationary — apply more differencing';
+  document.getElementById('stat-adf-verdict').style.color=stationary?'#86efac':'#f87171';
+
+  drawStatCanvas(series, d);
+  drawRollingCanvas(series);
+  drawStatACF(series);
+  drawADFGauge(p);
+}
+
+function drawStatCanvas(series, d) {
+  const canvas=document.getElementById('stat-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height,pad=40;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0f172a';ctx.beginPath();ctx.roundRect(0,0,W,H,4);ctx.fill();
+
+  const n=series.length;
+  const mn=Math.min(...series), mx=Math.max(...series), range=mx-mn||1;
+  const xScale=(W-pad-10)/(n-1), yScale=(H-pad*2)/range;
+
+  // Zero line
+  if(d!==0){
+    const zy=H-pad-(-mn)*yScale;
+    ctx.strokeStyle='#2d3147';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(pad,zy);ctx.lineTo(W-10,zy);ctx.stroke();ctx.setLineDash([]);
+  }
+
+  // Fill
+  ctx.globalAlpha=0.1;ctx.fillStyle='#2dd4bf';
+  ctx.beginPath();
+  series.forEach((v,i)=>{const x=pad+i*xScale,y=H-pad-(v-mn)*yScale;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.lineTo(pad+(n-1)*xScale,H-pad);ctx.lineTo(pad,H-pad);ctx.closePath();ctx.fill();ctx.globalAlpha=1;
+
+  drawLine(ctx,series,pad,H-pad,xScale,yScale,'#2dd4bf',2);
+  drawAxes(ctx,W,H,pad,'Time','');
+
+  const labels={0:'Original (Y_t)',1:'1st Difference (ΔY_t)',2:'2nd Difference (Δ²Y_t)',seasonal:'Seasonal Difference (Y_t − Y_{t-12})'};
+  ctx.fillStyle='#2dd4bf';ctx.font='10px Segoe UI';ctx.textAlign='left';
+  ctx.fillText(labels[currentDiff]||labels[0],pad+4,16);
+
+  // Y labels
+  ctx.fillStyle='#64748b';ctx.font='9px monospace';ctx.textAlign='right';
+  ctx.fillText(mx.toFixed(1),pad-4,12);
+  ctx.fillText(mn.toFixed(1),pad-4,H-pad+3);
+}
+
+function drawRollingCanvas(series) {
+  const canvas=document.getElementById('rolling-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height,pad=40;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0f172a';ctx.beginPath();ctx.roundRect(0,0,W,H,4);ctx.fill();
+
+  const n=series.length;
+  const rm=rollingMean(series,12);
+  const rs=rollingStd(series,12);
+
+  const allV=[...rm,...rs];
+  const mn=Math.min(...allV), mx=Math.max(...allV)||1, range=mx-mn||1;
+  const xScale=(W-pad-10)/(n-1), yScale=(H-pad*2)/range;
+
+  drawLine(ctx,rm,pad,H-pad,xScale,yScale,'#fbbf24',2);
+  drawLine(ctx,rs,pad,H-pad,xScale,yScale,'#f87171',1.5);
+  drawAxes(ctx,W,H,pad,'Time','');
+
+  ctx.fillStyle='#fbbf24';ctx.font='9px Segoe UI';ctx.textAlign='left';
+  ctx.fillText('Rolling Mean (w=12)',pad+4,15);
+  ctx.fillStyle='#f87171';
+  ctx.fillText('Rolling Std (w=12)',pad+4,27);
+
+  const stationary=currentDiff>0;
+  ctx.fillStyle=stationary?'#86efac':'#f87171';ctx.textAlign='right';
+  ctx.fillText(stationary?'Flat ✓':'Trending ✗',W-10,15);
+}
+
+function drawStatACF(series) {
+  const canvas=document.getElementById('stat-acf-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height,pad=35;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0f172a';ctx.beginPath();ctx.roundRect(0,0,W,H,4);ctx.fill();
+
+  const acf=computeACF(series,20);
+  const n=acf.length;
+  const bw=(W-pad-10)/n-2;
+  const ci=1.96/Math.sqrt(series.length);
+  const ciY=H-pad-ci*(H-pad*2);
+  const ciY2=H-pad+ci*(H-pad*2);
+
+  ctx.fillStyle='#2dd4bf11';ctx.fillRect(pad,ciY,W-pad-10,ciY2-ciY);
+  ctx.strokeStyle='#2dd4bf44';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(pad,ciY);ctx.lineTo(W-10,ciY);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(pad,ciY2);ctx.lineTo(W-10,ciY2);ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.strokeStyle='#2d3147';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(pad,H-pad);ctx.lineTo(W-10,H-pad);ctx.stroke();
+
+  acf.forEach((v,i)=>{
+    if(i===0) return;
+    const x=pad+(i-0.5)*(W-pad-10)/(n-1);
+    const barH=(H-pad*2)*Math.abs(v);
+    const outsideCI=Math.abs(v)>ci;
+    ctx.fillStyle=outsideCI?'#f87171':'#2dd4bf44';
+    if(v>=0)ctx.fillRect(x-bw/2,H-pad-barH,bw,barH);
+    else ctx.fillRect(x-bw/2,H-pad,bw,barH);
+    if(outsideCI){
+      ctx.strokeStyle='#f87171';ctx.lineWidth=1;
+      if(v>=0)ctx.strokeRect(x-bw/2,H-pad-barH,bw,barH);
+      else ctx.strokeRect(x-bw/2,H-pad,bw,barH);
+    }
+    if(i%5===0){ctx.fillStyle='#64748b';ctx.font='8px Segoe UI';ctx.textAlign='center';ctx.fillText(i,x,H-1);}
+  });
+
+  drawAxes(ctx,W,H,pad,'Lag',null);
+  ctx.fillStyle='#2dd4bf';ctx.font='10px Segoe UI';ctx.textAlign='left';
+  ctx.fillText('ACF — '+(currentDiff===0?'Slow decay → non-stationary':'Quick decay → stationary'),pad+4,14);
+}
+
+function drawADFGauge(p) {
+  const canvas=document.getElementById('adf-gauge-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  const pad=20, gw=W-pad*2, gh=16;
+  const gy=H/2-gh/2;
+
+  // Background gradient
+  const grad=ctx.createLinearGradient(pad,0,pad+gw,0);
+  grad.addColorStop(0,'#86efac');grad.addColorStop(0.05,'#86efac');
+  grad.addColorStop(0.05,'#fbbf24');grad.addColorStop(0.5,'#fbbf24');
+  grad.addColorStop(0.5,'#f87171');grad.addColorStop(1,'#f87171');
+  ctx.fillStyle=grad;
+  ctx.beginPath();ctx.roundRect(pad,gy,gw,gh,8);ctx.fill();
+
+  // Threshold line at p=0.05
+  const threshX=pad+0.05*gw;
+  ctx.strokeStyle='#fff';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(threshX,gy-8);ctx.lineTo(threshX,gy+gh+8);ctx.stroke();
+  ctx.fillStyle='#fff';ctx.font='9px Segoe UI';ctx.textAlign='center';
+  ctx.fillText('0.05',threshX,gy-10);
+
+  // Pointer
+  const px=Math.min(pad+Math.min(p,1)*gw, W-pad-4);
+  ctx.fillStyle='#fff';
+  ctx.beginPath();ctx.moveTo(px,gy+gh+2);ctx.lineTo(px-6,gy+gh+12);ctx.lineTo(px+6,gy+gh+12);ctx.closePath();ctx.fill();
+
+  ctx.fillStyle='#94a3b8';ctx.font='9px Segoe UI';
+  ctx.textAlign='left';ctx.fillText('p=0 (Stationary)',pad,gy+gh+22);
+  ctx.textAlign='right';ctx.fillText('p=1 (Non-stationary)',W-pad,gy+gh+22);
+  ctx.textAlign='center';ctx.fillText('ADF p-value',W/2,gy-2);
+}
+
+// ==================== INIT ====================
+buildForecastData();
+window.addEventListener('load', ()=>{
+  updateDecomp();
+  updateARIMA();
+  drawForecast();
+  drawMetrics();
+  setDiff(0, document.getElementById('diff-0'));
+  // Resize canvases to match CSS width
+  document.querySelectorAll('canvas').forEach(c=>{
+    c.width=c.parentElement.clientWidth||600;
+  });
+  updateDecomp();
+  updateARIMA();
+  drawForecast();
+  setDiff(0,document.getElementById('diff-0'));
+});
+window.addEventListener('resize', ()=>{
+  document.querySelectorAll('canvas').forEach(c=>{
+    c.width=c.parentElement.clientWidth||600;
+  });
+  const activeTab=document.querySelector('.tab-content.active');
+  if(activeTab.id==='tab-decomp') updateDecomp();
+  if(activeTab.id==='tab-arima') updateARIMA();
+  if(activeTab.id==='tab-forecast') {drawForecast();drawMetrics();}
+  if(activeTab.id==='tab-stationarity') setDiff(currentDiff,document.getElementById(currentDiff===0?'diff-0':currentDiff===1?'diff-1':currentDiff===2?'diff-2':'diff-s'));
+});
+</script>
+
+
+<style>
+/* ── Chapter sidenav ── */
+.chap-sidenav {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 8888;
+}
+.chap-sidenav-toggle {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  color: #7dd3fc;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px #00000060;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+.chap-sidenav-toggle:hover { background: #0369a1; border-color: #7dd3fc; }
+.chap-sidenav-menu {
+  position: absolute;
+  bottom: 52px;
+  right: 0;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  border-radius: 14px;
+  padding: 10px 6px;
+  min-width: 220px;
+  max-height: 70vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 40px #00000080;
+  display: none;
+  scrollbar-width: thin;
+  scrollbar-color: #2d3147 transparent;
+}
+.chap-sidenav-menu.open { display: block; }
+.chap-sidenav-menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #94a3b8;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.chap-sidenav-menu a:hover { background: #0f172a; color: #e2e8f0; }
+.chap-sidenav-menu a.current { background: #0369a133; color: #7dd3fc; font-weight: 600; }
+.chap-sidenav-menu .chap-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #4b5563;
+  min-width: 28px;
+}
+.chap-sidenav-menu .menu-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #4b5563;
+  padding: 4px 12px 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+@media (max-width: 480px) {
+  .chap-sidenav { bottom: 12px; right: 12px; }
+  .chap-sidenav-menu { right: 0; min-width: 180px; }
+}
+</style>
+
+<div class="chap-sidenav">
+  <div class="chap-sidenav-menu" id="chapMenu">
+    <div class="menu-header">ML Field Guide</div>
+      <a href="ch01_math_foundations.html"><span class="chap-num">Ch 01</span>Math Foundations</a>
+      <a href="ch02_statistics.html"><span class="chap-num">Ch 02</span>Statistics</a>
+      <a href="ch03_python.html"><span class="chap-num">Ch 03</span>Python for ML</a>
+      <a href="ch04_feature_engineering.html"><span class="chap-num">Ch 04</span>Feature Engineering</a>
+      <a href="ch05_supervised_learning.html"><span class="chap-num">Ch 05</span>Supervised Learning</a>
+      <a href="ch06_model_evaluation.html"><span class="chap-num">Ch 06</span>Model Evaluation</a>
+      <a href="ch07_unsupervised.html"><span class="chap-num">Ch 07</span>Unsupervised Learning</a>
+      <a href="ch08_recommendations.html"><span class="chap-num">Ch 08</span>Recommendations</a>
+      <a href="ch09_neural_networks.html"><span class="chap-num">Ch 09a</span>Neural Networks</a>
+      <a href="ch09_cnn_architectures.html"><span class="chap-num">Ch 09b</span>CNN Architectures</a>
+      <a href="ch10_nlp_transformers.html"><span class="chap-num">Ch 10</span>NLP & Transformers</a>
+      <a href="ch11_reinforcement_learning.html"><span class="chap-num">Ch 11</span>Reinforcement Learning</a>
+      <a href="ch12_time_series.html" class="current"><span class="chap-num">Ch 12</span>Time Series</a>
+      <a href="ch13_sql.html"><span class="chap-num">Ch 13</span>SQL for ML</a>
+      <a href="ch14_big_data.html"><span class="chap-num">Ch 14</span>Big Data</a>
+      <a href="ch15_mlops.html"><span class="chap-num">Ch 15</span>MLOps</a>
+      <a href="ch16_aws.html"><span class="chap-num">Ch 16</span>AWS for ML</a>
+      <a href="ch17_responsible_ai.html"><span class="chap-num">Ch 17</span>Responsible AI</a>
+      <a href="ch18_interview_prep.html"><span class="chap-num">Ch 18</span>Interview Prep</a>
+  </div>
+  <button class="chap-sidenav-toggle" onclick="document.getElementById('chapMenu').classList.toggle('open')" title="Chapter navigation">☰</button>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Model evaluation interactive: confusion matrix, ROC/AUC, cross-validation, bias-variance.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 6 · Model Evaluation — The ML Field Guide</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0f1117;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;padding:24px}
+  h1{text-align:center;font-size:1.6rem;color:#7dd3fc;margin-bottom:6px;letter-spacing:.5px}
+  .subtitle{text-align:center;color:#94a3b8;font-size:.9rem;margin-bottom:24px}
+  .tabs{display:flex;gap:4px;margin-bottom:20px;background:#1e2130;padding:6px;border-radius:12px;border:1px solid #2d3147}
+  .tab{flex:1;padding:10px 8px;background:transparent;border:none;color:#94a3b8;cursor:pointer;border-radius:8px;font-size:.85rem;font-family:inherit;transition:all .2s}
+  .tab.active{background:#0369a1;color:#e2e8f0;font-weight:600}
+  .tab:hover:not(.active){background:#2d3147;color:#e2e8f0}
+  .panel{display:none;animation:fadeIn .3s ease}
+  .panel.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+  .card{background:#1e2130;border:1px solid #2d3147;border-radius:12px;padding:16px}
+  .card-title{font-size:.8rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px}
+  label{font-size:.82rem;color:#94a3b8;display:block;margin-bottom:4px}
+  input[type=range]{width:100%;accent-color:#7dd3fc;cursor:pointer}
+  select{background:#0f172a;border:1px solid #2d3147;color:#e2e8f0;padding:6px 10px;border-radius:8px;font-size:.82rem;width:100%;cursor:pointer}
+  button{background:#0369a1;border:none;color:#e2e8f0;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:.82rem;font-family:inherit;transition:all .2s}
+  button:hover{background:#0284c7;transform:translateY(-1px)}
+  button.secondary{background:#2d3147}
+  button.secondary:hover{background:#3d4157}
+  .metric-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .metric-name{font-size:.78rem;color:#94a3b8;width:90px;flex-shrink:0}
+  .metric-bar-bg{flex:1;background:#0f172a;border-radius:4px;height:8px;overflow:hidden}
+  .metric-bar{height:100%;border-radius:4px;transition:width .4s ease}
+  .metric-val{font-size:.82rem;font-weight:700;width:44px;text-align:right;flex-shrink:0}
+  .formula{font-size:.75rem;color:#64748b;font-family:monospace;background:#0f172a;padding:4px 8px;border-radius:4px;margin-top:4px}
+  .big-metric{font-size:2.2rem;font-weight:700;color:#7dd3fc}
+  .big-metric-label{font-size:.78rem;color:#94a3b8;margin-top:2px}
+  canvas{display:block;border-radius:8px}
+  .flex{display:flex;gap:12px;align-items:center}
+  .flex-col{display:flex;flex-direction:column;gap:8px}
+  .chip{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600;margin:2px}
+  .legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px}
+  .info-box{background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:10px;font-size:.78rem;color:#94a3b8;margin-top:8px}
+  .scenario-btns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .scenario-btn{background:#2d3147;border:none;color:#94a3b8;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:.78rem;font-family:inherit;transition:all .2s}
+  .scenario-btn:hover,.scenario-btn.active{background:#0369a1;color:#e2e8f0}
+  .conf-matrix{display:grid;grid-template-columns:auto 1fr 1fr;grid-template-rows:auto 1fr 1fr;gap:4px;margin:8px 0}
+  .conf-cell{border-radius:8px;padding:12px 8px;text-align:center;position:relative}
+  .conf-label{color:#64748b;font-size:.72rem;display:flex;align-items:center;justify-content:center;font-weight:600}
+  .conf-val{font-size:1.6rem;font-weight:700}
+  .conf-sub{font-size:.68rem;color:#94a3b8;margin-top:2px}
+  .toggle-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .toggle{display:flex;background:#0f172a;border-radius:8px;padding:3px;gap:2px}
+  .toggle-btn{padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:.78rem;font-family:inherit;color:#64748b;background:transparent;transition:all .2s}
+  .toggle-btn.active{background:#0369a1;color:#e2e8f0}
+  .auc-guide{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+  .auc-row{display:flex;align-items:center;gap:8px;font-size:.75rem}
+  .auc-bar{height:6px;border-radius:3px;background:linear-gradient(to right,#f87171,#fbbf24,#86efac)}
+  .cv-strip{height:28px;border-radius:6px;overflow:hidden;display:flex;gap:2px;margin:4px 0}
+  .cv-block{border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:600;transition:all .3s}
+  .score-row{display:flex;align-items:center;gap:8px;margin:3px 0;font-size:.78rem}
+  .score-num{color:#7dd3fc;font-weight:700;width:44px}
+  .reg-point{cursor:grab}
+  .reg-point:active{cursor:grabbing}
+  #roc-canvas,.cv-canvas,#reg-canvas{background:#1a1f2e;border-radius:8px}
+  .pr-toggle-row{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+  .tooltip{position:fixed;background:#1e2130;border:1px solid #2d3147;border-radius:8px;padding:8px 12px;font-size:.75rem;pointer-events:none;z-index:100;display:none;color:#e2e8f0}
+  .section-title{font-size:.9rem;font-weight:600;color:#e2e8f0;margin-bottom:8px}
+  .warn{background:#451a03;border:1px solid #92400e;border-radius:8px;padding:8px 12px;font-size:.75rem;color:#fbbf24;margin-top:8px}
+
+  /* ── Shared improvements ── */
+  body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important; }
+  code, pre, .code-block, .formula, .mono, [style*="monospace"], [style*="Courier"] { font-family: 'JetBrains Mono', 'Cascadia Code', 'Courier New', monospace !important; }
+
+  /* Smoother scrolling */
+  html { scroll-behavior: smooth; }
+
+  /* Focus ring for accessibility */
+  button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid #7dd3fc;
+    outline-offset: 2px;
+  }
+
+  /* Improve tab-nav overflow on small screens */
+  .tab-nav, .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .tab-nav::-webkit-scrollbar, .tabs::-webkit-scrollbar { display: none; }
+
+  /* Mobile responsive improvements */
+  @media (max-width: 768px) {
+    .page-header { padding: 24px 20px 18px !important; }
+    .tab-panel { padding: 20px !important; }
+    .tab-nav { padding: 16px 20px 0 !important; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
+    .grid2, .grid3 { grid-template-columns: 1fr !important; }
+    .page-title { font-size: 22px !important; }
+    h1 { font-size: 1.4rem !important; }
+  }
+  @media (max-width: 480px) {
+    body { padding: 0 0 40px 0 !important; }
+    .tab-btn { padding: 8px 14px !important; font-size: 12px !important; }
+    .btn { padding: 6px 12px !important; font-size: 12px !important; }
+  }
+
+  /* Better selection color */
+  ::selection { background: #1d4ed880; color: #e0f2fe; }
+
+  /* Smoother canvas rendering */
+  canvas { image-rendering: -webkit-optimize-contrast; }
+
+  /* Tooltip z-index fix */
+  .tooltip { z-index: 9999 !important; }
+
+  /* Code block horizontal scroll indicator */
+  .code-block { overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>Chapter 6 — Model Evaluation</h1>
+<p class="subtitle">Interactive visualizations for classification and regression metrics</p>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab(0)">Confusion Matrix &amp; Threshold</button>
+  <button class="tab" onclick="switchTab(1)">ROC Curve Builder</button>
+  <button class="tab" onclick="switchTab(2)">Cross-Validation</button>
+  <button class="tab" onclick="switchTab(3)">Regression Metrics</button>
+</div>
+
+<!-- TAB 1: Confusion Matrix -->
+<div class="panel active" id="tab0">
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="card">
+        <div class="card-title">Preset Scenarios</div>
+        <div class="scenario-btns">
+          <button class="scenario-btn active" id="sc0" onclick="setScenario(0)">Balanced</button>
+          <button class="scenario-btn" id="sc1" onclick="setScenario(1)">Fraud Detection</button>
+          <button class="scenario-btn" id="sc2" onclick="setScenario(2)">Spam Filter</button>
+          <button class="scenario-btn" id="sc3" onclick="setScenario(3)">Medical Diagnosis</button>
+        </div>
+        <label>Classification Threshold: <strong id="thresh-val">0.50</strong></label>
+        <input type="range" id="thresh" min="0" max="100" value="50" oninput="updateThreshold()">
+        <div class="info-box" id="scenario-desc">All classes balanced. Adjust the threshold to see how metrics change.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Confusion Matrix</div>
+        <div style="display:grid;grid-template-columns:28px 1fr 1fr;grid-template-rows:28px 1fr 1fr;gap:4px">
+          <div></div>
+          <div class="conf-label" style="font-size:.7rem;color:#7dd3fc">Pred +</div>
+          <div class="conf-label" style="font-size:.7rem;color:#f87171">Pred −</div>
+          <div class="conf-label" style="writing-mode:vertical-rl;text-orientation:mixed;font-size:.7rem;color:#7dd3fc;transform:rotate(180deg)">Act +</div>
+          <div class="conf-cell" style="background:#064e3b" id="cell-tp">
+            <div style="font-size:.65rem;color:#86efac;font-weight:600">TP</div>
+            <div class="conf-val" style="color:#86efac" id="tp-val">85</div>
+            <div class="conf-sub" id="tp-pct">True Positive</div>
+          </div>
+          <div class="conf-cell" style="background:#450a0a" id="cell-fn">
+            <div style="font-size:.65rem;color:#f87171;font-weight:600">FN</div>
+            <div class="conf-val" style="color:#f87171" id="fn-val">15</div>
+            <div class="conf-sub">False Negative</div>
+          </div>
+          <div class="conf-label" style="writing-mode:vertical-rl;text-orientation:mixed;font-size:.7rem;color:#f87171;transform:rotate(180deg)">Act −</div>
+          <div class="conf-cell" style="background:#450a0a" id="cell-fp">
+            <div style="font-size:.65rem;color:#fbbf24;font-weight:600">FP</div>
+            <div class="conf-val" style="color:#fbbf24" id="fp-val">20</div>
+            <div class="conf-sub">False Positive</div>
+          </div>
+          <div class="conf-cell" style="background:#064e3b" id="cell-tn">
+            <div style="font-size:.65rem;color:#86efac;font-weight:600">TN</div>
+            <div class="conf-val" style="color:#86efac" id="tn-val">80</div>
+            <div class="conf-sub">True Negative</div>
+          </div>
+        </div>
+        <div class="info-box" style="margin-top:8px;font-size:.72rem">
+          Total: <strong id="total-count">200</strong> samples &nbsp;|&nbsp;
+          Positives: <strong id="pos-count">100</strong> &nbsp;|&nbsp;
+          Negatives: <strong id="neg-count">100</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Metrics Dashboard</div>
+      <div id="metrics-display"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 2: ROC Curve -->
+<div class="panel" id="tab1">
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="card">
+        <div class="card-title">Model &amp; Curve Settings</div>
+        <div style="margin-bottom:10px">
+          <label>Model comparison</label>
+          <select id="model-select" onchange="updateROC()">
+            <option value="0">Model A — Logistic Regression (AUC≈0.82)</option>
+            <option value="1">Model B — Random Forest (AUC≈0.91)</option>
+            <option value="2">Model C — SVM (AUC≈0.87)</option>
+            <option value="3">Random Classifier (AUC=0.50)</option>
+          </select>
+        </div>
+        <label>Threshold: <strong id="roc-thresh-val">0.50</strong></label>
+        <input type="range" id="roc-thresh" min="0" max="100" value="50" oninput="updateROCThresh()">
+        <div class="toggle-row" style="margin-top:10px">
+          <span style="font-size:.78rem;color:#94a3b8">Curve type:</span>
+          <div class="toggle">
+            <button class="toggle-btn active" id="roc-btn" onclick="setCurveType('roc')">ROC</button>
+            <button class="toggle-btn" id="pr-btn" onclick="setCurveType('pr')">Precision-Recall</button>
+          </div>
+        </div>
+        <div class="info-box" id="curve-info" style="margin-top:8px;font-size:.75rem">
+          ROC curve plots TPR (Recall) vs FPR. Better for balanced datasets.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Current Threshold Metrics</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="roc-metrics">
+        </div>
+        <div class="auc-guide">
+          <div style="font-size:.75rem;color:#94a3b8;margin-bottom:4px;font-weight:600">AUC Interpretation</div>
+          <div class="auc-row"><span style="width:30px;color:#f87171">0.50</span><span style="color:#94a3b8">Random classifier</span></div>
+          <div class="auc-row"><span style="width:30px;color:#fbbf24">0.70</span><span style="color:#94a3b8">Fair model</span></div>
+          <div class="auc-row"><span style="width:30px;color:#7dd3fc">0.80</span><span style="color:#94a3b8">Good model</span></div>
+          <div class="auc-row"><span style="width:30px;color:#86efac">0.90</span><span style="color:#94a3b8">Excellent model</span></div>
+          <div class="auc-row"><span style="width:30px;color:#a78bfa">1.00</span><span style="color:#94a3b8">Perfect classifier</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column">
+      <div class="card-title" id="roc-title">ROC Curve — <span id="roc-auc-label" style="color:#86efac">AUC = 0.82</span></div>
+      <canvas id="roc-canvas" width="440" height="380"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 3: Cross-Validation -->
+<div class="panel" id="tab2">
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div class="card">
+      <div class="card-title">Split Strategy</div>
+      <div class="scenario-btns" id="cv-btns">
+        <button class="scenario-btn active" onclick="setCVMethod('holdout')">Holdout (70/15/15)</button>
+        <button class="scenario-btn" onclick="setCVMethod('kfold3')">K-Fold k=3</button>
+        <button class="scenario-btn" onclick="setCVMethod('kfold5')">K-Fold k=5</button>
+        <button class="scenario-btn" onclick="setCVMethod('kfold10')">K-Fold k=10</button>
+        <button class="scenario-btn" onclick="setCVMethod('stratified')">Stratified K-Fold</button>
+        <button class="scenario-btn" onclick="setCVMethod('timeseries')">Time-Series Split</button>
+        <button class="scenario-btn" onclick="setCVMethod('loo')">Leave-One-Out</button>
+      </div>
+    </div>
+    <div class="grid2">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="card">
+          <div class="card-title">Data Splits Visualization</div>
+          <div id="cv-strips"></div>
+          <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
+            <div class="flex"><div class="legend-dot" style="background:#3b82f6"></div><span style="font-size:.75rem;color:#94a3b8">Training</span></div>
+            <div class="flex"><div class="legend-dot" style="background:#fbbf24"></div><span style="font-size:.75rem;color:#94a3b8">Validation</span></div>
+            <div class="flex"><div class="legend-dot" style="background:#86efac"></div><span style="font-size:.75rem;color:#94a3b8">Test</span></div>
+            <div class="flex"><div class="legend-dot" style="background:#64748b"></div><span style="font-size:.75rem;color:#94a3b8">Not used</span></div>
+          </div>
+          <div class="flex" style="gap:8px;margin-top:10px">
+            <button onclick="cvPrev()" id="cv-prev" style="padding:6px 14px">&#9664; Prev Fold</button>
+            <button onclick="cvNext()" id="cv-next" style="padding:6px 14px">Next Fold &#9654;</button>
+            <button onclick="cvAnimate()" id="cv-anim" class="secondary" style="padding:6px 14px">&#9654; Animate</button>
+            <span style="font-size:.78rem;color:#94a3b8;align-self:center" id="cv-fold-label">Fold 1 of 1</span>
+          </div>
+          <div id="cv-warning" style="display:none" class="warn"></div>
+          <div id="cv-info" class="info-box" style="margin-top:8px;font-size:.75rem"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Fold Scores &amp; Variance</div>
+        <div id="cv-scores"></div>
+        <canvas id="cv-canvas" width="340" height="180" style="margin-top:10px"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 4: Regression Metrics -->
+<div class="panel" id="tab3">
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="card">
+        <div class="card-title">Controls</div>
+        <label>Outlier magnitude: <strong id="outlier-val">0</strong></label>
+        <input type="range" id="outlier-slider" min="0" max="100" value="0" oninput="updateOutlier()">
+        <div style="margin-top:8px">
+          <button onclick="resetRegPoints()" class="secondary">Reset Points</button>
+          <span style="font-size:.75rem;color:#94a3b8;margin-left:8px">Drag points to move</span>
+        </div>
+        <div class="info-box" style="margin-top:8px;font-size:.75rem">
+          Drag the predicted points (circles) on the scatter plot to explore how each metric responds.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Metrics</div>
+        <div id="reg-metrics-display"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Sensitivity to Outliers</div>
+        <canvas id="reg-bar-canvas" width="300" height="160"></canvas>
+        <div class="info-box" style="margin-top:8px;font-size:.72rem" id="reg-bar-info">
+          MSE and RMSE grow quadratically with outliers; MAE grows linearly.
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Actual vs Predicted — <span style="color:#94a3b8;font-size:.8rem">drag the predicted points</span></div>
+      <canvas id="reg-canvas" width="460" height="380"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+// ============================================================
+// TAB 1: CONFUSION MATRIX
+// ============================================================
+const scenarios = [
+  {desc:"All classes balanced. Adjust the threshold to see how metrics change.", totalP:100, totalN:100, label:"Balanced"},
+  {desc:"Fraud detection: Very few frauds (<1%), missing a fraud is costly. High recall is critical.", totalP:10, totalN:190, label:"Fraud Detection"},
+  {desc:"Spam filter: Some spam is okay; we don't want to lose real emails. Precision matters.", totalP:80, totalN:120, label:"Spam Filter"},
+  {desc:"Medical diagnosis: Both false positives and negatives are costly. Balance precision and recall.", totalP:60, totalN:140, label:"Medical Diagnosis"}
+];
+let curScenario = 0;
+const metricsInfo = [
+  {name:"Accuracy",  color:"#7dd3fc", formula:"(TP+TN)/(TP+FP+FN+TN)", when:"Works well for balanced classes"},
+  {name:"Precision", color:"#fbbf24", formula:"TP/(TP+FP)", when:"When FP is costly (spam filter)"},
+  {name:"Recall",    color:"#86efac", formula:"TP/(TP+FN)", when:"When FN is costly (fraud, cancer)"},
+  {name:"F1",        color:"#a78bfa", formula:"2·TP/(2·TP+FP+FN)", when:"Harmonic mean of precision & recall"},
+  {name:"Specificity",color:"#fb923c",formula:"TN/(TN+FP)", when:"True Negative Rate"}
+];
+
+function tpRate(t, totalP){return Math.min(1, Math.max(0, 1 - Math.pow(t, 0.8)))}
+function fpRate(t, totalN){return Math.min(1, Math.max(0, 1 - Math.pow(t, 1.5)))}
+
+function calcCM(thresh01){
+  const s = scenarios[curScenario];
+  const tp = Math.round(tpRate(thresh01, s.totalP) * s.totalP);
+  const fn = s.totalP - tp;
+  const fp = Math.round(fpRate(thresh01, s.totalN) * s.totalN);
+  const tn = s.totalN - fp;
+  return {tp,fn,fp,tn,totalP:s.totalP,totalN:s.totalN};
+}
+
+function calcMetrics(cm){
+  const {tp,fn,fp,tn} = cm;
+  const acc  = (tp+tn)/(tp+fn+fp+tn);
+  const prec = tp+fp>0 ? tp/(tp+fp) : 0;
+  const rec  = tp+fn>0 ? tp/(tp+fn) : 0;
+  const f1   = prec+rec>0 ? 2*prec*rec/(prec+rec) : 0;
+  const spec = tn+fp>0 ? tn/(tn+fp) : 0;
+  return {acc,prec,rec,f1,spec};
+}
+
+function setScenario(i){
+  curScenario = i;
+  document.querySelectorAll('.scenario-btn').forEach((b,j)=>b.classList.toggle('active',j===i));
+  document.getElementById('scenario-desc').textContent = scenarios[i].desc;
+  updateThreshold();
+}
+
+function updateThreshold(){
+  const t = parseInt(document.getElementById('thresh').value)/100;
+  document.getElementById('thresh-val').textContent = t.toFixed(2);
+  const cm = calcCM(t);
+  document.getElementById('tp-val').textContent = cm.tp;
+  document.getElementById('fn-val').textContent = cm.fn;
+  document.getElementById('fp-val').textContent = cm.fp;
+  document.getElementById('tn-val').textContent = cm.tn;
+  document.getElementById('total-count').textContent = cm.tp+cm.fn+cm.fp+cm.tn;
+  document.getElementById('pos-count').textContent = cm.totalP;
+  document.getElementById('neg-count').textContent = cm.totalN;
+  const m = calcMetrics(cm);
+  const vals = [m.acc, m.prec, m.rec, m.f1, m.spec];
+  let html = '';
+  metricsInfo.forEach((info,i)=>{
+    const pct = (vals[i]*100).toFixed(1);
+    html += `<div style="margin-bottom:12px">
+      <div class="flex" style="justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:.82rem;font-weight:600;color:${info.color}">${info.name}</span>
+        <span style="font-size:.9rem;font-weight:700;color:${info.color}">${pct}%</span>
+      </div>
+      <div class="metric-bar-bg"><div class="metric-bar" style="width:${pct}%;background:${info.color}"></div></div>
+      <div class="formula">${info.formula}</div>
+      <div style="font-size:.7rem;color:#64748b;margin-top:2px">${info.when}</div>
+    </div>`;
+  });
+  document.getElementById('metrics-display').innerHTML = html;
+}
+
+// ============================================================
+// TAB 2: ROC CURVE
+// ============================================================
+const rocModels = [
+  {name:"Logistic Regression", auc:0.82, color:"#7dd3fc"},
+  {name:"Random Forest", auc:0.91, color:"#86efac"},
+  {name:"SVM", auc:0.87, color:"#a78bfa"},
+  {name:"Random", auc:0.50, color:"#64748b"}
+];
+let curveType = 'roc';
+
+function generateROCPoints(auc){
+  const pts = [{x:0,y:0}];
+  const n = 60;
+  for(let i=1;i<n;i++){
+    const fpr = i/n;
+    const tpr = Math.min(1, Math.pow(fpr, Math.pow(1-auc,1.5)*2) * (1 + (auc-0.5)*1.5));
+    pts.push({x:fpr, y:Math.min(1,tpr)});
+  }
+  pts.push({x:1,y:1});
+  return pts;
+}
+
+function generatePRPoints(auc){
+  const pts = [];
+  const pos_rate = 0.3;
+  const n = 60;
+  for(let i=n;i>=0;i--){
+    const recall = i/n;
+    const precision = pos_rate + (1-pos_rate)*Math.pow(recall, (1-auc)*3+0.3) * auc;
+    pts.push({x:recall, y:Math.min(1,Math.max(pos_rate,precision))});
+  }
+  return pts.reverse();
+}
+
+function calcAUC(pts){
+  let area = 0;
+  for(let i=1;i<pts.length;i++){
+    area += (pts[i].x-pts[i-1].x)*(pts[i].y+pts[i-1].y)/2;
+  }
+  return area;
+}
+
+function updateROC(){
+  updateROCThresh();
+}
+
+function setCurveType(t){
+  curveType = t;
+  document.getElementById('roc-btn').classList.toggle('active', t==='roc');
+  document.getElementById('pr-btn').classList.toggle('active', t==='pr');
+  document.getElementById('roc-title').innerHTML = t==='roc'
+    ? 'ROC Curve — <span id="roc-auc-label" style="color:#86efac">AUC = </span>'
+    : 'Precision-Recall Curve — <span id="roc-auc-label" style="color:#86efac">AUC = </span>';
+  document.getElementById('curve-info').textContent = t==='roc'
+    ? 'ROC curve plots TPR (Recall) vs FPR. Better for balanced datasets.'
+    : 'Precision-Recall curve is more informative for highly imbalanced datasets.';
+  drawROCCanvas();
+}
+
+function updateROCThresh(){
+  const t = parseInt(document.getElementById('roc-thresh').value)/100;
+  document.getElementById('roc-thresh-val').textContent = t.toFixed(2);
+  drawROCCanvas();
+}
+
+function drawROCCanvas(){
+  const canvas = document.getElementById('roc-canvas');
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  const pad = {l:52,r:20,t:20,b:48};
+  const cw = W-pad.l-pad.r, ch = H-pad.t-pad.b;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#1a1f2e';ctx.fillRect(0,0,W,H);
+
+  // Grid
+  ctx.strokeStyle='#2d3147';ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){
+    const x=pad.l+i/5*cw, y=pad.t+i/5*ch;
+    ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,pad.t+ch);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+cw,y);ctx.stroke();
+  }
+
+  // Axes labels
+  ctx.fillStyle='#64748b';ctx.font='11px Segoe UI';ctx.textAlign='center';
+  for(let i=0;i<=5;i++){
+    ctx.fillText((i/5).toFixed(1),pad.l+i/5*cw,pad.t+ch+18);
+  }
+  ctx.textAlign='right';
+  for(let i=0;i<=5;i++){
+    ctx.fillText((i/5).toFixed(1),pad.l-6,pad.t+ch-i/5*ch+4);
+  }
+  ctx.save();ctx.translate(14,H/2);ctx.rotate(-Math.PI/2);
+  ctx.fillStyle='#94a3b8';ctx.font='12px Segoe UI';ctx.textAlign='center';
+  ctx.fillText(curveType==='roc'?'TPR (Recall)':'Precision',0,0);ctx.restore();
+  ctx.fillStyle='#94a3b8';ctx.font='12px Segoe UI';ctx.textAlign='center';
+  ctx.fillText(curveType==='roc'?'FPR (1 - Specificity)':'Recall',pad.l+cw/2,H-6);
+
+  const midx = parseInt(document.getElementById('model-select').value);
+
+  // Draw all model curves faintly first
+  rocModels.forEach((m,i)=>{
+    if(i===midx) return;
+    const pts = curveType==='roc' ? generateROCPoints(m.auc) : generatePRPoints(m.auc);
+    ctx.beginPath();ctx.strokeStyle=m.color+'44';ctx.lineWidth=1.5;ctx.setLineDash([4,4]);
+    pts.forEach((p,j)=>{
+      const px=pad.l+p.x*cw, py=pad.t+(1-p.y)*ch;
+      j===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+    });
+    ctx.stroke();ctx.setLineDash([]);
+  });
+
+  // Diagonal / baseline
+  ctx.beginPath();ctx.strokeStyle='#64748b88';ctx.lineWidth=1.5;ctx.setLineDash([6,4]);
+  if(curveType==='roc'){
+    ctx.moveTo(pad.l,pad.t+ch);ctx.lineTo(pad.l+cw,pad.t);
+  } else {
+    const baseP = 0.3;
+    ctx.moveTo(pad.l,pad.t+(1-baseP)*ch);ctx.lineTo(pad.l+cw,pad.t+(1-baseP)*ch);
+  }
+  ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#64748b';ctx.font='10px Segoe UI';
+  if(curveType==='roc') ctx.fillText('Random',pad.l+cw*0.65,pad.t+ch*0.42);
+
+  // Main curve
+  const model = rocModels[midx];
+  const pts = curveType==='roc' ? generateROCPoints(model.auc) : generatePRPoints(model.auc);
+
+  // Fill under curve
+  ctx.beginPath();
+  pts.forEach((p,j)=>{
+    const px=pad.l+p.x*cw, py=pad.t+(1-p.y)*ch;
+    j===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+  });
+  if(curveType==='roc'){ctx.lineTo(pad.l+cw,pad.t+ch);ctx.lineTo(pad.l,pad.t+ch);}
+  else{ctx.lineTo(pad.l+cw,pad.t+ch);ctx.lineTo(pad.l,pad.t+ch);}
+  ctx.closePath();
+  ctx.fillStyle=model.color+'22';ctx.fill();
+
+  ctx.beginPath();ctx.strokeStyle=model.color;ctx.lineWidth=2.5;
+  pts.forEach((p,j)=>{
+    const px=pad.l+p.x*cw, py=pad.t+(1-p.y)*ch;
+    j===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+  });
+  ctx.stroke();
+
+  // AUC label
+  const auc = calcAUC(pts).toFixed(3);
+  const aucEl = document.getElementById('roc-auc-label');
+  if(aucEl) aucEl.textContent = 'AUC = ' + auc;
+
+  // Threshold dot
+  const t = parseInt(document.getElementById('roc-thresh').value)/100;
+  const idx = Math.min(pts.length-1, Math.round(t*(pts.length-1)));
+  const dot = pts[idx];
+  const dx=pad.l+dot.x*cw, dy=pad.t+(1-dot.y)*ch;
+  ctx.beginPath();ctx.arc(dx,dy,7,0,Math.PI*2);ctx.fillStyle='#fbbf24';ctx.fill();
+  ctx.beginPath();ctx.arc(dx,dy,5,0,Math.PI*2);ctx.fillStyle='#1a1f2e';ctx.fill();
+
+  // Metrics
+  const tpr = dot.y.toFixed(3), fpr_val = dot.x.toFixed(3);
+  document.getElementById('roc-metrics').innerHTML = curveType==='roc'
+    ? `<div class="card" style="padding:10px"><div style="font-size:.72rem;color:#94a3b8">TPR / Recall</div><div style="font-size:1.4rem;font-weight:700;color:#86efac">${tpr}</div></div>
+       <div class="card" style="padding:10px"><div style="font-size:.72rem;color:#94a3b8">FPR</div><div style="font-size:1.4rem;font-weight:700;color:#f87171">${fpr_val}</div></div>
+       <div class="card" style="padding:10px"><div style="font-size:.72rem;color:#94a3b8">Specificity</div><div style="font-size:1.4rem;font-weight:700;color:#7dd3fc">${(1-dot.x).toFixed(3)}</div></div>
+       <div class="card" style="padding:10px"><div style="font-size:.72rem;color:#94a3b8">AUC</div><div style="font-size:1.4rem;font-weight:700;color:#a78bfa">${auc}</div></div>`
+    : `<div class="card" style="padding:10px"><div style="font-size:.72rem;color:#94a3b8">Precision</div><div style="font-size:1.4rem;font-weight:700;color:#86efac">${tpr}</div></div>
+       <div class="card" style="padding:10px"><div style="font-size:.72rem;color:#94a3b8">Recall</div><div style="font-size:1.4rem;font-weight:700;color:#7dd3fc">${fpr_val}</div></div>
+       <div class="card" style="padding:10px"><div style="font-size:.72rem;color:#94a3b8">F1</div><div style="font-size:1.4rem;font-weight:700;color:#fbbf24">${(2*dot.y*dot.x/(dot.y+dot.x+1e-9)).toFixed(3)}</div></div>
+       <div class="card" style="padding:10px"><div style="font-size:.72rem;color:#94a3b8">PR-AUC</div><div style="font-size:1.4rem;font-weight:700;color:#a78bfa">${auc}</div></div>`;
+
+  // Draw legend
+  ctx.font='11px Segoe UI';ctx.textAlign='left';
+  rocModels.forEach((m,i)=>{
+    const lx=pad.l+10, ly=pad.t+15+i*18;
+    ctx.beginPath();ctx.strokeStyle=i===midx?m.color:m.color+'44';
+    ctx.lineWidth=i===midx?2.5:1.5;
+    if(i!==midx)ctx.setLineDash([4,4]);
+    ctx.moveTo(lx,ly);ctx.lineTo(lx+24,ly);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=i===midx?m.color:m.color+'88';
+    ctx.fillText(m.name+' ('+(m.auc.toFixed(2))+')',lx+28,ly+4);
+  });
+}
+
+// ============================================================
+// TAB 3: CROSS-VALIDATION
+// ============================================================
+const cvMethods = {
+  holdout:{name:"Holdout",k:1,info:"Simple random split. Fast but high variance — depends on which samples are in each split.",warn:""},
+  kfold3:{name:"3-Fold CV",k:3,info:"3-fold cross-validation. Each sample is used for validation once. Reduces variance but higher bias.",warn:""},
+  kfold5:{name:"5-Fold CV",k:5,info:"5-fold cross-validation. Gold standard balance between bias and variance.",warn:""},
+  kfold10:{name:"10-Fold CV",k:10,info:"10-fold cross-validation. Lower bias, higher variance, more compute.",warn:""},
+  stratified:{name:"Stratified K-Fold",k:5,info:"Ensures each fold has the same class distribution as the full dataset. Critical for imbalanced data.",warn:""},
+  timeseries:{name:"Time-Series Split",k:5,info:"Temporal order is preserved. Earlier folds train on older data, validate on newer. Prevents data leakage.",warn:"⚠ Never shuffle time-series data! Random K-Fold would cause data leakage from future to past."},
+  loo:{name:"Leave-One-Out",k:20,info:"Each sample is its own validation set. Very low bias, very high variance, computationally expensive.",warn:""}
+};
+let curCVMethod = 'holdout', curFold=0, cvAnimTimer=null;
+const TOTAL_BLOCKS = 20;
+const foldScores = {
+  holdout:[0.84], kfold3:[0.81,0.86,0.83], kfold5:[0.82,0.85,0.79,0.87,0.83],
+  kfold10:[0.83,0.86,0.80,0.84,0.82,0.87,0.79,0.85,0.83,0.81],
+  stratified:[0.84,0.83,0.85,0.82,0.84], timeseries:[0.78,0.81,0.83,0.85,0.86],
+  loo: Array.from({length:20},()=>+(0.78+Math.random()*0.14).toFixed(2))
+};
+
+function setCVMethod(m){
+  clearInterval(cvAnimTimer);
+  curCVMethod=m; curFold=0;
+  document.querySelectorAll('#cv-btns .scenario-btn').forEach(b=>{
+    b.classList.toggle('active', b.textContent.trim()===cvMethods[m].name||
+      (m==='kfold3'&&b.textContent.includes('k=3'))||
+      (m==='kfold5'&&b.textContent.includes('k=5'))||
+      (m==='kfold10'&&b.textContent.includes('k=10'))||
+      (m==='stratified'&&b.textContent.includes('Stratified'))||
+      (m==='timeseries'&&b.textContent.includes('Time'))||
+      (m==='loo'&&b.textContent.includes('One-Out'))||
+      (m==='holdout'&&b.textContent.includes('Holdout')));
+  });
+  renderCV();
+}
+
+function renderCV(){
+  const method = cvMethods[curCVMethod];
+  const k = method.k;
+  document.getElementById('cv-fold-label').textContent = `Fold ${curFold+1} of ${k}`;
+  const info = cvMethods[curCVMethod].info;
+  document.getElementById('cv-info').textContent = info;
+  const warn = cvMethods[curCVMethod].warn;
+  const warnEl = document.getElementById('cv-warning');
+  if(warn){warnEl.style.display='block';warnEl.textContent=warn;}
+  else{warnEl.style.display='none';}
+
+  // Build strips
+  let html = '';
+  if(curCVMethod==='holdout'){
+    html += '<div style="font-size:.75rem;color:#94a3b8;margin-bottom:4px">Data split (70% train, 15% val, 15% test)</div>';
+    html += '<div class="cv-strip">';
+    for(let i=0;i<TOTAL_BLOCKS;i++){
+      const t = i<14?'train':i<17?'val':'test';
+      const c = t==='train'?'#3b82f6':t==='val'?'#fbbf24':'#86efac';
+      html += `<div class="cv-block" style="flex:1;background:${c};opacity:0.9">&nbsp;</div>`;
+    }
+    html += '</div>';
+  } else if(curCVMethod==='loo'){
+    html += `<div style="font-size:.75rem;color:#94a3b8;margin-bottom:4px">LOO: each sample = 1 validation point</div>`;
+    html += '<div class="cv-strip">';
+    for(let i=0;i<TOTAL_BLOCKS;i++){
+      const isVal=i===curFold;
+      const c=isVal?'#fbbf24':'#3b82f6';
+      html+=`<div class="cv-block" style="flex:1;background:${c};${isVal?'transform:scaleY(1.2);':''}font-size:.55rem;color:#1a1f2e">${isVal?'V':''}</div>`;
+    }
+    html+='</div>';
+  } else if(curCVMethod==='timeseries'){
+    html += `<div style="font-size:.75rem;color:#94a3b8;margin-bottom:4px">Time-series split (fold ${curFold+1}/${k})</div>`;
+    for(let f=0;f<k;f++){
+      const trainEnd = Math.round((f+1)/k*TOTAL_BLOCKS*0.8);
+      const valEnd = Math.min(TOTAL_BLOCKS, trainEnd+Math.round(TOTAL_BLOCKS/k*0.8));
+      const isCur=f===curFold;
+      html+=`<div style="margin-bottom:3px;display:flex;align-items:center;gap:4px">`;
+      html+=`<div style="font-size:.68rem;color:${isCur?'#fbbf24':'#64748b'};width:38px">Fold ${f+1}</div>`;
+      html+='<div class="cv-strip" style="flex:1;margin:0">';
+      for(let i=0;i<TOTAL_BLOCKS;i++){
+        let c='#2d3147';
+        if(i<trainEnd && isCur)c='#3b82f6';
+        else if(i>=trainEnd&&i<valEnd&&isCur)c='#fbbf24';
+        else if(i<trainEnd&&!isCur)c='#3b82f688';
+        html+=`<div class="cv-block" style="flex:1;background:${c}">&nbsp;</div>`;
+      }
+      html+='</div></div>';
+    }
+  } else {
+    const blocksPerFold = Math.floor(TOTAL_BLOCKS/k);
+    for(let f=0;f<k;f++){
+      const isValFold=f===curFold;
+      const start=f*blocksPerFold, end=f===k-1?TOTAL_BLOCKS:(f+1)*blocksPerFold;
+      html+=`<div style="margin-bottom:3px;display:flex;align-items:center;gap:4px">`;
+      html+=`<div style="font-size:.68rem;color:${isValFold?'#fbbf24':'#64748b'};width:38px">Fold ${f+1}</div>`;
+      html+='<div class="cv-strip" style="flex:1;margin:0">';
+      for(let i=0;i<TOTAL_BLOCKS;i++){
+        let c='#3b82f6';
+        if(i>=start&&i<end) c=isValFold?'#fbbf24':'#3b82f688';
+        if(curCVMethod==='stratified'){
+          // Tint classes in validation fold
+        }
+        html+=`<div class="cv-block" style="flex:1;background:${c}">&nbsp;</div>`;
+      }
+      html+='</div></div>';
+    }
+  }
+  document.getElementById('cv-strips').innerHTML = html;
+
+  // Scores
+  const scores = foldScores[curCVMethod];
+  const mean = scores.reduce((a,b)=>a+b,0)/scores.length;
+  const std = Math.sqrt(scores.reduce((a,b)=>a+(b-mean)**2,0)/scores.length);
+  let sh = `<div style="font-size:.78rem;color:#94a3b8;margin-bottom:8px">Fold Accuracy Scores</div>`;
+  scores.forEach((s,i)=>{
+    sh+=`<div class="score-row"><span style="color:#64748b;width:50px">Fold ${i+1}</span>
+    <div style="flex:1;background:#0f172a;border-radius:4px;height:8px;overflow:hidden">
+      <div style="width:${(s*100).toFixed(0)}%;background:${i===curFold?'#fbbf24':'#3b82f6'};height:100%;border-radius:4px;transition:all .3s"></div>
+    </div>
+    <span class="score-num" style="color:${i===curFold?'#fbbf24':'#7dd3fc'}">${(s*100).toFixed(1)}%</span></div>`;
+  });
+  sh+=`<div style="margin-top:10px;font-size:.78rem">
+    <span style="color:#94a3b8">Mean: </span><strong style="color:#7dd3fc">${(mean*100).toFixed(2)}%</strong>
+    &nbsp;&nbsp;<span style="color:#94a3b8">Std: </span><strong style="color:#fbbf24">±${(std*100).toFixed(2)}%</strong>
+  </div>`;
+  document.getElementById('cv-scores').innerHTML = sh;
+  drawCVChart(scores, mean, std);
+}
+
+function drawCVChart(scores, mean, std){
+  const canvas = document.getElementById('cv-canvas');
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height,pad=30;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#1a1f2e';ctx.fillRect(0,0,W,H);
+  const cw=W-pad*2, ch=H-pad*2;
+  const minS=Math.min(...scores)-0.05, maxS=Math.max(...scores)+0.05;
+  const bw=cw/scores.length*0.6, gap=cw/scores.length;
+  ctx.fillStyle='#3b82f633';ctx.fillRect(pad, pad+(1-(mean+std-minS)/(maxS-minS))*ch, cw, (2*std/(maxS-minS))*ch);
+  ctx.strokeStyle='#7dd3fc';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);
+  const my=pad+(1-(mean-minS)/(maxS-minS))*ch;
+  ctx.beginPath();ctx.moveTo(pad,my);ctx.lineTo(pad+cw,my);ctx.stroke();ctx.setLineDash([]);
+  scores.forEach((s,i)=>{
+    const x=pad+i*gap+gap*0.2, y=pad+(1-(s-minS)/(maxS-minS))*ch;
+    const isC=i===curFold;
+    ctx.fillStyle=isC?'#fbbf24':'#3b82f6';
+    ctx.fillRect(x,y,bw,pad+(1-(minS-minS)/(maxS-minS))*ch-y);
+    ctx.fillStyle=isC?'#fbbf24':'#e2e8f0';
+    ctx.font='10px Segoe UI';ctx.textAlign='center';
+    ctx.fillText((s*100).toFixed(1)+'%',x+bw/2,y-4);
+  });
+  ctx.fillStyle='#64748b';ctx.font='10px Segoe UI';ctx.textAlign='right';
+  ctx.fillText((minS*100).toFixed(0)+'%',pad-4,pad+ch);
+  ctx.fillText((maxS*100).toFixed(0)+'%',pad-4,pad+6);
+  ctx.fillStyle='#7dd3fc';ctx.textAlign='right';
+  ctx.fillText('μ='+( mean*100).toFixed(1)+'%',W-4,my-2);
+}
+
+function cvNext(){
+  const k=cvMethods[curCVMethod].k;
+  curFold=(curFold+1)%k;
+  renderCV();
+}
+function cvPrev(){
+  const k=cvMethods[curCVMethod].k;
+  curFold=(curFold-1+k)%k;
+  renderCV();
+}
+function cvAnimate(){
+  clearInterval(cvAnimTimer);
+  const k=cvMethods[curCVMethod].k;
+  cvAnimTimer=setInterval(()=>{
+    curFold=(curFold+1)%k;
+    renderCV();
+    if(curFold===0)clearInterval(cvAnimTimer);
+  },800);
+}
+
+// ============================================================
+// TAB 4: REGRESSION METRICS
+// ============================================================
+let regActual=[], regPred=[], regDragIdx=-1;
+const N_REG=12;
+
+function initRegData(){
+  regActual=[];regPred=[];
+  for(let i=0;i<N_REG;i++){
+    const x=(i+1)*8;
+    regActual.push({x:30+x+Math.random()*10, y:30+x+Math.random()*20});
+    regPred.push({x:30+x+Math.random()*10, y:30+x+Math.random()*15});
+  }
+  // Align x
+  for(let i=0;i<N_REG;i++) regPred[i].x = regActual[i].x;
+}
+
+function resetRegPoints(){
+  document.getElementById('outlier-slider').value=0;
+  document.getElementById('outlier-val').textContent=0;
+  initRegData();
+  drawReg();
+}
+
+function updateOutlier(){
+  const v=parseInt(document.getElementById('outlier-slider').value);
+  document.getElementById('outlier-val').textContent=v;
+  // add outlier to last point
+  if(regPred.length>0){
+    const base=regActual[N_REG-1].y;
+    regPred[N_REG-1].y=base+v*1.5;
+  }
+  drawReg();
+}
+
+function calcRegMetrics(){
+  const errs=regActual.map((a,i)=>a.y-regPred[i].y);
+  const n=errs.length;
+  const mae=errs.reduce((s,e)=>s+Math.abs(e),0)/n;
+  const mse=errs.reduce((s,e)=>s+e*e,0)/n;
+  const rmse=Math.sqrt(mse);
+  const meanA=regActual.reduce((s,a)=>s+a.y,0)/n;
+  const ssTot=regActual.reduce((s,a)=>s+(a.y-meanA)**2,0);
+  const ssRes=errs.reduce((s,e)=>s+e*e,0);
+  const r2=1-ssRes/ssTot;
+  return {mae,mse,rmse,r2};
+}
+
+function drawReg(){
+  const canvas=document.getElementById('reg-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height,pad=50;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#1a1f2e';ctx.fillRect(0,0,W,H);
+  const cw=W-pad*2,ch=H-pad*2;
+  const allY=[...regActual.map(p=>p.y),...regPred.map(p=>p.y)];
+  const allX=[...regActual.map(p=>p.x)];
+  const minY=Math.min(...allY)-10,maxY=Math.max(...allY)+10;
+  const minX=Math.min(...allX)-10,maxX=Math.max(...allX)+10;
+  const sx=x=>(x-minX)/(maxX-minX)*cw+pad;
+  const sy=y=>ch-(y-minY)/(maxY-minY)*ch+pad;
+
+  // Perfect line
+  ctx.beginPath();ctx.strokeStyle='#86efac66';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);
+  const px1=sx(minX+5),py1=sy(minX+5),px2=sx(maxX-5),py2=sy(maxX-5);
+  ctx.moveTo(px1,py1);ctx.lineTo(px2,py2);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#86efac66';ctx.font='10px Segoe UI';ctx.fillText('Perfect fit',px1+4,py1-4);
+
+  // Error lines
+  regActual.forEach((a,i)=>{
+    const p=regPred[i];
+    const isOut=i===N_REG-1&&parseInt(document.getElementById('outlier-slider').value)>0;
+    ctx.beginPath();ctx.strokeStyle=isOut?'#f8717188':'#7dd3fc44';ctx.lineWidth=1.5;
+    ctx.moveTo(sx(a.x),sy(a.y));ctx.lineTo(sx(p.x),sy(p.y));ctx.stroke();
+  });
+
+  // Actual points
+  regActual.forEach((a,i)=>{
+    ctx.beginPath();ctx.arc(sx(a.x),sy(a.y),5,0,Math.PI*2);
+    ctx.fillStyle='#86efac';ctx.fill();
+    ctx.beginPath();ctx.arc(sx(a.x),sy(a.y),5,0,Math.PI*2);
+    ctx.strokeStyle='#0f172a';ctx.lineWidth=1.5;ctx.stroke();
+  });
+
+  // Predicted points (draggable)
+  regPred.forEach((p,i)=>{
+    const isOut=i===N_REG-1&&parseInt(document.getElementById('outlier-slider').value)>0;
+    ctx.beginPath();ctx.arc(sx(p.x),sy(p.y),7,0,Math.PI*2);
+    ctx.fillStyle=isOut?'#f87171':'#7dd3fc';ctx.fill();
+    ctx.beginPath();ctx.arc(sx(p.x),sy(p.y),7,0,Math.PI*2);
+    ctx.strokeStyle='#e2e8f0';ctx.lineWidth=1.5;ctx.stroke();
+  });
+
+  // Axes
+  ctx.fillStyle='#64748b';ctx.font='10px Segoe UI';ctx.textAlign='center';
+  ctx.fillText('Actual value',pad+cw/2,H-6);
+  ctx.save();ctx.translate(14,H/2);ctx.rotate(-Math.PI/2);
+  ctx.fillText('Predicted value',0,0);ctx.restore();
+
+  // Metrics
+  const m=calcRegMetrics();
+  const metricsData=[
+    {name:'MAE',val:m.mae,color:'#7dd3fc',formula:'mean|yᵢ−ŷᵢ|',when:'Interpretable, robust to outliers'},
+    {name:'MSE',val:m.mse,color:'#fbbf24',formula:'mean(yᵢ−ŷᵢ)²',when:'Penalizes large errors heavily'},
+    {name:'RMSE',val:m.rmse,color:'#a78bfa',formula:'√MSE',when:'Same units as target; sensitive to outliers'},
+    {name:'R²',val:m.r2,color:'#86efac',formula:'1−SSres/SStot',when:'Proportion of variance explained (0–1)'},
+  ];
+  let mh='';
+  metricsData.forEach(md=>{
+    const fmt=md.name==='R²'?md.val.toFixed(4):md.val.toFixed(2);
+    mh+=`<div style="margin-bottom:10px">
+      <div class="flex" style="justify-content:space-between">
+        <span style="font-size:.82rem;font-weight:700;color:${md.color}">${md.name}</span>
+        <span style="font-size:.9rem;font-weight:700;color:${md.color}">${fmt}</span>
+      </div>
+      <div class="formula">${md.formula}</div>
+      <div style="font-size:.7rem;color:#64748b;margin-top:2px">${md.when}</div>
+    </div>`;
+  });
+  document.getElementById('reg-metrics-display').innerHTML=mh;
+  drawRegBar(metricsData);
+}
+
+function drawRegBar(metricsData){
+  const canvas=document.getElementById('reg-bar-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height,pad=30;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#1a1f2e';ctx.fillRect(0,0,W,H);
+  // Normalize all except R2
+  const normed=[metricsData[0].val,metricsData[1].val,metricsData[2].val,metricsData[3].val>0?metricsData[3].val:0];
+  const maxV=Math.max(...normed.slice(0,3),1);
+  const bw=40,gap=(W-pad*2-4*bw)/5;
+  metricsData.forEach((md,i)=>{
+    const x=pad+gap+(bw+gap)*i;
+    const norm=i<3?normed[i]/maxV:normed[3];
+    const bh=Math.max(4,(H-pad*2)*norm);
+    const y=H-pad-bh;
+    ctx.fillStyle=md.color+'44';ctx.fillRect(x,pad,bw,H-pad*2);
+    ctx.fillStyle=md.color;ctx.fillRect(x,y,bw,bh);
+    ctx.fillStyle=md.color;ctx.font='11px Segoe UI';ctx.textAlign='center';
+    ctx.fillText(md.name,x+bw/2,H-pad+14);
+    const fmt=i===3?normed[3].toFixed(3):normed[i].toFixed(1);
+    ctx.fillText(fmt,x+bw/2,y-4);
+  });
+}
+
+// Drag for regression canvas
+function initRegDrag(){
+  const canvas=document.getElementById('reg-canvas');
+  let dragging=false;
+  canvas.addEventListener('mousedown',e=>{
+    const rect=canvas.getBoundingClientRect();
+    const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+    const pad=50,W=canvas.width,H=canvas.height,cw=W-pad*2,ch=H-pad*2;
+    const allY=[...regActual.map(p=>p.y),...regPred.map(p=>p.y)];
+    const allX=[...regActual.map(p=>p.x)];
+    const minY=Math.min(...allY)-10,maxY=Math.max(...allY)+10;
+    const minX=Math.min(...allX)-10,maxX=Math.max(...allX)+10;
+    const sx=x=>(x-minX)/(maxX-minX)*cw+pad;
+    const sy=y=>ch-(y-minY)/(maxY-minY)*ch+pad;
+    regPred.forEach((p,i)=>{
+      if(Math.hypot(sx(p.x)-mx,sy(p.y)-my)<14){regDragIdx=i;dragging=true;}
+    });
+  });
+  canvas.addEventListener('mousemove',e=>{
+    if(!dragging||regDragIdx<0)return;
+    const rect=canvas.getBoundingClientRect();
+    const my=e.clientY-rect.top;
+    const pad=50,H=canvas.height,ch=H-pad*2;
+    const allY=[...regActual.map(p=>p.y),...regPred.map(p=>p.y)];
+    const minY=Math.min(...allY)-10,maxY=Math.max(...allY)+10;
+    regPred[regDragIdx].y=minY+(1-(my-pad)/ch)*(maxY-minY);
+    drawReg();
+  });
+  canvas.addEventListener('mouseup',()=>{dragging=false;regDragIdx=-1;});
+  canvas.addEventListener('mouseleave',()=>{dragging=false;regDragIdx=-1;});
+}
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+function switchTab(i){
+  document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('active',j===i));
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',j===i));
+  if(i===1) setTimeout(drawROCCanvas,10);
+  if(i===2) setTimeout(renderCV,10);
+  if(i===3) setTimeout(drawReg,10);
+}
+
+// Init
+updateThreshold();
+initRegData();
+setTimeout(()=>{
+  drawROCCanvas();
+  renderCV();
+  drawReg();
+  initRegDrag();
+},100);
+</script>
+
+
+<style>
+/* ── Chapter sidenav ── */
+.chap-sidenav {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 8888;
+}
+.chap-sidenav-toggle {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  color: #7dd3fc;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px #00000060;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+.chap-sidenav-toggle:hover { background: #0369a1; border-color: #7dd3fc; }
+.chap-sidenav-menu {
+  position: absolute;
+  bottom: 52px;
+  right: 0;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  border-radius: 14px;
+  padding: 10px 6px;
+  min-width: 220px;
+  max-height: 70vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 40px #00000080;
+  display: none;
+  scrollbar-width: thin;
+  scrollbar-color: #2d3147 transparent;
+}
+.chap-sidenav-menu.open { display: block; }
+.chap-sidenav-menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #94a3b8;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.chap-sidenav-menu a:hover { background: #0f172a; color: #e2e8f0; }
+.chap-sidenav-menu a.current { background: #0369a133; color: #7dd3fc; font-weight: 600; }
+.chap-sidenav-menu .chap-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #4b5563;
+  min-width: 28px;
+}
+.chap-sidenav-menu .menu-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #4b5563;
+  padding: 4px 12px 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+@media (max-width: 480px) {
+  .chap-sidenav { bottom: 12px; right: 12px; }
+  .chap-sidenav-menu { right: 0; min-width: 180px; }
+}
+</style>
+
+<div class="chap-sidenav">
+  <div class="chap-sidenav-menu" id="chapMenu">
+    <div class="menu-header">ML Field Guide</div>
+      <a href="ch01_math_foundations.html"><span class="chap-num">Ch 01</span>Math Foundations</a>
+      <a href="ch02_statistics.html"><span class="chap-num">Ch 02</span>Statistics</a>
+      <a href="ch03_python.html"><span class="chap-num">Ch 03</span>Python for ML</a>
+      <a href="ch04_feature_engineering.html"><span class="chap-num">Ch 04</span>Feature Engineering</a>
+      <a href="ch05_supervised_learning.html"><span class="chap-num">Ch 05</span>Supervised Learning</a>
+      <a href="ch06_model_evaluation.html" class="current"><span class="chap-num">Ch 06</span>Model Evaluation</a>
+      <a href="ch07_unsupervised.html"><span class="chap-num">Ch 07</span>Unsupervised Learning</a>
+      <a href="ch08_recommendations.html"><span class="chap-num">Ch 08</span>Recommendations</a>
+      <a href="ch09_neural_networks.html"><span class="chap-num">Ch 09a</span>Neural Networks</a>
+      <a href="ch09_cnn_architectures.html"><span class="chap-num">Ch 09b</span>CNN Architectures</a>
+      <a href="ch10_nlp_transformers.html"><span class="chap-num">Ch 10</span>NLP & Transformers</a>
+      <a href="ch11_reinforcement_learning.html"><span class="chap-num">Ch 11</span>Reinforcement Learning</a>
+      <a href="ch12_time_series.html"><span class="chap-num">Ch 12</span>Time Series</a>
+      <a href="ch13_sql.html"><span class="chap-num">Ch 13</span>SQL for ML</a>
+      <a href="ch14_big_data.html"><span class="chap-num">Ch 14</span>Big Data</a>
+      <a href="ch15_mlops.html"><span class="chap-num">Ch 15</span>MLOps</a>
+      <a href="ch16_aws.html"><span class="chap-num">Ch 16</span>AWS for ML</a>
+      <a href="ch17_responsible_ai.html"><span class="chap-num">Ch 17</span>Responsible AI</a>
+      <a href="ch18_interview_prep.html"><span class="chap-num">Ch 18</span>Interview Prep</a>
+  </div>
+  <button class="chap-sidenav-toggle" onclick="document.getElementById('chapMenu').classList.toggle('open')" title="Chapter navigation">☰</button>
+</div>
+
+</body>
+</html>

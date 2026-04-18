@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="MLOps: CI/CD for ML, model monitoring, drift detection — interactive guide.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 15 · MLOps — The ML Field Guide</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f1117; color: #e2e8f0; font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; padding: 0 0 60px 0; }
+  .page-header { background: linear-gradient(135deg, #1e2130 0%, #0f1117 100%); border-bottom: 1px solid #2d3147; padding: 32px 40px 24px; }
+  .chapter-label { font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #7dd3fc; margin-bottom: 6px; }
+  .page-title { font-size: 28px; font-weight: 700; color: #e2e8f0; margin-bottom: 4px; }
+  .page-subtitle { font-size: 14px; color: #94a3b8; }
+  .tab-nav { display: flex; gap: 4px; padding: 20px 40px 0; border-bottom: 1px solid #2d3147; background: #0f1117; }
+  .tab-btn { padding: 10px 22px; border: 1px solid transparent; border-bottom: none; background: transparent; color: #94a3b8; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; border-radius: 8px 8px 0 0; transition: all 0.2s; position: relative; bottom: -1px; }
+  .tab-btn:hover { color: #e2e8f0; background: #1e2130; }
+  .tab-btn.active { color: #7dd3fc; background: #1e2130; border-color: #2d3147; border-bottom-color: #1e2130; }
+  .tab-panel { display: none; padding: 32px 40px; }
+  .tab-panel.active { display: block; }
+  .section-title { font-size: 20px; font-weight: 700; color: #e2e8f0; margin-bottom: 8px; }
+  .section-sub { font-size: 13px; color: #94a3b8; margin-bottom: 24px; }
+  .panel { background: #1e2130; border: 1px solid #2d3147; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .btn { padding: 8px 16px; border: 1px solid #2d3147; border-radius: 8px; background: #0f172a; color: #e2e8f0; font-family: inherit; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+  .btn:hover { border-color: #7dd3fc; color: #7dd3fc; }
+  .btn.active { background: #0369a1; border-color: #7dd3fc; color: #7dd3fc; }
+  .code-block { background: #0f172a; border: 1px solid #2d3147; border-radius: 8px; padding: 16px; font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 12px; color: #86efac; line-height: 1.6; white-space: pre; overflow-x: auto; }
+  .label { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #94a3b8; margin-bottom: 8px; }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .insight-box { background: #0f172a; border-left: 3px solid #7dd3fc; border-radius: 0 8px 8px 0; padding: 12px 16px; font-size: 13px; color: #94a3b8; }
+  .insight-box strong { color: #7dd3fc; }
+  .pipeline-stage { display: flex; flex-direction: column; align-items: center; position: relative; }
+  .stage-box { background: #1a1f2e; border: 2px solid #2d3147; border-radius: 10px; padding: 12px 16px; text-align: center; cursor: pointer; transition: all 0.2s; min-width: 90px; width: 100%; }
+  .stage-box:hover { border-color: #7dd3fc; transform: translateY(-2px); }
+  .stage-box.active { border-color: #7dd3fc; background: #0f2035; }
+  .stage-box.ok { border-color: #86efac; }
+  .stage-box.warn { border-color: #fbbf24; }
+  .stage-box.fail { border-color: #f87171; }
+  .stage-icon { font-size: 20px; margin-bottom: 4px; }
+  .stage-name { font-size: 11px; font-weight: 700; color: #e2e8f0; }
+  .stage-arrow { color: #2d3147; font-size: 20px; margin: 0 2px; align-self: center; }
+  .metric-row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .metric-card { background: #0f172a; border: 1px solid #2d3147; border-radius: 8px; padding: 12px 16px; flex: 1; min-width: 100px; }
+  .metric-card .metric-val { font-size: 22px; font-weight: 700; color: #7dd3fc; }
+  .metric-card .metric-label { font-size: 11px; color: #64748b; margin-top: 2px; }
+  .slider-container { margin: 12px 0; }
+  .slider-container label { font-size: 12px; color: #94a3b8; display: flex; justify-content: space-between; margin-bottom: 4px; }
+  input[type="range"] { width: 100%; accent-color: #7dd3fc; cursor: pointer; }
+  .alert-line { stroke: #f87171; stroke-dasharray: 5,3; }
+  .ab-user { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin: 2px; transition: all 0.3s; }
+  .sig-bar { height: 12px; border-radius: 6px; transition: width 0.5s; }
+  select.styled { background: #0f172a; border: 1px solid #2d3147; border-radius: 8px; color: #e2e8f0; padding: 7px 12px; font-family: inherit; font-size: 13px; cursor: pointer; }
+
+  /* ── Shared improvements ── */
+  body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important; }
+  code, pre, .code-block, .formula, .mono, [style*="monospace"], [style*="Courier"] { font-family: 'JetBrains Mono', 'Cascadia Code', 'Courier New', monospace !important; }
+
+  /* Smoother scrolling */
+  html { scroll-behavior: smooth; }
+
+  /* Focus ring for accessibility */
+  button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid #7dd3fc;
+    outline-offset: 2px;
+  }
+
+  /* Improve tab-nav overflow on small screens */
+  .tab-nav, .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .tab-nav::-webkit-scrollbar, .tabs::-webkit-scrollbar { display: none; }
+
+  /* Mobile responsive improvements */
+  @media (max-width: 768px) {
+    .page-header { padding: 24px 20px 18px !important; }
+    .tab-panel { padding: 20px !important; }
+    .tab-nav { padding: 16px 20px 0 !important; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
+    .grid2, .grid3 { grid-template-columns: 1fr !important; }
+    .page-title { font-size: 22px !important; }
+    h1 { font-size: 1.4rem !important; }
+  }
+  @media (max-width: 480px) {
+    body { padding: 0 0 40px 0 !important; }
+    .tab-btn { padding: 8px 14px !important; font-size: 12px !important; }
+    .btn { padding: 6px 12px !important; font-size: 12px !important; }
+  }
+
+  /* Better selection color */
+  ::selection { background: #1d4ed880; color: #e0f2fe; }
+
+  /* Smoother canvas rendering */
+  canvas { image-rendering: -webkit-optimize-contrast; }
+
+  /* Tooltip z-index fix */
+  .tooltip { z-index: 9999 !important; }
+
+  /* Code block horizontal scroll indicator */
+  .code-block { overflow-x: auto; }
+</style>
+</head>
+<body>
+<div class="page-header">
+  <div class="chapter-label">Chapter 15</div>
+  <div class="page-title">MLOps</div>
+  <div class="page-subtitle">ML pipelines, drift detection, and model deployment at scale</div>
+</div>
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('pipeline')">ML Pipeline Flow</button>
+  <button class="tab-btn" onclick="switchTab('drift')">Model Drift Detection</button>
+  <button class="tab-btn" onclick="switchTab('ab')">A/B Testing for Models</button>
+</div>
+
+<!-- TAB 1: PIPELINE -->
+<div class="tab-panel active" id="tab-pipeline">
+  <div class="section-title">ML Pipeline Flow</div>
+  <div class="section-sub">Click any stage to explore what happens there, common tools, and failure modes</div>
+  <div style="margin-bottom:12px;display:flex;align-items:center;gap:8px">
+    <span style="font-size:12px;color:#94a3b8">Mode:</span>
+    <button class="btn active" id="mode-direct" onclick="setPipelineMode('direct')">Direct Pipeline</button>
+    <button class="btn" id="mode-fs" onclick="setPipelineMode('feature-store')">Feature Store Mode</button>
+  </div>
+  <div class="panel">
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:0" id="pipeline-stages"></div>
+  </div>
+  <div class="grid-2" style="align-items:start">
+    <div class="panel" id="stage-detail">
+      <div class="label">Stage Details</div>
+      <div style="color:#94a3b8;font-size:13px">Click a stage above to see details.</div>
+    </div>
+    <div class="panel">
+      <div class="label">Artifact Flow</div>
+      <div id="artifact-flow" style="font-size:13px;color:#94a3b8">Click a stage to see what artifacts flow through it.</div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 2: DRIFT -->
+<div class="tab-panel" id="tab-drift">
+  <div class="section-title">Model Drift Detection</div>
+  <div class="section-sub">Models degrade over time — track performance and feature distributions to know when to retrain</div>
+  <div class="btn-row">
+    <button class="btn active" id="drift-data" onclick="selectDrift('data')">Data Drift</button>
+    <button class="btn" id="drift-concept" onclick="selectDrift('concept')">Concept Drift</button>
+    <button class="btn" id="drift-label" onclick="selectDrift('label')">Label Drift</button>
+  </div>
+  <div class="grid-2" style="align-items:start">
+    <div>
+      <div class="panel">
+        <div class="label">Performance Over Time</div>
+        <canvas id="drift-chart" width="420" height="200"></canvas>
+      </div>
+      <div class="panel">
+        <div class="label">PSI (Population Stability Index)</div>
+        <div id="psi-display" style="font-size:32px;font-weight:700;color:#7dd3fc;margin-bottom:8px">0.04</div>
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:12px">
+          <span style="color:#86efac">PSI &lt; 0.1</span> — No significant drift &nbsp;|&nbsp;
+          <span style="color:#fbbf24">0.1–0.2</span> — Monitor &nbsp;|&nbsp;
+          <span style="color:#f87171">PSI &gt; 0.2</span> — Retrain!
+        </div>
+        <div class="slider-container">
+          <label><span>Time →</span><span id="time-label">Week 1</span></label>
+          <input type="range" id="time-slider" min="1" max="20" value="1" oninput="updateDrift(this.value)">
+        </div>
+        <div id="psi-bar-container" style="height:12px;background:#0f172a;border-radius:6px;margin-top:8px">
+          <div id="psi-bar" class="sig-bar" style="width:20%;background:#86efac"></div>
+        </div>
+        <div id="drift-alert" style="margin-top:10px;font-size:13px;color:#64748b"></div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <div class="label">Feature Distribution — Income (example)</div>
+        <canvas id="hist-chart" width="420" height="200"></canvas>
+        <div style="margin-top:8px;display:flex;gap:16px;font-size:11px">
+          <span><span style="display:inline-block;width:12px;height:3px;background:#7dd3fc;vertical-align:middle"></span> Training distribution</span>
+          <span><span style="display:inline-block;width:12px;height:3px;background:#f87171;vertical-align:middle"></span> Current distribution</span>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="label">Drift Definition</div>
+        <div id="drift-def" style="font-size:13px;color:#94a3b8"></div>
+      </div>
+      <div class="panel">
+        <div class="label">Monitoring Dashboard</div>
+        <div class="metric-row">
+          <div class="metric-card"><div class="metric-val" id="m-auc">0.88</div><div class="metric-label">AUC-ROC</div></div>
+          <div class="metric-card"><div class="metric-val" id="m-prec">0.84</div><div class="metric-label">Precision</div></div>
+          <div class="metric-card"><div class="metric-val" id="m-latency">12ms</div><div class="metric-label">P99 Latency</div></div>
+          <div class="metric-card"><div class="metric-val" id="m-canary">5%</div><div class="metric-label">Canary %</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 3: A/B TESTING -->
+<div class="tab-panel" id="tab-ab">
+  <div class="section-title">A/B Testing for ML Models</div>
+  <div class="section-sub">Rigorously compare model variants with statistical significance testing</div>
+  <div class="grid-2" style="align-items:start">
+    <div>
+      <div class="panel">
+        <div class="label">Traffic Split</div>
+        <div class="slider-container">
+          <label><span>Control (Model A)</span><span id="split-a-label">90%</span></label>
+          <input type="range" id="split-slider" min="10" max="90" step="10" value="90" oninput="updateAB()">
+          <label><span>Treatment (Model B)</span><span id="split-b-label">10%</span></label>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <div style="flex:9;background:#0369a1;border-radius:6px;height:24px;transition:flex 0.3s" id="bar-a"></div>
+          <div style="flex:1;background:#a78bfa;border-radius:6px;height:24px;transition:flex 0.3s" id="bar-b"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;margin-top:4px">
+          <span style="color:#7dd3fc">Model A (Control)</span>
+          <span style="color:#a78bfa">Model B (Treatment)</span>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="label">Metric</div>
+        <select class="styled" id="ab-metric" onchange="updateAB()" style="width:100%;margin-bottom:12px">
+          <option value="ctr">Click-through Rate (CTR)</option>
+          <option value="conversion">Conversion Rate</option>
+          <option value="auc">AUC Score</option>
+        </select>
+        <div class="metric-row">
+          <div class="metric-card"><div class="metric-val" id="ab-val-a" style="color:#7dd3fc">8.2%</div><div class="metric-label">Model A</div></div>
+          <div class="metric-card"><div class="metric-val" id="ab-val-b" style="color:#a78bfa">9.1%</div><div class="metric-label">Model B</div></div>
+          <div class="metric-card"><div class="metric-val" id="ab-lift" style="color:#86efac">+11%</div><div class="metric-label">Lift</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="label">MDE Calculator — Minimum Detectable Effect</div>
+        <div class="grid-2" style="gap:8px;margin-bottom:12px">
+          <div>
+            <div style="font-size:11px;color:#94a3b8;margin-bottom:3px">α (significance)</div>
+            <select class="styled" id="alpha-sel" onchange="calcMDE()" style="width:100%">
+              <option value="0.05" selected>0.05</option>
+              <option value="0.01">0.01</option>
+              <option value="0.10">0.10</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#94a3b8;margin-bottom:3px">β (power target)</div>
+            <select class="styled" id="beta-sel" onchange="calcMDE()" style="width:100%">
+              <option value="0.8" selected>0.80</option>
+              <option value="0.9">0.90</option>
+              <option value="0.95">0.95</option>
+            </select>
+          </div>
+        </div>
+        <div id="mde-result" style="font-size:13px;color:#94a3b8"></div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <div class="label">Simulation — users routed to each model</div>
+        <div id="ab-dots" style="min-height:120px;line-height:1.8"></div>
+        <button class="btn" onclick="runSimulation()" style="margin-top:10px">▶ Run 100 Users</button>
+      </div>
+      <div class="panel">
+        <div class="label">Statistical Significance</div>
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:8px">p-value (two-tailed t-test):</div>
+        <div id="pval-display" style="font-size:28px;font-weight:700;color:#7dd3fc">—</div>
+        <div style="margin-top:8px;background:#0f172a;border-radius:6px;height:12px">
+          <div id="sig-bar" style="height:12px;border-radius:6px;background:#86efac;width:0%;transition:width 0.8s"></div>
+        </div>
+        <div id="sig-verdict" style="font-size:13px;margin-top:8px;color:#94a3b8">Run simulation to compute significance.</div>
+      </div>
+      <div class="panel">
+        <div class="label">Guardrail Metrics</div>
+        <table style="width:100%;font-size:13px;border-collapse:collapse">
+          <thead><tr>
+            <th style="color:#7dd3fc;text-align:left;padding:6px 8px;border-bottom:1px solid #2d3147">Metric</th>
+            <th style="color:#7dd3fc;text-align:right;padding:6px 8px;border-bottom:1px solid #2d3147">Model A</th>
+            <th style="color:#7dd3fc;text-align:right;padding:6px 8px;border-bottom:1px solid #2d3147">Model B</th>
+            <th style="color:#7dd3fc;text-align:right;padding:6px 8px;border-bottom:1px solid #2d3147">Status</th>
+          </tr></thead>
+          <tbody>
+            <tr><td style="padding:6px 8px">P99 Latency</td><td style="text-align:right;color:#94a3b8;padding:6px 8px">45ms</td><td style="text-align:right;color:#94a3b8;padding:6px 8px">52ms</td><td style="text-align:right;padding:6px 8px;color:#86efac">✅ OK</td></tr>
+            <tr><td style="padding:6px 8px">Error Rate</td><td style="text-align:right;color:#94a3b8;padding:6px 8px">0.1%</td><td style="text-align:right;color:#94a3b8;padding:6px 8px">0.2%</td><td style="text-align:right;padding:6px 8px;color:#86efac">✅ OK</td></tr>
+            <tr><td style="padding:6px 8px">Crash Rate</td><td style="text-align:right;color:#94a3b8;padding:6px 8px">0.0%</td><td style="text-align:right;color:#94a3b8;padding:6px 8px">0.0%</td><td style="text-align:right;padding:6px 8px;color:#86efac">✅ OK</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── TABS ──
+function switchTab(t) {
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['pipeline','drift','ab'][i]===t));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  if(t==='drift') initDriftChart();
+  if(t==='ab') { updateAB(); calcMDE(); }
+}
+
+// ── PIPELINE ──
+const stages = {
+  direct:[
+    {id:'data',icon:'🗄️',name:'Data',status:'ok',
+     detail:'Raw data ingestion from databases, files, APIs, or streams.',
+     tools:'Airflow, dbt, Spark, Fivetran',
+     failures:'Missing values, schema drift, data leakage',
+     best:'Validate schema and statistics on every ingestion',
+     artifacts:'Raw DataFrames / parquet files'},
+    {id:'features',icon:'⚙️',name:'Features',status:'ok',
+     detail:'Feature engineering: transformations, aggregations, encodings.',
+     tools:'Pandas, Spark, Feast, Tecton',
+     failures:'Train-serve skew, feature leakage, staleness',
+     best:'Log feature values at prediction time; compare to training',
+     artifacts:'Feature matrices, encoders, scalers'},
+    {id:'training',icon:'🧠',name:'Training',status:'warn',
+     detail:'Model training on historical data with defined hyperparameters.',
+     tools:'scikit-learn, XGBoost, PyTorch, SageMaker',
+     failures:'Overfitting, slow convergence, OOM errors',
+     best:'Track every experiment with MLflow or W&B',
+     artifacts:'Model weights, training metrics, feature importances'},
+    {id:'validation',icon:'✅',name:'Validation',status:'ok',
+     detail:'Evaluate model on held-out test set; check fairness & robustness.',
+     tools:'sklearn metrics, Evidently, Deepchecks',
+     failures:'Leaky test set, wrong metric for business goal',
+     best:'Use business metrics, not just accuracy',
+     artifacts:'Evaluation report, confusion matrix, AUC curves'},
+    {id:'registry',icon:'📦',name:'Registry',status:'ok',
+     detail:'Versioned model storage with metadata and approval workflows.',
+     tools:'MLflow Registry, SageMaker Registry, Vertex AI',
+     failures:'No versioning, untracked dependencies',
+     best:'Store model + config + data version together',
+     artifacts:'Registered model artifact, metadata JSON'},
+    {id:'serving',icon:'🚀',name:'Serving',status:'ok',
+     detail:'Deploy model behind an API endpoint (REST/gRPC).',
+     tools:'FastAPI, TorchServe, Triton, SageMaker Endpoint',
+     failures:'High latency, memory leaks, version mismatch',
+     best:'Blue-green deployment; canary rollouts',
+     artifacts:'REST endpoint, serialized model, containers'},
+    {id:'monitoring',icon:'📊',name:'Monitoring',status:'warn',
+     detail:'Track prediction quality, data drift, and infrastructure health.',
+     tools:'Evidently AI, Arize, Grafana, CloudWatch',
+     failures:'Silent model degradation, alarm fatigue',
+     best:'Monitor data distribution + model performance + infra',
+     artifacts:'Dashboards, alerts, drift reports'},
+  ]
+};
+
+let pipelineMode='direct';
+let activeStage=null;
+
+function setPipelineMode(m) {
+  pipelineMode=m;
+  document.getElementById('mode-direct').classList.toggle('active',m==='direct');
+  document.getElementById('mode-fs').classList.toggle('active',m==='feature-store');
+  renderPipeline();
+}
+
+function renderPipeline() {
+  const stgs=stages.direct;
+  let html='';
+  stgs.forEach((s,i)=>{
+    const statusEmoji={ok:'✅',warn:'⚠️',fail:'❌'}[s.status];
+    const statusBorder={ok:'#86efac',warn:'#fbbf24',fail:'#f87171'}[s.status];
+    const active=activeStage===s.id;
+    html+=`<div class="pipeline-stage" style="flex:1;min-width:80px">
+      <div class="stage-box ${s.status}${active?' active':''}" onclick="selectStage('${s.id}')"
+           style="${active?'border-color:#7dd3fc;background:#0f2035':''}">
+        <div class="stage-icon">${s.icon}</div>
+        <div class="stage-name">${s.name}</div>
+        <div style="font-size:14px;margin-top:4px">${statusEmoji}</div>
+      </div>
+    </div>`;
+    if(i<stgs.length-1) html+=`<div class="stage-arrow" style="flex:0 0 auto">→</div>`;
+  });
+  if(pipelineMode==='feature-store') {
+    html+=`<div style="width:100%;margin-top:12px;padding:8px 12px;background:#0f172a;border:1px dashed #a78bfa;border-radius:8px;font-size:12px;color:#a78bfa">
+      ✦ Feature Store mode: Features are pre-computed and cached. Training reads from offline store; inference reads from online store (low latency).
+    </div>`;
+  }
+  document.getElementById('pipeline-stages').innerHTML=html;
+}
+
+function selectStage(id) {
+  activeStage=id;
+  renderPipeline();
+  const s=stages.direct.find(x=>x.id===id);
+  document.getElementById('stage-detail').innerHTML=`
+    <div class="label">${s.icon} ${s.name} Stage</div>
+    <div style="margin-bottom:8px"><span style="color:#7dd3fc;font-size:12px;font-weight:600">What happens:</span><br><span style="font-size:13px;color:#94a3b8">${s.detail}</span></div>
+    <div style="margin-bottom:8px"><span style="color:#86efac;font-size:12px;font-weight:600">Tools:</span><br><span style="font-size:13px;color:#94a3b8">${s.tools}</span></div>
+    <div style="margin-bottom:8px"><span style="color:#f87171;font-size:12px;font-weight:600">Common failures:</span><br><span style="font-size:13px;color:#94a3b8">${s.failures}</span></div>
+    <div><span style="color:#fbbf24;font-size:12px;font-weight:600">Best practices:</span><br><span style="font-size:13px;color:#94a3b8">${s.best}</span></div>
+  `;
+  document.getElementById('artifact-flow').innerHTML=`<span style="color:#7dd3fc">Output artifact:</span><br><span style="color:#94a3b8">${s.artifacts}</span>`;
+}
+
+renderPipeline();
+
+// ── DRIFT ──
+let driftType='data';
+let driftChartDrawn=false;
+
+const driftDefs={
+  data:{
+    title:'Data Drift',
+    desc:'The statistical distribution of input features changes over time. The model was trained on past data — if feature distributions shift, predictions degrade even if the relationship between X and Y is unchanged.',
+    psiWeeks:[0.02,0.03,0.04,0.06,0.07,0.09,0.11,0.13,0.15,0.17,0.19,0.21,0.25,0.28,0.30,0.32,0.29,0.31,0.33,0.35]
+  },
+  concept:{
+    title:'Concept Drift',
+    desc:'The underlying relationship between features and labels changes. Example: "spam" patterns evolve as spammers adapt. The model logic is stale even if feature distributions look normal.',
+    psiWeeks:[0.05,0.05,0.06,0.07,0.12,0.15,0.18,0.22,0.25,0.24,0.26,0.29,0.31,0.33,0.34,0.36,0.38,0.40,0.42,0.45]
+  },
+  label:{
+    title:'Label Drift',
+    desc:'The distribution of the target variable shifts. Example: fraud rate changes seasonally. Class imbalance worsens, and decision thresholds become miscalibrated.',
+    psiWeeks:[0.01,0.02,0.02,0.03,0.03,0.04,0.05,0.07,0.08,0.10,0.12,0.13,0.14,0.16,0.18,0.20,0.21,0.22,0.24,0.26]
+  }
+};
+
+function selectDrift(type) {
+  driftType=type;
+  ['data','concept','label'].forEach(t=>document.getElementById('drift-'+t).classList.toggle('active',t===type));
+  document.getElementById('drift-def').innerHTML=`<strong style="color:#7dd3fc">${driftDefs[type].title}:</strong><br><span>${driftDefs[type].desc}</span>`;
+  updateDrift(document.getElementById('time-slider').value);
+  drawDriftChart();
+  drawHistChart(parseInt(document.getElementById('time-slider').value));
+}
+
+function updateDrift(week) {
+  week=parseInt(week);
+  document.getElementById('time-label').textContent=`Week ${week}`;
+  const psi=driftDefs[driftType].psiWeeks[week-1];
+  document.getElementById('psi-display').textContent=psi.toFixed(2);
+  const pct=Math.min((psi/0.4)*100,100);
+  const color=psi<0.1?'#86efac':psi<0.2?'#fbbf24':'#f87171';
+  document.getElementById('psi-bar').style.width=pct+'%';
+  document.getElementById('psi-bar').style.background=color;
+  document.getElementById('psi-display').style.color=color;
+  if(psi>=0.2) {
+    document.getElementById('drift-alert').innerHTML='<span style="color:#f87171;font-weight:700">⚠️ Alert: PSI > 0.2 — Retrain triggered!</span>';
+    document.getElementById('m-auc').style.color='#f87171';
+    document.getElementById('m-auc').textContent=(0.88-Math.max(0,(psi-0.1)*1.2)).toFixed(2);
+  } else {
+    document.getElementById('drift-alert').innerHTML='<span style="color:#86efac">✅ No retraining needed yet</span>';
+    document.getElementById('m-auc').style.color='#7dd3fc';
+    document.getElementById('m-auc').textContent=(0.88-Math.max(0,(psi-0.05)*0.5)).toFixed(2);
+  }
+  drawHistChart(week);
+  drawDriftChart(week);
+}
+
+function initDriftChart() {
+  if(!driftChartDrawn){driftChartDrawn=true;selectDrift('data');}
+}
+
+function drawDriftChart(currentWeek) {
+  const canvas=document.getElementById('drift-chart');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#1a1f2e'; ctx.fillRect(0,0,W,H);
+  const vals=driftDefs[driftType].psiWeeks;
+  const maxV=0.5; const n=vals.length;
+  const pw=(W-60)/(n-1); const ph=(H-40);
+  // Axes
+  ctx.strokeStyle='#2d3147'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(50,10); ctx.lineTo(50,H-30); ctx.lineTo(W-10,H-30); ctx.stroke();
+  // Threshold lines
+  [0.1,0.2].forEach(t=>{
+    const y=H-30-t/maxV*ph+10;
+    ctx.strokeStyle=t===0.2?'#f87171':'#fbbf24'; ctx.setLineDash([5,3]); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(50,y); ctx.lineTo(W-10,y); ctx.stroke();
+    ctx.fillStyle=t===0.2?'#f87171':'#fbbf24'; ctx.font='10px sans-serif'; ctx.fillText(t.toFixed(1),2,y+4);
+    ctx.setLineDash([]);
+  });
+  // Line
+  ctx.strokeStyle='#7dd3fc'; ctx.lineWidth=2;
+  ctx.beginPath();
+  vals.forEach((v,i)=>{
+    const x=50+i*pw; const y=H-30-v/maxV*ph+10;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  // Current marker
+  if(currentWeek) {
+    const i=currentWeek-1; const v=vals[i];
+    const x=50+i*pw; const y=H-30-v/maxV*ph+10;
+    ctx.fillStyle=v>=0.2?'#f87171':v>=0.1?'#fbbf24':'#86efac';
+    ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2); ctx.fill();
+  }
+  // X-axis labels
+  ctx.fillStyle='#64748b'; ctx.font='10px sans-serif';
+  [1,5,10,15,20].forEach(w=>{
+    ctx.fillText('W'+w,50+(w-1)*pw-6,H-8);
+  });
+  ctx.fillStyle='#94a3b8'; ctx.font='11px sans-serif';
+  ctx.fillText('PSI over time',55,22);
+}
+
+function drawHistChart(week) {
+  const canvas=document.getElementById('hist-chart');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#1a1f2e'; ctx.fillRect(0,0,W,H);
+  const buckets=10; const bw=(W-40)/buckets;
+  // Training distribution (normal-ish)
+  const trainDist=[2,8,18,28,24,12,5,2,1,0];
+  // Shifted distribution
+  const shift=Math.floor((week/20)*4);
+  const testDist=[0,1,2,5,10,20,28,22,10,2].map((_,i)=>{
+    const shifted=i-shift;
+    return shifted>=0&&shifted<10?trainDist[shifted]*(0.7+(week/20)*0.3):Math.max(0,((week/20)*8)-Math.abs(i-7)*3);
+  });
+  const maxV=Math.max(...trainDist,...testDist);
+  const drawBar=(vals,color,offset)=>{
+    vals.forEach((v,i)=>{
+      const x=20+i*bw+offset; const bh=(v/maxV)*(H-40);
+      ctx.fillStyle=color; ctx.globalAlpha=0.5;
+      ctx.fillRect(x,H-20-bh,bw*0.45,bh);
+      ctx.globalAlpha=1;
+    });
+  };
+  drawBar(trainDist,'#7dd3fc',0);
+  drawBar(testDist,'#f87171',bw*0.47);
+  // x-axis
+  ctx.strokeStyle='#2d3147'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(20,H-20); ctx.lineTo(W-10,H-20); ctx.stroke();
+  ctx.fillStyle='#64748b'; ctx.font='10px sans-serif';
+  ctx.fillText('Low income',22,H-6); ctx.fillText('High income',W-70,H-6);
+  ctx.fillStyle='#94a3b8'; ctx.font='11px sans-serif'; ctx.fillText('Income distribution',22,16);
+}
+
+// ── A/B TESTING ──
+function updateAB() {
+  const split=parseInt(document.getElementById('split-slider').value);
+  const metricKey=document.getElementById('ab-metric').value;
+  document.getElementById('split-a-label').textContent=split+'%';
+  document.getElementById('split-b-label').textContent+(100-split)+'%';
+  document.getElementById('split-b-label').textContent=(100-split)+'%';
+  document.getElementById('bar-a').style.flex=split;
+  document.getElementById('bar-b').style.flex=(100-split);
+  const metrics={ctr:{a:'8.2%',b:'9.1%',lift:'+11.0%'},conversion:{a:'3.4%',b:'3.9%',lift:'+14.7%'},auc:{a:'0.843',b:'0.871',lift:'+3.3%'}};
+  const m=metrics[metricKey];
+  document.getElementById('ab-val-a').textContent=m.a;
+  document.getElementById('ab-val-b').textContent=m.b;
+  document.getElementById('ab-lift').textContent=m.lift;
+}
+
+function calcMDE() {
+  const alpha=parseFloat(document.getElementById('alpha-sel').value);
+  const power=parseFloat(document.getElementById('beta-sel').value);
+  // Approximate sample size formula for proportions
+  const za={0.05:1.96,0.01:2.576,0.10:1.645}[alpha]||1.96;
+  const zb={0.8:0.842,0.9:1.282,0.95:1.645}[power]||0.842;
+  const p=0.082; // baseline CTR
+  const mde=0.01; // 1% effect size
+  const n=Math.ceil(2*(za+zb)**2*p*(1-p)/(mde**2));
+  document.getElementById('mde-result').innerHTML=`
+    <strong style="color:#7dd3fc">Required sample size: ${n.toLocaleString()} per variant</strong><br>
+    <span style="color:#64748b">To detect a ${(mde*100).toFixed(1)}% absolute lift at α=${alpha}, power=${power}</span><br>
+    <span style="color:#94a3b8;font-size:12px">Formula: n = 2(z_α + z_β)² · p(1-p) / Δ²</span>
+  `;
+}
+
+let simUsers=[];
+function runSimulation() {
+  const split=parseInt(document.getElementById('split-slider').value);
+  const N=100;
+  simUsers=Array.from({length:N},()=>Math.random()*100<split?'a':'b');
+  const aCount=simUsers.filter(x=>x==='a').length;
+  const bCount=N-aCount;
+  let html='';
+  simUsers.forEach(u=>{
+    html+=`<span class="ab-user" style="background:${u==='a'?'#0369a1':'#7c3aed'}"></span>`;
+  });
+  html+=`<div style="font-size:12px;color:#94a3b8;margin-top:8px">${aCount} → Model A &nbsp;|&nbsp; ${bCount} → Model B</div>`;
+  document.getElementById('ab-dots').innerHTML=html;
+  // Simulate p-value
+  const metricKey=document.getElementById('ab-metric').value;
+  const rates={ctr:{a:0.082,b:0.091},conversion:{a:0.034,b:0.039},auc:{a:0.843,b:0.871}};
+  const r=rates[metricKey];
+  const pval=computePValue(r.a,r.b,aCount,bCount);
+  document.getElementById('pval-display').textContent=pval<0.001?'< 0.001':pval.toFixed(4);
+  const sigPct=Math.max(0,Math.min(100,(1-pval)*100));
+  document.getElementById('sig-bar').style.width=sigPct+'%';
+  document.getElementById('sig-bar').style.background=pval<0.05?'#86efac':'#f87171';
+  document.getElementById('pval-display').style.color=pval<0.05?'#86efac':'#f87171';
+  document.getElementById('sig-verdict').innerHTML=pval<0.05?
+    '<span style="color:#86efac">✅ Statistically significant (p < 0.05). Model B shows improvement.</span>':
+    `<span style="color:#f87171">❌ Not significant (p = ${pval.toFixed(3)}). Need more data.</span>`;
+}
+
+function computePValue(pa,pb,na,nb) {
+  // Approximate z-test for proportions
+  const p=(pa*na+pb*nb)/(na+nb);
+  const se=Math.sqrt(p*(1-p)*(1/na+1/nb));
+  const z=Math.abs(pa-pb)/se;
+  // Approximate p-value from z (two-tailed)
+  const pval=2*(1-normalCDF(z));
+  return pval;
+}
+function normalCDF(z) {
+  const t=1/(1+0.2315419*Math.abs(z));
+  const p=1-0.3989423*Math.exp(-z*z/2)*(0.319381530*t-0.356563782*t**2+1.781477937*t**3-1.821255978*t**4+1.330274429*t**5);
+  return z>=0?p:1-p;
+}
+
+updateAB(); calcMDE();
+</script>
+
+
+<style>
+/* ── Chapter sidenav ── */
+.chap-sidenav {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 8888;
+}
+.chap-sidenav-toggle {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  color: #7dd3fc;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px #00000060;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+.chap-sidenav-toggle:hover { background: #0369a1; border-color: #7dd3fc; }
+.chap-sidenav-menu {
+  position: absolute;
+  bottom: 52px;
+  right: 0;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  border-radius: 14px;
+  padding: 10px 6px;
+  min-width: 220px;
+  max-height: 70vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 40px #00000080;
+  display: none;
+  scrollbar-width: thin;
+  scrollbar-color: #2d3147 transparent;
+}
+.chap-sidenav-menu.open { display: block; }
+.chap-sidenav-menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #94a3b8;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.chap-sidenav-menu a:hover { background: #0f172a; color: #e2e8f0; }
+.chap-sidenav-menu a.current { background: #0369a133; color: #7dd3fc; font-weight: 600; }
+.chap-sidenav-menu .chap-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #4b5563;
+  min-width: 28px;
+}
+.chap-sidenav-menu .menu-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #4b5563;
+  padding: 4px 12px 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+@media (max-width: 480px) {
+  .chap-sidenav { bottom: 12px; right: 12px; }
+  .chap-sidenav-menu { right: 0; min-width: 180px; }
+}
+</style>
+
+<div class="chap-sidenav">
+  <div class="chap-sidenav-menu" id="chapMenu">
+    <div class="menu-header">ML Field Guide</div>
+      <a href="ch01_math_foundations.html"><span class="chap-num">Ch 01</span>Math Foundations</a>
+      <a href="ch02_statistics.html"><span class="chap-num">Ch 02</span>Statistics</a>
+      <a href="ch03_python.html"><span class="chap-num">Ch 03</span>Python for ML</a>
+      <a href="ch04_feature_engineering.html"><span class="chap-num">Ch 04</span>Feature Engineering</a>
+      <a href="ch05_supervised_learning.html"><span class="chap-num">Ch 05</span>Supervised Learning</a>
+      <a href="ch06_model_evaluation.html"><span class="chap-num">Ch 06</span>Model Evaluation</a>
+      <a href="ch07_unsupervised.html"><span class="chap-num">Ch 07</span>Unsupervised Learning</a>
+      <a href="ch08_recommendations.html"><span class="chap-num">Ch 08</span>Recommendations</a>
+      <a href="ch09_neural_networks.html"><span class="chap-num">Ch 09a</span>Neural Networks</a>
+      <a href="ch09_cnn_architectures.html"><span class="chap-num">Ch 09b</span>CNN Architectures</a>
+      <a href="ch10_nlp_transformers.html"><span class="chap-num">Ch 10</span>NLP & Transformers</a>
+      <a href="ch11_reinforcement_learning.html"><span class="chap-num">Ch 11</span>Reinforcement Learning</a>
+      <a href="ch12_time_series.html"><span class="chap-num">Ch 12</span>Time Series</a>
+      <a href="ch13_sql.html"><span class="chap-num">Ch 13</span>SQL for ML</a>
+      <a href="ch14_big_data.html"><span class="chap-num">Ch 14</span>Big Data</a>
+      <a href="ch15_mlops.html" class="current"><span class="chap-num">Ch 15</span>MLOps</a>
+      <a href="ch16_aws.html"><span class="chap-num">Ch 16</span>AWS for ML</a>
+      <a href="ch17_responsible_ai.html"><span class="chap-num">Ch 17</span>Responsible AI</a>
+      <a href="ch18_interview_prep.html"><span class="chap-num">Ch 18</span>Interview Prep</a>
+  </div>
+  <button class="chap-sidenav-toggle" onclick="document.getElementById('chapMenu').classList.toggle('open')" title="Chapter navigation">☰</button>
+</div>
+
+</body>
+</html>

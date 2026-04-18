@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="CNN architectures: ResNet, EfficientNet, Vision Transformers — interactive explorer.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 9b · CNN Architectures — The ML Field Guide</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; padding: 20px; }
+h1 { font-size: 1.5rem; font-weight: 700; color: #7dd3fc; margin-bottom: 4px; }
+.subtitle { color: #64748b; font-size: 0.85rem; margin-bottom: 20px; }
+
+.tabs { display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap; }
+.tab-btn { padding: 8px 16px; border-radius: 8px; border: 1px solid #2d3147; background: #1e2130; color: #94a3b8; font-size: 0.82rem; cursor: pointer; transition: all .15s; }
+.tab-btn:hover { border-color: #7dd3fc; color: #7dd3fc; }
+.tab-btn.active { background: #0369a1; border-color: #7dd3fc; color: #e0f2fe; font-weight: 600; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.panel { background: #1e2130; border: 1px solid #2d3147; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.panel h2 { font-size: 0.8rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 12px; }
+.row { display: flex; gap: 16px; flex-wrap: wrap; }
+.col { flex: 1; min-width: 280px; }
+.canvas-wrap { background: #1a1f2e; border: 1px solid #2d3147; border-radius: 12px; overflow: hidden; }
+
+.btn { padding: 7px 14px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #94a3b8; font-size: 0.82rem; cursor: pointer; transition: all .15s; }
+.btn:hover { border-color: #7dd3fc; color: #7dd3fc; }
+.btn.active { background: #0369a1; border-color: #7dd3fc; color: #e0f2fe; font-weight: 600; }
+.btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+
+.info-box { background: #0f172a; border-left: 3px solid #7dd3fc; border-radius: 6px; padding: 12px 14px; font-size: 0.82rem; line-height: 1.7; color: #cbd5e1; margin-top: 12px; }
+.info-box strong { color: #7dd3fc; }
+.formula { background: #0f172a; border-radius: 8px; padding: 10px 14px; font-family: monospace; font-size: 0.83rem; color: #86efac; text-align: center; line-height: 1.9; margin-top: 8px; }
+.insight { background: #0f172a; border-left: 3px solid #fbbf24; border-radius: 6px; padding: 10px 14px; font-size: 0.8rem; color: #fde68a; margin-top: 8px; }
+
+.slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 0.82rem; }
+.slider-row label { color: #94a3b8; min-width: 120px; }
+.slider-row input[type=range] { flex: 1; accent-color: #7dd3fc; }
+.slider-row span { color: #7dd3fc; min-width: 50px; font-family: monospace; }
+
+.tooltip { position: fixed; background: #1e2130; border: 1px solid #7dd3fc; border-radius: 8px; padding: 10px 14px; font-size: 0.78rem; color: #e2e8f0; pointer-events: none; opacity: 0; transition: opacity .15s; max-width: 240px; line-height: 1.6; z-index: 9999; }
+.tooltip strong { color: #7dd3fc; display: block; margin-bottom: 4px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 8px; }
+th { background: #0f172a; color: #94a3b8; padding: 8px 10px; text-align: left; border-bottom: 1px solid #2d3147; }
+td { padding: 7px 10px; border-bottom: 1px solid #1e2130; color: #cbd5e1; }
+tr:hover td { background: #0f172a; }
+tr.selected td { background: #0369a133; }
+
+.block-item { background: #0f172a; border: 1px solid #2d3147; border-radius: 8px; padding: 10px 14px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: border-color .15s; }
+.block-item:hover { border-color: #7dd3fc; }
+.block-item .block-name { color: #7dd3fc; font-weight: 600; font-size: 0.82rem; }
+.block-item .block-info { color: #64748b; font-size: 0.75rem; }
+.block-item button { padding: 3px 10px; border-radius: 6px; border: 1px solid #f87171; background: transparent; color: #f87171; font-size: 0.75rem; cursor: pointer; }
+.block-item button:hover { background: #7f1d1d; }
+
+.stat-badge { display: inline-block; background: #0369a1; color: #e0f2fe; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; margin: 3px; }
+.stat-badge.green { background: #166534; color: #bbf7d0; }
+.stat-badge.yellow { background: #92400e; color: #fde68a; }
+.stat-badge.purple { background: #4c1d95; color: #ddd6fe; }
+
+.patch-grid { display: grid; gap: 2px; }
+.patch-cell { border-radius: 2px; cursor: pointer; transition: all .2s; }
+.patch-cell.selected { box-shadow: 0 0 0 2px #7dd3fc; transform: scale(1.1); z-index: 1; position: relative; }
+.patch-cell.attended { box-shadow: 0 0 0 2px #f87171; }
+
+.attn-bar { height: 8px; border-radius: 4px; background: #86efac; margin-bottom: 4px; }
+
+@media(max-width:700px){ .row{flex-direction:column;} }
+
+  /* ── Shared improvements ── */
+  body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important; }
+  code, pre, .code-block, .formula, .mono, [style*="monospace"], [style*="Courier"] { font-family: 'JetBrains Mono', 'Cascadia Code', 'Courier New', monospace !important; }
+
+  /* Smoother scrolling */
+  html { scroll-behavior: smooth; }
+
+  /* Focus ring for accessibility */
+  button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid #7dd3fc;
+    outline-offset: 2px;
+  }
+
+  /* Improve tab-nav overflow on small screens */
+  .tab-nav, .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .tab-nav::-webkit-scrollbar, .tabs::-webkit-scrollbar { display: none; }
+
+  /* Mobile responsive improvements */
+  @media (max-width: 768px) {
+    .page-header { padding: 24px 20px 18px !important; }
+    .tab-panel { padding: 20px !important; }
+    .tab-nav { padding: 16px 20px 0 !important; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
+    .grid2, .grid3 { grid-template-columns: 1fr !important; }
+    .page-title { font-size: 22px !important; }
+    h1 { font-size: 1.4rem !important; }
+  }
+  @media (max-width: 480px) {
+    body { padding: 0 0 40px 0 !important; }
+    .tab-btn { padding: 8px 14px !important; font-size: 12px !important; }
+    .btn { padding: 6px 12px !important; font-size: 12px !important; }
+  }
+
+  /* Better selection color */
+  ::selection { background: #1d4ed880; color: #e0f2fe; }
+
+  /* Smoother canvas rendering */
+  canvas { image-rendering: -webkit-optimize-contrast; }
+
+  /* Tooltip z-index fix */
+  .tooltip { z-index: 9999 !important; }
+
+  /* Code block horizontal scroll indicator */
+  .code-block { overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<h1>Chapter 9 — CNN Architectures</h1>
+<p class="subtitle">ResNet, EfficientNet, Vision Transformers — interactive exploration</p>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="showTab('resnet')">ResNet vs Plain Net</button>
+  <button class="tab-btn" onclick="showTab('builder')">ResNet Block Builder</button>
+  <button class="tab-btn" onclick="showTab('efficientnet')">EfficientNet Scaling</button>
+  <button class="tab-btn" onclick="showTab('vit')">Vision Transformer (ViT)</button>
+</div>
+
+<!-- ══════════════════════════════ TAB 1: RESNET VS PLAIN ══════════════════════════════ -->
+<div id="tab-resnet" class="tab-content active">
+  <div class="row">
+    <div class="col" style="min-width:420px;">
+      <div class="panel">
+        <h2>Accuracy vs Depth — Plain Net vs ResNet</h2>
+        <canvas id="accuracyChart" width="540" height="300"></canvas>
+        <div class="slider-row" style="margin-top:12px;">
+          <label>Depth (layers)</label>
+          <input type="range" min="10" max="152" value="56" id="depthSlider" oninput="updateResnetChart()">
+          <span id="depthVal">56</span>
+        </div>
+        <div class="panel" style="padding:10px; margin-top:0;">
+          <h2>Gradient Magnitudes per Layer</h2>
+          <canvas id="gradientChart" width="540" height="140"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="panel">
+        <h2>The Degradation Problem</h2>
+        <div class="info-box">
+          <strong>Plain Net Problem:</strong> Adding more layers <em>hurts</em> accuracy on training data — not just overfitting. A 56-layer plain net performs worse than a 20-layer plain net. This is the degradation problem.<br><br>
+          <strong>ResNet Solution:</strong> Learn residuals F(x) instead of full mappings H(x). Skip connections create "gradient highways" that preserve gradient magnitude across many layers.
+        </div>
+        <div class="formula">y = F(x, {Wᵢ}) + x<br><br>
+If identity is optimal → F(x) → 0 (easy to learn)<br>
+Plain net must learn H(x) = identity (hard)</div>
+        <div id="currentDepthInfo" class="info-box" style="margin-top:12px;"></div>
+      </div>
+      <div class="panel">
+        <h2>Skip Connection Diagram</h2>
+        <div class="canvas-wrap">
+          <svg id="skipSvg" width="100%" height="200" viewBox="0 0 380 200"></svg>
+        </div>
+        <div class="insight" style="margin-top:8px;">
+          ResNet gradients stay strong because ∂L/∂x = ∂L/∂y · (∂F/∂x + 1). The "+1" means gradient never vanishes completely.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ TAB 2: BUILDER ══════════════════════════════ -->
+<div id="tab-builder" class="tab-content">
+  <div class="row">
+    <div class="col" style="min-width:280px;">
+      <div class="panel">
+        <h2>Add Blocks</h2>
+        <div class="btn-group">
+          <button class="btn" onclick="addBlock('basic')">+ Basic Block</button>
+          <button class="btn" onclick="addBlock('bottleneck')">+ Bottleneck Block</button>
+          <button class="btn" onclick="clearBlocks()">Clear</button>
+        </div>
+        <div class="panel" style="padding:10px; margin-bottom:0;">
+          <h2>Presets</h2>
+          <div class="btn-group">
+            <button class="btn" onclick="loadPreset('resnet18')">ResNet-18</button>
+            <button class="btn" onclick="loadPreset('resnet34')">ResNet-34</button>
+            <button class="btn" onclick="loadPreset('resnet50')">ResNet-50</button>
+            <button class="btn" onclick="loadPreset('resnet101')">ResNet-101</button>
+            <button class="btn" onclick="loadPreset('resnet152')">ResNet-152</button>
+          </div>
+        </div>
+        <div class="panel" style="padding:10px; margin-top:12px;">
+          <h2>Block Types</h2>
+          <div class="info-box" style="margin:0;">
+            <strong>Basic Block</strong> (ResNet-18/34): Two 3×3 conv layers. ~2×C² params per block.<br><br>
+            <strong>Bottleneck Block</strong> (ResNet-50+): 1×1 → 3×3 → 1×1 conv. More efficient for large channel counts.
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col" style="min-width:280px;">
+      <div class="panel">
+        <h2>Network Stack</h2>
+        <div id="blockStack" style="min-height:200px;"></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="panel">
+        <h2>Network Statistics</h2>
+        <div id="netStats" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
+        <div id="netDiagram" class="canvas-wrap">
+          <canvas id="builderCanvas" width="280" height="400"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <div class="panel">
+        <h2>ResNet Family Comparison</h2>
+        <table>
+          <thead><tr><th>Model</th><th>Layers</th><th>Params</th><th>Block Type</th><th>Top-1 Acc</th><th>GFLOPs</th></tr></thead>
+          <tbody id="resnetTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ TAB 3: EFFICIENTNET ══════════════════════════════ -->
+<div id="tab-efficientnet" class="tab-content">
+  <div class="row">
+    <div class="col" style="min-width:380px;">
+      <div class="panel">
+        <h2>Compound Scaling</h2>
+        <div class="slider-row">
+          <label>φ (compound coeff)</label>
+          <input type="range" min="0" max="70" value="0" id="phiSlider" oninput="updateEfficientNet()">
+          <span id="phiVal">0.0</span>
+        </div>
+        <div class="slider-row">
+          <label>α (depth factor)</label>
+          <input type="range" min="10" max="25" value="20" id="alphaSlider" oninput="updateEfficientNet()">
+          <span id="alphaVal">1.20</span>
+        </div>
+        <div class="slider-row">
+          <label>β (width factor)</label>
+          <input type="range" min="10" max="20" value="11" id="betaSlider" oninput="updateEfficientNet()">
+          <span id="betaVal">1.10</span>
+        </div>
+        <div class="slider-row">
+          <label>γ (resolution factor)</label>
+          <input type="range" min="10" max="20" value="14" id="gammaSlider" oninput="updateEfficientNet()">
+          <span id="gammaVal">1.15</span>
+        </div>
+        <div class="formula" id="scalingFormula">
+          depth = α^φ = 1.20^0 = 1.00×<br>
+          width = β^φ = 1.10^0 = 1.00×<br>
+          resolution = γ^φ = 1.15^0 = 1.00×
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Presets: EfficientNet B0 → B7</h2>
+        <div class="btn-group" id="effPresets"></div>
+        <div id="effPresetInfo" class="info-box"></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="panel">
+        <h2>FLOPS &amp; Params vs Accuracy Tradeoff</h2>
+        <canvas id="effChart" width="380" height="280"></canvas>
+      </div>
+      <div class="panel">
+        <h2>Network Scaling Diagram</h2>
+        <canvas id="scalingDiagram" width="380" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ TAB 4: VIT ══════════════════════════════ -->
+<div id="tab-vit" class="tab-content">
+  <div class="row">
+    <div class="col" style="min-width:380px;">
+      <div class="panel">
+        <h2>Image → Patches → Transformer</h2>
+        <canvas id="vitCanvas" width="420" height="340"></canvas>
+        <div class="btn-group" style="margin-top:10px;">
+          <button class="btn" onclick="animateViT()">▶ Animate Patches</button>
+          <button class="btn" onclick="resetViT()">Reset</button>
+        </div>
+        <div id="vitStep" class="info-box" style="margin-top:8px;">Click "Animate Patches" to see how ViT processes an image.</div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="panel">
+        <h2>Patch Attention Map</h2>
+        <p style="font-size:0.78rem; color:#64748b; margin-bottom:8px;">Click a patch to see which other patches it attends to.</p>
+        <div id="patchAttention" style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start;">
+          <div>
+            <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:6px;">Image patches (6×6)</div>
+            <div id="patchGrid" class="patch-grid" style="grid-template-columns:repeat(6,36px);"></div>
+          </div>
+          <div style="flex:1; min-width:160px;">
+            <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:6px;">Attention weights</div>
+            <div id="attnWeights"></div>
+          </div>
+        </div>
+        <div id="attnInfo" class="info-box" style="margin-top:12px;">
+          <strong>Self-Attention:</strong> Each patch computes Query, Key, Value vectors. Attention(Q,K,V) = softmax(QKᵀ/√d)·V. Every patch attends to all others — no local receptive field constraint.
+        </div>
+      </div>
+      <div class="panel">
+        <h2>CNN vs ViT Comparison</h2>
+        <table>
+          <thead><tr><th>Property</th><th>CNN</th><th>ViT</th></tr></thead>
+          <tbody>
+            <tr><td>Inductive bias</td><td>Translation equivariance, locality</td><td>None (learns from data)</td></tr>
+            <tr><td>Receptive field</td><td>Grows with depth</td><td>Global from layer 1</td></tr>
+            <tr><td>Data efficiency</td><td>High (less data needed)</td><td>Low (needs more data)</td></tr>
+            <tr><td>Scalability</td><td>Diminishing returns at scale</td><td>Scales very well</td></tr>
+            <tr><td>Typical use</td><td>&lt;10M images</td><td>100M+ images or fine-tune</td></tr>
+            <tr><td>Compute</td><td>O(n²) with depth</td><td>O(n²) with patch count</td></tr>
+          </tbody>
+        </table>
+        <div class="insight" style="margin-top:10px;">ViT needs more data than CNN to train from scratch but scales better and achieves state-of-the-art with enough data (JFT-300M+). With fine-tuning from pretrained weights, ViT is competitive on smaller datasets.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+// ═══════════════ UTILITIES ═══════════════
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  event.target.classList.add('active');
+  if(name==='resnet') { updateResnetChart(); drawSkipDiagram(); }
+  if(name==='builder') { initBuilder(); }
+  if(name==='efficientnet') { initEfficientNet(); }
+  if(name==='vit') { initViT(); }
+}
+
+const tip = document.getElementById('tooltip');
+function showTip(e,html){ tip.innerHTML=html; tip.style.opacity='1'; tip.style.left=(e.clientX+14)+'px'; tip.style.top=(e.clientY-10)+'px'; }
+function hideTip(){ tip.style.opacity='0'; }
+
+// ═══════════════ TAB 1: RESNET ═══════════════
+function plainAccuracy(depth) {
+  // Plain net degrades after ~20 layers
+  if(depth <= 20) return 0.5 + 0.35 * (depth/20);
+  return 0.85 - 0.15 * Math.min(1, (depth-20)/80) + 0.02 * Math.sin(depth*0.3);
+}
+
+function resnetAccuracy(depth) {
+  // ResNet keeps improving
+  return 0.5 + 0.44 * (1 - Math.exp(-depth/40)) + 0.01 * Math.sin(depth*0.2);
+}
+
+function updateResnetChart() {
+  const depth = parseInt(document.getElementById('depthSlider').value);
+  document.getElementById('depthVal').textContent = depth;
+  drawAccuracyChart(depth);
+  drawGradientChart(depth);
+
+  const pa = (plainAccuracy(depth)*100).toFixed(1);
+  const ra = (resnetAccuracy(depth)*100).toFixed(1);
+  const diff = (resnetAccuracy(depth) - plainAccuracy(depth)) * 100;
+  document.getElementById('currentDepthInfo').innerHTML =
+    `<strong>At depth ${depth}:</strong><br>
+     Plain Net: ${pa}% top-1 acc<br>
+     ResNet-${depth}: ${ra}% top-1 acc<br>
+     <span style="color:${diff>0?'#86efac':'#f87171'};">ResNet advantage: ${diff>0?'+':''}${diff.toFixed(1)}%</span>`;
+}
+
+function drawAccuracyChart(highlightDepth) {
+  const canvas = document.getElementById('accuracyChart');
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H); ctx.fillStyle='#1a1f2e'; ctx.fillRect(0,0,W,H);
+
+  const pad={l:55,r:20,t:25,b:40};
+  const depthMin=10, depthMax=152;
+  const accMin=0.4, accMax=1.0;
+  const toX=d=>pad.l+(d-depthMin)/(depthMax-depthMin)*(W-pad.l-pad.r);
+  const toY=a=>pad.t+(1-(a-accMin)/(accMax-accMin))*(H-pad.t-pad.b);
+
+  // Grid
+  ctx.strokeStyle='#2d3147'; ctx.lineWidth=1;
+  [0.5,0.6,0.7,0.8,0.9,1.0].forEach(a=>{
+    ctx.beginPath(); ctx.moveTo(pad.l,toY(a)); ctx.lineTo(W-pad.r,toY(a)); ctx.stroke();
+  });
+
+  // Axes labels
+  ctx.fillStyle='#64748b'; ctx.font='10px Segoe UI,sans-serif';
+  ctx.textAlign='right';
+  [0.5,0.6,0.7,0.8,0.9,1.0].forEach(a=>ctx.fillText((a*100).toFixed(0)+'%',pad.l-5,toY(a)+4));
+  ctx.textAlign='center';
+  [20,50,100,152].forEach(d=>ctx.fillText(d,toX(d),H-pad.b+16));
+  ctx.fillText('Depth (layers)',W/2,H-5);
+  ctx.save(); ctx.translate(12,H/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('Top-1 Accuracy',0,0); ctx.restore();
+
+  // Plain net line
+  ctx.beginPath(); ctx.strokeStyle='#f87171'; ctx.lineWidth=2.5; ctx.setLineDash([]);
+  for(let d=depthMin; d<=depthMax; d+=2) {
+    const a=plainAccuracy(d);
+    d===depthMin ? ctx.moveTo(toX(d),toY(a)) : ctx.lineTo(toX(d),toY(a));
+  }
+  ctx.stroke();
+
+  // ResNet line
+  ctx.beginPath(); ctx.strokeStyle='#86efac'; ctx.lineWidth=2.5;
+  for(let d=depthMin; d<=depthMax; d+=2) {
+    const a=resnetAccuracy(d);
+    d===depthMin ? ctx.moveTo(toX(d),toY(a)) : ctx.lineTo(toX(d),toY(a));
+  }
+  ctx.stroke();
+
+  // Highlight point
+  const px=toX(highlightDepth);
+  ctx.strokeStyle='#fbbf24'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(px,pad.t); ctx.lineTo(px,H-pad.b); ctx.stroke(); ctx.setLineDash([]);
+
+  [['#f87171','Plain Net'],['#86efac','ResNet']].forEach(([c,n],i)=>{
+    ctx.fillStyle=c; ctx.beginPath(); ctx.arc(W-pad.r-80,pad.t+15+i*18,5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#e2e8f0'; ctx.font='11px Segoe UI,sans-serif'; ctx.textAlign='left';
+    ctx.fillText(n,W-pad.r-70,pad.t+19+i*18);
+  });
+
+  // Degradation annotation
+  ctx.fillStyle='#f87171'; ctx.font='10px Segoe UI,sans-serif'; ctx.textAlign='center';
+  ctx.fillText('Degradation ↓',toX(56),toY(0.72));
+  ctx.fillStyle='#86efac'; ctx.fillText('Keeps improving ↑',toX(100),toY(0.97));
+}
+
+function drawGradientChart(depth) {
+  const canvas = document.getElementById('gradientChart');
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H); ctx.fillStyle='#1a1f2e'; ctx.fillRect(0,0,W,H);
+
+  const n=Math.min(depth, 30);
+  const pad={l:50,r:20,t:20,b:30};
+  const barW=(W-pad.l-pad.r)/n-2;
+
+  // Plain net: exponential decay
+  for(let i=0; i<n; i++) {
+    const plain=Math.exp(-i*3.5/n);
+    const resnet=Math.exp(-i*0.5/n);
+    const x=pad.l+i*((W-pad.l-pad.r)/n);
+    const maxH=H-pad.t-pad.b;
+
+    ctx.fillStyle='#f87171aa';
+    ctx.fillRect(x,H-pad.b-plain*maxH,barW/2,plain*maxH);
+    ctx.fillStyle='#86efacaa';
+    ctx.fillRect(x+barW/2+1,H-pad.b-resnet*maxH,barW/2,resnet*maxH);
+  }
+
+  ctx.fillStyle='#64748b'; ctx.font='10px Segoe UI,sans-serif'; ctx.textAlign='right';
+  ctx.fillText('Gradient',pad.l-4,pad.t+10);
+  ctx.fillText('magnitude',pad.l-4,pad.t+22);
+  ctx.textAlign='left'; ctx.fillText('← output',pad.l,H-5); ctx.textAlign='right'; ctx.fillText('input →',W-pad.r,H-5);
+
+  ctx.fillStyle='#f87171'; ctx.fillRect(W-130,pad.t,10,10); ctx.fillStyle='#e2e8f0'; ctx.font='10px Segoe UI,sans-serif'; ctx.textAlign='left'; ctx.fillText('Plain Net',W-116,pad.t+9);
+  ctx.fillStyle='#86efac'; ctx.fillRect(W-60,pad.t,10,10); ctx.fillStyle='#e2e8f0'; ctx.fillText('ResNet',W-46,pad.t+9);
+}
+
+function drawSkipDiagram() {
+  const svg = document.getElementById('skipSvg');
+  svg.innerHTML = '';
+
+  const blocks = [
+    {x:60,y:80,label:'x (input)'},
+    {x:160,y:80,label:'Conv 3×3\nBN+ReLU'},
+    {x:260,y:80,label:'Conv 3×3\nBN'},
+    {x:360,y:80,label:'x + F(x)\nReLU'}
+  ];
+
+  // Skip arrow
+  const skip = document.createElementNS('http://www.w3.org/2000/svg','path');
+  skip.setAttribute('d','M 60,80 C 60,140 360,140 360,80');
+  skip.setAttribute('fill','none'); skip.setAttribute('stroke','#fbbf24');
+  skip.setAttribute('stroke-width','2'); skip.setAttribute('stroke-dasharray','6,3');
+  skip.setAttribute('marker-end','url(#arrow)'); svg.appendChild(skip);
+
+  // Arrow marker
+  const defs=document.createElementNS('http://www.w3.org/2000/svg','defs');
+  defs.innerHTML='<marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#fbbf24"/></marker>';
+  svg.insertBefore(defs,svg.firstChild);
+
+  // Horizontal arrows
+  blocks.forEach((b,i) => {
+    if(i<blocks.length-1) {
+      const arrow=document.createElementNS('http://www.w3.org/2000/svg','line');
+      arrow.setAttribute('x1',b.x+30); arrow.setAttribute('y1',b.y);
+      arrow.setAttribute('x2',blocks[i+1].x-30); arrow.setAttribute('y2',b.y);
+      arrow.setAttribute('stroke','#3b4459'); arrow.setAttribute('stroke-width','1.5');
+      arrow.setAttribute('marker-end','url(#arrow)'); svg.appendChild(arrow);
+    }
+    const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('x',b.x-28); rect.setAttribute('y',b.y-22);
+    rect.setAttribute('width',56); rect.setAttribute('height',44);
+    rect.setAttribute('rx',6); rect.setAttribute('fill','#1a1f2e');
+    rect.setAttribute('stroke',i===blocks.length-1?'#86efac':i===0?'#fbbf24':'#a78bfa');
+    rect.setAttribute('stroke-width','1.5'); svg.appendChild(rect);
+
+    const lines = b.label.split('\n');
+    lines.forEach((line,j) => {
+      const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+      t.setAttribute('x',b.x); t.setAttribute('y',b.y-6+j*14+(lines.length===1?7:0));
+      t.setAttribute('fill','#cbd5e1'); t.setAttribute('font-size','9');
+      t.setAttribute('text-anchor','middle'); t.textContent=line; svg.appendChild(t);
+    });
+  });
+
+  // Skip label
+  const sl=document.createElementNS('http://www.w3.org/2000/svg','text');
+  sl.setAttribute('x',210); sl.setAttribute('y',160); sl.setAttribute('fill','#fbbf24');
+  sl.setAttribute('font-size','10'); sl.setAttribute('text-anchor','middle');
+  sl.textContent='Skip connection (identity shortcut)'; svg.appendChild(sl);
+
+  // Plus sign
+  const plus=document.createElementNS('http://www.w3.org/2000/svg','text');
+  plus.setAttribute('x',340); plus.setAttribute('y',65); plus.setAttribute('fill','#86efac');
+  plus.setAttribute('font-size','18'); plus.setAttribute('text-anchor','middle');
+  plus.textContent='⊕'; svg.appendChild(plus);
+}
+
+// Init
+updateResnetChart(); drawSkipDiagram();
+
+// ═══════════════ TAB 2: BUILDER ═══════════════
+const RESNET_PRESETS = {
+  resnet18: {name:'ResNet-18',blocks:[['basic',2],['basic',2],['basic',2],['basic',2]],layers:18,params:'11.7M',acc:'69.8%',flops:1.8},
+  resnet34: {name:'ResNet-34',blocks:[['basic',3],['basic',4],['basic',6],['basic',3]],layers:34,params:'21.8M',acc:'73.3%',flops:3.7},
+  resnet50: {name:'ResNet-50',blocks:[['bottleneck',3],['bottleneck',4],['bottleneck',6],['bottleneck',3]],layers:50,params:'25.6M',acc:'76.1%',flops:4.1},
+  resnet101:{name:'ResNet-101',blocks:[['bottleneck',3],['bottleneck',4],['bottleneck',23],['bottleneck',3]],layers:101,params:'44.5M',acc:'77.4%',flops:7.8},
+  resnet152:{name:'ResNet-152',blocks:[['bottleneck',3],['bottleneck',8],['bottleneck',36],['bottleneck',3]],layers:152,params:'60.2M',acc:'78.3%',flops:11.6}
+};
+
+let builderBlocks = [];
+
+function initBuilder() {
+  if(!document.getElementById('resnetTable').children.length) {
+    const tbody=document.getElementById('resnetTable');
+    Object.values(RESNET_PRESETS).forEach(p=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td style="color:#7dd3fc;font-weight:600;">${p.name}</td><td>${p.layers}</td><td>${p.params}</td><td style="color:#a78bfa;">${p.blocks[0][0].charAt(0).toUpperCase()+p.blocks[0][0].slice(1)}</td><td style="color:#86efac;">${p.acc}</td><td>${p.flops}G</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+  renderBuilderStack();
+}
+
+function addBlock(type) {
+  builderBlocks.push({type, channels: type==='basic'?64:256});
+  renderBuilderStack();
+}
+
+function removeBlock(i) {
+  builderBlocks.splice(i,1);
+  renderBuilderStack();
+}
+
+function clearBlocks() { builderBlocks=[]; renderBuilderStack(); }
+
+function loadPreset(key) {
+  const p=RESNET_PRESETS[key];
+  builderBlocks=[];
+  p.blocks.forEach(([type,count])=>{ for(let i=0;i<count;i++) builderBlocks.push({type}); });
+  renderBuilderStack();
+}
+
+function renderBuilderStack() {
+  const stack=document.getElementById('blockStack');
+  stack.innerHTML='';
+  if(!builderBlocks.length) {
+    stack.innerHTML='<div style="color:#64748b;font-size:0.82rem;padding:12px;">Add blocks using the buttons above, or load a preset.</div>';
+  } else {
+    builderBlocks.slice(-10).forEach((b,i) => {
+      const idx=Math.max(0,builderBlocks.length-10)+i;
+      const div=document.createElement('div'); div.className='block-item';
+      div.innerHTML=`<span class="block-name">${b.type==='basic'?'Basic Block':'Bottleneck Block'}</span><span class="block-info">${b.type==='basic'?'3×3 → 3×3':'1×1 → 3×3 → 1×1'}</span><button onclick="removeBlock(${idx})">✕</button>`;
+      stack.appendChild(div);
+    });
+    if(builderBlocks.length>10) {
+      const info=document.createElement('div');
+      info.style.cssText='color:#64748b;font-size:0.75rem;padding:4px 10px;';
+      info.textContent=`... and ${builderBlocks.length-10} more blocks above`;
+      stack.insertBefore(info,stack.firstChild);
+    }
+  }
+
+  // Stats
+  const depth=2+builderBlocks.reduce((acc,b)=>acc+(b.type==='basic'?2:3),0);
+  const params=builderBlocks.reduce((acc,b)=>acc+(b.type==='basic'?0.29:0.54),0.06).toFixed(1);
+  const rf=Math.min(224, 3+builderBlocks.length*4);
+
+  const stats=document.getElementById('netStats');
+  stats.innerHTML=`
+    <span class="stat-badge">Depth: ${depth} layers</span>
+    <span class="stat-badge green">Params: ~${params}M</span>
+    <span class="stat-badge yellow">Blocks: ${builderBlocks.length}</span>
+    <span class="stat-badge purple">RF: ~${rf}px</span>
+  `;
+
+  drawBuilderDiagram();
+}
+
+function drawBuilderDiagram() {
+  const canvas=document.getElementById('builderCanvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H); ctx.fillStyle='#1a1f2e'; ctx.fillRect(0,0,W,H);
+
+  const blocks=builderBlocks.slice(-12);
+  const bH=Math.min(28, (H-80)/Math.max(1,blocks.length+2));
+  const bW=140, cx=W/2;
+  let y=20;
+
+  function drawBox(label,color,yy) {
+    ctx.fillStyle='#1e2130'; ctx.strokeStyle=color; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.roundRect(cx-bW/2,yy,bW,bH-4,5); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=color; ctx.font=`${Math.max(8,bH-10)}px Segoe UI,sans-serif`; ctx.textAlign='center';
+    ctx.fillText(label,cx,yy+bH/2+2);
+  }
+
+  function drawArrow(yy) {
+    ctx.strokeStyle='#3b4459'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(cx,yy+bH-4); ctx.lineTo(cx,yy+bH+2); ctx.stroke();
+  }
+
+  drawBox('Input 224×224×3','#fbbf24',y); drawArrow(y); y+=bH+2;
+  drawBox('Conv 7×7, stride 2','#64748b',y); drawArrow(y); y+=bH+2;
+
+  if(!blocks.length) {
+    drawBox('(add blocks above)','#4b5563',y);
+  } else {
+    blocks.forEach((b,i) => {
+      const col=b.type==='basic'?'#7dd3fc':'#a78bfa';
+      drawBox(b.type==='basic'?'Basic Block':'Bottleneck',col,y);
+      if(i<blocks.length-1) drawArrow(y);
+      y+=bH+2;
+    });
+  }
+  y+=bH+4;
+  drawBox('AvgPool → FC → Softmax','#86efac',y);
+}
+
+// ═══════════════ TAB 3: EFFICIENTNET ═══════════════
+const EFF_PRESETS = [
+  {name:'B0',phi:0,alpha:1.2,beta:1.1,gamma:1.15,acc:77.1,params:5.3,flops:0.39,res:224},
+  {name:'B1',phi:1,alpha:1.2,beta:1.1,gamma:1.15,acc:79.1,params:7.8,flops:0.70,res:240},
+  {name:'B2',phi:2,alpha:1.2,beta:1.1,gamma:1.15,acc:80.1,params:9.2,flops:1.0,res:260},
+  {name:'B3',phi:3,alpha:1.2,beta:1.1,gamma:1.15,acc:81.6,params:12,flops:1.8,res:300},
+  {name:'B4',phi:4,alpha:1.2,beta:1.1,gamma:1.15,acc:82.9,params:19,flops:4.2,res:380},
+  {name:'B5',phi:5,alpha:1.2,beta:1.1,gamma:1.15,acc:83.6,params:30,flops:9.9,res:456},
+  {name:'B6',phi:6,alpha:1.2,beta:1.1,gamma:1.15,acc:84.0,params:43,flops:19,res:528},
+  {name:'B7',phi:7,alpha:1.2,beta:1.1,gamma:1.15,acc:84.3,params:66,flops:37,res:600},
+];
+
+function initEfficientNet() {
+  const container=document.getElementById('effPresets');
+  if(!container.children.length) {
+    EFF_PRESETS.forEach((p,i) => {
+      const btn=document.createElement('button');
+      btn.className='btn'; btn.textContent='B'+i;
+      btn.onclick=()=>{ loadEffPreset(i); };
+      container.appendChild(btn);
+    });
+  }
+  updateEfficientNet();
+}
+
+function loadEffPreset(i) {
+  const p=EFF_PRESETS[i];
+  document.getElementById('phiSlider').value=p.phi*10;
+  document.getElementById('alphaSlider').value=p.alpha*10;
+  document.getElementById('betaSlider').value=p.beta*10;
+  document.getElementById('gammaSlider').value=p.gamma*10;
+  document.getElementById('effPresetInfo').innerHTML=`<strong>EfficientNet-B${i}</strong>: φ=${p.phi}, Resolution ${p.res}×${p.res}<br>Params: ${p.params}M | Top-1: ${p.acc}% | FLOPs: ${p.flops}G`;
+  updateEfficientNet();
+}
+
+function updateEfficientNet() {
+  const phi=document.getElementById('phiSlider').value/10;
+  const alpha=document.getElementById('alphaSlider').value/10;
+  const beta=document.getElementById('betaSlider').value/10;
+  const gamma=document.getElementById('gammaSlider').value/10;
+  document.getElementById('phiVal').textContent=phi.toFixed(1);
+  document.getElementById('alphaVal').textContent=alpha.toFixed(2);
+  document.getElementById('betaVal').textContent=beta.toFixed(2);
+  document.getElementById('gammaVal').textContent=gamma.toFixed(2);
+
+  const d=Math.pow(alpha,phi), w=Math.pow(beta,phi), r=Math.pow(gamma,phi);
+  document.getElementById('scalingFormula').innerHTML=
+    `depth = α^φ = ${alpha}^${phi.toFixed(1)} = ${d.toFixed(2)}×<br>
+     width = β^φ = ${beta}^${phi.toFixed(1)} = ${w.toFixed(2)}×<br>
+     resolution = γ^φ = ${gamma}^${phi.toFixed(1)} = ${r.toFixed(2)}×<br>
+     <span style="color:#fbbf24;">Constraint: α·β²·γ² ≈ ${(alpha*beta*beta*gamma*gamma).toFixed(2)} (target≈2)</span>`;
+
+  drawEffChart();
+  drawScalingDiagram(d, w, r);
+}
+
+function drawEffChart() {
+  const canvas=document.getElementById('effChart');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H); ctx.fillStyle='#1a1f2e'; ctx.fillRect(0,0,W,H);
+
+  const pad={l:50,r:20,t:25,b:40};
+  const xMin=0,xMax=40,yMin=74,yMax=86;
+  const toX=v=>pad.l+(v-xMin)/(xMax-xMin)*(W-pad.l-pad.r);
+  const toY=v=>pad.t+(1-(v-yMin)/(yMax-yMin))*(H-pad.t-pad.b);
+
+  ctx.strokeStyle='#2d3147'; ctx.lineWidth=1;
+  [76,78,80,82,84].forEach(a=>{ ctx.beginPath(); ctx.moveTo(pad.l,toY(a)); ctx.lineTo(W-pad.r,toY(a)); ctx.stroke(); });
+  [0,10,20,30,40].forEach(f=>{ ctx.beginPath(); ctx.moveTo(toX(f),pad.t); ctx.lineTo(toX(f),H-pad.b); ctx.stroke(); });
+
+  ctx.fillStyle='#64748b'; ctx.font='10px Segoe UI,sans-serif';
+  ctx.textAlign='right'; [76,78,80,82,84].forEach(a=>ctx.fillText(a+'%',pad.l-4,toY(a)+4));
+  ctx.textAlign='center'; [0,10,20,30,40].forEach(f=>ctx.fillText(f+'G',toX(f),H-pad.b+14));
+  ctx.fillText('GFLOPs',W/2,H-4);
+  ctx.save(); ctx.translate(12,H/2); ctx.rotate(-Math.PI/2); ctx.fillText('Top-1 Acc',0,0); ctx.restore();
+
+  // ResNet family
+  const resnetPoints=[{f:1.8,a:69.8,n:'R18'},{f:3.7,a:73.3,n:'R34'},{f:4.1,a:76.1,n:'R50'},{f:7.8,a:77.4,n:'R101'},{f:11.6,a:78.3,n:'R152'}];
+  ctx.strokeStyle='#f87171'; ctx.lineWidth=1.5; ctx.setLineDash([4,3]);
+  ctx.beginPath(); resnetPoints.forEach((p,i)=>i===0?ctx.moveTo(toX(p.f),toY(p.a)):ctx.lineTo(toX(p.f),toY(p.a))); ctx.stroke();
+  ctx.setLineDash([]);
+  resnetPoints.forEach(p=>{ ctx.fillStyle='#f87171'; ctx.beginPath(); ctx.arc(toX(p.f),toY(p.a),4,0,Math.PI*2); ctx.fill(); });
+
+  // EfficientNet
+  ctx.strokeStyle='#86efac'; ctx.lineWidth=2;
+  ctx.beginPath(); EFF_PRESETS.forEach((p,i)=>i===0?ctx.moveTo(toX(p.flops),toY(p.acc)):ctx.lineTo(toX(p.flops),toY(p.acc))); ctx.stroke();
+  EFF_PRESETS.forEach((p,i)=>{
+    ctx.fillStyle='#86efac'; ctx.beginPath(); ctx.arc(toX(p.flops),toY(p.acc),5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#86efac'; ctx.font='9px Segoe UI,sans-serif'; ctx.textAlign='center';
+    ctx.fillText('B'+i,toX(p.flops),toY(p.acc)-8);
+  });
+
+  ctx.fillStyle='#f87171'; ctx.fillRect(pad.l+5,pad.t,10,10); ctx.fillStyle='#e2e8f0'; ctx.font='10px Segoe UI,sans-serif'; ctx.textAlign='left'; ctx.fillText('ResNet',pad.l+19,pad.t+9);
+  ctx.fillStyle='#86efac'; ctx.fillRect(pad.l+75,pad.t,10,10); ctx.fillStyle='#e2e8f0'; ctx.fillText('EfficientNet',pad.l+89,pad.t+9);
+}
+
+function drawScalingDiagram(d, w, r) {
+  const canvas=document.getElementById('scalingDiagram');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H); ctx.fillStyle='#1a1f2e'; ctx.fillRect(0,0,W,H);
+
+  // 3 networks: baseline, depth, width-height
+  function drawNet(cx, label, depthScale, widthScale, resScale, color) {
+    const baseH=20, baseW=24;
+    const nLayers=Math.round(4*Math.min(depthScale,3));
+    const layerW=Math.round(baseW*Math.min(widthScale,2.5));
+    const layerH=Math.round(baseH*Math.min(resScale,2));
+    const totalH=nLayers*(layerH+4);
+    const startY=(H-totalH)/2;
+
+    ctx.strokeStyle=color; ctx.lineWidth=1.5;
+    for(let i=0;i<nLayers;i++) {
+      ctx.fillStyle=color+'33';
+      ctx.beginPath();
+      ctx.roundRect(cx-layerW/2,startY+i*(layerH+4),layerW,layerH,3);
+      ctx.fill(); ctx.stroke();
+    }
+    ctx.fillStyle=color; ctx.font='10px Segoe UI,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(label,cx,H-10);
+    ctx.fillStyle='#64748b'; ctx.font='9px Segoe UI,sans-serif';
+    ctx.fillText(`d:${Math.min(depthScale,3).toFixed(1)}× w:${Math.min(widthScale,2.5).toFixed(1)}×`,cx,H-1);
+  }
+
+  drawNet(60,'Baseline',1,1,1,'#64748b');
+  drawNet(160,'Depth↑',d,1,1,'#7dd3fc');
+  drawNet(250,'Width↑',1,w,1,'#a78bfa');
+  drawNet(340,'Compound',d,w,r,'#86efac');
+
+  ctx.fillStyle='#94a3b8'; ctx.font='11px Segoe UI,sans-serif'; ctx.textAlign='center';
+  ctx.fillText('Scaling Dimensions',W/2,16);
+}
+
+// ═══════════════ TAB 4: VIT ═══════════════
+let selectedPatch=-1;
+let vitAnimTimer=null;
+let vitStep=0;
+
+function initViT() {
+  renderPatchGrid();
+  drawViTCanvas();
+}
+
+function renderPatchGrid() {
+  const grid=document.getElementById('patchGrid');
+  grid.innerHTML='';
+  const N=36; // 6×6 patches
+  for(let i=0;i<N;i++) {
+    const cell=document.createElement('div');
+    cell.className='patch-cell';
+    const h=Math.round((i%6)*30+((Math.floor(i/6)%2)*15));
+    cell.style.cssText=`width:36px;height:36px;background:hsl(${h+200},40%,${20+Math.round(Math.random()*15)}%);border:1px solid #2d3147;`;
+    cell.dataset.idx=i;
+    cell.onclick=()=>selectPatch(i);
+    grid.appendChild(cell);
+  }
+}
+
+function selectPatch(idx) {
+  selectedPatch=idx;
+  document.querySelectorAll('.patch-cell').forEach((c,i)=>{
+    c.classList.remove('selected','attended');
+    if(i===idx) c.classList.add('selected');
+  });
+
+  // Fake attention weights
+  const attnWeights=Array.from({length:36},(_,i)=>{
+    const dist=Math.sqrt(Math.pow((i%6)-(idx%6),2)+Math.pow(Math.floor(i/6)-Math.floor(idx/6),2));
+    return Math.exp(-dist*0.4)*(0.5+Math.random()*0.5);
+  });
+  const sum=attnWeights.reduce((a,b)=>a+b,0);
+  const norm=attnWeights.map(w=>w/sum);
+
+  // Highlight attended patches
+  const threshold=norm[idx]*0.6;
+  document.querySelectorAll('.patch-cell').forEach((c,i)=>{
+    if(i!==idx && norm[i]>threshold) c.classList.add('attended');
+  });
+
+  // Show attention bar chart
+  const container=document.getElementById('attnWeights');
+  container.innerHTML='';
+  const top8=norm.map((w,i)=>({w,i})).sort((a,b)=>b.w-a.w).slice(0,8);
+  top8.forEach(({w,i})=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:6px;margin-bottom:3px;font-size:0.75rem;';
+    row.innerHTML=`<span style="color:#64748b;min-width:50px;">Patch ${i}</span><div style="flex:1;height:8px;background:#7dd3fc${Math.round(w*255).toString(16).padStart(2,'0')};border-radius:4px;width:${(w*300).toFixed(0)}px;max-width:120px;"></div><span style="color:#7dd3fc;min-width:40px;">${(w*100).toFixed(1)}%</span>`;
+    container.appendChild(row);
+  });
+
+  document.getElementById('attnInfo').innerHTML=`<strong>Patch ${idx} attends to:</strong> Highest attention on patch ${top8[0].i} (${(top8[0].w*100).toFixed(1)}%). ViT attends globally from the first layer, unlike CNN which builds local→global hierarchy.`;
+}
+
+function drawViTCanvas() {
+  const canvas=document.getElementById('vitCanvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H); ctx.fillStyle='#1a1f2e'; ctx.fillRect(0,0,W,H);
+
+  // Image on left
+  const imgSize=96;
+  const pSize=imgSize/4;
+  ctx.strokeStyle='#2d3147'; ctx.lineWidth=1;
+  for(let r=0;r<4;r++) for(let c=0;c<4;c++) {
+    const h=(r*4+c)*22+180;
+    ctx.fillStyle=`hsl(${h},40%,30%)`;
+    ctx.fillRect(20+c*pSize,80+r*pSize,pSize-1,pSize-1);
+    ctx.strokeStyle='#7dd3fc33'; ctx.strokeRect(20+c*pSize,80+r*pSize,pSize-1,pSize-1);
+  }
+  ctx.strokeStyle='#7dd3fc'; ctx.lineWidth=1.5; ctx.strokeRect(19,79,imgSize+1,imgSize+1);
+  ctx.fillStyle='#94a3b8'; ctx.font='11px Segoe UI,sans-serif'; ctx.textAlign='center'; ctx.fillText('Image',67,72);
+  ctx.fillStyle='#64748b'; ctx.font='10px Segoe UI,sans-serif'; ctx.fillText('224×224',67,62);
+
+  // Arrow
+  ctx.fillStyle='#3b4459'; ctx.beginPath(); ctx.moveTo(125,128); ctx.lineTo(148,128); ctx.lineTo(140,122); ctx.moveTo(148,128); ctx.lineTo(140,134); ctx.stroke();
+
+  // Patches
+  const patchX=155, patchY=70;
+  for(let i=0;i<4;i++) {
+    const h=(i*4)*22+180;
+    ctx.fillStyle=`hsl(${h},40%,30%)`;
+    ctx.fillRect(patchX+i*26,patchY,22,22);
+    ctx.strokeStyle='#a78bfa'; ctx.lineWidth=1; ctx.strokeRect(patchX+i*26,patchY,22,22);
+    ctx.fillStyle='#a78bfa'; ctx.font='9px Segoe UI,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(i+1,patchX+i*26+11,patchY+34);
+  }
+  ctx.fillStyle='#94a3b8'; ctx.font='11px Segoe UI,sans-serif'; ctx.textAlign='center'; ctx.fillText('Patches + Pos Enc',patchX+52,patchY-8);
+
+  // Arrow 2
+  ctx.fillStyle='#3b4459'; ctx.strokeStyle='#3b4459'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(265,128); ctx.lineTo(285,128); ctx.stroke();
+
+  // Transformer blocks
+  const txX=292;
+  ['Embed','MHA','FFN','Output'].forEach((label,i)=>{
+    const y=60+i*60;
+    ctx.fillStyle='#1e2130'; ctx.strokeStyle='#7dd3fc'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.roundRect(txX,y,110,40,6); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#7dd3fc'; ctx.font='11px Segoe UI,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(label,txX+55,y+24);
+    if(i<3) {
+      ctx.strokeStyle='#3b4459'; ctx.beginPath(); ctx.moveTo(txX+55,y+40); ctx.lineTo(txX+55,y+60); ctx.stroke();
+    }
+  });
+  ctx.fillStyle='#94a3b8'; ctx.font='11px Segoe UI,sans-serif'; ctx.textAlign='center'; ctx.fillText('Transformer',txX+55,50);
+
+  // Global attention annotation
+  ctx.strokeStyle='#fbbf2455'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.arc(txX+55,130,55,0,Math.PI*2); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#fbbf24'; ctx.font='9px Segoe UI,sans-serif'; ctx.textAlign='center';
+  ctx.fillText('Global attention',txX+55,H-10);
+
+  // Labels at bottom
+  ctx.fillStyle='#64748b'; ctx.font='9px Segoe UI,sans-serif'; ctx.textAlign='center';
+  ctx.fillText('Split into',67,H-20); ctx.fillText('16×16 patches',67,H-10);
+  ctx.fillText('Linear embed +',patchX+52,H-20); ctx.fillText('position encoding',patchX+52,H-10);
+}
+
+function animateViT() {
+  if(vitAnimTimer) clearInterval(vitAnimTimer);
+  vitStep=0;
+  const steps=[
+    'Step 1: Image is divided into fixed-size patches (16×16 pixels each for standard ViT).',
+    'Step 2: Each patch is flattened and linearly projected to a D-dimensional embedding vector.',
+    'Step 3: Positional encodings are added to preserve spatial order information.',
+    'Step 4: A [CLS] token is prepended — its final representation is used for classification.',
+    'Step 5: The sequence flows through L transformer blocks (multi-head self-attention + FFN).',
+    'Step 6: Final [CLS] embedding is fed to a classification head. Done!'
+  ];
+  const stepEl=document.getElementById('vitStep');
+  vitAnimTimer=setInterval(()=>{
+    if(vitStep>=steps.length){ clearInterval(vitAnimTimer); return; }
+    stepEl.innerHTML=`<strong>[${vitStep+1}/${steps.length}]</strong> ${steps[vitStep]}`;
+    vitStep++;
+  },1500);
+}
+
+function resetViT() {
+  if(vitAnimTimer) clearInterval(vitAnimTimer);
+  vitStep=0;
+  document.getElementById('vitStep').textContent='Click "Animate Patches" to see how ViT processes an image.';
+  selectedPatch=-1;
+  renderPatchGrid();
+  document.getElementById('attnWeights').innerHTML='';
+  document.getElementById('attnInfo').innerHTML='<strong>Self-Attention:</strong> Each patch computes Query, Key, Value vectors. Attention(Q,K,V) = softmax(QKᵀ/√d)·V. Every patch attends to all others.';
+}
+
+// Initialize first tab
+updateResnetChart(); drawSkipDiagram();
+</script>
+
+
+<style>
+/* ── Chapter sidenav ── */
+.chap-sidenav {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 8888;
+}
+.chap-sidenav-toggle {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  color: #7dd3fc;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px #00000060;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+.chap-sidenav-toggle:hover { background: #0369a1; border-color: #7dd3fc; }
+.chap-sidenav-menu {
+  position: absolute;
+  bottom: 52px;
+  right: 0;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  border-radius: 14px;
+  padding: 10px 6px;
+  min-width: 220px;
+  max-height: 70vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 40px #00000080;
+  display: none;
+  scrollbar-width: thin;
+  scrollbar-color: #2d3147 transparent;
+}
+.chap-sidenav-menu.open { display: block; }
+.chap-sidenav-menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #94a3b8;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.chap-sidenav-menu a:hover { background: #0f172a; color: #e2e8f0; }
+.chap-sidenav-menu a.current { background: #0369a133; color: #7dd3fc; font-weight: 600; }
+.chap-sidenav-menu .chap-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #4b5563;
+  min-width: 28px;
+}
+.chap-sidenav-menu .menu-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #4b5563;
+  padding: 4px 12px 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+@media (max-width: 480px) {
+  .chap-sidenav { bottom: 12px; right: 12px; }
+  .chap-sidenav-menu { right: 0; min-width: 180px; }
+}
+</style>
+
+<div class="chap-sidenav">
+  <div class="chap-sidenav-menu" id="chapMenu">
+    <div class="menu-header">ML Field Guide</div>
+      <a href="ch01_math_foundations.html"><span class="chap-num">Ch 01</span>Math Foundations</a>
+      <a href="ch02_statistics.html"><span class="chap-num">Ch 02</span>Statistics</a>
+      <a href="ch03_python.html"><span class="chap-num">Ch 03</span>Python for ML</a>
+      <a href="ch04_feature_engineering.html"><span class="chap-num">Ch 04</span>Feature Engineering</a>
+      <a href="ch05_supervised_learning.html"><span class="chap-num">Ch 05</span>Supervised Learning</a>
+      <a href="ch06_model_evaluation.html"><span class="chap-num">Ch 06</span>Model Evaluation</a>
+      <a href="ch07_unsupervised.html"><span class="chap-num">Ch 07</span>Unsupervised Learning</a>
+      <a href="ch08_recommendations.html"><span class="chap-num">Ch 08</span>Recommendations</a>
+      <a href="ch09_neural_networks.html"><span class="chap-num">Ch 09a</span>Neural Networks</a>
+      <a href="ch09_cnn_architectures.html" class="current"><span class="chap-num">Ch 09b</span>CNN Architectures</a>
+      <a href="ch10_nlp_transformers.html"><span class="chap-num">Ch 10</span>NLP & Transformers</a>
+      <a href="ch11_reinforcement_learning.html"><span class="chap-num">Ch 11</span>Reinforcement Learning</a>
+      <a href="ch12_time_series.html"><span class="chap-num">Ch 12</span>Time Series</a>
+      <a href="ch13_sql.html"><span class="chap-num">Ch 13</span>SQL for ML</a>
+      <a href="ch14_big_data.html"><span class="chap-num">Ch 14</span>Big Data</a>
+      <a href="ch15_mlops.html"><span class="chap-num">Ch 15</span>MLOps</a>
+      <a href="ch16_aws.html"><span class="chap-num">Ch 16</span>AWS for ML</a>
+      <a href="ch17_responsible_ai.html"><span class="chap-num">Ch 17</span>Responsible AI</a>
+      <a href="ch18_interview_prep.html"><span class="chap-num">Ch 18</span>Interview Prep</a>
+  </div>
+  <button class="chap-sidenav-toggle" onclick="document.getElementById('chapMenu').classList.toggle('open')" title="Chapter navigation">☰</button>
+</div>
+
+</body>
+</html>

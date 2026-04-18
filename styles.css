@@ -590,3 +590,49 @@ th{
   h1 { page-break-before: auto !important; break-before: auto !important; }
   .front-page { page-break-after: auto !important; break-after: auto !important; }
 }
+
+/* ── Interactive Lab Card ── */
+.lab-card{
+  background:linear-gradient(135deg,#eff6ff,#f0f9ff);
+  border:1px solid #93c5fd;
+  border-radius:12px;
+  padding:20px 24px;
+  margin:20px 0 32px;
+  font-family:"Segoe UI",Arial,sans-serif;
+}
+.lab-card-header{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:8px;
+}
+.lab-card-header svg{ flex-shrink:0; }
+.lab-card-header strong{
+  font-size:16px;
+  color:#1d4ed8;
+}
+.lab-card p{
+  font-size:13px;
+  color:#475569;
+  margin:0 0 12px;
+  line-height:1.6;
+}
+.lab-card-links{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+.lab-card-links a{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:#1d4ed8;
+  color:#fff;
+  padding:8px 18px;
+  border-radius:8px;
+  font-size:13px;
+  font-weight:600;
+  text-decoration:none;
+  transition:background 0.2s;
+}
+.lab-card-links a:hover{ background:#1e40af; }

@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Reinforcement learning: MDPs, Q-learning, policy gradient — interactive demos.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 11 · Reinforcement Learning — The ML Field Guide</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0f1117;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+.header{padding:24px 32px;border-bottom:1px solid #2d3147;background:#1e2130}
+.header h1{font-size:1.5rem;font-weight:700;color:#86efac;letter-spacing:-0.02em}
+.header p{color:#94a3b8;font-size:0.875rem;margin-top:4px}
+.tab-bar{display:flex;gap:4px;padding:16px 32px;background:#1e2130;border-bottom:1px solid #2d3147}
+.tab-btn{padding:8px 20px;border-radius:8px;border:1px solid #2d3147;background:transparent;color:#94a3b8;cursor:pointer;font-size:0.85rem;font-weight:500;white-space:nowrap;transition:all .2s}
+.tab-btn.active{background:#14532d;color:#86efac;border-color:#86efac}
+.tab-btn:hover:not(.active){background:#1e2130;color:#e2e8f0;border-color:#86efac}
+.tab-content{display:none;padding:28px 32px;max-width:1200px;margin:0 auto}
+.tab-content.active{display:block}
+.panel{background:#1e2130;border:1px solid #2d3147;border-radius:12px;padding:20px;margin-bottom:16px}
+.panel h3{font-size:1rem;font-weight:600;color:#86efac;margin-bottom:14px}
+.panel h4{font-size:0.875rem;font-weight:600;color:#e2e8f0;margin-bottom:10px}
+.row{display:flex;gap:16px;flex-wrap:wrap}
+.col{flex:1;min-width:280px}
+label{font-size:0.8rem;color:#94a3b8;display:block;margin-bottom:5px}
+input[type=range]{width:100%;accent-color:#86efac}
+select{padding:6px 10px;background:#0f172a;border:1px solid #2d3147;border-radius:8px;color:#e2e8f0;font-size:0.8rem;outline:none}
+.btn{padding:8px 16px;border-radius:8px;border:1px solid #2d3147;background:#1e2130;color:#e2e8f0;cursor:pointer;font-size:0.8rem;font-weight:500;transition:all .2s}
+.btn:hover{background:#14532d;border-color:#86efac;color:#86efac}
+.btn.primary{background:#14532d;border-color:#86efac;color:#86efac}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+canvas{border-radius:8px;display:block}
+.grid-wrap{position:relative;display:inline-block}
+.info-box{background:#0f172a;border-left:3px solid #86efac;border-radius:0 8px 8px 0;padding:12px 16px;font-size:0.8rem;color:#94a3b8;line-height:1.6}
+.info-box strong{color:#e2e8f0}
+.formula-box{background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:10px 14px;font-size:0.85rem;color:#fbbf24;font-family:monospace;text-align:center;margin:8px 0}
+.stat-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.stat-card{background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:10px 14px;text-align:center;flex:1;min-width:90px}
+.stat-card .val{font-size:1.3rem;font-weight:700;color:#86efac}
+.stat-card .lbl{font-size:0.7rem;color:#64748b;margin-top:2px}
+.param-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.param-row label{min-width:90px;margin:0}
+.param-val{color:#86efac;font-weight:600;font-size:0.85rem;min-width:40px}
+.metric-bar{height:8px;border-radius:4px;background:#1a1f2e;margin:3px 0;overflow:hidden}
+.metric-fill{height:100%;border-radius:4px;transition:width .3s}
+.bandit-arm{background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:12px;text-align:center;flex:1;min-width:80px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.bandit-arm:hover{border-color:#86efac}
+.bandit-arm.selected{border-color:#fbbf24;border-width:2px}
+.arm-name{font-size:0.8rem;font-weight:600;color:#e2e8f0}
+.arm-true{font-size:0.7rem;color:#64748b;margin-top:4px}
+.arm-est{font-size:0.9rem;font-weight:700;color:#86efac;margin-top:6px}
+.arm-pulls{font-size:0.7rem;color:#94a3b8;margin-top:2px}
+.arm-bar{position:absolute;bottom:0;left:0;right:0;height:3px;background:#86efac;transition:width .3s}
+.mdp-svg{overflow:visible}
+.state-circle{cursor:pointer;transition:all .2s}
+.state-circle:hover circle{filter:brightness(1.3)}
+.bellman-box{background:#0f172a;border:1px solid #fbbf24;border-radius:8px;padding:14px;font-family:monospace;font-size:0.85rem;color:#fbbf24;text-align:center}
+.comparison-table{width:100%;border-collapse:collapse;font-size:0.8rem}
+.comparison-table th{background:#0f172a;color:#86efac;padding:8px 12px;text-align:left;border:1px solid #2d3147}
+.comparison-table td{padding:8px 12px;border:1px solid #2d3147}
+.comparison-table tr:nth-child(even) td{background:#0f172a}
+
+  /* ── Shared improvements ── */
+  body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important; }
+  code, pre, .code-block, .formula, .mono, [style*="monospace"], [style*="Courier"] { font-family: 'JetBrains Mono', 'Cascadia Code', 'Courier New', monospace !important; }
+
+  /* Smoother scrolling */
+  html { scroll-behavior: smooth; }
+
+  /* Focus ring for accessibility */
+  button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid #7dd3fc;
+    outline-offset: 2px;
+  }
+
+  /* Improve tab-nav overflow on small screens */
+  .tab-nav, .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .tab-nav::-webkit-scrollbar, .tabs::-webkit-scrollbar { display: none; }
+
+  /* Mobile responsive improvements */
+  @media (max-width: 768px) {
+    .page-header { padding: 24px 20px 18px !important; }
+    .tab-panel { padding: 20px !important; }
+    .tab-nav { padding: 16px 20px 0 !important; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
+    .grid2, .grid3 { grid-template-columns: 1fr !important; }
+    .page-title { font-size: 22px !important; }
+    h1 { font-size: 1.4rem !important; }
+  }
+  @media (max-width: 480px) {
+    body { padding: 0 0 40px 0 !important; }
+    .tab-btn { padding: 8px 14px !important; font-size: 12px !important; }
+    .btn { padding: 6px 12px !important; font-size: 12px !important; }
+  }
+
+  /* Better selection color */
+  ::selection { background: #1d4ed880; color: #e0f2fe; }
+
+  /* Smoother canvas rendering */
+  canvas { image-rendering: -webkit-optimize-contrast; }
+
+  /* Tooltip z-index fix */
+  .tooltip { z-index: 9999 !important; }
+
+  /* Code block horizontal scroll indicator */
+  .code-block { overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Chapter 11: Reinforcement Learning</h1>
+  <p>Interactive visualizations — Q-Learning, Exploration vs Exploitation, Markov Decision Processes</p>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('grid')">Grid World — Q-Learning</button>
+  <button class="tab-btn" onclick="switchTab('bandit')">Exploration vs Exploitation</button>
+  <button class="tab-btn" onclick="switchTab('mdp')">Markov Decision Process</button>
+</div>
+
+<!-- TAB 1: Grid World -->
+<div id="tab-grid" class="tab-content active">
+  <div class="row">
+    <div class="col" style="max-width:520px">
+      <div class="panel">
+        <h3>Grid World — Q-Learning</h3>
+        <div class="btn-row">
+          <button class="btn" onclick="stepAgent()">Step</button>
+          <button class="btn" onclick="runEpisode()">Run Episode</button>
+          <button class="btn primary" onclick="train100()">Train 100 Episodes</button>
+          <button class="btn" onclick="resetGrid()">Reset</button>
+        </div>
+        <div class="grid-wrap">
+          <canvas id="grid-canvas" width="360" height="360"></canvas>
+        </div>
+        <div class="info-box" style="margin-top:12px" id="grid-info">
+          Click any cell to inspect its Q-values. Use the controls to train the agent.
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="stat-row">
+        <div class="stat-card"><div class="val" id="ep-count">0</div><div class="lbl">Episodes</div></div>
+        <div class="stat-card"><div class="val" id="step-count">0</div><div class="lbl">Steps</div></div>
+        <div class="stat-card"><div class="val" id="cum-reward">0</div><div class="lbl">Cum. Reward</div></div>
+        <div class="stat-card"><div class="val" id="success-rate">0%</div><div class="lbl">Success Rate</div></div>
+      </div>
+      <div class="panel">
+        <h4>Q-Learning Parameters</h4>
+        <div class="param-row">
+          <label>Learning rate α</label>
+          <input type="range" id="alpha-sl" min="0.01" max="1" step="0.01" value="0.1" oninput="updateParams()">
+          <span class="param-val" id="alpha-val">0.10</span>
+        </div>
+        <div class="param-row">
+          <label>Discount γ</label>
+          <input type="range" id="gamma-sl" min="0.5" max="0.999" step="0.001" value="0.9" oninput="updateParams()">
+          <span class="param-val" id="gamma-val">0.90</span>
+        </div>
+        <div class="param-row">
+          <label>Exploration ε</label>
+          <input type="range" id="eps-sl" min="0.01" max="1" step="0.01" value="0.3" oninput="updateParams()">
+          <span class="param-val" id="eps-val">0.30</span>
+        </div>
+        <div class="formula-box" style="margin-top:8px">Q(s,a) ← Q(s,a) + α[r + γ·max Q(s',a') − Q(s,a)]</div>
+      </div>
+      <div class="panel">
+        <h4>Q-Values for Selected Cell</h4>
+        <canvas id="qval-canvas" width="280" height="160"></canvas>
+        <div style="color:#64748b;font-size:0.75rem;margin-top:6px;text-align:center" id="qval-info">Click a grid cell to see Q-values</div>
+      </div>
+      <div class="panel">
+        <h4>Learning Curve</h4>
+        <canvas id="reward-canvas" width="280" height="110"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 2: Bandits -->
+<div id="tab-bandit" class="tab-content">
+  <div class="row">
+    <div class="col">
+      <div class="panel">
+        <h3>Multi-Armed Bandit</h3>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+          <div>
+            <label>Strategy</label>
+            <select id="bandit-strategy" onchange="resetBandit()">
+              <option value="egreedy">ε-Greedy</option>
+              <option value="ucb">UCB (Upper Confidence Bound)</option>
+              <option value="thompson">Thompson Sampling</option>
+            </select>
+          </div>
+          <div id="eps-bandit-wrap">
+            <label>ε = <span id="eps-bandit-val">0.10</span></label>
+            <input type="range" id="eps-bandit-sl" min="0.01" max="0.5" step="0.01" value="0.1" oninput="document.getElementById('eps-bandit-val').textContent=parseFloat(this.value).toFixed(2)">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn" onclick="pullOnce()">Pull Once</button>
+          <button class="btn" onclick="pull100()">Pull 100×</button>
+          <button class="btn primary" onclick="pull1000()">Pull 1000×</button>
+          <button class="btn" onclick="resetBandit()">Reset</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="arms-display"></div>
+        <div class="info-box" id="bandit-info">
+          Pull the arms to discover their true reward rates. The agent doesn't know which is best — it must balance <strong>exploring</strong> uncertain arms vs <strong>exploiting</strong> the best known arm.
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="panel">
+        <h4>Regret Curve</h4>
+        <canvas id="regret-canvas" width="380" height="180"></canvas>
+        <div style="display:flex;gap:12px;margin-top:8px;font-size:0.75rem;flex-wrap:wrap" id="regret-legend"></div>
+      </div>
+      <div class="panel">
+        <h4>Estimated vs True Reward Rates</h4>
+        <canvas id="convergence-canvas" width="380" height="160"></canvas>
+      </div>
+      <div class="panel">
+        <h4>Strategy Comparison</h4>
+        <table class="comparison-table">
+          <thead><tr><th>Strategy</th><th>Exploration</th><th>Best For</th><th>Regret</th></tr></thead>
+          <tbody>
+            <tr><td>ε-Greedy</td><td>Random (prob ε)</td><td>Simple, robust</td><td>Linear O(T)</td></tr>
+            <tr><td>UCB</td><td>Uncertain arms</td><td>No ε to tune</td><td>O(log T)</td></tr>
+            <tr><td>Thompson</td><td>Bayesian sampling</td><td>Best empirically</td><td>O(log T)</td></tr>
+          </tbody>
+        </table>
+        <div class="info-box" style="margin-top:10px"><strong>Key insight:</strong> UCB explores arms that are uncertain (few pulls), not randomly — "optimism in the face of uncertainty."</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 3: MDP -->
+<div id="tab-mdp" class="tab-content">
+  <div class="row">
+    <div class="col" style="max-width:560px">
+      <div class="panel">
+        <h3>Markov Decision Process</h3>
+        <div class="btn-row">
+          <button class="btn primary" onclick="runValueIteration()">Run Value Iteration</button>
+          <button class="btn" onclick="stepVI()">Step</button>
+          <button class="btn" onclick="resetMDP()">Reset</button>
+        </div>
+        <div class="param-row">
+          <label>Discount γ</label>
+          <input type="range" id="mdp-gamma-sl" min="0.5" max="0.999" step="0.001" value="0.9" oninput="updateMDPGamma(this.value)">
+          <span class="param-val" id="mdp-gamma-val">0.90</span>
+        </div>
+        <div style="margin-top:12px">
+          <svg id="mdp-svg" width="100%" viewBox="0 0 500 420" class="mdp-svg"></svg>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="panel">
+        <h4>Value Iteration Progress</h4>
+        <div class="stat-row">
+          <div class="stat-card"><div class="val" id="vi-iter">0</div><div class="lbl">Iterations</div></div>
+          <div class="stat-card"><div class="val" id="vi-delta">∞</div><div class="lbl">Max ΔV</div></div>
+          <div class="stat-card"><div class="val" id="vi-status">Init</div><div class="lbl">Status</div></div>
+        </div>
+        <canvas id="vi-canvas" width="320" height="140"></canvas>
+      </div>
+      <div class="panel">
+        <h4>Bellman Optimality Equation</h4>
+        <div class="bellman-box">
+          V*(s) = max_a Σ P(s'|s,a)[R(s,a,s') + γV*(s')]
+        </div>
+        <div class="info-box" style="margin-top:10px">
+          <strong>Value Iteration</strong> repeatedly applies the Bellman operator until convergence. Each iteration updates all state values using current estimates of neighbors.
+        </div>
+        <div class="formula-box" style="margin-top:8px">
+          V_{k+1}(s) = max_a Σ P(s'|s,a)[R + γ·V_k(s')]
+        </div>
+      </div>
+      <div class="panel">
+        <h4>Current Policy (Optimal Actions)</h4>
+        <div id="policy-display" style="font-size:0.8rem;color:#94a3b8">Run value iteration to see the optimal policy arrows.</div>
+        <canvas id="policy-canvas" width="320" height="140" style="margin-top:8px"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== TAB SWITCHING ====================
+function switchTab(id) {
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.target.classList.add('active');
+  if (id==='grid') { drawGrid(); drawQValCanvas(-1,-1); drawRewardCurve(); }
+  if (id==='bandit') { initBandit(); }
+  if (id==='mdp') { drawMDP(); drawVICanvas(); drawPolicyCanvas(); }
+}
+
+// ==================== GRID WORLD ====================
+const GRID_SIZE = 6;
+const CELL = 60;
+// Layout: 0=free, 1=wall, 2=trap, 3=goal
+const GRID = [
+  [0,0,0,1,0,0],
+  [0,1,0,1,0,2],
+  [0,1,0,0,0,0],
+  [0,0,0,1,1,0],
+  [2,0,1,0,0,0],
+  [0,0,0,0,0,3]
+];
+const START = {r:0,c:0};
+const GOAL = {r:5,c:5};
+const ACTIONS = [{r:-1,c:0},{r:1,c:0},{r:0,c:-1},{r:0,c:1}]; // up,down,left,right
+const ACTION_SYMBOLS = ['↑','↓','←','→'];
+
+let Q = {};
+let agentPos = {...START};
+let episodeCount = 0, stepCount = 0, cumReward = 0, successCount = 0;
+let rewardHistory = [];
+let trail = [];
+let selectedCell = null;
+let alpha = 0.1, gamma = 0.9, epsilon = 0.3;
+let isTraining = false;
+let trainInterval = null;
+
+function qKey(r,c) { return `${r},${c}`; }
+
+function initQ() {
+  Q = {};
+  for (let r=0;r<GRID_SIZE;r++) for (let c=0;c<GRID_SIZE;c++) {
+    if (GRID[r][c]!==1) Q[qKey(r,c)] = [0,0,0,0];
+  }
+}
+
+function reward(r,c) {
+  if (r===GOAL.r&&c===GOAL.c) return 10;
+  if (GRID[r][c]===2) return -5;
+  return -0.1;
+}
+
+function isTerminal(r,c) {
+  return (r===GOAL.r&&c===GOAL.c) || GRID[r][c]===2;
+}
+
+function getAction(r,c) {
+  if (Math.random() < epsilon) return Math.floor(Math.random()*4);
+  const qs = Q[qKey(r,c)];
+  return qs.indexOf(Math.max(...qs));
+}
+
+function step(r,c,a) {
+  let nr = r + ACTIONS[a].r;
+  let nc = c + ACTIONS[a].c;
+  if (nr<0||nr>=GRID_SIZE||nc<0||nc>=GRID_SIZE||GRID[nr][nc]===1) { nr=r; nc=c; }
+  return {nr,nc};
+}
+
+function qLearnStep() {
+  const {r,c} = agentPos;
+  const a = getAction(r,c);
+  const {nr,nc} = step(r,c,a);
+  const r_ = reward(nr,nc);
+  const maxNext = isTerminal(nr,nc) ? 0 : Math.max(...Q[qKey(nr,nc)]);
+  Q[qKey(r,c)][a] += alpha*(r_ + gamma*maxNext - Q[qKey(r,c)][a]);
+  agentPos = {r:nr,c:nc};
+  trail.push({r:nr,c:nc});
+  if (trail.length > 20) trail.shift();
+  stepCount++;
+  cumReward += r_;
+  return isTerminal(nr,nc);
+}
+
+function runEpisode() {
+  agentPos = {...START};
+  trail = [];
+  let done = false, steps = 0;
+  while (!done && steps < 200) {
+    done = qLearnStep();
+    steps++;
+  }
+  if (agentPos.r===GOAL.r&&agentPos.c===GOAL.c) successCount++;
+  rewardHistory.push(cumReward);
+  episodeCount++;
+  agentPos = {...START};
+  trail = [];
+  updateStats();
+  drawGrid();
+  drawRewardCurve();
+}
+
+function stepAgent() {
+  const done = qLearnStep();
+  if (done) {
+    if (agentPos.r===GOAL.r&&agentPos.c===GOAL.c) successCount++;
+    rewardHistory.push(cumReward);
+    episodeCount++;
+    agentPos = {...START};
+    trail = [];
+  }
+  updateStats();
+  drawGrid();
+  drawRewardCurve();
+}
+
+function train100() {
+  for (let i=0;i<100;i++) {
+    agentPos = {...START};
+    trail = [];
+    let done=false, steps=0;
+    while (!done&&steps<200) { done=qLearnStep(); steps++; }
+    if (agentPos.r===GOAL.r&&agentPos.c===GOAL.c) successCount++;
+    rewardHistory.push(cumReward);
+    episodeCount++;
+  }
+  agentPos = {...START};
+  trail = [];
+  updateStats();
+  drawGrid();
+  drawRewardCurve();
+}
+
+function resetGrid() {
+  initQ();
+  agentPos = {...START};
+  trail = [];
+  episodeCount=stepCount=cumReward=successCount=0;
+  rewardHistory=[];
+  selectedCell=null;
+  updateStats();
+  drawGrid();
+  drawQValCanvas(-1,-1);
+  drawRewardCurve();
+}
+
+function updateStats() {
+  document.getElementById('ep-count').textContent = episodeCount;
+  document.getElementById('step-count').textContent = stepCount;
+  document.getElementById('cum-reward').textContent = cumReward.toFixed(1);
+  document.getElementById('success-rate').textContent = episodeCount>0 ? Math.round(successCount/episodeCount*100)+'%' : '0%';
+}
+
+function updateParams() {
+  alpha = parseFloat(document.getElementById('alpha-sl').value);
+  gamma = parseFloat(document.getElementById('gamma-sl').value);
+  epsilon = parseFloat(document.getElementById('eps-sl').value);
+  document.getElementById('alpha-val').textContent = alpha.toFixed(2);
+  document.getElementById('gamma-val').textContent = gamma.toFixed(2);
+  document.getElementById('eps-val').textContent = epsilon.toFixed(2);
+}
+
+function drawGrid() {
+  const canvas = document.getElementById('grid-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  for (let r=0;r<GRID_SIZE;r++) for (let c=0;c<GRID_SIZE;c++) {
+    const x=c*CELL, y=r*CELL, ct=GRID[r][c];
+    // Cell background
+    if (ct===1) ctx.fillStyle='#1a1f2e';
+    else if (ct===2) ctx.fillStyle='#2d1515';
+    else if (r===GOAL.r&&c===GOAL.c) ctx.fillStyle='#2d2a0d';
+    else if (selectedCell&&selectedCell.r===r&&selectedCell.c===c) ctx.fillStyle='#1a2a1a';
+    else ctx.fillStyle='#0f172a';
+    ctx.fillRect(x,y,CELL,CELL);
+
+    // Q-value heatmap tint
+    if (ct===0||ct===2||ct===3) {
+      const qs = Q[qKey(r,c)];
+      if (qs) {
+        const maxQ = Math.max(...qs);
+        if (maxQ > 0) {
+          const intensity = Math.min(1, maxQ/10);
+          ctx.fillStyle = `rgba(134,239,172,${intensity*0.25})`;
+          ctx.fillRect(x,y,CELL,CELL);
+        }
+      }
+    }
+
+    // Grid lines
+    ctx.strokeStyle='#2d3147';
+    ctx.lineWidth=1;
+    ctx.strokeRect(x,y,CELL,CELL);
+
+    // Special cells
+    if (ct===1) {
+      ctx.fillStyle='#2d3147';
+      ctx.fillRect(x+2,y+2,CELL-4,CELL-4);
+      ctx.fillStyle='#64748b';
+      ctx.font='20px serif';
+      ctx.textAlign='center';
+      ctx.fillText('█', x+CELL/2, y+CELL/2+7);
+    } else if (ct===2) {
+      ctx.fillStyle='#f87171';
+      ctx.font='22px serif';
+      ctx.textAlign='center';
+      ctx.fillText('💀', x+CELL/2, y+CELL/2+8);
+    } else if (r===GOAL.r&&c===GOAL.c) {
+      ctx.fillStyle='#fbbf24';
+      ctx.font='22px serif';
+      ctx.textAlign='center';
+      ctx.fillText('⭐', x+CELL/2, y+CELL/2+8);
+    } else if (r===START.r&&c===START.c&&!(agentPos.r===r&&agentPos.c===c)) {
+      ctx.fillStyle='#14532d';
+      ctx.font='11px Segoe UI';
+      ctx.textAlign='center';
+      ctx.fillStyle='#86efac';
+      ctx.fillText('START', x+CELL/2, y+CELL/2+4);
+    }
+
+    // Best action arrow
+    if (episodeCount > 0 && ct===0) {
+      const qs = Q[qKey(r,c)];
+      if (qs) {
+        const best = qs.indexOf(Math.max(...qs));
+        const arrows = ['↑','↓','←','→'];
+        const maxQ = Math.max(...qs);
+        if (maxQ > 0.1) {
+          ctx.fillStyle = `rgba(125,211,252,${Math.min(1,maxQ/5)*0.9})`;
+          ctx.font = `bold ${Math.min(22,12+maxQ*2)}px serif`;
+          ctx.textAlign = 'center';
+          ctx.fillText(arrows[best], x+CELL/2, y+CELL/2+8);
+        }
+      }
+    }
+  }
+
+  // Trail
+  trail.forEach((pos,i) => {
+    const alpha_ = (i/trail.length)*0.6;
+    ctx.fillStyle = `rgba(134,239,172,${alpha_})`;
+    ctx.beginPath();
+    ctx.arc(pos.c*CELL+CELL/2, pos.r*CELL+CELL/2, 4, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  // Agent
+  ctx.font='28px serif';
+  ctx.textAlign='center';
+  ctx.fillText('🤖', agentPos.c*CELL+CELL/2, agentPos.r*CELL+CELL/2+10);
+
+  // Click handler
+  canvas.onclick = function(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width/rect.width, scaleY = canvas.height/rect.height;
+    const c = Math.floor((e.clientX-rect.left)*scaleX/CELL);
+    const r = Math.floor((e.clientY-rect.top)*scaleY/CELL);
+    if (r>=0&&r<GRID_SIZE&&c>=0&&c<GRID_SIZE) {
+      selectedCell = {r,c};
+      drawGrid();
+      drawQValCanvas(r,c);
+    }
+  };
+}
+
+function drawQValCanvas(r,c) {
+  const canvas = document.getElementById('qval-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const w=canvas.width, h=canvas.height;
+
+  if (r<0||c<0||GRID[r][c]===1) {
+    ctx.fillStyle='#64748b';
+    ctx.font='12px Segoe UI';
+    ctx.textAlign='center';
+    ctx.fillText('Select a free cell', w/2, h/2);
+    return;
+  }
+
+  const qs = Q[qKey(r,c)] || [0,0,0,0];
+  const maxQ = Math.max(Math.max(...qs), 0.001);
+  const dirs = [{label:'↑ Up',dx:0,dy:-1,val:qs[0]},{label:'↓ Down',dx:0,dy:1,val:qs[1]},{label:'← Left',dx:-1,dy:0,val:qs[2]},{label:'→ Right',dx:1,dy:0,val:qs[3]}];
+  const best = qs.indexOf(Math.max(...qs));
+
+  dirs.forEach((d,i) => {
+    const y=20+i*33;
+    const barW = Math.max(0, d.val/maxQ)*(w-120);
+    ctx.fillStyle = i===best ? '#14532d' : '#0f172a';
+    ctx.beginPath();
+    ctx.roundRect(5, y, w-10, 26, 4);
+    ctx.fill();
+    ctx.fillStyle = i===best ? '#86efac44' : '#7dd3fc22';
+    ctx.beginPath();
+    ctx.roundRect(5, y, Math.max(10,barW+10), 26, 4);
+    ctx.fill();
+    ctx.fillStyle = i===best ? '#86efac' : '#7dd3fc';
+    ctx.font = `bold 14px serif`;
+    ctx.textAlign = 'left';
+    ctx.fillText(d.label.split(' ')[0], 12, y+18);
+    ctx.font = '11px Segoe UI';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText(d.label.split(' ')[1], 26, y+18);
+    ctx.fillStyle = i===best ? '#86efac' : '#e2e8f0';
+    ctx.textAlign = 'right';
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText(d.val.toFixed(3), w-10, y+18);
+  });
+
+  document.getElementById('qval-info').textContent = `Cell (${r},${c}) — Best action: ${ACTION_SYMBOLS[best]} (Q=${qs[best].toFixed(3)})`;
+}
+
+function drawRewardCurve() {
+  const canvas = document.getElementById('reward-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const w=canvas.width, h=canvas.height, pad=30;
+
+  if (rewardHistory.length < 2) {
+    ctx.fillStyle='#64748b'; ctx.font='11px Segoe UI'; ctx.textAlign='center';
+    ctx.fillText('Run episodes to see learning curve', w/2, h/2);
+    return;
+  }
+
+  const data = rewardHistory.slice(-100);
+  const mn=Math.min(...data), mx=Math.max(...data);
+  const range=mx-mn||1;
+
+  ctx.strokeStyle='#86efac'; ctx.lineWidth=1.5;
+  ctx.beginPath();
+  data.forEach((v,i) => {
+    const x=pad+(i/(data.length-1))*(w-pad*2);
+    const y=h-pad-((v-mn)/range)*(h-pad*2);
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  // Axes
+  ctx.strokeStyle='#2d3147'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(pad,5); ctx.lineTo(pad,h-pad); ctx.lineTo(w-5,h-pad); ctx.stroke();
+  ctx.fillStyle='#64748b'; ctx.font='9px Segoe UI'; ctx.textAlign='center';
+  ctx.fillText('Episodes', w/2, h-2);
+  ctx.save(); ctx.translate(12,h/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('Cum. Reward', 0, 0); ctx.restore();
+}
+
+// Init grid
+initQ();
+drawGrid();
+
+// ==================== MULTI-ARMED BANDIT ====================
+const TRUE_RATES = [0.2, 0.5, 0.35, 0.7, 0.45];
+const ARM_NAMES = ['Arm A','Arm B','Arm C','Arm D','Arm E'];
+const ARM_COLORS = ['#7dd3fc','#86efac','#fbbf24','#f87171','#a78bfa'];
+
+let armPulls, armWins, armEst, totalPulls, regretHistory;
+let alphaThompson, betaThompson;
+
+function initBandit() {
+  armPulls = new Array(5).fill(0);
+  armWins = new Array(5).fill(0);
+  armEst = new Array(5).fill(0.5);
+  totalPulls = 0;
+  regretHistory = [];
+  alphaThompson = new Array(5).fill(1);
+  betaThompson = new Array(5).fill(1);
+  renderArms();
+  drawRegretCurve();
+  drawConvergence();
+}
+
+function renderArms() {
+  const container = document.getElementById('arms-display');
+  container.innerHTML = '';
+  for (let i=0;i<5;i++) {
+    const div = document.createElement('div');
+    div.className = 'bandit-arm';
+    const known = episodeCount > 0;
+    div.innerHTML = `
+      <div style="font-size:1.8rem">🎰</div>
+      <div class="arm-name" style="color:${ARM_COLORS[i]}">${ARM_NAMES[i]}</div>
+      <div class="arm-est" style="color:${ARM_COLORS[i]}">${armEst[i].toFixed(3)}</div>
+      <div class="arm-pulls">${armPulls[i]} pulls</div>
+      <div class="arm-bar" style="background:${ARM_COLORS[i]};width:${armEst[i]*100}%"></div>`;
+    div.onclick = () => { pullArm(i); };
+    container.appendChild(div);
+  }
+}
+
+function selectArm() {
+  const strategy = document.getElementById('bandit-strategy').value;
+  const eps = parseFloat(document.getElementById('eps-bandit-sl').value);
+  if (strategy==='egreedy') {
+    if (Math.random()<eps) return Math.floor(Math.random()*5);
+    return armEst.indexOf(Math.max(...armEst));
+  } else if (strategy==='ucb') {
+    const t = totalPulls+1;
+    const scores = armEst.map((e,i)=>e + Math.sqrt(2*Math.log(t)/(armPulls[i]+1)));
+    return scores.indexOf(Math.max(...scores));
+  } else { // thompson
+    const samples = alphaThompson.map((a,i)=>sampleBeta(a,betaThompson[i]));
+    return samples.indexOf(Math.max(...samples));
+  }
+}
+
+function sampleBeta(a,b) {
+  // Approximate beta sample using normal
+  const mu = a/(a+b);
+  const std = Math.sqrt(a*b/((a+b)*(a+b)*(a+b+1)));
+  return Math.max(0, Math.min(1, mu + std*(Math.random()+Math.random()+Math.random()-1.5)*1.5));
+}
+
+function pullArm(i) {
+  const reward = Math.random() < TRUE_RATES[i] ? 1 : 0;
+  armPulls[i]++;
+  armWins[i]+=reward;
+  armEst[i] = armWins[i]/armPulls[i];
+  alphaThompson[i]+=reward;
+  betaThompson[i]+=(1-reward);
+  totalPulls++;
+  const bestTrue = Math.max(...TRUE_RATES);
+  const regret = (regretHistory.length>0?regretHistory[regretHistory.length-1]:0) + (bestTrue - TRUE_RATES[i]);
+  regretHistory.push(regret);
+  renderArms();
+  drawRegretCurve();
+  drawConvergence();
+  updateBanditInfo(i);
+}
+
+function pullOnce() { pullArm(selectArm()); }
+
+function pull100() { for(let i=0;i<100;i++) pullArm(selectArm()); }
+function pull1000() { for(let i=0;i<1000;i++) pullArm(selectArm()); }
+
+function resetBandit() { initBandit(); }
+
+function updateBanditInfo(arm) {
+  const strategy = document.getElementById('bandit-strategy').value;
+  const infos = {
+    egreedy:`Pulled ${ARM_NAMES[arm]} with ε-Greedy. ${Math.random()<0.3?'Random exploration!':'Exploiting best known arm.'} Arm D has highest true rate (0.70).`,
+    ucb:`UCB selected ${ARM_NAMES[arm]} — it had the highest UCB score (mean + uncertainty bonus). Explores arms with few pulls.`,
+    thompson:`Thompson Sampling drew ${ARM_NAMES[arm]} from its Beta posterior — naturally balances exploration/exploitation.`
+  };
+  document.getElementById('bandit-info').innerHTML = `<strong>${totalPulls} total pulls.</strong> ${infos[strategy]}`;
+}
+
+function drawRegretCurve() {
+  const canvas = document.getElementById('regret-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const w=canvas.width,h=canvas.height,pad=35;
+
+  if (regretHistory.length<2) {
+    ctx.fillStyle='#64748b';ctx.font='11px Segoe UI';ctx.textAlign='center';
+    ctx.fillText('Pull arms to see regret accumulate',w/2,h/2);return;
+  }
+  const data = regretHistory;
+  const mx=data[data.length-1];
+  ctx.strokeStyle='#86efac';ctx.lineWidth=2;
+  ctx.beginPath();
+  data.forEach((v,i)=>{
+    const x=pad+(i/(data.length-1))*(w-pad*2);
+    const y=h-pad-(v/mx)*(h-pad*2);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  // Ideal log(T) reference
+  ctx.strokeStyle='#fbbf2460';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+  ctx.beginPath();
+  const logScale = mx/Math.log(data.length+1);
+  data.forEach((v,i)=>{
+    const x=pad+(i/(data.length-1))*(w-pad*2);
+    const y=h-pad-(Math.log(i+1)*logScale/mx)*(h-pad*2);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.strokeStyle='#2d3147';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(pad,5);ctx.lineTo(pad,h-pad);ctx.lineTo(w-5,h-pad);ctx.stroke();
+  ctx.fillStyle='#64748b';ctx.font='9px Segoe UI';ctx.textAlign='center';
+  ctx.fillText('Pulls',w/2,h);
+  ctx.save();ctx.translate(12,h/2);ctx.rotate(-Math.PI/2);ctx.fillText('Cumulative Regret',0,0);ctx.restore();
+  ctx.fillStyle='#86efac';ctx.fillText('Actual',w-50,20);
+  ctx.fillStyle='#fbbf24';ctx.fillText('O(log T)',w-50,34);
+}
+
+function drawConvergence() {
+  const canvas = document.getElementById('convergence-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const w=canvas.width,h=canvas.height,pad=30;
+  const barH = (h-pad*2-10)/5;
+
+  ctx.fillStyle='#94a3b8';ctx.font='10px Segoe UI';
+  ctx.textAlign='left';
+  ctx.fillText('Arm',5,pad-5);ctx.textAlign='center';ctx.fillText('True Rate',pad+80,pad-5);ctx.fillText('Est. Rate',pad+200,pad-5);
+
+  for (let i=0;i<5;i++) {
+    const y=pad+i*(barH+4);
+    ctx.fillStyle=ARM_COLORS[i];
+    ctx.font='10px Segoe UI';ctx.textAlign='left';
+    ctx.fillText(ARM_NAMES[i],4,y+barH/2+3);
+
+    // True rate bar
+    ctx.fillStyle=ARM_COLORS[i]+'33';
+    ctx.beginPath();ctx.roundRect(pad+40,y,120,barH-2,3);ctx.fill();
+    ctx.fillStyle=ARM_COLORS[i];
+    ctx.beginPath();ctx.roundRect(pad+40,y,TRUE_RATES[i]*120,barH-2,3);ctx.fill();
+    ctx.fillStyle='#94a3b8';ctx.font='9px monospace';ctx.textAlign='right';
+    ctx.fillText(TRUE_RATES[i].toFixed(2),pad+165,y+barH/2+3);
+
+    // Est rate bar
+    ctx.fillStyle=ARM_COLORS[i]+'33';
+    ctx.beginPath();ctx.roundRect(pad+170,y,120,barH-2,3);ctx.fill();
+    ctx.fillStyle=ARM_COLORS[i];
+    const estW=Math.min(armEst[i],1)*120;
+    ctx.beginPath();ctx.roundRect(pad+170,y,estW,barH-2,3);ctx.fill();
+    ctx.fillStyle='#94a3b8';ctx.font='9px monospace';ctx.textAlign='right';
+    ctx.fillText(armEst[i].toFixed(2),pad+294,y+barH/2+3);
+  }
+}
+
+initBandit();
+
+// ==================== MDP ====================
+const MDP_STATES = [
+  {id:'s0',label:'S₀',x:80,y:80,reward:0,terminal:false},
+  {id:'s1',label:'S₁',x:250,y:80,reward:0,terminal:false},
+  {id:'s2',label:'S₂',x:420,y:80,reward:0,terminal:false},
+  {id:'s3',label:'S₃',x:80,y:220,reward:0,terminal:false},
+  {id:'s4',label:'S₄',x:250,y:220,reward:0,terminal:false},
+  {id:'s5',label:'S₅',x:420,y:220,reward:+10,terminal:true},
+  {id:'s6',label:'S₆',x:80,y:360,reward:0,terminal:false},
+  {id:'s7',label:'S₇',x:250,y:360,reward:-5,terminal:true},
+];
+
+// Transitions: [from, to, action, prob, reward]
+const MDP_TRANSITIONS = [
+  {from:0,to:1,action:'→',prob:0.8,reward:0},
+  {from:0,to:3,action:'↓',prob:0.7,reward:0},
+  {from:0,to:0,action:'stay',prob:0.2,reward:-0.1},
+  {from:1,to:2,action:'→',prob:0.9,reward:0},
+  {from:1,to:4,action:'↓',prob:0.8,reward:0},
+  {from:2,to:5,action:'↓',prob:0.8,reward:10},
+  {from:2,to:1,action:'←',prob:0.2,reward:0},
+  {from:3,to:4,action:'→',prob:0.7,reward:0},
+  {from:3,to:6,action:'↓',prob:0.6,reward:0},
+  {from:4,to:5,action:'→',prob:0.6,reward:10},
+  {from:4,to:7,action:'↓',prob:0.5,reward:-5},
+  {from:6,to:7,action:'→',prob:0.8,reward:-5},
+  {from:6,to:3,action:'↑',prob:0.3,reward:0},
+];
+
+let V = new Array(8).fill(0);
+let viIteration = 0, viHistory = [];
+let mdpGamma = 0.9;
+let selectedState = -1;
+
+function resetMDP() {
+  V = new Array(8).fill(0);
+  viIteration=0; viHistory=[];
+  selectedState=-1;
+  drawMDP(); drawVICanvas(); drawPolicyCanvas();
+  document.getElementById('vi-iter').textContent='0';
+  document.getElementById('vi-delta').textContent='∞';
+  document.getElementById('vi-status').textContent='Init';
+}
+
+function viStep() {
+  const newV = [...V];
+  let maxDelta=0;
+  for (let s=0;s<8;s++) {
+    if (MDP_STATES[s].terminal) { newV[s]=MDP_STATES[s].reward; continue; }
+    // Get all actions from state s
+    const outs = MDP_TRANSITIONS.filter(t=>t.from===s);
+    if (outs.length===0) continue;
+    // Group by action
+    const actions = [...new Set(outs.map(t=>t.action))];
+    let maxVal=-Infinity;
+    for (const a of actions) {
+      const trans = outs.filter(t=>t.action===a);
+      let val=0;
+      for (const t of trans) val += t.prob*(t.reward + mdpGamma*V[t.to]);
+      if (val>maxVal) maxVal=val;
+    }
+    newV[s]=maxVal;
+    maxDelta=Math.max(maxDelta,Math.abs(newV[s]-V[s]));
+  }
+  V=[...newV];
+  viIteration++;
+  viHistory.push(maxDelta);
+  document.getElementById('vi-iter').textContent=viIteration;
+  document.getElementById('vi-delta').textContent=maxDelta.toFixed(4);
+  document.getElementById('vi-status').textContent=maxDelta<0.001?'Converged!':'Running';
+  drawMDP(); drawVICanvas(); drawPolicyCanvas();
+  return maxDelta < 0.001;
+}
+
+function stepVI() { viStep(); }
+
+async function runValueIteration() {
+  for (let i=0;i<50;i++) {
+    const done=viStep();
+    await new Promise(r=>setTimeout(r,80));
+    if (done) break;
+  }
+}
+
+function updateMDPGamma(v) {
+  mdpGamma=parseFloat(v);
+  document.getElementById('mdp-gamma-val').textContent=parseFloat(v).toFixed(2);
+  resetMDP();
+}
+
+function valueColor(v) {
+  const mn=-5,mx=10,norm=(v-mn)/(mx-mn);
+  const r=Math.floor(248*(1-norm));
+  const g=Math.floor(113+norm*126);
+  const b=Math.floor(113*(1-norm));
+  return `rgb(${r},${g},${b})`;
+}
+
+function drawMDP() {
+  const svg = document.getElementById('mdp-svg');
+  let html = `<defs><marker id="marrow" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto"><path d="M0,0 L0,8 L8,4 z" fill="#2dd4bf"/></marker></defs>`;
+
+  // Draw transitions
+  for (const t of MDP_TRANSITIONS) {
+    const s = MDP_STATES[t.from], e = MDP_STATES[t.to];
+    const dx=e.x-s.x, dy=e.y-s.y, dist=Math.sqrt(dx*dx+dy*dy);
+    const ux=dx/dist, uy=dy/dist;
+    const sx=s.x+ux*26, sy=s.y+uy*26;
+    const ex=e.x-ux*30, ey=e.y-uy*30;
+    const mx=(sx+ex)/2+(-uy)*15, my=(sy+ey)/2+(ux)*15;
+    html+=`<path d="M${sx},${sy} Q${mx},${my} ${ex},${ey}" stroke="#2dd4bf" stroke-width="1.5" fill="none" marker-end="url(#marrow)" opacity="0.6"/>
+      <text x="${mx}" y="${my}" fill="#2dd4bf" font-size="10" text-anchor="middle">${t.action} ${t.prob}</text>`;
+  }
+
+  // Draw states
+  for (let i=0;i<MDP_STATES.length;i++) {
+    const s=MDP_STATES[i];
+    const vcolor=viIteration>0?valueColor(V[i]):'#94a3b8';
+    const fillAlpha=viIteration>0?0.3:0.1;
+    const selected=selectedState===i;
+    html+=`<g class="state-circle" onclick="selectMDPState(${i})">
+      <circle cx="${s.x}" cy="${s.y}" r="28" fill="${vcolor}" fill-opacity="${fillAlpha}" stroke="${selected?'#fbbf24':vcolor}" stroke-width="${selected?3:2}"/>
+      <text x="${s.x}" y="${s.y-8}" text-anchor="middle" fill="${vcolor}" font-size="13" font-weight="bold">${s.label}</text>
+      <text x="${s.x}" y="${s.y+6}" text-anchor="middle" fill="${vcolor}" font-size="11">${viIteration>0?'V='+V[i].toFixed(1):'V=0'}</text>
+      <text x="${s.x}" y="${s.y+19}" text-anchor="middle" fill="#64748b" font-size="9">R=${s.reward}</text>
+      ${s.terminal?`<circle cx="${s.x}" cy="${s.y}" r="32" fill="none" stroke="${vcolor}" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>`:''}
+    </g>`;
+  }
+  svg.innerHTML=html;
+}
+
+function selectMDPState(i) {
+  selectedState=i;
+  const s=MDP_STATES[i];
+  document.getElementById('policy-display').innerHTML=`<strong>${s.label}</strong>: V = ${V[i].toFixed(3)}, Reward = ${s.reward}${s.terminal?' (Terminal)':''}`;
+  drawMDP();
+}
+
+function drawVICanvas() {
+  const canvas=document.getElementById('vi-canvas');
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const w=canvas.width,h=canvas.height,pad=30;
+
+  if (viHistory.length<1) {
+    ctx.fillStyle='#64748b';ctx.font='11px Segoe UI';ctx.textAlign='center';
+    ctx.fillText('Run value iteration to see convergence',w/2,h/2);return;
+  }
+  const data=viHistory;
+  const mx=Math.max(...data,0.001);
+  ctx.strokeStyle='#86efac';ctx.lineWidth=2;
+  ctx.beginPath();
+  data.forEach((v,i)=>{
+    const x=pad+(i/(Math.max(data.length-1,1)))*(w-pad*2);
+    const y=h-pad-(v/mx)*(h-pad*2);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  // Threshold
+  ctx.strokeStyle='#f8717160';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+  ctx.beginPath();
+  const ty=h-pad-(0.001/mx)*(h-pad*2);
+  ctx.moveTo(pad,ty);ctx.lineTo(w-5,ty);ctx.stroke();ctx.setLineDash([]);
+
+  ctx.strokeStyle='#2d3147';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(pad,5);ctx.lineTo(pad,h-pad);ctx.lineTo(w-5,h-pad);ctx.stroke();
+  ctx.fillStyle='#64748b';ctx.font='9px Segoe UI';ctx.textAlign='center';
+  ctx.fillText('Iteration',w/2,h);
+  ctx.save();ctx.translate(12,h/2);ctx.rotate(-Math.PI/2);ctx.fillText('Max |ΔV|',0,0);ctx.restore();
+  ctx.fillStyle='#f87171';ctx.textAlign='right';ctx.font='9px Segoe UI';ctx.fillText('θ=0.001',w-4,ty-2);
+}
+
+function drawPolicyCanvas() {
+  const canvas=document.getElementById('policy-canvas');
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if (viIteration===0) return;
+
+  // For each non-terminal state, show best action
+  const positions=[
+    {x:40,y:30},{x:130,y:30},{x:220,y:30},
+    {x:40,y:75},{x:130,y:75},{x:220,y:75},
+    {x:40,y:120},{x:130,y:120}
+  ];
+
+  MDP_STATES.forEach((s,i)=>{
+    const p=positions[i];
+    const outs=MDP_TRANSITIONS.filter(t=>t.from===i);
+    const vcolor=valueColor(V[i]);
+
+    ctx.fillStyle=vcolor+'22';
+    ctx.beginPath();ctx.roundRect(p.x-25,p.y-18,50,36,6);ctx.fill();
+    ctx.strokeStyle=vcolor;ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.roundRect(p.x-25,p.y-18,50,36,6);ctx.stroke();
+
+    if (s.terminal) {
+      ctx.fillStyle=vcolor;ctx.font='14px serif';ctx.textAlign='center';
+      ctx.fillText(s.reward>0?'🎯':'💀',p.x,p.y+6);
+    } else if (outs.length>0) {
+      const actions=[...new Set(outs.map(t=>t.action))];
+      let bestA='',bestV=-Infinity;
+      for (const a of actions) {
+        const trans=outs.filter(t=>t.action===a);
+        let val=0;
+        for (const t of trans) val+=t.prob*(t.reward+mdpGamma*V[t.to]);
+        if (val>bestV){bestV=val;bestA=a;}
+      }
+      ctx.fillStyle=vcolor;ctx.font='bold 18px serif';ctx.textAlign='center';
+      ctx.fillText(bestA,p.x,p.y+7);
+    }
+    ctx.fillStyle='#64748b';ctx.font='9px monospace';ctx.textAlign='center';
+    ctx.fillText(s.label,p.x,p.y+25);
+  });
+}
+
+resetMDP();
+
+// ==================== INIT ====================
+document.addEventListener('DOMContentLoaded', () => {
+  drawGrid();
+  drawQValCanvas(-1,-1);
+  drawRewardCurve();
+});
+</script>
+
+
+<style>
+/* ── Chapter sidenav ── */
+.chap-sidenav {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 8888;
+}
+.chap-sidenav-toggle {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  color: #7dd3fc;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px #00000060;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+.chap-sidenav-toggle:hover { background: #0369a1; border-color: #7dd3fc; }
+.chap-sidenav-menu {
+  position: absolute;
+  bottom: 52px;
+  right: 0;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  border-radius: 14px;
+  padding: 10px 6px;
+  min-width: 220px;
+  max-height: 70vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 40px #00000080;
+  display: none;
+  scrollbar-width: thin;
+  scrollbar-color: #2d3147 transparent;
+}
+.chap-sidenav-menu.open { display: block; }
+.chap-sidenav-menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #94a3b8;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.chap-sidenav-menu a:hover { background: #0f172a; color: #e2e8f0; }
+.chap-sidenav-menu a.current { background: #0369a133; color: #7dd3fc; font-weight: 600; }
+.chap-sidenav-menu .chap-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #4b5563;
+  min-width: 28px;
+}
+.chap-sidenav-menu .menu-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #4b5563;
+  padding: 4px 12px 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+@media (max-width: 480px) {
+  .chap-sidenav { bottom: 12px; right: 12px; }
+  .chap-sidenav-menu { right: 0; min-width: 180px; }
+}
+</style>
+
+<div class="chap-sidenav">
+  <div class="chap-sidenav-menu" id="chapMenu">
+    <div class="menu-header">ML Field Guide</div>
+      <a href="ch01_math_foundations.html"><span class="chap-num">Ch 01</span>Math Foundations</a>
+      <a href="ch02_statistics.html"><span class="chap-num">Ch 02</span>Statistics</a>
+      <a href="ch03_python.html"><span class="chap-num">Ch 03</span>Python for ML</a>
+      <a href="ch04_feature_engineering.html"><span class="chap-num">Ch 04</span>Feature Engineering</a>
+      <a href="ch05_supervised_learning.html"><span class="chap-num">Ch 05</span>Supervised Learning</a>
+      <a href="ch06_model_evaluation.html"><span class="chap-num">Ch 06</span>Model Evaluation</a>
+      <a href="ch07_unsupervised.html"><span class="chap-num">Ch 07</span>Unsupervised Learning</a>
+      <a href="ch08_recommendations.html"><span class="chap-num">Ch 08</span>Recommendations</a>
+      <a href="ch09_neural_networks.html"><span class="chap-num">Ch 09a</span>Neural Networks</a>
+      <a href="ch09_cnn_architectures.html"><span class="chap-num">Ch 09b</span>CNN Architectures</a>
+      <a href="ch10_nlp_transformers.html"><span class="chap-num">Ch 10</span>NLP & Transformers</a>
+      <a href="ch11_reinforcement_learning.html" class="current"><span class="chap-num">Ch 11</span>Reinforcement Learning</a>
+      <a href="ch12_time_series.html"><span class="chap-num">Ch 12</span>Time Series</a>
+      <a href="ch13_sql.html"><span class="chap-num">Ch 13</span>SQL for ML</a>
+      <a href="ch14_big_data.html"><span class="chap-num">Ch 14</span>Big Data</a>
+      <a href="ch15_mlops.html"><span class="chap-num">Ch 15</span>MLOps</a>
+      <a href="ch16_aws.html"><span class="chap-num">Ch 16</span>AWS for ML</a>
+      <a href="ch17_responsible_ai.html"><span class="chap-num">Ch 17</span>Responsible AI</a>
+      <a href="ch18_interview_prep.html"><span class="chap-num">Ch 18</span>Interview Prep</a>
+  </div>
+  <button class="chap-sidenav-toggle" onclick="document.getElementById('chapMenu').classList.toggle('open')" title="Chapter navigation">☰</button>
+</div>
+
+</body>
+</html>

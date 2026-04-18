@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Interactive math foundations for ML: linear algebra, calculus, probability, and optimization.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 1 · Math Foundations — The ML Field Guide</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0f1117;
+    color: #e2e8f0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 0 0 60px 0;
+  }
+
+  /* ── Header ── */
+  .page-header {
+    background: linear-gradient(135deg, #1e2130 0%, #0f1117 100%);
+    border-bottom: 1px solid #2d3147;
+    padding: 32px 40px 24px;
+  }
+  .chapter-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #7dd3fc;
+    margin-bottom: 6px;
+  }
+  .page-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 4px;
+  }
+  .page-subtitle {
+    font-size: 14px;
+    color: #94a3b8;
+  }
+
+  /* ── Tab Navigation ── */
+  .tab-nav {
+    display: flex;
+    gap: 4px;
+    padding: 20px 40px 0;
+    border-bottom: 1px solid #2d3147;
+    background: #0f1117;
+    flex-wrap: wrap;
+  }
+  .tab-btn {
+    padding: 10px 22px;
+    border: 1px solid transparent;
+    border-bottom: none;
+    background: transparent;
+    color: #94a3b8;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 8px 8px 0 0;
+    transition: all 0.2s;
+    position: relative;
+    bottom: -1px;
+  }
+  .tab-btn:hover { color: #e2e8f0; background: #1e2130; }
+  .tab-btn.active {
+    color: #7dd3fc;
+    background: #1e2130;
+    border-color: #2d3147;
+    border-bottom-color: #1e2130;
+  }
+
+  /* ── Tab Content ── */
+  .tab-panel { display: none; padding: 32px 40px; }
+  .tab-panel.active { display: block; }
+
+  .section-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 4px;
+  }
+  .section-subtitle {
+    font-size: 13px;
+    color: #94a3b8;
+    margin-bottom: 24px;
+  }
+
+  /* ── Layout ── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .two-col { grid-template-columns: 1fr; }
+    .tab-nav { padding: 16px 16px 0; }
+    .tab-panel { padding: 20px 16px; }
+    .page-header { padding: 20px 16px 16px; }
+  }
+
+  /* ── Cards / Panels ── */
+  .card {
+    background: #1e2130;
+    border: 1px solid #2d3147;
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .card-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 14px;
+  }
+
+  /* ── SVG Containers ── */
+  .svg-wrap {
+    background: #1a1f2e;
+    border: 1px solid #2d3147;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+  }
+  .svg-wrap svg { display: block; width: 100%; }
+
+  /* ── Controls ── */
+  .control-group { margin-bottom: 18px; }
+  .control-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #94a3b8;
+    margin-bottom: 6px;
+  }
+  .control-label span { color: #7dd3fc; font-weight: 600; }
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    background: #2d3147;
+    border-radius: 2px;
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    background: #7dd3fc;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 6px rgba(125,211,252,0.4);
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #2d3147;
+    background: #0f172a;
+    color: #e2e8f0;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn:hover { border-color: #7dd3fc; color: #7dd3fc; }
+  .btn.primary { background: #0369a1; border-color: #7dd3fc; color: #e2e8f0; }
+  .btn.primary:hover { background: #0284c7; }
+  .btn.active { background: #0369a1; border-color: #7dd3fc; color: #7dd3fc; }
+  .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+
+  /* ── Stats Table ── */
+  .stats-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .stats-table th {
+    text-align: left;
+    color: #64748b;
+    font-weight: 500;
+    padding: 6px 8px;
+    border-bottom: 1px solid #2d3147;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .stats-table td {
+    padding: 8px 8px;
+    border-bottom: 1px solid #1e2130;
+    color: #e2e8f0;
+  }
+  .stats-table tr:last-child td { border-bottom: none; }
+  .val-highlight { color: #7dd3fc; font-weight: 600; font-family: monospace; }
+  .val-green { color: #86efac; font-weight: 600; font-family: monospace; }
+  .val-yellow { color: #fbbf24; font-weight: 600; font-family: monospace; }
+
+  /* ── Metric Pill ── */
+  .metric-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .metric-pill {
+    background: #0f172a;
+    border: 1px solid #2d3147;
+    border-radius: 8px;
+    padding: 8px 14px;
+    flex: 1;
+    min-width: 80px;
+  }
+  .metric-pill .mp-label { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+  .metric-pill .mp-val { font-size: 16px; font-weight: 700; color: #7dd3fc; font-family: monospace; margin-top: 2px; }
+
+  /* ── Info / Takeaway Box ── */
+  .info-box {
+    background: #0f172a;
+    border-left: 3px solid #7dd3fc;
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin-top: 16px;
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.6;
+  }
+  .info-box strong { color: #e2e8f0; }
+
+  .takeaway-box {
+    background: #1e2130;
+    border: 1px solid #2d3147;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-top: 24px;
+  }
+  .takeaway-box .tb-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #fbbf24;
+    margin-bottom: 10px;
+  }
+  .takeaway-box ul { padding-left: 16px; }
+  .takeaway-box li {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-bottom: 6px;
+    line-height: 1.5;
+  }
+  .takeaway-box li strong { color: #e2e8f0; }
+
+  /* ── Tooltip ── */
+  .tooltip {
+    position: fixed;
+    background: #1e2130;
+    border: 1px solid #7dd3fc;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #e2e8f0;
+    pointer-events: none;
+    z-index: 1000;
+    max-width: 220px;
+    line-height: 1.5;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    display: none;
+  }
+
+  /* ── Bar Chart (Entropy) ── */
+  .bar-interactive { cursor: ns-resize; }
+
+  /* ── Status Badge ── */
+  .status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge-blue { background: rgba(125,211,252,0.15); color: #7dd3fc; }
+  .badge-green { background: rgba(134,239,172,0.15); color: #86efac; }
+  .badge-red { background: rgba(248,113,113,0.15); color: #f87171; }
+  .badge-yellow { background: rgba(251,191,36,0.15); color: #fbbf24; }
+
+  /* ── Gradient Descent specific ── */
+  #gd-status {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 8px;
+  }
+  #gd-status span { color: #7dd3fc; font-weight: 600; }
+
+  .formula-box {
+    background: #0f172a;
+    border: 1px solid #2d3147;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 12px 0;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    color: #a78bfa;
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Shared improvements ── */
+  body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important; }
+  code, pre, .code-block, .formula, .mono, [style*="monospace"], [style*="Courier"] { font-family: 'JetBrains Mono', 'Cascadia Code', 'Courier New', monospace !important; }
+
+  /* Smoother scrolling */
+  html { scroll-behavior: smooth; }
+
+  /* Focus ring for accessibility */
+  button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid #7dd3fc;
+    outline-offset: 2px;
+  }
+
+  /* Improve tab-nav overflow on small screens */
+  .tab-nav, .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .tab-nav::-webkit-scrollbar, .tabs::-webkit-scrollbar { display: none; }
+
+  /* Mobile responsive improvements */
+  @media (max-width: 768px) {
+    .page-header { padding: 24px 20px 18px !important; }
+    .tab-panel { padding: 20px !important; }
+    .tab-nav { padding: 16px 20px 0 !important; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
+    .grid2, .grid3 { grid-template-columns: 1fr !important; }
+    .page-title { font-size: 22px !important; }
+    h1 { font-size: 1.4rem !important; }
+  }
+  @media (max-width: 480px) {
+    body { padding: 0 0 40px 0 !important; }
+    .tab-btn { padding: 8px 14px !important; font-size: 12px !important; }
+    .btn { padding: 6px 12px !important; font-size: 12px !important; }
+  }
+
+  /* Better selection color */
+  ::selection { background: #1d4ed880; color: #e0f2fe; }
+
+  /* Smoother canvas rendering */
+  canvas { image-rendering: -webkit-optimize-contrast; }
+
+  /* Tooltip z-index fix */
+  .tooltip { z-index: 9999 !important; }
+
+  /* Code block horizontal scroll indicator */
+  .code-block { overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="chapter-label">Chapter 1 · Math Foundations</div>
+  <div class="page-title">The Machine Learning Field Guide</div>
+  <div class="page-subtitle">Interactive visualizations for linear algebra, calculus, and information theory</div>
+</div>
+
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('pca')">Eigenvalues &amp; PCA</button>
+  <button class="tab-btn" onclick="switchTab('gd')">Gradient Descent</button>
+  <button class="tab-btn" onclick="switchTab('entropy')">Entropy &amp; Information</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ TAB 1: PCA -->
+<div id="tab-pca" class="tab-panel active">
+  <div class="section-title">Eigenvalues &amp; Principal Component Analysis</div>
+  <div class="section-subtitle">Visualize how eigenvectors capture the directions of maximum variance in data</div>
+
+  <div class="two-col">
+    <div>
+      <div class="svg-wrap">
+        <svg id="pca-svg" viewBox="0 0 560 420" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Controls</div>
+
+        <div class="control-group">
+          <div class="control-label">Rotation angle <span id="rot-val">30°</span></div>
+          <input type="range" id="rot-slider" min="0" max="360" value="30" oninput="updatePCA()">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">Stretch factor <span id="str-val">2.0×</span></div>
+          <input type="range" id="str-slider" min="50" max="300" value="200" oninput="updatePCA()">
+        </div>
+
+        <div class="control-group" style="margin-bottom:0">
+          <div class="control-label">Number of points <span id="npts-val">80</span></div>
+          <input type="range" id="npts-slider" min="20" max="200" value="80" oninput="regenerateData()">
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Eigenvalue Summary</div>
+        <table class="stats-table">
+          <thead>
+            <tr><th>Component</th><th>Eigenvalue</th><th>Variance %</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span style="color:#7dd3fc">●</span> PC1</td>
+              <td class="val-highlight" id="ev1">—</td>
+              <td class="val-green" id="vp1">—</td>
+            </tr>
+            <tr>
+              <td><span style="color:#f87171">●</span> PC2</td>
+              <td class="val-highlight" id="ev2">—</td>
+              <td class="val-yellow" id="vp2">—</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="info-box" style="margin-top:12px">
+          <strong>Covariance matrix</strong><br>
+          <span id="cov-display" style="font-family:monospace; font-size:11px; color:#7dd3fc">C = ...</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">What's happening</div>
+        <div style="font-size:12px; color:#94a3b8; line-height:1.6">
+          The <span style="color:#7dd3fc">blue arrow</span> (PC1) points in the direction of <strong style="color:#e2e8f0">maximum variance</strong>. The <span style="color:#f87171">red arrow</span> (PC2) is orthogonal. Drag the sliders to watch eigenvectors rotate with the data cloud.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="takeaway-box" style="margin-top:20px">
+    <div class="tb-title">Key Takeaways</div>
+    <ul>
+      <li><strong>Eigenvectors</strong> of the covariance matrix define the principal axes of a data cloud — they point in directions of maximum spread.</li>
+      <li><strong>Eigenvalues</strong> tell you how much variance is explained along each eigenvector. λ₁ ≥ λ₂ always (after sorting).</li>
+      <li><strong>PCA dimensionality reduction</strong> keeps only the top-k eigenvectors, discarding the rest. This works because low-eigenvalue directions carry little information.</li>
+      <li>The <strong>covariance ellipse</strong> is fully characterized by the eigenvalue decomposition: C = QΛQᵀ.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ TAB 2: GRADIENT DESCENT -->
+<div id="tab-gd" class="tab-panel">
+  <div class="section-title">Gradient Descent — The Optimizer Behind Every ML Model</div>
+  <div class="section-subtitle">Watch the algorithm navigate a loss surface by following the negative gradient</div>
+
+  <div class="two-col">
+    <div>
+      <div class="svg-wrap">
+        <svg id="gd-svg" viewBox="0 0 560 440" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+      <div id="gd-status" style="padding: 10px 4px;">
+        Step: <span id="gd-step">0</span> &nbsp;|&nbsp;
+        Loss: <span id="gd-loss">—</span> &nbsp;|&nbsp;
+        |∇f|: <span id="gd-grad">—</span> &nbsp;|&nbsp;
+        <span id="gd-verdict"></span>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Controls</div>
+
+        <div class="control-group">
+          <div class="control-label">Learning rate η <span id="lr-val">0.10</span></div>
+          <input type="range" id="lr-slider" min="1" max="90" value="10" oninput="gdUpdateLR()">
+        </div>
+
+        <div class="control-group" style="margin-bottom:8px">
+          <div class="control-label">Animation speed <span id="speed-val">Normal</span></div>
+          <input type="range" id="speed-slider" min="1" max="5" value="3" oninput="gdUpdateSpeed()">
+        </div>
+
+        <div class="btn-group">
+          <button class="btn primary" id="play-btn" onclick="gdTogglePlay()">▶ Play</button>
+          <button class="btn" onclick="gdReset()">↺ Reset</button>
+          <button class="btn" onclick="gdRandomStart()">⚄ Random Start</button>
+        </div>
+        <button class="btn" style="width:100%; margin-top:4px" onclick="gdStep()">Single Step →</button>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Loss Function</div>
+        <div class="formula-box">f(x,y) = x² + 5y²</div>
+        <div style="font-size:12px; color:#94a3b8; line-height:1.6">
+          Update rule:<br>
+          <span style="color:#a78bfa; font-family:monospace">θ ← θ − η · ∇f(θ)</span><br><br>
+          Gradient:<br>
+          <span style="color:#a78bfa; font-family:monospace">∇f = [2x, 10y]</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Learning Rate Effect</div>
+        <div style="font-size:12px; color:#94a3b8; line-height:1.6">
+          <span class="status-badge badge-red">High LR &gt; 0.5</span><br>
+          Steps overshoot — oscillates or diverges<br><br>
+          <span class="status-badge badge-yellow">Medium LR ≈ 0.1</span><br>
+          Smooth convergence to minimum<br><br>
+          <span class="status-badge badge-blue">Low LR &lt; 0.02</span><br>
+          Converges slowly, many iterations needed
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="takeaway-box" style="margin-top:20px">
+    <div class="tb-title">Key Takeaways</div>
+    <ul>
+      <li><strong>Gradient descent</strong> is an iterative first-order optimization algorithm. It requires only gradient information, not second-order curvature.</li>
+      <li>The <strong>learning rate</strong> η is the most critical hyperparameter: too large → divergence; too small → impractically slow convergence.</li>
+      <li>On <strong>elongated loss surfaces</strong> (like x² + 5y²), the gradient points "across" the valley rather than "down" it, causing zigzag behaviour — this is why momentum and adaptive methods (Adam, RMSProp) were invented.</li>
+      <li>In deep learning, we use <strong>stochastic gradient descent (SGD)</strong>: compute the gradient on a random mini-batch rather than the full dataset.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ TAB 3: ENTROPY -->
+<div id="tab-entropy" class="tab-panel">
+  <div class="section-title">Entropy &amp; Information Theory</div>
+  <div class="section-subtitle">Drag bar heights to shape probability distributions and see information measures update instantly</div>
+
+  <div class="two-col">
+    <div>
+      <div class="svg-wrap">
+        <svg id="ent-svg" viewBox="0 0 560 400" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+      <div style="margin-top:10px; font-size:11px; color:#64748b; padding: 0 4px;">
+        Drag bar tops to adjust probabilities · Left bars = P · Right bars = Q
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Presets</div>
+        <div class="btn-group" style="margin-bottom:4px">
+          <button class="btn" onclick="setPreset('uniform','P')">P: Uniform</button>
+          <button class="btn" onclick="setPreset('peaked','P')">P: Peaked</button>
+          <button class="btn" onclick="setPreset('sparse','P')">P: Sparse</button>
+        </div>
+        <div class="btn-group">
+          <button class="btn" onclick="setPreset('uniform','Q')">Q: Uniform</button>
+          <button class="btn" onclick="setPreset('peaked','Q')">Q: Peaked</button>
+          <button class="btn" onclick="setPreset('sparse','Q')">Q: Sparse</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Information Measures</div>
+        <div class="metric-row">
+          <div class="metric-pill">
+            <div class="mp-label">H(P)</div>
+            <div class="mp-val" id="hp-val">—</div>
+          </div>
+          <div class="metric-pill">
+            <div class="mp-label">H(Q)</div>
+            <div class="mp-val" style="color:#86efac" id="hq-val">—</div>
+          </div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-pill">
+            <div class="mp-label">KL(P‖Q)</div>
+            <div class="mp-val" style="color:#fbbf24" id="kl-val">—</div>
+          </div>
+          <div class="metric-pill">
+            <div class="mp-label">H(P,Q)</div>
+            <div class="mp-val" style="color:#a78bfa" id="cross-val">—</div>
+          </div>
+        </div>
+
+        <div class="info-box">
+          <strong>Max entropy</strong> = log₂(N) = <span id="max-ent" style="color:#7dd3fc">—</span> bits<br>
+          Achieved by <em>uniform distribution</em>.<br>
+          <strong>Min entropy</strong> = 0 (all mass on one event).
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Formulas</div>
+        <div class="formula-box" style="margin-bottom:8px; font-size:11px">H(P) = −Σ p·log₂(p)</div>
+        <div class="formula-box" style="margin-bottom:8px; font-size:11px">KL(P‖Q) = Σ p·log₂(p/q)</div>
+        <div class="formula-box" style="font-size:11px">H(P,Q) = H(P) + KL(P‖Q)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="takeaway-box" style="margin-top:20px">
+    <div class="tb-title">Key Takeaways</div>
+    <ul>
+      <li><strong>Shannon entropy</strong> H(P) measures average surprise. Uniform distributions have maximum entropy; deterministic ones have zero entropy.</li>
+      <li><strong>KL divergence</strong> KL(P‖Q) is not symmetric — it measures the extra bits needed to encode samples from P using a code optimized for Q.</li>
+      <li><strong>Cross-entropy</strong> H(P,Q) = H(P) + KL(P‖Q) is used as a loss function in classification. Minimizing it over Q is equivalent to minimizing KL divergence.</li>
+      <li>In ML, we minimize <strong>cross-entropy loss</strong> between the true label distribution P and the model's predicted distribution Q.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════════════
+const NS = 'http://www.w3.org/2000/svg';
+function svgEl(tag, attrs) {
+  const el = document.createElementNS(NS, tag);
+  for (const [k,v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+function lerp(a,b,t) { return a + (b-a)*t; }
+function clamp(v,lo,hi) { return Math.max(lo, Math.min(hi, v)); }
+
+const tooltip = document.getElementById('tooltip');
+function showTip(e, html) {
+  tooltip.innerHTML = html;
+  tooltip.style.display = 'block';
+  moveTip(e);
+}
+function moveTip(e) {
+  let x = e.clientX + 14, y = e.clientY - 10;
+  if (x + 240 > window.innerWidth) x = e.clientX - 254;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top = y + 'px';
+}
+function hideTip() { tooltip.style.display = 'none'; }
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'pca') updatePCA();
+  if (name === 'gd') { gdDrawContour(); gdDrawState(); }
+  if (name === 'entropy') drawEntropy();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TAB 1 — PCA / EIGENVALUES
+// ═══════════════════════════════════════════════════════════════
+let pcaPoints = [];
+const PCA_W = 560, PCA_H = 420;
+const PCA_CX = 280, PCA_CY = 210;
+const PCA_SCALE = 60;
+
+function generatePCAData() {
+  const n = parseInt(document.getElementById('npts-slider').value);
+  const rng = () => (Math.random() + Math.random() + Math.random() - 1.5) * 1.2;
+  pcaPoints = Array.from({length: n}, () => ({ x: rng() * 2.2, y: rng() * 0.6 }));
+}
+
+function regenerateData() {
+  document.getElementById('npts-val').textContent = document.getElementById('npts-slider').value;
+  generatePCAData();
+  updatePCA();
+}
+
+function mat2Mul(M, v) {
+  return [M[0]*v[0] + M[1]*v[1], M[2]*v[0] + M[3]*v[1]];
+}
+
+function updatePCA() {
+  const angle = parseInt(document.getElementById('rot-slider').value);
+  const stretch = parseInt(document.getElementById('str-slider').value) / 100;
+
+  document.getElementById('rot-val').textContent = angle + '°';
+  document.getElementById('str-val').textContent = stretch.toFixed(1) + '×';
+
+  const rad = angle * Math.PI / 180;
+  const cos = Math.cos(rad), sin = Math.sin(rad);
+
+  // Transformation matrix: rotate then scale
+  const M = [cos * stretch, -sin, sin * stretch, cos];
+
+  // Apply to base data
+  const pts = pcaPoints.map(p => {
+    const [tx, ty] = mat2Mul(M, [p.x, p.y]);
+    return { x: tx, y: ty };
+  });
+
+  // Compute covariance
+  const n = pts.length;
+  const mx = pts.reduce((s,p) => s+p.x, 0)/n;
+  const my = pts.reduce((s,p) => s+p.y, 0)/n;
+  const cxx = pts.reduce((s,p) => s+(p.x-mx)**2, 0)/n;
+  const cyy = pts.reduce((s,p) => s+(p.y-my)**2, 0)/n;
+  const cxy = pts.reduce((s,p) => s+(p.x-mx)*(p.y-my), 0)/n;
+
+  // Eigenvalues (analytic for 2x2)
+  const tr = cxx + cyy;
+  const det = cxx*cyy - cxy*cxy;
+  const disc = Math.sqrt(Math.max(0, tr*tr/4 - det));
+  const lam1 = tr/2 + disc;
+  const lam2 = tr/2 - disc;
+
+  // Eigenvectors
+  let ev1x, ev1y;
+  if (Math.abs(cxy) > 1e-10) {
+    ev1x = lam1 - cyy; ev1y = cxy;
+  } else {
+    ev1x = 1; ev1y = 0;
+  }
+  const len1 = Math.sqrt(ev1x**2 + ev1y**2);
+  ev1x /= len1; ev1y /= len1;
+  const ev2x = -ev1y, ev2y = ev1x;
+
+  const totalVar = lam1 + lam2;
+  const vp1 = totalVar > 0 ? (lam1/totalVar*100) : 100;
+  const vp2 = totalVar > 0 ? (lam2/totalVar*100) : 0;
+
+  document.getElementById('ev1').textContent = lam1.toFixed(3);
+  document.getElementById('ev2').textContent = lam2.toFixed(3);
+  document.getElementById('vp1').textContent = vp1.toFixed(1) + '%';
+  document.getElementById('vp2').textContent = vp2.toFixed(1) + '%';
+  document.getElementById('cov-display').textContent =
+    `[[${cxx.toFixed(2)}, ${cxy.toFixed(2)}], [${cxy.toFixed(2)}, ${cyy.toFixed(2)}]]`;
+  document.getElementById('max-ent') && (document.getElementById('max-ent').textContent = '—');
+
+  drawPCA(pts, mx, my, ev1x, ev1y, ev2x, ev2y, lam1, lam2, vp1, vp2, cxx, cyy, cxy);
+}
+
+function drawPCA(pts, mx, my, ev1x, ev1y, ev2x, ev2y, lam1, lam2, vp1, vp2, cxx, cyy, cxy) {
+  const svg = document.getElementById('pca-svg');
+  svg.innerHTML = '';
+
+  // Background grid
+  for (let gx = 0; gx <= PCA_W; gx += 40) {
+    const l = svgEl('line', {x1:gx, y1:0, x2:gx, y2:PCA_H, stroke:'#2d3147', 'stroke-width':'0.5'});
+    svg.appendChild(l);
+  }
+  for (let gy = 0; gy <= PCA_H; gy += 40) {
+    const l = svgEl('line', {x1:0, y1:gy, x2:PCA_W, y2:gy, stroke:'#2d3147', 'stroke-width':'0.5'});
+    svg.appendChild(l);
+  }
+
+  // Axes
+  svg.appendChild(svgEl('line', {x1:PCA_CX, y1:10, x2:PCA_CX, y2:PCA_H-10, stroke:'#3d4560', 'stroke-width':'1'}));
+  svg.appendChild(svgEl('line', {x1:10, y1:PCA_CY, x2:PCA_W-10, y2:PCA_CY, stroke:'#3d4560', 'stroke-width':'1'}));
+
+  const tx = x => PCA_CX + (x - mx)*PCA_SCALE;
+  const ty = y => PCA_CY - (y - my)*PCA_SCALE;
+
+  // Covariance ellipse (parametric)
+  const ellPath = [];
+  const steps = 120;
+  const sqL1 = Math.sqrt(Math.max(0,lam1)), sqL2 = Math.sqrt(Math.max(0,lam2));
+  for (let i = 0; i <= steps; i++) {
+    const t = (i/steps)*2*Math.PI;
+    const u = sqL1 * Math.cos(t) * 2;
+    const v = sqL2 * Math.sin(t) * 2;
+    const ex = u*ev1x + v*ev2x;
+    const ey = u*ev1y + v*ev2y;
+    const px = tx(mx + ex), py = ty(my + ey);
+    ellPath.push(i === 0 ? `M${px},${py}` : `L${px},${py}`);
+  }
+  const ell = svgEl('path', {
+    d: ellPath.join(' ') + 'Z',
+    fill: 'rgba(125,211,252,0.05)',
+    stroke: '#7dd3fc',
+    'stroke-width': '1.5',
+    'stroke-dasharray': '4 3'
+  });
+  svg.appendChild(ell);
+
+  // Points
+  pts.forEach(p => {
+    const circle = svgEl('circle', {
+      cx: tx(p.x), cy: ty(p.y), r: '3',
+      fill: '#94a3b8', opacity: '0.6'
+    });
+    svg.appendChild(circle);
+  });
+
+  // Mean point
+  svg.appendChild(svgEl('circle', {cx: tx(mx), cy: ty(my), r:'5', fill:'#fbbf24'}));
+
+  // Eigenvectors as arrows
+  const arrowLen1 = Math.sqrt(lam1) * PCA_SCALE * 1.8;
+  const arrowLen2 = Math.sqrt(Math.max(0,lam2)) * PCA_SCALE * 1.8;
+
+  function drawArrow(dx, dy, len, color, label, pctVar, id) {
+    const x1 = tx(mx), y1 = ty(my);
+    const x2 = x1 + dx*len, y2 = y1 - dy*len;
+    const x2n = x1 - dx*len, y2n = y1 + dy*len;
+
+    // Defs for arrowhead
+    if (!svg.querySelector('defs')) {
+      const defs = svgEl('defs', {});
+      svg.appendChild(defs);
+    }
+    const defs = svg.querySelector('defs');
+    const markId = 'arrow-' + id;
+    const marker = svgEl('marker', {
+      id: markId, markerWidth:'8', markerHeight:'8',
+      refX:'4', refY:'2', orient:'auto'
+    });
+    const poly = svgEl('polygon', { points:'0 0, 4 2, 0 4', fill: color });
+    marker.appendChild(poly);
+    defs.appendChild(marker);
+
+    // Line (both directions)
+    const line = svgEl('line', {
+      x1: x2n, y1: y2n, x2, y2,
+      stroke: color, 'stroke-width': '2.5',
+      'marker-end': `url(#${markId})`,
+      style: 'cursor:pointer'
+    });
+    svg.appendChild(line);
+
+    // Label
+    const lx = x2 + dx*12, ly = y2 - dy*12;
+    const lbl = svgEl('text', {
+      x: lx, y: ly,
+      fill: color, 'font-size': '11',
+      'font-weight': '600', 'font-family': 'Segoe UI, sans-serif',
+      'text-anchor': 'middle'
+    });
+    lbl.textContent = label;
+    svg.appendChild(lbl);
+
+    // Tooltip on arrow
+    line.addEventListener('mouseenter', e => {
+      showTip(e, `<strong>${label}</strong><br>Explains <span style="color:${color}">${pctVar.toFixed(1)}%</span> of variance<br>Eigenvalue: <span style="color:#7dd3fc">${(len/(PCA_SCALE*1.8))**2 > 0 ? ((len/(PCA_SCALE*1.8))**2).toFixed(3) : '—'}</span>`);
+    });
+    line.addEventListener('mousemove', moveTip);
+    line.addEventListener('mouseleave', hideTip);
+  }
+
+  drawArrow(ev1x, ev1y, arrowLen1, '#7dd3fc', 'PC1', vp1, '1');
+  drawArrow(ev2x, ev2y, arrowLen2, '#f87171', 'PC2', vp2, '2');
+
+  // Labels
+  const lbl = svgEl('text', {x:'10', y:'20', fill:'#64748b', 'font-size':'11', 'font-family':'Segoe UI,sans-serif'});
+  lbl.textContent = `n = ${pts.length} points`;
+  svg.appendChild(lbl);
+}
+
+// Init PCA
+generatePCAData();
+updatePCA();
+
+// ═══════════════════════════════════════════════════════════════
+// TAB 2 — GRADIENT DESCENT
+// ═══════════════════════════════════════════════════════════════
+const GD_W = 560, GD_H = 440;
+const GD_CX = 280, GD_CY = 220;
+const GD_SCALE = 70;
+
+let gdX = 2.5, gdY = 1.5;
+let gdPlaying = false;
+let gdTimer = null;
+let gdStepCount = 0;
+let gdLR = 0.10;
+let gdSpeedMs = 120;
+let gdHistory = [];
+
+function gdLoss(x, y) { return x*x + 5*y*y; }
+function gdGradX(x) { return 2*x; }
+function gdGradY(y) { return 10*y; }
+
+function gdUpdateLR() {
+  gdLR = parseInt(document.getElementById('lr-slider').value) / 100;
+  document.getElementById('lr-val').textContent = gdLR.toFixed(2);
+}
+
+function gdUpdateSpeed() {
+  const s = parseInt(document.getElementById('speed-slider').value);
+  const labels = ['','Very Slow','Slow','Normal','Fast','Very Fast'];
+  document.getElementById('speed-val').textContent = labels[s];
+  gdSpeedMs = [null, 400, 220, 120, 50, 15][s];
+  if (gdPlaying) { clearInterval(gdTimer); gdTimer = setInterval(gdStep, gdSpeedMs); }
+}
+
+function gdTogglePlay() {
+  gdPlaying = !gdPlaying;
+  document.getElementById('play-btn').textContent = gdPlaying ? '⏸ Pause' : '▶ Play';
+  if (gdPlaying) {
+    gdTimer = setInterval(gdStep, gdSpeedMs);
+  } else {
+    clearInterval(gdTimer);
+  }
+}
+
+function gdReset() {
+  gdPlaying = false;
+  clearInterval(gdTimer);
+  document.getElementById('play-btn').textContent = '▶ Play';
+  gdStepCount = 0;
+  gdHistory = [{x: gdX, y: gdY}];
+  gdDrawContour();
+  gdDrawState();
+}
+
+function gdRandomStart() {
+  gdX = (Math.random() - 0.5) * 6;
+  gdY = (Math.random() - 0.5) * 3;
+  gdStepCount = 0;
+  gdHistory = [{x: gdX, y: gdY}];
+  gdDrawContour();
+  gdDrawState();
+}
+
+function gdStep() {
+  const gx = gdGradX(gdX);
+  const gy = gdGradY(gdY);
+  gdX = gdX - gdLR * gx;
+  gdY = gdY - gdLR * gy;
+  gdStepCount++;
+  gdHistory.push({x: gdX, y: gdY});
+  if (gdHistory.length > 300) gdHistory.shift();
+  gdDrawState();
+}
+
+function gdWorldToSVG(x, y) {
+  return [GD_CX + x * GD_SCALE, GD_CY - y * GD_SCALE];
+}
+
+let gdContourCache = null;
+function gdDrawContour() {
+  const svg = document.getElementById('gd-svg');
+  svg.innerHTML = '';
+
+  // Grid
+  for (let gx = 0; gx <= GD_W; gx += 40) svg.appendChild(svgEl('line', {x1:gx,y1:0,x2:gx,y2:GD_H,stroke:'#1e2130','stroke-width':'1'}));
+  for (let gy = 0; gy <= GD_H; gy += 40) svg.appendChild(svgEl('line', {x1:0,y1:gy,x2:GD_W,y2:gy,stroke:'#1e2130','stroke-width':'1'}));
+
+  // Contour ellipses: f = c → x²+5y²=c → a=√c, b=√(c/5)
+  const contourLevels = [0.1, 0.3, 0.7, 1.5, 3, 6, 11, 18, 28];
+  const colors = ['#0284c7','#0369a1','#1d4ed8','#4338ca','#6d28d9','#7c3aed','#9333ea','#c026d3','#db2777'];
+
+  contourLevels.forEach((c, i) => {
+    const a = Math.sqrt(c) * GD_SCALE;
+    const b = Math.sqrt(c/5) * GD_SCALE;
+    const ell = svgEl('ellipse', {
+      cx: GD_CX, cy: GD_CY, rx: a, ry: b,
+      fill: 'none', stroke: colors[i] || '#555', 'stroke-width': '1',
+      opacity: '0.7'
+    });
+    // Label
+    svg.appendChild(ell);
+    if (i % 2 === 0 && a < GD_W/2 - 10) {
+      const lbl = svgEl('text', {
+        x: GD_CX + a + 3, y: GD_CY + 4,
+        fill: '#64748b', 'font-size': '9', 'font-family': 'monospace'
+      });
+      lbl.textContent = 'f=' + c;
+      svg.appendChild(lbl);
+    }
+  });
+
+  // Axes
+  svg.appendChild(svgEl('line', {x1:GD_CX,y1:10,x2:GD_CX,y2:GD_H-10,stroke:'#3d4560','stroke-width':'1.5'}));
+  svg.appendChild(svgEl('line', {x1:10,y1:GD_CY,x2:GD_W-10,y2:GD_CY,stroke:'#3d4560','stroke-width':'1.5'}));
+
+  // Axis labels
+  ['x','y'].forEach((ax,i) => {
+    const lbl = svgEl('text', {
+      x: i===0 ? GD_W-16 : GD_CX+8,
+      y: i===0 ? GD_CY-6 : 18,
+      fill:'#64748b','font-size':'12','font-family':'Segoe UI,sans-serif','font-style':'italic'
+    });
+    lbl.textContent = ax;
+    svg.appendChild(lbl);
+  });
+
+  // Minimum star
+  const [mx,my] = gdWorldToSVG(0,0);
+  const star = svgEl('text', {x:mx-6, y:my+5, fill:'#86efac', 'font-size':'14'});
+  star.textContent = '★';
+  star.addEventListener('mouseenter', e => showTip(e, '<strong>Global Minimum</strong><br>f(0,0) = 0<br>∇f = [0, 0]'));
+  star.addEventListener('mousemove', moveTip);
+  star.addEventListener('mouseleave', hideTip);
+  svg.appendChild(star);
+
+  gdContourCache = true;
+  gdDrawState();
+}
+
+function gdDrawState() {
+  // Remove dynamic elements only
+  const svg = document.getElementById('gd-svg');
+  ['gd-path','gd-dot','gd-grad-arrow','gd-step-arrow'].forEach(id => {
+    const el = svg.getElementById(id);
+    if (el) el.remove();
+  });
+
+  const loss = gdLoss(gdX, gdY);
+  const gx = gdGradX(gdX);
+  const gy = gdGradY(gdY);
+  const gradMag = Math.sqrt(gx*gx + gy*gy);
+
+  // History path
+  if (gdHistory.length > 1) {
+    const d = gdHistory.map((p,i) => {
+      const [sx,sy] = gdWorldToSVG(p.x, p.y);
+      return `${i===0?'M':'L'}${sx.toFixed(1)},${sy.toFixed(1)}`;
+    }).join(' ');
+    const path = svgEl('path', {id:'gd-path', d, fill:'none', stroke:'#fbbf24',
+      'stroke-width':'1.5', opacity:'0.7'});
+    svg.appendChild(path);
+  }
+
+  // Gradient arrow
+  const [sx, sy] = gdWorldToSVG(gdX, gdY);
+  const gradScale = Math.min(40, 20 / (gradMag + 0.1));
+  const gax = sx + gx * gradScale;
+  const gay = sy - gy * gradScale;
+
+  if (!svg.querySelector('defs #grad-arrow-marker')) {
+    const defs = svg.querySelector('defs') || (() => { const d = svgEl('defs',{}); svg.appendChild(d); return d; })();
+    const m = svgEl('marker', {id:'grad-arrow-marker', markerWidth:'6',markerHeight:'6',refX:'3',refY:'1.5',orient:'auto'});
+    m.appendChild(svgEl('polygon', {points:'0 0, 3 1.5, 0 3', fill:'#f87171'}));
+    defs.appendChild(m);
+    const m2 = svgEl('marker', {id:'step-arrow-marker', markerWidth:'6',markerHeight:'6',refX:'3',refY:'1.5',orient:'auto'});
+    m2.appendChild(svgEl('polygon', {points:'0 0, 3 1.5, 0 3', fill:'#86efac'}));
+    defs.appendChild(m2);
+  }
+
+  const gradLine = svgEl('line', {
+    id:'gd-grad-arrow',
+    x1:sx, y1:sy, x2:gax, y2:gay,
+    stroke:'#f87171','stroke-width':'2',
+    'marker-end':'url(#grad-arrow-marker)'
+  });
+  gradLine.addEventListener('mouseenter', e => showTip(e, `<strong>Gradient ∇f</strong><br>[${gx.toFixed(2)}, ${gy.toFixed(2)}]<br>|∇f| = ${gradMag.toFixed(3)}<br>Points toward steepest <em>ascent</em>`));
+  gradLine.addEventListener('mousemove', moveTip);
+  gradLine.addEventListener('mouseleave', hideTip);
+  svg.appendChild(gradLine);
+
+  // Step arrow (−η∇f direction)
+  const [nx, ny] = gdWorldToSVG(gdX - gdLR*gx, gdY - gdLR*gy);
+  const stepLine = svgEl('line', {
+    id:'gd-step-arrow',
+    x1:sx, y1:sy, x2:nx, y2:ny,
+    stroke:'#86efac','stroke-width':'2','stroke-dasharray':'4 3',
+    'marker-end':'url(#step-arrow-marker)'
+  });
+  svg.appendChild(stepLine);
+
+  // Current position dot
+  const lossNorm = Math.min(1, loss / 28);
+  const dotColor = `hsl(${Math.round(240 - lossNorm*240)}, 80%, 60%)`;
+  const dot = svgEl('circle', {
+    id:'gd-dot', cx:sx, cy:sy, r:'7',
+    fill: dotColor,
+    stroke:'#e2e8f0','stroke-width':'1.5'
+  });
+  dot.addEventListener('mouseenter', e => showTip(e, `<strong>Current position</strong><br>(${gdX.toFixed(3)}, ${gdY.toFixed(3)})<br>Loss: ${loss.toFixed(4)}`));
+  dot.addEventListener('mousemove', moveTip);
+  dot.addEventListener('mouseleave', hideTip);
+  svg.appendChild(dot);
+
+  // Update status
+  document.getElementById('gd-step').textContent = gdStepCount;
+  document.getElementById('gd-loss').innerHTML = `<span>${loss.toFixed(4)}</span>`;
+  document.getElementById('gd-grad').innerHTML = `<span>${gradMag.toFixed(4)}</span>`;
+
+  let verdict = '';
+  if (loss < 0.001) verdict = '<span class="status-badge badge-green">Converged ✓</span>';
+  else if (loss > 50 && gdStepCount > 5) verdict = '<span class="status-badge badge-red">Diverging!</span>';
+  else if (gdLR > 0.5) verdict = '<span class="status-badge badge-yellow">High LR — watch for oscillation</span>';
+  document.getElementById('gd-verdict').innerHTML = verdict;
+}
+
+// Init GD
+gdHistory = [{x: gdX, y: gdY}];
+
+// ═══════════════════════════════════════════════════════════════
+// TAB 3 — ENTROPY & INFORMATION
+// ═══════════════════════════════════════════════════════════════
+const N_EVENTS = 5;
+let pDist = [0.35, 0.25, 0.20, 0.12, 0.08];
+let qDist = [0.20, 0.20, 0.20, 0.20, 0.20];
+
+const ENT_W = 560, ENT_H = 400;
+const ENT_PAD_L = 40, ENT_PAD_R = 20, ENT_PAD_T = 40, ENT_PAD_B = 60;
+const ENT_INNER_W = ENT_W - ENT_PAD_L - ENT_PAD_R;
+const ENT_INNER_H = ENT_H - ENT_PAD_T - ENT_PAD_B;
+
+function normalize(arr) {
+  const s = arr.reduce((a,b)=>a+b,0);
+  return s > 0 ? arr.map(v=>v/s) : arr.map(()=>1/arr.length);
+}
+
+function entropy(p) {
+  return -p.reduce((s,v) => s + (v>1e-10 ? v*Math.log2(v) : 0), 0);
+}
+
+function klDiv(p, q) {
+  return p.reduce((s,v,i) => s + (v>1e-10 && q[i]>1e-10 ? v*Math.log2(v/q[i]) : 0), 0);
+}
+
+function crossEntropy(p, q) {
+  return entropy(p) + klDiv(p, q);
+}
+
+function setPreset(type, which) {
+  let arr;
+  if (type === 'uniform') arr = Array(N_EVENTS).fill(1/N_EVENTS);
+  else if (type === 'peaked') arr = [0.7, 0.1, 0.1, 0.05, 0.05];
+  else if (type === 'sparse') arr = [0.9, 0.05, 0.02, 0.02, 0.01];
+  if (which === 'P') pDist = arr.slice();
+  else qDist = arr.slice();
+  drawEntropy();
+}
+
+let dragState = null;
+
+function drawEntropy() {
+  const svg = document.getElementById('ent-svg');
+  svg.innerHTML = '';
+
+  const P = normalize(pDist);
+  const Q = normalize(qDist);
+  const Hp = entropy(P);
+  const Hq = entropy(Q);
+  const kl = klDiv(P, Q);
+  const ce = crossEntropy(P, Q);
+  const maxEnt = Math.log2(N_EVENTS);
+
+  document.getElementById('hp-val').textContent = Hp.toFixed(3) + ' b';
+  document.getElementById('hq-val').textContent = Hq.toFixed(3) + ' b';
+  document.getElementById('kl-val').textContent = kl.toFixed(3) + ' b';
+  document.getElementById('cross-val').textContent = ce.toFixed(3) + ' b';
+  document.getElementById('max-ent').textContent = maxEnt.toFixed(3);
+
+  // Background
+  svg.appendChild(svgEl('rect', {x:0,y:0,width:ENT_W,height:ENT_H,fill:'#1a1f2e'}));
+
+  // Grid lines
+  for (let i=0; i<=4; i++) {
+    const gy = ENT_PAD_T + (i/4)*ENT_INNER_H;
+    svg.appendChild(svgEl('line', {x1:ENT_PAD_L,y1:gy,x2:ENT_W-ENT_PAD_R,y2:gy,stroke:'#2d3147','stroke-width':'0.5'}));
+    const lbl = svgEl('text',{x:ENT_PAD_L-4,y:gy+4,fill:'#64748b','font-size':'9','text-anchor':'end','font-family':'monospace'});
+    lbl.textContent = (1-i/4).toFixed(2);
+    svg.appendChild(lbl);
+  }
+
+  // Axis
+  svg.appendChild(svgEl('line',{x1:ENT_PAD_L,y1:ENT_PAD_T,x2:ENT_PAD_L,y2:ENT_PAD_T+ENT_INNER_H,stroke:'#3d4560','stroke-width':'1'}));
+  svg.appendChild(svgEl('line',{x1:ENT_PAD_L,y1:ENT_PAD_T+ENT_INNER_H,x2:ENT_W-ENT_PAD_R,y2:ENT_PAD_T+ENT_INNER_H,stroke:'#3d4560','stroke-width':'1'}));
+
+  // Bars
+  const totalBars = N_EVENTS * 2 + 1; // gap in middle
+  const barW = (ENT_INNER_W - 20) / (N_EVENTS * 2 + 1) * 0.85;
+  const barGap = (ENT_INNER_W - 20) / (N_EVENTS * 2 + 1);
+
+  function drawBars(dist, color, startIdx, label, which) {
+    dist.forEach((v, i) => {
+      const bx = ENT_PAD_L + 10 + (startIdx + i) * barGap;
+      const barH = v * ENT_INNER_H;
+      const by = ENT_PAD_T + ENT_INNER_H - barH;
+
+      // Bar
+      const bar = svgEl('rect', {
+        x: bx, y: by, width: barW, height: barH,
+        fill: color, rx: '3', ry: '3', opacity: '0.85',
+        class: 'bar-interactive',
+        'data-which': which, 'data-idx': i
+      });
+      bar.addEventListener('mouseenter', e => {
+        showTip(e, `<strong>${which}(x${i+1})</strong> = ${v.toFixed(3)}<br>−p·log₂(p) = ${v>1e-10?(-v*Math.log2(v)).toFixed(3):'0'} bits`);
+        bar.setAttribute('opacity','1');
+      });
+      bar.addEventListener('mousemove', moveTip);
+      bar.addEventListener('mouseleave', () => { hideTip(); bar.setAttribute('opacity','0.85'); });
+      svg.appendChild(bar);
+
+      // Interactive handle
+      const handle = svgEl('rect', {
+        x: bx-2, y: by-4, width: barW+4, height: 10,
+        fill: color, rx:'3', opacity:'0.9',
+        class:'bar-interactive', cursor:'ns-resize',
+        'data-which': which, 'data-idx': i
+      });
+      svg.appendChild(handle);
+
+      // Value label
+      const vlbl = svgEl('text', {
+        x: bx + barW/2, y: by - 8,
+        fill: color, 'font-size': '9', 'text-anchor': 'middle',
+        'font-family': 'monospace', 'font-weight': '600'
+      });
+      vlbl.textContent = v.toFixed(2);
+      svg.appendChild(vlbl);
+
+      // Event label
+      const elbl = svgEl('text', {
+        x: bx + barW/2, y: ENT_PAD_T + ENT_INNER_H + 16,
+        fill: '#64748b', 'font-size': '10', 'text-anchor': 'middle',
+        'font-family': 'Segoe UI, sans-serif'
+      });
+      elbl.textContent = `x${i+1}`;
+      svg.appendChild(elbl);
+    });
+  }
+
+  drawBars(P, '#7dd3fc', 0, 'P', 'P');
+  drawBars(Q, '#86efac', N_EVENTS + 1, 'Q', 'Q');
+
+  // Section labels
+  const Plabel = svgEl('text', {x: ENT_PAD_L + 10 + (N_EVENTS/2-0.5)*barGap + barW/2, y: ENT_PAD_T - 12,
+    fill:'#7dd3fc', 'font-size':'12','font-weight':'600','text-anchor':'middle','font-family':'Segoe UI,sans-serif'});
+  Plabel.textContent = 'Distribution P';
+  svg.appendChild(Plabel);
+
+  const Qlabel = svgEl('text', {x: ENT_PAD_L + 10 + (N_EVENTS + 1 + N_EVENTS/2)*barGap + barW/2, y: ENT_PAD_T - 12,
+    fill:'#86efac', 'font-size':'12','font-weight':'600','text-anchor':'middle','font-family':'Segoe UI,sans-serif'});
+  Qlabel.textContent = 'Distribution Q';
+  svg.appendChild(Qlabel);
+
+  // Entropy markers
+  const maxLine = ENT_PAD_T;
+  const HpY = ENT_PAD_T + ENT_INNER_H * (1 - Hp/maxEnt);
+  const defs = svgEl('defs',{});
+  svg.appendChild(defs);
+
+  // Set up drag
+  svg.onmousedown = function(e) {
+    const target = e.target;
+    const which = target.getAttribute('data-which');
+    const idx = parseInt(target.getAttribute('data-idx'));
+    if (!which || isNaN(idx)) return;
+    e.preventDefault();
+    dragState = { which, idx, startY: e.clientY, svgEl: svg };
+  };
+
+  svg.style.userSelect = 'none';
+}
+
+document.addEventListener('mousemove', e => {
+  if (!dragState) return;
+  const dy = dragState.startY - e.clientY;
+  const dv = dy / ENT_INNER_H;
+  const dist = dragState.which === 'P' ? pDist : qDist;
+  dist[dragState.idx] = clamp(dist[dragState.idx] + dv * 0.5, 0.001, 1);
+  dragState.startY = e.clientY;
+  drawEntropy();
+});
+
+document.addEventListener('mouseup', () => { dragState = null; });
+
+// Initialize
+setTimeout(() => {
+  gdDrawContour();
+  drawEntropy();
+}, 50);
+</script>
+
+
+<style>
+/* ── Chapter sidenav ── */
+.chap-sidenav {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 8888;
+}
+.chap-sidenav-toggle {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  color: #7dd3fc;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px #00000060;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+.chap-sidenav-toggle:hover { background: #0369a1; border-color: #7dd3fc; }
+.chap-sidenav-menu {
+  position: absolute;
+  bottom: 52px;
+  right: 0;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  border-radius: 14px;
+  padding: 10px 6px;
+  min-width: 220px;
+  max-height: 70vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 40px #00000080;
+  display: none;
+  scrollbar-width: thin;
+  scrollbar-color: #2d3147 transparent;
+}
+.chap-sidenav-menu.open { display: block; }
+.chap-sidenav-menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #94a3b8;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.chap-sidenav-menu a:hover { background: #0f172a; color: #e2e8f0; }
+.chap-sidenav-menu a.current { background: #0369a133; color: #7dd3fc; font-weight: 600; }
+.chap-sidenav-menu .chap-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #4b5563;
+  min-width: 28px;
+}
+.chap-sidenav-menu .menu-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #4b5563;
+  padding: 4px 12px 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+@media (max-width: 480px) {
+  .chap-sidenav { bottom: 12px; right: 12px; }
+  .chap-sidenav-menu { right: 0; min-width: 180px; }
+}
+</style>
+
+<div class="chap-sidenav">
+  <div class="chap-sidenav-menu" id="chapMenu">
+    <div class="menu-header">ML Field Guide</div>
+      <a href="ch01_math_foundations.html" class="current"><span class="chap-num">Ch 01</span>Math Foundations</a>
+      <a href="ch02_statistics.html"><span class="chap-num">Ch 02</span>Statistics</a>
+      <a href="ch03_python.html"><span class="chap-num">Ch 03</span>Python for ML</a>
+      <a href="ch04_feature_engineering.html"><span class="chap-num">Ch 04</span>Feature Engineering</a>
+      <a href="ch05_supervised_learning.html"><span class="chap-num">Ch 05</span>Supervised Learning</a>
+      <a href="ch06_model_evaluation.html"><span class="chap-num">Ch 06</span>Model Evaluation</a>
+      <a href="ch07_unsupervised.html"><span class="chap-num">Ch 07</span>Unsupervised Learning</a>
+      <a href="ch08_recommendations.html"><span class="chap-num">Ch 08</span>Recommendations</a>
+      <a href="ch09_neural_networks.html"><span class="chap-num">Ch 09a</span>Neural Networks</a>
+      <a href="ch09_cnn_architectures.html"><span class="chap-num">Ch 09b</span>CNN Architectures</a>
+      <a href="ch10_nlp_transformers.html"><span class="chap-num">Ch 10</span>NLP & Transformers</a>
+      <a href="ch11_reinforcement_learning.html"><span class="chap-num">Ch 11</span>Reinforcement Learning</a>
+      <a href="ch12_time_series.html"><span class="chap-num">Ch 12</span>Time Series</a>
+      <a href="ch13_sql.html"><span class="chap-num">Ch 13</span>SQL for ML</a>
+      <a href="ch14_big_data.html"><span class="chap-num">Ch 14</span>Big Data</a>
+      <a href="ch15_mlops.html"><span class="chap-num">Ch 15</span>MLOps</a>
+      <a href="ch16_aws.html"><span class="chap-num">Ch 16</span>AWS for ML</a>
+      <a href="ch17_responsible_ai.html"><span class="chap-num">Ch 17</span>Responsible AI</a>
+      <a href="ch18_interview_prep.html"><span class="chap-num">Ch 18</span>Interview Prep</a>
+  </div>
+  <button class="chap-sidenav-toggle" onclick="document.getElementById('chapMenu').classList.toggle('open')" title="Chapter navigation">☰</button>
+</div>
+
+</body>
+</html>

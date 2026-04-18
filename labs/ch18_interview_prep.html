@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="ML interview prep: flashcards, complexity tables, system design canvas.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 18 · Interview Prep — The ML Field Guide</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f1117; color: #e2e8f0; font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; padding: 0 0 60px 0; }
+  .page-header { background: linear-gradient(135deg, #1e2130 0%, #0f1117 100%); border-bottom: 1px solid #2d3147; padding: 32px 40px 24px; }
+  .chapter-label { font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #7dd3fc; margin-bottom: 6px; }
+  .page-title { font-size: 28px; font-weight: 700; color: #e2e8f0; margin-bottom: 4px; }
+  .page-subtitle { font-size: 14px; color: #94a3b8; }
+  .tab-nav { display: flex; gap: 4px; padding: 20px 40px 0; border-bottom: 1px solid #2d3147; background: #0f1117; }
+  .tab-btn { padding: 10px 22px; border: 1px solid transparent; border-bottom: none; background: transparent; color: #94a3b8; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; border-radius: 8px 8px 0 0; transition: all 0.2s; position: relative; bottom: -1px; }
+  .tab-btn:hover { color: #e2e8f0; background: #1e2130; }
+  .tab-btn.active { color: #7dd3fc; background: #1e2130; border-color: #2d3147; border-bottom-color: #1e2130; }
+  .tab-panel { display: none; padding: 32px 40px; }
+  .tab-panel.active { display: block; }
+  .section-title { font-size: 20px; font-weight: 700; color: #e2e8f0; margin-bottom: 8px; }
+  .section-sub { font-size: 13px; color: #94a3b8; margin-bottom: 24px; }
+  .panel { background: #1e2130; border: 1px solid #2d3147; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .btn { padding: 8px 16px; border: 1px solid #2d3147; border-radius: 8px; background: #0f172a; color: #e2e8f0; font-family: inherit; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+  .btn:hover { border-color: #7dd3fc; color: #7dd3fc; }
+  .btn.active { background: #0369a1; border-color: #7dd3fc; color: #7dd3fc; }
+  .label { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #94a3b8; margin-bottom: 8px; }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .insight-box { background: #0f172a; border-left: 3px solid #7dd3fc; border-radius: 0 8px 8px 0; padding: 12px 16px; font-size: 13px; color: #94a3b8; }
+  .insight-box strong { color: #7dd3fc; }
+  .canvas-section { background: #1a1f2e; border: 1px solid #2d3147; border-radius: 8px; padding: 14px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; }
+  .canvas-section:hover { border-color: #7dd3fc; }
+  .canvas-section.active { border-color: #7dd3fc; background: #0f2035; }
+  .canvas-section .cs-title { font-weight: 700; font-size: 13px; color: #e2e8f0; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+  .canvas-section .cs-content { font-size: 12px; color: #94a3b8; display: none; margin-top: 8px; line-height: 1.7; }
+  .canvas-section.active .cs-content { display: block; }
+  .checklist { list-style: none; }
+  .checklist li { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; font-size: 13px; color: #94a3b8; border-bottom: 1px solid #1a1f2e; }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist input[type="checkbox"] { margin-top: 2px; accent-color: #7dd3fc; cursor: pointer; flex-shrink: 0; }
+  .checklist label { cursor: pointer; }
+  /* Flashcards */
+  .card-container { perspective: 1000px; width: 100%; min-height: 220px; cursor: pointer; }
+  .card-inner { position: relative; width: 100%; min-height: 220px; transition: transform 0.5s; transform-style: preserve-3d; }
+  .card-container.flipped .card-inner { transform: rotateY(180deg); }
+  .card-front, .card-back { position: absolute; width: 100%; min-height: 220px; backface-visibility: hidden; border-radius: 12px; padding: 24px; }
+  .card-front { background: #1e2130; border: 1px solid #2d3147; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+  .card-back { background: #0f172a; border: 1px solid #7dd3fc; transform: rotateY(180deg); }
+  .card-category { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
+  .card-title { font-size: 24px; font-weight: 700; color: #e2e8f0; text-align: center; }
+  .card-def { font-size: 13px; color: #94a3b8; line-height: 1.7; margin-bottom: 10px; }
+  .card-formula { font-family: monospace; font-size: 13px; color: #fbbf24; background: #0f1117; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; }
+  .card-impl { font-size: 12px; color: #86efac; font-style: italic; }
+  .star-rating { display: flex; gap: 4px; margin-top: 8px; }
+  .star { font-size: 20px; cursor: pointer; color: #2d3147; transition: color 0.1s; }
+  .star.filled { color: #fbbf24; }
+  .progress-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  /* Complexity Table */
+  .complexity-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .complexity-table th { background: #0f172a; color: #7dd3fc; padding: 10px 12px; text-align: left; border-bottom: 1px solid #2d3147; font-weight: 600; cursor: pointer; user-select: none; }
+  .complexity-table th:hover { color: #e2e8f0; }
+  .complexity-table td { padding: 9px 12px; border-bottom: 1px solid #1a1f2e; vertical-align: middle; }
+  .complexity-table tr:last-child td { border-bottom: none; }
+  .complexity-table tr:hover td { background: #1a1f2e; }
+  .speed-fast { color: #86efac; font-weight: 600; }
+  .speed-med { color: #fbbf24; font-weight: 600; }
+  .speed-slow { color: #f87171; font-weight: 600; }
+  .cat-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  input[type="text"].search-input { background: #0f172a; border: 1px solid #2d3147; border-radius: 8px; color: #e2e8f0; padding: 8px 14px; font-family: inherit; font-size: 13px; width: 100%; outline: none; }
+  input[type="text"].search-input:focus { border-color: #7dd3fc; }
+  select.styled { background: #0f172a; border: 1px solid #2d3147; border-radius: 8px; color: #e2e8f0; padding: 7px 12px; font-family: inherit; font-size: 13px; cursor: pointer; }
+  .case-btn { padding: 8px 14px; border: 1px solid #2d3147; border-radius: 8px; background: #0f172a; color: #94a3b8; font-family: inherit; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+  .case-btn:hover { border-color: #7dd3fc; color: #7dd3fc; }
+  .case-btn.active { background: #0369a1; border-color: #7dd3fc; color: #7dd3fc; }
+
+  /* ── Shared improvements ── */
+  body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important; }
+  code, pre, .code-block, .formula, .mono, [style*="monospace"], [style*="Courier"] { font-family: 'JetBrains Mono', 'Cascadia Code', 'Courier New', monospace !important; }
+
+  /* Smoother scrolling */
+  html { scroll-behavior: smooth; }
+
+  /* Focus ring for accessibility */
+  button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid #7dd3fc;
+    outline-offset: 2px;
+  }
+
+  /* Improve tab-nav overflow on small screens */
+  .tab-nav, .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .tab-nav::-webkit-scrollbar, .tabs::-webkit-scrollbar { display: none; }
+
+  /* Mobile responsive improvements */
+  @media (max-width: 768px) {
+    .page-header { padding: 24px 20px 18px !important; }
+    .tab-panel { padding: 20px !important; }
+    .tab-nav { padding: 16px 20px 0 !important; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
+    .grid2, .grid3 { grid-template-columns: 1fr !important; }
+    .page-title { font-size: 22px !important; }
+    h1 { font-size: 1.4rem !important; }
+  }
+  @media (max-width: 480px) {
+    body { padding: 0 0 40px 0 !important; }
+    .tab-btn { padding: 8px 14px !important; font-size: 12px !important; }
+    .btn { padding: 6px 12px !important; font-size: 12px !important; }
+  }
+
+  /* Better selection color */
+  ::selection { background: #1d4ed880; color: #e0f2fe; }
+
+  /* Smoother canvas rendering */
+  canvas { image-rendering: -webkit-optimize-contrast; }
+
+  /* Tooltip z-index fix */
+  .tooltip { z-index: 9999 !important; }
+
+  /* Code block horizontal scroll indicator */
+  .code-block { overflow-x: auto; }
+</style>
+</head>
+<body>
+<div class="page-header">
+  <div class="chapter-label">Chapter 18</div>
+  <div class="page-title">ML Interview Preparation</div>
+  <div class="page-subtitle">System design canvas, algorithm flashcards, and complexity cheat sheet</div>
+</div>
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('canvas')">ML System Design Canvas</button>
+  <button class="tab-btn" onclick="switchTab('cards')">Algorithm Flashcards</button>
+  <button class="tab-btn" onclick="switchTab('complexity')">Complexity Cheat Sheet</button>
+</div>
+
+<!-- TAB 1: SYSTEM DESIGN CANVAS -->
+<div class="tab-panel active" id="tab-canvas">
+  <div class="section-title">ML System Design Canvas</div>
+  <div class="section-sub">Click a case study, then explore each canvas section with interview-ready answers</div>
+  <div class="btn-row">
+    <button class="case-btn active" id="case-fraud" onclick="selectCase('fraud')">Fraud Detection</button>
+    <button class="case-btn" id="case-rec" onclick="selectCase('rec')">Recommendation System</button>
+    <button class="case-btn" id="case-search" onclick="selectCase('search')">Search Ranking</button>
+    <button class="case-btn" id="case-demand" onclick="selectCase('demand')">Demand Forecasting</button>
+  </div>
+  <div class="grid-2" style="align-items:start">
+    <div id="canvas-sections"></div>
+    <div class="panel">
+      <div class="label">Interview Checklist — 45-minute plan</div>
+      <ul class="checklist" id="interview-checklist">
+        <li><input type="checkbox" id="ck1"><label for="ck1">Clarify requirements — scope, scale, latency, accuracy tradeoff (5 min)</label></li>
+        <li><input type="checkbox" id="ck2"><label for="ck2">Describe data collection and feature engineering plan (8 min)</label></li>
+        <li><input type="checkbox" id="ck3"><label for="ck3">Choose and justify model architecture (8 min)</label></li>
+        <li><input type="checkbox" id="ck4"><label for="ck4">Explain training strategy and hyperparameter tuning (5 min)</label></li>
+        <li><input type="checkbox" id="ck5"><label for="ck5">Design serving infrastructure — latency, throughput, SLAs (7 min)</label></li>
+        <li><input type="checkbox" id="ck6"><label for="ck6">Discuss monitoring — drift, alerts, retraining triggers (5 min)</label></li>
+        <li><input type="checkbox" id="ck7"><label for="ck7">Cover bias/fairness considerations proactively (4 min)</label></li>
+        <li><input type="checkbox" id="ck8"><label for="ck8">Discuss tradeoffs — what would you do differently at 10× scale? (3 min)</label></li>
+      </ul>
+      <div style="margin-top:12px">
+        <button class="btn" onclick="resetChecklist()">Reset</button>
+        <span id="checklist-score" style="font-size:13px;color:#94a3b8;margin-left:12px"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 2: FLASHCARDS -->
+<div class="tab-panel" id="tab-cards">
+  <div class="section-title">Algorithm Flashcards</div>
+  <div class="section-sub">Click a card to flip it — rate your confidence to prioritize review</div>
+  <div class="btn-row" style="align-items:center;flex-wrap:wrap">
+    <button class="btn active" id="cat-all" onclick="filterCards('all')">All</button>
+    <button class="btn" id="cat-math" onclick="filterCards('Math')">Math</button>
+    <button class="btn" id="cat-stats" onclick="filterCards('Statistics')">Statistics</button>
+    <button class="btn" id="cat-supervised" onclick="filterCards('Supervised')">Supervised</button>
+    <button class="btn" id="cat-dl" onclick="filterCards('Deep Learning')">Deep Learning</button>
+    <button class="btn" id="cat-systems" onclick="filterCards('Systems')">Systems</button>
+    <button class="btn" onclick="shuffleCards()">🔀 Shuffle</button>
+    <span id="card-progress" style="font-size:13px;color:#94a3b8;margin-left:8px"></span>
+  </div>
+  <div class="card-container" id="flashcard" onclick="flipCard()"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">
+    <button class="btn" onclick="prevCard()">← Previous</button>
+    <div>
+      <span style="font-size:13px;color:#94a3b8;margin-right:8px">Confidence:</span>
+      <span class="star-rating" id="star-rating">
+        <span class="star" onclick="rateCard(1)">★</span>
+        <span class="star" onclick="rateCard(2)">★</span>
+        <span class="star" onclick="rateCard(3)">★</span>
+        <span class="star" onclick="rateCard(4)">★</span>
+        <span class="star" onclick="rateCard(5)">★</span>
+      </span>
+    </div>
+    <button class="btn" onclick="nextCard()">Next →</button>
+  </div>
+</div>
+
+<!-- TAB 3: COMPLEXITY CHEAT SHEET -->
+<div class="tab-panel" id="tab-complexity">
+  <div class="section-title">Algorithm Complexity Cheat Sheet</div>
+  <div class="section-sub">Time and space complexity for core ML algorithms — click headers to sort</div>
+  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+    <input type="text" class="search-input" id="complexity-search" placeholder="Search algorithms..." oninput="filterComplexity()" style="max-width:240px">
+    <select class="styled" id="complexity-cat" onchange="filterComplexity()">
+      <option value="all">All Categories</option>
+      <option value="linear">Linear Models</option>
+      <option value="tree">Trees</option>
+      <option value="neural">Neural Networks</option>
+      <option value="unsupervised">Unsupervised</option>
+      <option value="ensemble">Ensemble</option>
+      <option value="instance">Instance-Based</option>
+    </select>
+  </div>
+  <div class="panel" style="overflow-x:auto">
+    <table class="complexity-table" id="complexity-table">
+      <thead>
+        <tr>
+          <th onclick="sortTable(0)">Algorithm ↕</th>
+          <th onclick="sortTable(1)">Train Time ↕</th>
+          <th onclick="sortTable(2)">Predict Time ↕</th>
+          <th onclick="sortTable(3)">Space ↕</th>
+          <th>Category</th>
+          <th>Best For</th>
+        </tr>
+      </thead>
+      <tbody id="complexity-tbody"></tbody>
+    </table>
+  </div>
+  <div class="insight-box" style="margin-top:16px">
+    <strong>Legend:</strong>
+    <span class="speed-fast">Green = fast</span> &nbsp;
+    <span class="speed-med">Yellow = medium</span> &nbsp;
+    <span class="speed-slow">Red = slow</span> &nbsp;
+    n = samples, d = features, k = clusters/classes, D = depth, T = trees
+  </div>
+</div>
+
+<script>
+// ── TABS ──
+function switchTab(t) {
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['canvas','cards','complexity'][i]===t));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  if(t==='cards') renderCard();
+  if(t==='complexity') renderComplexity();
+}
+
+// ── CASE STUDIES ──
+const cases = {
+  fraud:{
+    requirements:'Detect fraudulent transactions in real-time (<100ms latency). 99.9% SLA. Handle 10k TPS. Binary classification. Minimize false positives (bad UX) while catching fraud.',
+    data:'Transaction history, user behavior, merchant data, device fingerprint. Time-windowed aggregations: tx/hour, avg amount, velocity. Streaming features via Kafka + Flink. Point-in-time correct features to avoid leakage.',
+    features:'User velocity features, merchant risk score, geo-distance from usual, device fingerprint hash, hour-of-day, day-of-week, amount z-score vs user history, card present flag.',
+    model:'XGBoost or LightGBM as primary. Deep neural net with entity embeddings for categorical features. Ensemble both. Reason: tree models handle tabular data well; DNN captures complex interactions.',
+    training:'Highly imbalanced (0.1% fraud). Use SMOTE + class weighting. Time-series split (no random shuffle). AUC-PR metric (not AUC-ROC). Hyperparameter tuning with Optuna.',
+    serving:'Real-time endpoint (<50ms). Feature store (Redis) for precomputed user/merchant features. Model served via Triton Inference Server. Blue-green deployment. Shadow mode for new models.',
+    monitoring:'PSI on feature distributions. Alert if fraud rate changes >2σ. A/B test new models in shadow mode. Monitor false positive rate by customer segment. Weekly retraining trigger.'
+  },
+  rec:{
+    requirements:'Recommend 10 items from a catalog of 10M. Optimize for CTR and session engagement. Handle 100M users. Real-time personalization <200ms.',
+    data:'Implicit feedback (clicks, time spent, purchases). Explicit ratings. Item metadata. User demographics. Session context. Build interaction matrix: (user, item, timestamp, event_type).',
+    features:'User: historical interactions, session context, demographics. Item: category, embeddings, recency, popularity. Interaction: collaborative filtering embeddings (ALS or NCF).',
+    model:'Two-stage: (1) Candidate generation via ANN (Approximate Nearest Neighbor) on learned embeddings. (2) Ranking via LambdaMART or DNN with cross-features. Pre-compute candidate sets offline.',
+    training:'Matrix factorization or neural collaborative filtering. Contrastive learning for embedding quality. Evaluation: offline (NDCG, MAP) + online (A/B CTR, conversion). Exposure bias correction.',
+    serving:'Candidate retrieval: FAISS index on item embeddings (<10ms). Ranking: lightweight model online. Caching: precompute top-500 candidates for frequent users. CDN for static content.',
+    monitoring:'Monitor CTR, session length, diversity. Filter bubble detection. Novelty vs accuracy tradeoff. User satisfaction surveys. Canary rollout for new ranker.'
+  },
+  search:{
+    requirements:'Rank search results for a query. Optimize for relevance + click-through. Handle 10k QPS. Multi-lingual. Balance freshness vs authority.',
+    data:'Query logs, click data (positive signal), dwell time (engagement proxy), skip data (negative signal). Document features: PageRank, freshness, entity matches, content quality.',
+    features:'Query-document features: BM25 score, semantic similarity (dense retrieval), exact match signals. Document features: authority, freshness, diversity. Learning to Rank (LTR) framework.',
+    model:'Two-stage: BM25/ANN retrieval → LambdaMART or BERT-based cross-encoder reranking. Optimize for NDCG. Use pointwise/pairwise/listwise loss. Distill from larger model for latency.',
+    training:'Offline: train on historical click logs with position bias correction. Propensity scoring for unbiased LTR. Online: interleaving experiments for A/B comparison without splitting traffic.',
+    serving:'Pre-indexed inverted index for recall. Vector index for semantic recall. Reranker in <50ms. Feature cache for common queries. Edge deployment for latency reduction.',
+    monitoring:'Monitor CTR by position, zero-click rate, time-to-click. Query coverage (% queries with good results). Freshness of index. Adversarial query detection.'
+  },
+  demand:{
+    requirements:'Forecast product demand 7/14/30 days ahead. Coverage: 1M SKUs across 50 regions. Optimize inventory and reduce stockouts. MAPE < 15%.',
+    data:'Historical sales (sparse, intermittent). Price, promotions, holidays, weather. Competitor data. Hierarchy: product → category → region. Handle cold-start for new SKUs.',
+    features:'Lag features (7d, 14d, 28d, 52w same period). Rolling averages. Price elasticity. Promotion flags. Calendar features: weekday, month, holiday proximity. Category trend.',
+    model:'LightGBM baseline per category. DeepAR (probabilistic forecasting) for uncertainty estimates. N-BEATS or TFT (Temporal Fusion Transformer) for complex patterns. Ensemble via stacking.',
+    training:'Time-series cross-validation (walk-forward). Quantile loss for prediction intervals. Hierarchical reconciliation for coherent forecasts across levels. Cold-start: use category-level model.',
+    serving:'Batch inference daily (not real-time). Results written to database. API for inventory system to pull. Uncertainty intervals propagated downstream for safety stock calculation.',
+    monitoring:'Track MAPE, bias (systematic over/under), stockout rate, overstock cost. Data quality checks on input sales data. Alert on >20% MAPE degradation. Seasonal model retraining.'
+  }
+};
+
+let activeCase='fraud';
+function selectCase(c) {
+  activeCase=c;
+  document.querySelectorAll('.case-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('case-'+c).classList.add('active');
+  renderCanvas();
+}
+
+const canvasSections=[
+  {key:'requirements',label:'Requirements & Problem Framing'},
+  {key:'data',label:'Data Collection & Labeling'},
+  {key:'features',label:'Feature Engineering'},
+  {key:'model',label:'Model Selection'},
+  {key:'training',label:'Training Strategy'},
+  {key:'serving',label:'Serving & Infrastructure'},
+  {key:'monitoring',label:'Monitoring & Maintenance'}
+];
+
+let activeSection=null;
+function renderCanvas() {
+  let html='';
+  canvasSections.forEach(s=>{
+    const active=activeSection===s.key;
+    html+=`<div class="canvas-section${active?' active':''}" onclick="toggleSection('${s.key}')">
+      <div class="cs-title">
+        <span>${s.label}</span>
+        <span>${active?'▲':'▼'}</span>
+      </div>
+      <div class="cs-content">${cases[activeCase][s.key]}</div>
+    </div>`;
+  });
+  document.getElementById('canvas-sections').innerHTML=html;
+}
+
+function toggleSection(key) {
+  activeSection=activeSection===key?null:key;
+  renderCanvas();
+}
+
+function resetChecklist() {
+  document.querySelectorAll('#interview-checklist input').forEach(c=>c.checked=false);
+  updateChecklistScore();
+}
+
+function updateChecklistScore() {
+  const total=document.querySelectorAll('#interview-checklist input').length;
+  const done=document.querySelectorAll('#interview-checklist input:checked').length;
+  document.getElementById('checklist-score').textContent=`${done}/${total} covered`;
+}
+
+document.addEventListener('change',e=>{if(e.target.type==='checkbox')updateChecklistScore();});
+selectCase('fraud');
+updateChecklistScore();
+
+// ── FLASHCARDS ──
+const allCards=[
+  {cat:'Statistics',title:'Bias-Variance Tradeoff',def:'Error = Bias² + Variance + Irreducible Noise. High bias = underfitting (model too simple). High variance = overfitting (model too complex). The goal is to minimize total expected error.',formula:'MSE = Bias² + Var + σ²',impl:'Use regularization to trade variance for bias. Cross-validation to find the sweet spot. Ensemble methods reduce variance.'},
+  {cat:'Supervised',title:'Overfitting',def:'Model performs well on training data but poorly on unseen data. Caused by excessive model complexity relative to training data size. The model memorizes noise instead of learning patterns.',formula:'Train error ≪ Test error',impl:'Fix with: more data, regularization (L1/L2), dropout, early stopping, simpler model.'},
+  {cat:'Math',title:'Gradient Descent',def:'Iterative optimization algorithm that updates parameters in the direction of steepest descent of the loss function. The workhorse of all neural network training.',formula:'θ ← θ - α · ∇J(θ)',impl:'SGD uses one sample; Mini-batch uses k samples. Adam adapts learning rate per parameter using first and second moments.'},
+  {cat:'Deep Learning',title:'Vanishing Gradient',def:'In deep networks, gradients shrink exponentially as they backpropagate through layers. Early layers receive near-zero gradient updates and learn very slowly.',formula:'∂L/∂W₁ = ∏ᵢ (∂hᵢ/∂hᵢ₋₁) → 0',impl:'Fix with: ReLU activations, batch normalization, residual connections (ResNet), gradient clipping.'},
+  {cat:'Math',title:'Regularization (L1/L2)',def:'Adds a penalty term to the loss function to prevent overfitting. L1 (Lasso) produces sparse weights. L2 (Ridge) shrinks weights toward zero.',formula:'L1: J + λΣ|w|  L2: J + λΣw²',impl:'L1 for feature selection (sparsity). L2 for general regularization. ElasticNet combines both.'},
+  {cat:'Deep Learning',title:'Backpropagation',def:'Algorithm to compute gradients of the loss with respect to all parameters using the chain rule. Works backward from the output layer to the input layer.',formula:'∂L/∂wᵢⱼ = ∂L/∂aⱼ · ∂aⱼ/∂wᵢⱼ',impl:'Enabled by computational graphs (PyTorch autograd, TensorFlow). Same math as the chain rule from calculus.'},
+  {cat:'Deep Learning',title:'Attention Mechanism',def:'Allows the model to focus on relevant parts of the input sequence when producing each output. Computes a weighted sum of values, where weights (attention scores) are learned.',formula:'Attention(Q,K,V) = softmax(QKᵀ/√d)V',impl:'Foundation of Transformers. Self-attention compares each position to all others. Multi-head = multiple attention functions in parallel.'},
+  {cat:'Statistics',title:'Cross-Validation',def:'Technique to estimate generalization error by training on k-1 folds and testing on 1 fold, repeating k times. Reduces variance of evaluation.',formula:'CV Error = (1/k)Σᵢ L(yᵢ, ŷᵢ)',impl:'k=5 or 10 typical. For time series: always use walk-forward (no data from the future). Stratified k-fold for imbalanced classes.'},
+  {cat:'Supervised',title:'Decision Trees',def:'Greedy algorithm that recursively partitions feature space by selecting splits that maximize information gain (ID3, C4.5) or minimize Gini impurity (CART).',formula:'Gini = 1 - Σpᵢ²  IG = H(S) - Σ|Sᵥ|/|S| H(Sᵥ)',impl:'Prone to overfitting — use max_depth or min_samples_leaf. Basis for Random Forests and Gradient Boosting.'},
+  {cat:'Supervised',title:'Gradient Boosting',def:'Ensemble method that builds trees sequentially, each correcting the residuals of the previous. Minimizes arbitrary differentiable loss functions.',formula:'Fₘ(x) = Fₘ₋₁(x) + η·hₘ(x)',impl:'XGBoost, LightGBM, CatBoost are implementations. Tune: n_estimators, max_depth, learning_rate, subsample. Use early stopping.'},
+  {cat:'Supervised',title:'SVM & Kernel Trick',def:'Finds the maximum-margin hyperplane between classes. The kernel trick maps data to higher dimensions implicitly, enabling non-linear boundaries without computing high-dim coordinates.',formula:'min ½||w||² s.t. yᵢ(w·xᵢ+b) ≥ 1',impl:'RBF kernel for non-linear. C controls margin vs misclassification tradeoff. Slow for large n — use SGD or kernel approximations.'},
+  {cat:'Statistics',title:'Central Limit Theorem',def:'The sum (or mean) of many independent random variables approaches a normal distribution regardless of the original distribution, given large enough sample size.',formula:'√n(X̄ - μ)/σ → N(0,1) as n→∞',impl:'Justifies using z-tests and t-tests. A/B test significance relies on CLT. Base assumption for many statistical methods.'},
+  {cat:'Statistics',title:'p-value & Hypothesis Testing',def:'The p-value is the probability of observing data at least as extreme as seen, assuming H₀ is true. NOT the probability that H₀ is true.',formula:'p = P(T ≥ t_observed | H₀)',impl:'p < 0.05 → reject H₀ (common threshold). Beware: multiple comparisons inflate false positives. Use Bonferroni correction or FDR.'},
+  {cat:'Deep Learning',title:'Batch Normalization',def:'Normalizes activations within each mini-batch during training. Reduces internal covariate shift, allows higher learning rates, acts as a regularizer.',formula:'x̂ = (x - μ_B)/√(σ²_B + ε)  y = γx̂ + β',impl:'Add after linear/conv layer, before activation. Layer Norm preferred for Transformers/RNNs. Not beneficial with very small batch sizes.'},
+  {cat:'Supervised',title:'Logistic Regression',def:'Linear model for binary classification. Applies sigmoid function to linear combination of features to output probability. Trained via maximum likelihood / cross-entropy loss.',formula:'P(y=1|x) = σ(wᵀx + b) = 1/(1+e^{-wᵀx})',impl:'Interpretable, fast, calibrated. L2 regularization (C parameter in sklearn). Feature scaling important. Works well as a baseline.'},
+  {cat:'Systems',title:'Feature Store',def:'Centralized repository for computed features. Offline store (Parquet/S3) for training. Online store (Redis/DynamoDB) for low-latency serving. Eliminates train-serve skew.',formula:'train_features = offline_store.get_historical(timestamps)\nserve_features = online_store.get(entity_id)',impl:'Feast, Tecton, Vertex Feature Store. Key design: point-in-time correctness — features must reflect what was known at prediction time.'},
+  {cat:'Systems',title:'Model Calibration',def:'A model is calibrated if its predicted probability matches empirical frequency. A score of 0.7 should correspond to 70% actual positive rate.',formula:'Expected Calibration Error = Σ|acc(B) - conf(B)|·|B|/n',impl:'Platt scaling (sigmoid on model output) or isotonic regression. Use reliability diagram to diagnose. Critical for risk-sensitive applications.'},
+  {cat:'Math',title:'PCA — Principal Component Analysis',def:'Unsupervised dimensionality reduction. Finds orthogonal axes (principal components) of maximum variance in data via eigendecomposition of the covariance matrix.',formula:'C = (1/n)XᵀX  Cv = λv  X_reduced = XV_k',impl:'Scale features first. Choose k to retain 95% variance. Limitations: linear only (use UMAP/t-SNE for nonlinear). Interpretability lost.'},
+  {cat:'Supervised',title:'Random Forest',def:'Ensemble of decision trees trained on bootstrap samples (bagging). At each split, considers only a random subset of features. Final prediction is vote (classification) or average (regression).',formula:'ŷ = (1/T)Σᵢ hᵢ(x)  Feature importance: Σ Δgini per feature',impl:'Out-of-bag error as free validation set. Feature importance via MDI or permutation. Handles missing data and nonlinear relationships well.'},
+  {cat:'Deep Learning',title:'Transformer Architecture',def:'Self-attention based architecture that processes entire sequences in parallel (unlike RNNs). Each token attends to all other tokens. Scaled to enormous sizes (GPT, BERT).',formula:'MultiHead(Q,K,V) = Concat(head₁,...,headₕ)Wᴼ',impl:'Encoder-only (BERT) for understanding. Decoder-only (GPT) for generation. Encoder-decoder (T5) for seq2seq. Position encoding required (no recurrence).'},
+  {cat:'Statistics',title:'AUC-ROC vs AUC-PR',def:'AUC-ROC: area under TPR vs FPR curve. Invariant to class imbalance for ranking. AUC-PR: area under Precision vs Recall curve. Better for imbalanced datasets where the positive class is rare.',formula:'AUC = P(score(pos) > score(neg))',impl:'Use AUC-PR for fraud, medical diagnosis, rare events. AUC-ROC overestimates performance when negatives dominate. Both measure ranking quality.'},
+  {cat:'Systems',title:'A/B Testing',def:'Randomized controlled experiment comparing two variants. Requires sufficient power, randomization, and statistical significance to draw causal conclusions.',formula:'n = 2(z_α + z_β)²p(1-p)/Δ²',impl:'Minimum detectable effect drives sample size. Watch for novelty effect, network effects, and multiple testing. Use holdout groups for long-term measurement.'},
+  {cat:'Supervised',title:'K-Nearest Neighbors (KNN)',def:'Non-parametric, instance-based learner. Prediction = majority vote (classification) or average (regression) of k nearest training points in feature space.',formula:'ŷ = arg max_c Σᵢ I(yᵢ=c) for i in kNN(x)',impl:'Scales poorly: O(n·d) per prediction. No training phase. Feature scaling critical. Use ANN (Faiss) for large n. Breaks down in high dimensions (curse of dimensionality).'},
+  {cat:'Deep Learning',title:'Dropout',def:'Regularization technique that randomly zeroes activations during training with probability p. Forces redundant representations and prevents co-adaptation.',formula:'h̃ = h ⊙ Bernoulli(1-p) / (1-p)',impl:'p=0.5 common for FC layers; p=0.1 for conv. Not used at inference (multiply weights by 1-p instead). Less effective with batch norm.'},
+  {cat:'Math',title:'Cross-Entropy Loss',def:'The negative log-likelihood of the true label under the predicted distribution. The standard loss for classification. Penalizes confident wrong predictions heavily.',formula:'H(y, ŷ) = -Σ yᵢ log(ŷᵢ)',impl:'Binary CE for binary classification. Categorical CE for multi-class. Label smoothing (ε=0.1) helps calibration and reduces overconfidence.'},
+  {cat:'Systems',title:'Data Leakage',def:'Training data contains information that would not be available at prediction time. Causes inflated evaluation metrics and catastrophic real-world failure.',formula:'Leak: P(y|X_train) ≠ P(y|X_serve)',impl:'Common sources: future data in features, target encoding without CV, test data in preprocessing. Always split before any transformation.'},
+  {cat:'Statistics',title:'Bayesian vs Frequentist',def:'Frequentist: parameters are fixed; data is random. Bayesian: parameters have prior distributions; updated by data to form posteriors.',formula:'P(θ|data) ∝ P(data|θ) · P(θ)',impl:'Bayesian: uncertainty quantification, small data. Frequentist: large data, hypothesis testing. In ML: Bayesian optimization, Gaussian processes.'},
+  {cat:'Supervised',title:'XGBoost',def:'Optimized gradient boosting with second-order Taylor expansion of loss, column subsampling, sparsity-aware split finding, and parallelized tree construction.',formula:'Obj = Σ l(yᵢ,ŷᵢ) + Σ Ω(fₖ)  where Ω = γT + ½λ||w||²',impl:'Key params: n_estimators, max_depth(3-10), eta(0.01-0.3), subsample, colsample_bytree. Always use early stopping.'},
+  {cat:'Deep Learning',title:'LSTM / GRU',def:'Recurrent architectures with gating mechanisms to selectively remember/forget information across long sequences. Solve the vanishing gradient problem of vanilla RNNs.',formula:'GRU: z=σ(Wz·[h,x])  h=(1-z)⊙h_prev + z⊙tanh(Wr·[r⊙h,x])',impl:'LSTMs have forget/input/output gates + cell state. GRU is simpler (two gates). Largely replaced by Transformers for NLP but still useful for time series.'},
+  {cat:'Systems',title:'Online Learning',def:'Model updates incrementally as new data arrives, without full retraining. Suitable for concept drift, streaming data, and when data does not fit in memory.',formula:'θₜ₊₁ = θₜ - α·∇L(θₜ; xₜ, yₜ)',impl:'Vowpal Wabbit, river library. Risk: catastrophic forgetting. Safeguard with champion/challenger monitoring. Combine with periodic full retraining.'}
+];
+
+let currentCards=[...allCards];
+let currentCardIdx=0;
+let ratings={};
+let isFlipped=false;
+
+function filterCards(cat) {
+  document.querySelectorAll('.btn[id^="cat-"]').forEach(b=>b.classList.remove('active'));
+  document.getElementById('cat-'+(cat==='all'?'all':cat.toLowerCase().replace(' ','-').replace('/','')))||document.getElementById('cat-all');
+  const btn=cat==='all'?document.getElementById('cat-all'):document.querySelector(`#cat-${cat.toLowerCase().replace(/\s+/g,'').replace(/\//g,'')}`);
+  if(btn) btn.classList.add('active');
+  currentCards=cat==='all'?[...allCards]:allCards.filter(c=>c.cat===cat);
+  currentCardIdx=0; isFlipped=false; renderCard();
+}
+
+function shuffleCards() {
+  currentCards=[...currentCards].sort(()=>Math.random()-0.5);
+  currentCardIdx=0; isFlipped=false; renderCard();
+}
+
+function flipCard() {
+  isFlipped=!isFlipped;
+  document.getElementById('flashcard').classList.toggle('flipped',isFlipped);
+}
+
+function prevCard() {
+  currentCardIdx=(currentCardIdx-1+currentCards.length)%currentCards.length;
+  isFlipped=false; renderCard();
+}
+
+function nextCard() {
+  currentCardIdx=(currentCardIdx+1)%currentCards.length;
+  isFlipped=false; renderCard();
+}
+
+function rateCard(n) {
+  const card=currentCards[currentCardIdx];
+  ratings[card.title]=n;
+  renderStars(n);
+}
+
+function renderStars(n) {
+  document.querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('filled',i<n));
+}
+
+const catColors={Math:'#7dd3fc',Statistics:'#86efac',Supervised:'#fbbf24',DL:'#a78bfa','Deep Learning':'#a78bfa',Systems:'#f87171',Unsupervised:'#2dd4bf'};
+function renderCard() {
+  if(!currentCards.length){document.getElementById('flashcard').innerHTML='<div style="padding:40px;text-align:center;color:#64748b">No cards in this category.</div>';return;}
+  const card=currentCards[currentCardIdx];
+  const color=catColors[card.cat]||'#94a3b8';
+  const rating=ratings[card.title]||0;
+  const stars=['★','★','★','★','★'].map((s,i)=>`<span class="star${i<rating?' filled':''}" onclick="rateCard(${i+1})">${s}</span>`).join('');
+
+  document.getElementById('flashcard').className='card-container'+(isFlipped?' flipped':'');
+  document.getElementById('flashcard').innerHTML=`
+    <div class="card-inner">
+      <div class="card-front">
+        <div class="card-category" style="color:${color}">${card.cat}</div>
+        <div class="card-title">${card.title}</div>
+        <div style="font-size:12px;color:#64748b;margin-top:16px">Click to reveal definition →</div>
+      </div>
+      <div class="card-back">
+        <div class="card-category" style="color:${color}">${card.cat} — ${card.title}</div>
+        <div class="card-def">${card.def}</div>
+        <div class="card-formula">${card.formula}</div>
+        <div class="card-impl">💡 ${card.impl}</div>
+      </div>
+    </div>
+  `;
+  document.getElementById('card-progress').textContent=`${currentCardIdx+1} / ${currentCards.length}`;
+  renderStars(rating);
+}
+
+// ── COMPLEXITY TABLE ──
+const complexityData=[
+  {name:'Linear Regression',train:'O(nd²)',predict:'O(d)',space:'O(d)',cat:'linear',color:'fast',bestFor:'Baseline, interpretable, fast'},
+  {name:'Logistic Regression',train:'O(ndt)',predict:'O(d)',space:'O(d)',cat:'linear',color:'fast',bestFor:'Binary classification, calibrated probabilities'},
+  {name:'Ridge / Lasso',train:'O(nd²)',predict:'O(d)',space:'O(d)',cat:'linear',color:'fast',bestFor:'High-dimensional, feature selection (L1)'},
+  {name:'KNN',train:'O(1)',predict:'O(nd)',space:'O(nd)',cat:'instance',color:'slow',bestFor:'Small datasets, anomaly detection'},
+  {name:'Naive Bayes',train:'O(nd)',predict:'O(dk)',space:'O(dk)',cat:'linear',color:'fast',bestFor:'Text classification, real-time, sparse data'},
+  {name:'SVM (linear)',train:'O(n²d)',predict:'O(d)',space:'O(nd)',cat:'linear',color:'med',bestFor:'High-dim text, margin-based classification'},
+  {name:'SVM (RBF kernel)',train:'O(n³)',predict:'O(n_sv·d)',space:'O(n_sv)',cat:'linear',color:'slow',bestFor:'Small datasets with complex boundaries'},
+  {name:'Decision Tree',train:'O(nd·log n)',predict:'O(log n)',space:'O(n)',cat:'tree',color:'fast',bestFor:'Interpretable, rule extraction, feature selection'},
+  {name:'Random Forest',train:'O(T·nd·log n)',predict:'O(T·log n)',space:'O(T·n)',cat:'ensemble',color:'med',bestFor:'General purpose, robust, feature importance'},
+  {name:'XGBoost',train:'O(T·nd·log n)',predict:'O(T·D)',space:'O(T·2^D)',cat:'ensemble',color:'med',bestFor:'Tabular data competitions, best accuracy'},
+  {name:'LightGBM',train:'O(T·n·k·log n)',predict:'O(T·D)',space:'O(T·2^D)',cat:'ensemble',color:'fast',bestFor:'Large datasets, faster than XGBoost'},
+  {name:'Neural Network (FC)',train:'O(n·L·w²)',predict:'O(L·w²)',space:'O(L·w²)',cat:'neural',color:'slow',bestFor:'Complex patterns, end-to-end learning'},
+  {name:'CNN',train:'O(n·L·k²·c)',predict:'O(L·k²·c)',space:'O(L·k²·c)',cat:'neural',color:'slow',bestFor:'Images, local patterns, translation invariance'},
+  {name:'LSTM/GRU',train:'O(n·L·h²)',predict:'O(L·h²)',space:'O(L·h)',cat:'neural',color:'slow',bestFor:'Sequences, time series, language (smaller)'},
+  {name:'Transformer',train:'O(n·L·s²)',predict:'O(s²·d)',space:'O(s²+d)',cat:'neural',color:'slow',bestFor:'NLP, long sequences, pre-trained fine-tuning'},
+  {name:'k-Means',train:'O(n·k·d·i)',predict:'O(k·d)',space:'O(k·d)',cat:'unsupervised',color:'fast',bestFor:'Clustering, customer segmentation, VQ'},
+  {name:'DBSCAN',train:'O(n·log n)',predict:'O(n)',space:'O(n)',cat:'unsupervised',color:'med',bestFor:'Arbitrary shape clusters, outlier detection'},
+  {name:'PCA',train:'O(nd²+d³)',predict:'O(d·k)',space:'O(d·k)',cat:'unsupervised',color:'med',bestFor:'Dimensionality reduction, visualization, noise removal'},
+  {name:'t-SNE',train:'O(n²)',predict:'N/A',space:'O(n²)',cat:'unsupervised',color:'slow',bestFor:'Visualization only — cannot generalize'},
+  {name:'UMAP',train:'O(n·log n)',predict:'O(d)',space:'O(n)',cat:'unsupervised',color:'med',bestFor:'Fast visualization, preserves global structure better'},
+];
+
+let sortCol=-1, sortDir=1;
+function renderComplexity(data) {
+  const d=data||complexityData;
+  const colorClass={fast:'speed-fast',med:'speed-med',slow:'speed-slow'};
+  const catLabel={linear:'Linear',tree:'Trees',ensemble:'Ensemble',instance:'Instance',neural:'Neural Net',unsupervised:'Unsupervised'};
+  const catColor={linear:'#7dd3fc',tree:'#86efac',ensemble:'#fbbf24',instance:'#2dd4bf',neural:'#a78bfa',unsupervised:'#f87171'};
+  let html='';
+  d.forEach(r=>{
+    const cc=colorClass[r.color];
+    html+=`<tr data-cat="${r.cat}">
+      <td><strong>${r.name}</strong></td>
+      <td class="${cc}">${r.train}</td>
+      <td class="${cc}">${r.predict}</td>
+      <td>${r.space}</td>
+      <td><span class="cat-badge" style="background:${catColor[r.cat]}22;color:${catColor[r.cat]};border:1px solid ${catColor[r.cat]}">${catLabel[r.cat]}</span></td>
+      <td style="color:#94a3b8;font-size:12px">${r.bestFor}</td>
+    </tr>`;
+  });
+  document.getElementById('complexity-tbody').innerHTML=html;
+}
+
+function filterComplexity() {
+  const q=document.getElementById('complexity-search').value.toLowerCase();
+  const cat=document.getElementById('complexity-cat').value;
+  let filtered=complexityData.filter(r=>{
+    const matchQ=!q||r.name.toLowerCase().includes(q)||r.bestFor.toLowerCase().includes(q);
+    const matchC=cat==='all'||r.cat===cat;
+    return matchQ&&matchC;
+  });
+  renderComplexity(filtered);
+}
+
+function sortTable(col) {
+  if(sortCol===col) sortDir*=-1; else {sortCol=col;sortDir=1;}
+  const keys=['name','train','predict','space'];
+  const sorted=[...complexityData].sort((a,b)=>{
+    const va=a[keys[col]]||''; const vb=b[keys[col]]||'';
+    return va.localeCompare(vb)*sortDir;
+  });
+  renderComplexity(sorted);
+}
+
+renderComplexity();
+renderCard();
+</script>
+
+
+<style>
+/* ── Chapter sidenav ── */
+.chap-sidenav {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 8888;
+}
+.chap-sidenav-toggle {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  color: #7dd3fc;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px #00000060;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+.chap-sidenav-toggle:hover { background: #0369a1; border-color: #7dd3fc; }
+.chap-sidenav-menu {
+  position: absolute;
+  bottom: 52px;
+  right: 0;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  border-radius: 14px;
+  padding: 10px 6px;
+  min-width: 220px;
+  max-height: 70vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 40px #00000080;
+  display: none;
+  scrollbar-width: thin;
+  scrollbar-color: #2d3147 transparent;
+}
+.chap-sidenav-menu.open { display: block; }
+.chap-sidenav-menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #94a3b8;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.chap-sidenav-menu a:hover { background: #0f172a; color: #e2e8f0; }
+.chap-sidenav-menu a.current { background: #0369a133; color: #7dd3fc; font-weight: 600; }
+.chap-sidenav-menu .chap-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #4b5563;
+  min-width: 28px;
+}
+.chap-sidenav-menu .menu-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #4b5563;
+  padding: 4px 12px 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+@media (max-width: 480px) {
+  .chap-sidenav { bottom: 12px; right: 12px; }
+  .chap-sidenav-menu { right: 0; min-width: 180px; }
+}
+</style>
+
+<div class="chap-sidenav">
+  <div class="chap-sidenav-menu" id="chapMenu">
+    <div class="menu-header">ML Field Guide</div>
+      <a href="ch01_math_foundations.html"><span class="chap-num">Ch 01</span>Math Foundations</a>
+      <a href="ch02_statistics.html"><span class="chap-num">Ch 02</span>Statistics</a>
+      <a href="ch03_python.html"><span class="chap-num">Ch 03</span>Python for ML</a>
+      <a href="ch04_feature_engineering.html"><span class="chap-num">Ch 04</span>Feature Engineering</a>
+      <a href="ch05_supervised_learning.html"><span class="chap-num">Ch 05</span>Supervised Learning</a>
+      <a href="ch06_model_evaluation.html"><span class="chap-num">Ch 06</span>Model Evaluation</a>
+      <a href="ch07_unsupervised.html"><span class="chap-num">Ch 07</span>Unsupervised Learning</a>
+      <a href="ch08_recommendations.html"><span class="chap-num">Ch 08</span>Recommendations</a>
+      <a href="ch09_neural_networks.html"><span class="chap-num">Ch 09a</span>Neural Networks</a>
+      <a href="ch09_cnn_architectures.html"><span class="chap-num">Ch 09b</span>CNN Architectures</a>
+      <a href="ch10_nlp_transformers.html"><span class="chap-num">Ch 10</span>NLP & Transformers</a>
+      <a href="ch11_reinforcement_learning.html"><span class="chap-num">Ch 11</span>Reinforcement Learning</a>
+      <a href="ch12_time_series.html"><span class="chap-num">Ch 12</span>Time Series</a>
+      <a href="ch13_sql.html"><span class="chap-num">Ch 13</span>SQL for ML</a>
+      <a href="ch14_big_data.html"><span class="chap-num">Ch 14</span>Big Data</a>
+      <a href="ch15_mlops.html"><span class="chap-num">Ch 15</span>MLOps</a>
+      <a href="ch16_aws.html"><span class="chap-num">Ch 16</span>AWS for ML</a>
+      <a href="ch17_responsible_ai.html"><span class="chap-num">Ch 17</span>Responsible AI</a>
+      <a href="ch18_interview_prep.html" class="current"><span class="chap-num">Ch 18</span>Interview Prep</a>
+  </div>
+  <button class="chap-sidenav-toggle" onclick="document.getElementById('chapMenu').classList.toggle('open')" title="Chapter navigation">☰</button>
+</div>
+
+</body>
+</html>

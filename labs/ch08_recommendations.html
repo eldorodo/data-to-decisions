@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Recommendation systems: collaborative filtering, content-based, matrix factorization.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 8 · Recommendations — The ML Field Guide</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0f1117;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;padding:24px}
+  h1{text-align:center;font-size:1.6rem;color:#7dd3fc;margin-bottom:6px}
+  .subtitle{text-align:center;color:#94a3b8;font-size:.9rem;margin-bottom:24px}
+  .tabs{display:flex;gap:4px;margin-bottom:20px;background:#1e2130;padding:6px;border-radius:12px;border:1px solid #2d3147}
+  .tab{flex:1;padding:10px 8px;background:transparent;border:none;color:#94a3b8;cursor:pointer;border-radius:8px;font-size:.85rem;font-family:inherit;transition:all .2s}
+  .tab.active{background:#0369a1;color:#e2e8f0;font-weight:600}
+  .tab:hover:not(.active){background:#2d3147;color:#e2e8f0}
+  .panel{display:none;animation:fadeIn .3s ease}
+  .panel.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .grid2{display:grid;grid-template-columns:380px 1fr;gap:16px}
+  .card{background:#1e2130;border:1px solid #2d3147;border-radius:12px;padding:16px}
+  .card-title{font-size:.8rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px}
+  label{font-size:.82rem;color:#94a3b8;display:block;margin-bottom:4px}
+  input[type=range]{width:100%;accent-color:#7dd3fc;cursor:pointer;margin-bottom:4px}
+  select{background:#0f172a;border:1px solid #2d3147;color:#e2e8f0;padding:6px 10px;border-radius:8px;font-size:.82rem;width:100%;cursor:pointer}
+  button{background:#0369a1;border:none;color:#e2e8f0;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:.8rem;font-family:inherit;transition:all .2s}
+  button:hover{background:#0284c7;transform:translateY(-1px)}
+  button.secondary{background:#2d3147}
+  button.secondary:hover{background:#3d4157}
+  .flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .info-box{background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:10px;font-size:.78rem;color:#94a3b8;margin-top:8px;line-height:1.5}
+  .formula{font-size:.75rem;color:#7dd3fc;font-family:monospace;background:#0f172a;padding:5px 10px;border-radius:4px;margin:3px 0;display:block}
+  .toggle{display:flex;background:#0f172a;border-radius:8px;padding:3px;gap:2px}
+  .toggle-btn{padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:.75rem;font-family:inherit;color:#64748b;background:transparent;transition:all .2s}
+  .toggle-btn.active{background:#0369a1;color:#e2e8f0}
+  .rating-cell{width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .2s;border:1px solid transparent;position:relative}
+  .rating-cell:hover{transform:scale(1.1);z-index:1}
+  .matrix-header{font-size:.7rem;color:#64748b;font-weight:600;text-align:center;padding:4px}
+  .sim-bar{height:6px;background:#7dd3fc;border-radius:3px;transition:width .3s}
+  .metric-card{background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:10px;margin-bottom:8px}
+  .rank-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;margin-bottom:4px;transition:all .2s;cursor:pointer;border:1px solid transparent}
+  .rank-item:hover{border-color:#2d3147;background:#0f172a}
+  .rank-num{font-size:.72rem;color:#64748b;width:16px;flex-shrink:0;text-align:center}
+  .rank-label{flex:1;font-size:.82rem}
+  .rel-badge{padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;border:none;cursor:pointer;transition:all .2s}
+  .rel-yes{background:#065f46;color:#86efac}
+  .rel-no{background:#2d3147;color:#64748b}
+  canvas{display:block;border-radius:8px;background:#1a1f2e}
+  .svd-matrix{display:inline-flex;flex-direction:column;align-items:center;background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:8px;margin:4px}
+  .svd-matrix-title{font-size:.7rem;color:#94a3b8;margin-bottom:4px;text-align:center}
+  .svd-row{display:flex;gap:2px;margin-bottom:2px}
+  .svd-cell{width:22px;height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:.55rem;font-weight:600}
+  .step-indicator{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+  .step-dot{width:8px;height:8px;border-radius:50%;background:#2d3147;transition:all .2s}
+  .step-dot.active{background:#7dd3fc;width:20px;border-radius:4px}
+  .ndcg-bar-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+
+  /* ── Shared improvements ── */
+  body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important; }
+  code, pre, .code-block, .formula, .mono, [style*="monospace"], [style*="Courier"] { font-family: 'JetBrains Mono', 'Cascadia Code', 'Courier New', monospace !important; }
+
+  /* Smoother scrolling */
+  html { scroll-behavior: smooth; }
+
+  /* Focus ring for accessibility */
+  button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid #7dd3fc;
+    outline-offset: 2px;
+  }
+
+  /* Improve tab-nav overflow on small screens */
+  .tab-nav, .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .tab-nav::-webkit-scrollbar, .tabs::-webkit-scrollbar { display: none; }
+
+  /* Mobile responsive improvements */
+  @media (max-width: 768px) {
+    .page-header { padding: 24px 20px 18px !important; }
+    .tab-panel { padding: 20px !important; }
+    .tab-nav { padding: 16px 20px 0 !important; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
+    .grid2, .grid3 { grid-template-columns: 1fr !important; }
+    .page-title { font-size: 22px !important; }
+    h1 { font-size: 1.4rem !important; }
+  }
+  @media (max-width: 480px) {
+    body { padding: 0 0 40px 0 !important; }
+    .tab-btn { padding: 8px 14px !important; font-size: 12px !important; }
+    .btn { padding: 6px 12px !important; font-size: 12px !important; }
+  }
+
+  /* Better selection color */
+  ::selection { background: #1d4ed880; color: #e0f2fe; }
+
+  /* Smoother canvas rendering */
+  canvas { image-rendering: -webkit-optimize-contrast; }
+
+  /* Tooltip z-index fix */
+  .tooltip { z-index: 9999 !important; }
+
+  /* Code block horizontal scroll indicator */
+  .code-block { overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>Chapter 8 — Recommendation Systems</h1>
+<p class="subtitle">Collaborative filtering, matrix factorization, and ranking metrics</p>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab(0)">Collaborative Filtering</button>
+  <button class="tab" onclick="switchTab(1)">Matrix Factorization (SVD)</button>
+  <button class="tab" onclick="switchTab(2)">Recommendation Metrics</button>
+</div>
+
+<!-- ============================================================ TAB 1: COLLABORATIVE FILTERING -->
+<div class="panel active" id="tab0">
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="card">
+        <div class="card-title">Controls</div>
+        <div class="toggle" style="margin-bottom:10px">
+          <button class="toggle-btn active" id="uu-btn" onclick="setCFMode('user')">User-User</button>
+          <button class="toggle-btn" id="ii-btn" onclick="setCFMode('item')">Item-Item</button>
+        </div>
+        <label>Hover a user row to see similarities. Click a "?" cell to predict its rating.</label>
+        <div class="flex" style="margin-top:8px">
+          <button onclick="findSimilar()" id="find-sim-btn">Find Similar Users</button>
+          <button onclick="resetCF()" class="secondary">Reset</button>
+        </div>
+        <div id="cf-target-info" class="info-box" style="margin-top:8px">
+          Click on a "?" cell to predict that rating step by step.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Similarity Scores</div>
+        <div id="cf-sims">
+          <div style="font-size:.75rem;color:#64748b">Click "Find Similar Users" to compute cosine similarity.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Prediction Steps</div>
+        <div id="cf-prediction">
+          <div style="font-size:.75rem;color:#64748b">Click a "?" cell to begin.</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">User-Item Rating Matrix — <span style="color:#94a3b8;font-size:.75rem">click ★ cells to edit, click ? to predict</span></div>
+      <div id="cf-matrix-container"></div>
+      <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap">
+        <div class="flex"><div style="width:12px;height:12px;border-radius:3px;background:#1d4ed8"></div><span style="font-size:.72rem;color:#94a3b8">★1 Low</span></div>
+        <div class="flex"><div style="width:12px;height:12px;border-radius:3px;background:#0369a1"></div><span style="font-size:.72rem;color:#94a3b8">★3 Mid</span></div>
+        <div class="flex"><div style="width:12px;height:12px;border-radius:3px;background:#0284c7"></div><span style="font-size:.72rem;color:#94a3b8">★5 High</span></div>
+        <div class="flex"><div style="width:12px;height:12px;border-radius:3px;background:#2d3147;border:1px solid #3d4157"></div><span style="font-size:.72rem;color:#94a3b8">? Unknown</span></div>
+        <div class="flex"><div style="width:12px;height:12px;border-radius:3px;background:#065f46;border:1px solid #86efac"></div><span style="font-size:.72rem;color:#94a3b8">Predicted</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ TAB 2: MATRIX FACTORIZATION -->
+<div class="panel" id="tab1">
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div style="display:grid;grid-template-columns:300px 1fr;gap:16px">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="card">
+          <div class="card-title">Latent Factors</div>
+          <label>k (latent factors): <strong id="k-svd-val" style="color:#7dd3fc">5</strong></label>
+          <input type="range" id="k-svd" min="1" max="20" value="5" oninput="updateSVD()">
+          <div class="flex" style="margin-top:8px">
+            <button onclick="animateSVD()" id="svd-anim-btn">&#9654; Animate Decomposition</button>
+          </div>
+          <div class="step-indicator" id="svd-steps" style="margin-top:8px">
+            <div class="step-dot active"></div>
+            <div class="step-dot"></div>
+            <div class="step-dot"></div>
+            <div class="step-dot"></div>
+          </div>
+          <div id="svd-step-info" class="info-box">
+            R ≈ U × Σ × Vᵀ — Matrix R is decomposed into user (U), singular values (Σ), and item (Vᵀ) matrices.
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Reconstruction Quality</div>
+          <div id="svd-error-display"></div>
+          <div class="metric-card" style="margin-top:8px">
+            <div style="font-size:.72rem;color:#94a3b8">What do latent factors represent?</div>
+            <div style="font-size:.75rem;color:#e2e8f0;margin-top:4px">
+              Factor 1: Action/Thriller genre<br>
+              Factor 2: Romance/Drama preference<br>
+              Factor 3: Recency/Novelty<br>
+              Factor 4: Director style preference<br>
+              Factor 5: Runtime tolerance<br>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">SVD Visualization — <span id="svd-stage-label" style="color:#7dd3fc;font-size:.8rem">R ≈ U × Σ × Vᵀ</span></div>
+        <canvas id="svd-canvas" width="640" height="380"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ TAB 3: METRICS -->
+<div class="panel" id="tab2">
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="card">
+        <div class="card-title">Controls</div>
+        <label>K (cutoff): <strong id="k-metric-val" style="color:#7dd3fc">5</strong></label>
+        <input type="range" id="k-metric" min="1" max="10" value="5" oninput="updateMetrics()">
+        <div class="info-box" style="margin-top:6px">
+          Toggle "relevant" / "not relevant" on each item. All metrics update instantly.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Metrics at K=<span id="k-display">5</span></div>
+        <div id="metrics-cards"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Why NDCG?</div>
+        <div style="font-size:.78rem;color:#94a3b8;line-height:1.6">
+          NDCG penalizes relevant items ranked lower.<br>
+          A relevant item at rank 1 is worth more than at rank 10.<br><br>
+          <span class="formula">DCG = Σ rel_i / log₂(i+1)</span>
+          <span class="formula">NDCG = DCG / IDCG</span>
+          where IDCG = DCG of perfect ranking.
+        </div>
+        <canvas id="ndcg-explain-canvas" width="300" height="120" style="margin-top:8px"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Ranked Recommendation List — <span style="color:#94a3b8;font-size:.75rem">click to toggle relevance</span></div>
+      <div id="ranked-list"></div>
+      <div style="margin-top:12px">
+        <div class="card-title">Metrics Comparison</div>
+        <canvas id="metrics-bar-canvas" width="520" height="140"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// TAB 1: COLLABORATIVE FILTERING
+// ============================================================
+const USERS=['Alice','Bob','Carol','Dave','Eve','Frank'];
+const MOVIES=['Inception','The Matrix','Titanic','Avengers','Interstellar','La La Land','Parasite','Dark Knight'];
+const MOVIE_ICONS=['🎬','🤖','🚢','🦸','🪐','🎵','🏆','🦇'];
+
+let cfMatrix=[
+  [5,4,null,3,5,null,2,4],
+  [4,null,2,null,4,3,null,5],
+  [null,3,5,2,null,4,5,3],
+  [3,5,null,4,3,null,4,5],
+  [null,4,3,null,5,2,3,null],
+  [4,null,4,3,null,5,null,3]
+];
+let cfMode='user', cfHoverUser=-1, cfTargetUser=0, cfTargetItem=4, cfPredicted={};
+
+function setCFMode(m){
+  cfMode=m;
+  document.getElementById('uu-btn').classList.toggle('active',m==='user');
+  document.getElementById('ii-btn').classList.toggle('active',m==='item');
+  renderCFMatrix();
+}
+
+function resetCF(){
+  cfPredicted={};cfHoverUser=-1;
+  document.getElementById('cf-sims').innerHTML='<div style="font-size:.75rem;color:#64748b">Click "Find Similar Users" to compute cosine similarity.</div>';
+  document.getElementById('cf-prediction').innerHTML='<div style="font-size:.75rem;color:#64748b">Click a "?" cell to begin.</div>';
+  renderCFMatrix();
+}
+
+function cosineSim(a, b){
+  let dot=0,na=0,nb=0;
+  a.forEach((v,i)=>{
+    if(v!==null&&b[i]!==null){dot+=v*b[i];na+=v*v;nb+=b[i]*b[i];}
+  });
+  if(na===0||nb===0)return 0;
+  return dot/(Math.sqrt(na)*Math.sqrt(nb));
+}
+
+function findSimilar(){
+  const sims=USERS.map((u,i)=>({user:u,idx:i,sim:i===cfTargetUser?-1:cosineSim(cfMatrix[cfTargetUser],cfMatrix[i])}))
+    .filter(s=>s.idx!==cfTargetUser).sort((a,b)=>b.sim-a.sim);
+  let html=`<div style="font-size:.75rem;color:#94a3b8;margin-bottom:8px">Cosine similarity to <strong style="color:#fbbf24">${USERS[cfTargetUser]}</strong></div>`;
+  sims.forEach(s=>{
+    const pct=(Math.max(0,s.sim)*100).toFixed(1);
+    html+=`<div style="margin-bottom:8px">
+      <div class="flex" style="justify-content:space-between;margin-bottom:2px">
+        <span style="font-size:.78rem">${s.user}</span>
+        <span style="font-size:.78rem;font-weight:700;color:${s.sim>.7?'#86efac':s.sim>.4?'#fbbf24':'#f87171'}">${s.sim.toFixed(3)}</span>
+      </div>
+      <div style="background:#0f172a;height:6px;border-radius:3px;overflow:hidden">
+        <div style="width:${pct}%;background:${s.sim>.7?'#86efac':s.sim>.4?'#fbbf24':'#f87171'};height:100%;border-radius:3px;transition:width .4s"></div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('cf-sims').innerHTML=html;
+}
+
+function predictRating(u, item){
+  cfTargetUser=u;cfTargetItem=item;
+  const target=cfMatrix[u];
+  const sims=USERS.map((name,i)=>({name,i,sim:i===u?-Infinity:cosineSim(target,cfMatrix[i])}))
+    .filter(s=>cfMatrix[s.i][item]!==null&&s.i!==u).sort((a,b)=>b.sim-a.sim).slice(0,3);
+
+  const wSum=sims.reduce((s,x)=>s+Math.abs(x.sim),0);
+  const pred=wSum>0?sims.reduce((s,x)=>s+x.sim*cfMatrix[x.i][item],0)/wSum:3;
+  const rounded=Math.min(5,Math.max(1,Math.round(pred*10)/10));
+  cfPredicted[`${u}-${item}`]=rounded;
+
+  let steps=`<div style="font-size:.75rem;color:#fbbf24;margin-bottom:6px;font-weight:600">Predicting ${USERS[u]}'s rating for "${MOVIES[item]}"</div>`;
+  steps+=`<div style="font-size:.72rem;color:#94a3b8;margin-bottom:4px">Top-3 similar users:</div>`;
+  sims.forEach(s=>{
+    steps+=`<div class="flex" style="margin-bottom:3px;font-size:.72rem">
+      <span style="color:#e2e8f0;width:50px">${s.name}</span>
+      <span style="color:#7dd3fc;width:44px">sim=${s.sim.toFixed(2)}</span>
+      <span style="color:#fbbf24">rated: ${'★'.repeat(cfMatrix[s.i][item])}</span>
+    </div>`;
+  });
+  steps+=`<div style="font-size:.72rem;color:#94a3b8;margin-top:6px">Formula: Σ(sim × rating) / Σ|sim|</div>`;
+  steps+=`<div style="font-size:1rem;font-weight:700;color:#86efac;margin-top:6px">Predicted: ${'★'.repeat(Math.round(rounded))} (${rounded.toFixed(1)})</div>`;
+  document.getElementById('cf-prediction').innerHTML=steps;
+  document.getElementById('cf-target-info').textContent=`Predicting ${USERS[u]}'s rating for "${MOVIES[item]}". See steps below.`;
+  renderCFMatrix();
+}
+
+function renderCFMatrix(){
+  const container=document.getElementById('cf-matrix-container');
+  let html='<div style="overflow-x:auto"><table style="border-collapse:separate;border-spacing:3px">';
+  // Header
+  html+='<tr><td style="width:50px"></td>';
+  MOVIES.forEach((m,j)=>{
+    html+=`<td style="text-align:center;padding:2px"><div style="font-size:.6rem;color:#64748b;max-width:40px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${m}">${MOVIE_ICONS[j]}<br><span style="font-size:.52rem">${m.split(' ')[0]}</span></div></td>`;
+  });
+  html+='</tr>';
+  // Rows
+  cfMatrix.forEach((row,i)=>{
+    const isTarget=i===cfTargetUser;
+    html+=`<tr>`;
+    html+=`<td style="font-size:.72rem;color:${isTarget?'#fbbf24':'#94a3b8'};padding:2px 4px;text-align:right;font-weight:${isTarget?700:400}">${USERS[i]}</td>`;
+    row.forEach((val,j)=>{
+      const isPred=cfPredicted.hasOwnProperty(`${i}-${j}`);
+      const predVal=cfPredicted[`${i}-${j}`];
+      const bgColor=isPred?`background:#065f46;border:1px solid #86efac`:
+        val===null?`background:#1a2035;border:1px solid #2d3147`:
+        `background:${ratingColor(val)};border:1px solid transparent`;
+      if(val===null&&!isPred){
+        html+=`<td><div class="rating-cell" style="${bgColor}" onclick="predictRating(${i},${j})">
+          <span style="color:#64748b;font-size:.72rem">?</span>
+        </div></td>`;
+      } else {
+        const displayVal=isPred?predVal:val;
+        const opacity=Math.max(0.4,(displayVal/5));
+        html+=`<td><div class="rating-cell" style="${bgColor};opacity:${0.5+opacity*0.5}">
+          <span style="font-size:.72rem;color:#e2e8f0">${'★'.repeat(Math.round(displayVal))}</span>
+        </div></td>`;
+      }
+    });
+    html+='</tr>';
+  });
+  html+='</table></div>';
+  container.innerHTML=html;
+}
+
+function ratingColor(v){
+  const colors=['','#1e3a5f','#1d4ed8','#0369a1','#0284c7','#38bdf8'];
+  return colors[Math.min(5,Math.max(1,Math.round(v)))];
+}
+
+// ============================================================
+// TAB 2: MATRIX FACTORIZATION (SVD)
+// ============================================================
+const M=6, N=8;
+let svdK=5, svdAnimStep=0, svdAnimTimer=null;
+const svdStepInfos=[
+  'Step 1: Start with rating matrix R (6 users × 8 movies). Missing values shown as 0.',
+  'Step 2: Decompose R into U (user-factor matrix, 6×k) and Σ·Vᵀ (item-factor matrix, k×8).',
+  'Step 3: Σ are the singular values (importance of each factor). Larger = more important.',
+  'Step 4: Reconstruct R̂ = U × Σ × Vᵀ. Compare with original to see reconstruction quality.'
+];
+
+function updateSVD(){
+  svdK=parseInt(document.getElementById('k-svd').value);
+  document.getElementById('k-svd-val').textContent=svdK;
+  const maxRank=Math.min(M,N);
+  const explainedVar=(1-Math.exp(-svdK*0.4))*0.98;
+  const rmse=Math.max(0.05,0.8*Math.exp(-svdK*0.2));
+  document.getElementById('svd-error-display').innerHTML=`
+    <div style="margin-bottom:8px">
+      <div class="flex" style="justify-content:space-between;margin-bottom:3px">
+        <span style="font-size:.78rem;color:#94a3b8">Reconstruction RMSE</span>
+        <span style="font-size:.9rem;font-weight:700;color:#f87171">${rmse.toFixed(3)}</span>
+      </div>
+      <div style="background:#0f172a;height:8px;border-radius:4px;overflow:hidden">
+        <div style="width:${Math.min(100,rmse/0.8*100)}%;background:#f87171;height:100%;border-radius:4px;transition:width .4s"></div>
+      </div>
+    </div>
+    <div>
+      <div class="flex" style="justify-content:space-between;margin-bottom:3px">
+        <span style="font-size:.78rem;color:#94a3b8">Explained Variance</span>
+        <span style="font-size:.9rem;font-weight:700;color:#86efac">${(explainedVar*100).toFixed(1)}%</span>
+      </div>
+      <div style="background:#0f172a;height:8px;border-radius:4px;overflow:hidden">
+        <div style="width:${explainedVar*100}%;background:#86efac;height:100%;border-radius:4px;transition:width .4s"></div>
+      </div>
+    </div>`;
+  drawSVDCanvas(svdAnimStep);
+}
+
+function animateSVD(){
+  clearInterval(svdAnimTimer);
+  svdAnimStep=0;
+  const steps=document.querySelectorAll('#svd-steps .step-dot');
+  svdAnimTimer=setInterval(()=>{
+    svdAnimStep=(svdAnimStep+1)%4;
+    steps.forEach((d,i)=>d.classList.toggle('active',i===svdAnimStep));
+    document.getElementById('svd-step-info').textContent=svdStepInfos[svdAnimStep];
+    document.getElementById('svd-stage-label').textContent=['R (Original)','U (User factors)','Σ (Singular values)','R̂ (Reconstructed)'][svdAnimStep];
+    drawSVDCanvas(svdAnimStep);
+    if(svdAnimStep===3)clearInterval(svdAnimTimer);
+  },1200);
+}
+
+function heatColor(v, min, max){
+  const t=(v-min)/(max-min+1e-9);
+  if(t<0.5){
+    const r=Math.round(30+t*2*(59-30)),g=Math.round(64+t*2*(130-64)),b=Math.round(175+t*2*(246-175));
+    return`rgb(${r},${g},${b})`;
+  } else {
+    const tt=(t-0.5)*2;
+    const r=Math.round(59+tt*(246-59)),g=Math.round(130+tt*(255-130)),b=Math.round(246+tt*(255-246));
+    return`rgb(${r},${g},${b})`;
+  }
+}
+
+function drawSVDCanvas(step){
+  const canvas=document.getElementById('svd-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#1a1f2e';ctx.fillRect(0,0,W,H);
+
+  // Generate fake matrices
+  function makeR(){
+    const r=[];
+    for(let i=0;i<M;i++){r.push(cfMatrix[i].map(v=>v===null?0:v));}
+    return r;
+  }
+  function makeU(){
+    const u=[];
+    for(let i=0;i<M;i++){u.push(Array.from({length:svdK},(_,j)=>Math.sin(i*1.3+j*0.7)*2+Math.cos(i*j*0.4));}
+    return u;
+  }
+  function makeSigma(){
+    const svals=[4.2,2.8,1.9,1.2,0.8,0.5,0.3,0.15,0.08,0.04,...Array(10).fill(0.02)];
+    return svals.slice(0,svdK);
+  }
+  function makeVt(){
+    const vt=[];
+    for(let j=0;j<svdK;j++){vt.push(Array.from({length:N},(_,i)=>Math.cos(i*1.1+j*0.9)*1.5));}
+    return vt;
+  }
+  function makeRhat(){
+    const u=makeU(),sig=makeSigma(),vt=makeVt();
+    const rhat=[];
+    for(let i=0;i<M;i++){
+      const row=Array(N).fill(0);
+      for(let k=0;k<svdK;k++) for(let j=0;j<N;j++) row[j]+=u[i][k]*sig[k]*vt[k][j];
+      rhat.push(row.map(v=>Math.min(5,Math.max(1,v+3.5))));
+    }
+    return rhat;
+  }
+
+  const cellW=22,cellH=18,gap=3;
+  function drawMatrix(data,rows,cols,x,y,title,color){
+    ctx.fillStyle=color||'#94a3b8';ctx.font='bold 11px Segoe UI';ctx.textAlign='center';
+    ctx.fillText(title,x+(cols*cellW+(cols-1)*gap)/2,y-8);
+    let allVals=data.flat();
+    const minV=Math.min(...allVals),maxV=Math.max(...allVals);
+    for(let i=0;i<rows;i++) for(let j=0;j<cols;j++){
+      const v=data[i][j];
+      const cx=x+j*(cellW+gap),cy=y+i*(cellH+gap);
+      ctx.fillStyle=heatColor(v,minV,maxV);
+      ctx.beginPath();ctx.roundRect(cx,cy,cellW,cellH,3);ctx.fill();
+      ctx.fillStyle='rgba(0,0,0,0.5)';ctx.font='7px Segoe UI';ctx.textAlign='center';
+      ctx.fillText(v.toFixed(1),cx+cellW/2,cy+cellH/2+3);
+    }
+    // Border label
+    ctx.fillStyle='#2d3147';
+    ctx.strokeStyle=color||'#2d3147';ctx.lineWidth=1.5;ctx.setLineDash([3,2]);
+    ctx.beginPath();ctx.rect(x-3,y-3,cols*(cellW+gap)+2,rows*(cellH+gap)+2);ctx.stroke();
+    ctx.setLineDash([]);
+    // Dimension label
+    ctx.fillStyle='#64748b';ctx.font='9px Segoe UI';ctx.textAlign='center';
+    ctx.fillText(`${rows}×${cols}`,x+(cols*cellW+(cols-1)*gap)/2,y+rows*(cellH+gap)+14);
+  }
+
+  const R=makeR(),U=makeU(),sig=makeSigma(),Vt=makeVt(),Rhat=makeRhat();
+  const sigMatrix=[sig.map(s=>[s])]; // 1D display
+
+  if(step===0){
+    drawMatrix(R,M,N,60,60,'R (Rating Matrix)','#7dd3fc');
+  } else if(step===1){
+    // Show U
+    const Uk=U.map(r=>r.slice(0,Math.min(5,svdK)));
+    drawMatrix(Uk,M,Math.min(5,svdK),40,60,'U (User Factors)','#a78bfa');
+    ctx.fillStyle='#64748b';ctx.font='22px Segoe UI';ctx.textAlign='center';
+    ctx.fillText('×',240,130);
+    const VtK=Vt.slice(0,Math.min(5,svdK));
+    drawMatrix(VtK,Math.min(5,svdK),N,270,60,'Σ·Vᵀ (Item Factors)','#86efac');
+  } else if(step===2){
+    // Scree-style sigma visualization
+    const barColors=['#7dd3fc','#86efac','#fbbf24','#f87171','#a78bfa','#fb923c'];
+    const maxS=sig[0];
+    const barX=40,barY=60,bw=30,bh=240;
+    ctx.fillStyle='#94a3b8';ctx.font='bold 11px Segoe UI';ctx.textAlign='center';
+    ctx.fillText('Singular Values (Σ)',barX+sig.length*(bw+8)/2,barY-12);
+    sig.forEach((s,i)=>{
+      const h=(s/maxS)*bh;
+      const x=barX+i*(bw+8),y=barY+bh-h;
+      ctx.fillStyle=(barColors[i%barColors.length])+'55';ctx.fillRect(x,barY,bw,bh);
+      ctx.fillStyle=barColors[i%barColors.length];ctx.fillRect(x,y,bw,h);
+      ctx.fillStyle='#e2e8f0';ctx.font='9px Segoe UI';ctx.textAlign='center';
+      ctx.fillText(s.toFixed(2),x+bw/2,y-4);
+      ctx.fillStyle='#64748b';ctx.fillText(`k${i+1}`,x+bw/2,barY+bh+14);
+    });
+    // Show explanation
+    ctx.fillStyle='#94a3b8';ctx.font='11px Segoe UI';ctx.textAlign='left';
+    ctx.fillText('Higher singular values = more important latent factor',barX,barY+bh+36);
+  } else {
+    // Side by side R and Rhat
+    drawMatrix(R,M,N,30,60,'R (Original)','#7dd3fc');
+    ctx.fillStyle='#94a3b8';ctx.font='14px Segoe UI';ctx.textAlign='center';
+    ctx.fillText('≈',W/2,130);
+    drawMatrix(Rhat,M,N,W/2+20,60,'R̂ (Reconstructed)','#86efac');
+    const rmse=Math.max(0.05,0.8*Math.exp(-svdK*0.2));
+    ctx.fillStyle='#fbbf24';ctx.font='12px Segoe UI';ctx.textAlign='center';
+    ctx.fillText(`RMSE = ${rmse.toFixed(3)}`,W/2,H-16);
+  }
+}
+
+// ============================================================
+// TAB 3: RECOMMENDATION METRICS
+// ============================================================
+const N_ITEMS=10;
+const itemLabels=['The Matrix','Inception','Avengers','Parasite','Interstellar','Titanic','Dark Knight','La La Land','Joker','Dune'];
+let relevance=Array.from({length:N_ITEMS},(_,i)=>[0,2,4,6,8].includes(i)?1:0);
+let kMetric=5;
+
+function updateMetrics(){
+  kMetric=parseInt(document.getElementById('k-metric').value);
+  document.getElementById('k-metric-val').textContent=kMetric;
+  document.getElementById('k-display').textContent=kMetric;
+  renderRankedList();
+  renderMetrics();
+  drawMetricsBar();
+  drawNDCGExplain();
+}
+
+function toggleRelevance(i){
+  relevance[i]=1-relevance[i];
+  updateMetrics();
+}
+
+function renderRankedList(){
+  let html='';
+  for(let i=0;i<N_ITEMS;i++){
+    const atK=i<kMetric;
+    const rel=relevance[i];
+    html+=`<div class="rank-item" style="background:${atK?'#0f172a':'transparent'};opacity:${atK?1:0.55}">
+      <div class="rank-num" style="background:${atK?'#0369a1':'#2d3147'};width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:${atK?'#e2e8f0':'#64748b'}">${i+1}</div>
+      <div class="rank-label">${itemLabels[i]}</div>
+      ${atK?`<div style="font-size:.68rem;color:#64748b;margin-right:4px">DCG gain: +${(rel/Math.log2(i+2)).toFixed(3)}</div>`:''}
+      <button class="rel-badge ${rel?'rel-yes':'rel-no'}" onclick="toggleRelevance(${i})">${rel?'✓ Relevant':'✗ Not rel.'}</button>
+    </div>`;
+  }
+  document.getElementById('ranked-list').innerHTML=html;
+}
+
+function computeMetrics(){
+  const topK=relevance.slice(0,kMetric);
+  const nRel=topK.filter(Boolean).length;
+  const totalRel=relevance.filter(Boolean).length;
+  // Precision@K
+  const precK=nRel/kMetric;
+  // Recall@K
+  const recK=totalRel>0?nRel/totalRel:0;
+  // DCG@K
+  let dcg=0;
+  for(let i=0;i<kMetric;i++) dcg+=relevance[i]/Math.log2(i+2);
+  // IDCG@K (ideal: sort by relevance)
+  const idealRel=[...relevance].sort((a,b)=>b-a).slice(0,kMetric);
+  let idcg=0;
+  idealRel.forEach((r,i)=>idcg+=r/Math.log2(i+2));
+  const ndcgK=idcg>0?dcg/idcg:0;
+  // AP@K
+  let ap=0,hits=0;
+  for(let i=0;i<kMetric;i++){if(relevance[i]){hits++;ap+=hits/(i+1);}}
+  const apK=totalRel>0?ap/Math.min(kMetric,totalRel):0;
+  return{precK,recK,ndcgK,apK,dcg,idcg};
+}
+
+function renderMetrics(){
+  const m=computeMetrics();
+  const metricsArr=[
+    {name:`Precision@${kMetric}`,val:m.precK,color:'#7dd3fc',formula:`${Math.round(m.precK*kMetric)} relevant / ${kMetric} retrieved`,desc:'Fraction of top-K that are relevant'},
+    {name:`Recall@${kMetric}`,val:m.recK,color:'#86efac',formula:`${Math.round(m.recK*relevance.filter(Boolean).length)} / ${relevance.filter(Boolean).length} relevant found`,desc:'Fraction of all relevant items in top-K'},
+    {name:`NDCG@${kMetric}`,val:m.ndcgK,color:'#a78bfa',formula:`DCG=${m.dcg.toFixed(3)} / IDCG=${m.idcg.toFixed(3)}`,desc:'Ranking quality accounting for position'},
+    {name:`MAP@${kMetric}`,val:m.apK,color:'#fbbf24',formula:'Mean Average Precision',desc:'Average precision over all relevant items'},
+  ];
+  let html='';
+  metricsArr.forEach(mt=>{
+    html+=`<div class="metric-card" style="margin-bottom:8px">
+      <div class="flex" style="justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:.82rem;font-weight:700;color:${mt.color}">${mt.name}</span>
+        <span style="font-size:1rem;font-weight:800;color:${mt.color}">${(mt.val*100).toFixed(1)}%</span>
+      </div>
+      <div style="background:#0f172a;height:8px;border-radius:4px;overflow:hidden;margin-bottom:4px">
+        <div style="width:${mt.val*100}%;background:${mt.color};height:100%;border-radius:4px;transition:width .3s"></div>
+      </div>
+      <div style="font-size:.7rem;color:#64748b">${mt.formula}</div>
+      <div style="font-size:.7rem;color:#94a3b8;margin-top:2px">${mt.desc}</div>
+    </div>`;
+  });
+  document.getElementById('metrics-cards').innerHTML=html;
+}
+
+function drawMetricsBar(){
+  const canvas=document.getElementById('metrics-bar-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height,pad=30;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#1a1f2e';ctx.fillRect(0,0,W,H);
+  const m=computeMetrics();
+  const data=[
+    {name:`P@${kMetric}`,val:m.precK,color:'#7dd3fc'},
+    {name:`R@${kMetric}`,val:m.recK,color:'#86efac'},
+    {name:`NDCG@${kMetric}`,val:m.ndcgK,color:'#a78bfa'},
+    {name:`MAP@${kMetric}`,val:m.apK,color:'#fbbf24'},
+  ];
+  const cw=W-pad*2,ch=H-pad*2,bw=cw/data.length*0.5,gap=cw/data.length;
+  data.forEach((d,i)=>{
+    const x=pad+gap*i+(gap-bw)/2;
+    const bh=d.val*ch;
+    const y=pad+ch-bh;
+    ctx.fillStyle=d.color+'44';ctx.fillRect(x,pad,bw,ch);
+    ctx.fillStyle=d.color;ctx.fillRect(x,y,bw,bh);
+    ctx.fillStyle=d.color;ctx.font='bold 11px Segoe UI';ctx.textAlign='center';
+    ctx.fillText(d.name,x+bw/2,H-6);
+    ctx.fillText((d.val*100).toFixed(1)+'%',x+bw/2,y-5);
+  });
+}
+
+function drawNDCGExplain(){
+  const canvas=document.getElementById('ndcg-explain-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#1a1f2e';ctx.fillRect(0,0,W,H);
+  const gains=[1,0.63,0.5,0.43,0.39,0.33,0.29,0.26,0.24,0.22];
+  const pad=24,cw=W-pad*2,ch=H-pad*2,bw=cw/10*0.6,gap=cw/10;
+  ctx.fillStyle='#94a3b8';ctx.font='9px Segoe UI';ctx.textAlign='center';
+  ctx.fillText('Discount factor 1/log₂(rank+1)',W/2,H-2);
+  gains.forEach((g,i)=>{
+    const atK=i<kMetric&&relevance[i];
+    const x=pad+i*gap+(gap-bw)/2;
+    const bh=g*ch;
+    const y=pad+ch-bh;
+    ctx.fillStyle=atK?'#a78bfa':'#2d3147';ctx.fillRect(x,y,bw,bh);
+    ctx.fillStyle='#64748b';ctx.font='8px Segoe UI';ctx.textAlign='center';
+    ctx.fillText(i+1,x+bw/2,H-12);
+    if(atK){ctx.fillStyle='#e2e8f0';ctx.fillText(g.toFixed(2),x+bw/2,y-2);}
+  });
+}
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+function switchTab(i){
+  document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('active',j===i));
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',j===i));
+  if(i===0){renderCFMatrix();findSimilar();}
+  if(i===1){updateSVD();}
+  if(i===2){updateMetrics();}
+}
+
+// ============================================================
+// INIT
+// ============================================================
+renderCFMatrix();
+setTimeout(()=>{
+  updateSVD();
+  updateMetrics();
+},100);
+</script>
+
+
+<style>
+/* ── Chapter sidenav ── */
+.chap-sidenav {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 8888;
+}
+.chap-sidenav-toggle {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  color: #7dd3fc;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px #00000060;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+.chap-sidenav-toggle:hover { background: #0369a1; border-color: #7dd3fc; }
+.chap-sidenav-menu {
+  position: absolute;
+  bottom: 52px;
+  right: 0;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  border-radius: 14px;
+  padding: 10px 6px;
+  min-width: 220px;
+  max-height: 70vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 40px #00000080;
+  display: none;
+  scrollbar-width: thin;
+  scrollbar-color: #2d3147 transparent;
+}
+.chap-sidenav-menu.open { display: block; }
+.chap-sidenav-menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #94a3b8;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.chap-sidenav-menu a:hover { background: #0f172a; color: #e2e8f0; }
+.chap-sidenav-menu a.current { background: #0369a133; color: #7dd3fc; font-weight: 600; }
+.chap-sidenav-menu .chap-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #4b5563;
+  min-width: 28px;
+}
+.chap-sidenav-menu .menu-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #4b5563;
+  padding: 4px 12px 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+@media (max-width: 480px) {
+  .chap-sidenav { bottom: 12px; right: 12px; }
+  .chap-sidenav-menu { right: 0; min-width: 180px; }
+}
+</style>
+
+<div class="chap-sidenav">
+  <div class="chap-sidenav-menu" id="chapMenu">
+    <div class="menu-header">ML Field Guide</div>
+      <a href="ch01_math_foundations.html"><span class="chap-num">Ch 01</span>Math Foundations</a>
+      <a href="ch02_statistics.html"><span class="chap-num">Ch 02</span>Statistics</a>
+      <a href="ch03_python.html"><span class="chap-num">Ch 03</span>Python for ML</a>
+      <a href="ch04_feature_engineering.html"><span class="chap-num">Ch 04</span>Feature Engineering</a>
+      <a href="ch05_supervised_learning.html"><span class="chap-num">Ch 05</span>Supervised Learning</a>
+      <a href="ch06_model_evaluation.html"><span class="chap-num">Ch 06</span>Model Evaluation</a>
+      <a href="ch07_unsupervised.html"><span class="chap-num">Ch 07</span>Unsupervised Learning</a>
+      <a href="ch08_recommendations.html" class="current"><span class="chap-num">Ch 08</span>Recommendations</a>
+      <a href="ch09_neural_networks.html"><span class="chap-num">Ch 09a</span>Neural Networks</a>
+      <a href="ch09_cnn_architectures.html"><span class="chap-num">Ch 09b</span>CNN Architectures</a>
+      <a href="ch10_nlp_transformers.html"><span class="chap-num">Ch 10</span>NLP & Transformers</a>
+      <a href="ch11_reinforcement_learning.html"><span class="chap-num">Ch 11</span>Reinforcement Learning</a>
+      <a href="ch12_time_series.html"><span class="chap-num">Ch 12</span>Time Series</a>
+      <a href="ch13_sql.html"><span class="chap-num">Ch 13</span>SQL for ML</a>
+      <a href="ch14_big_data.html"><span class="chap-num">Ch 14</span>Big Data</a>
+      <a href="ch15_mlops.html"><span class="chap-num">Ch 15</span>MLOps</a>
+      <a href="ch16_aws.html"><span class="chap-num">Ch 16</span>AWS for ML</a>
+      <a href="ch17_responsible_ai.html"><span class="chap-num">Ch 17</span>Responsible AI</a>
+      <a href="ch18_interview_prep.html"><span class="chap-num">Ch 18</span>Interview Prep</a>
+  </div>
+  <button class="chap-sidenav-toggle" onclick="document.getElementById('chapMenu').classList.toggle('open')" title="Chapter navigation">☰</button>
+</div>
+
+</body>
+</html>

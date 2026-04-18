@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Feature engineering interactive guide: scaling, encoding, selection, and pipelines.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 4 · Feature Engineering — The ML Field Guide</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0f1117;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;padding:20px}
+h1{text-align:center;color:#7dd3fc;font-size:1.6rem;margin-bottom:6px}
+.subtitle{text-align:center;color:#94a3b8;font-size:.9rem;margin-bottom:20px}
+.tabs{display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid #2d3147;flex-wrap:wrap}
+.tab{padding:10px 18px;border-radius:8px 8px 0 0;border:1px solid #2d3147;border-bottom:none;cursor:pointer;font-size:.88rem;color:#94a3b8;background:#1e2130;transition:all .2s;position:relative;top:1px}
+.tab.active{background:#1a1f2e;color:#7dd3fc;border-color:#7dd3fc;border-bottom-color:#1a1f2e}
+.tab:hover:not(.active){color:#e2e8f0;background:#252a3d}
+.panel{display:none;background:#1a1f2e;border:1px solid #2d3147;border-radius:0 12px 12px 12px;padding:24px}
+.panel.active{display:block}
+/* Controls */
+.ctrl-row{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+label{color:#94a3b8;font-size:.85rem;white-space:nowrap}
+input[type=range]{accent-color:#7dd3fc;cursor:pointer;min-width:120px}
+.val-badge{background:#0f172a;color:#7dd3fc;padding:4px 10px;border-radius:6px;font-size:.85rem;font-weight:700;min-width:52px;text-align:center}
+.btn{padding:7px 16px;border-radius:8px;border:1.5px solid #2d3147;background:#1e2130;color:#e2e8f0;cursor:pointer;font-size:.85rem;transition:all .2s}
+.btn:hover,.btn.active{border-color:#7dd3fc;color:#7dd3fc;background:#252a3d}
+.insight-box{background:#0f172a;border-left:3px solid #7dd3fc;border-radius:0 8px 8px 0;padding:12px 16px;margin:12px 0;font-size:.85rem;color:#7dd3fc}
+.formula-box{background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:10px 14px;font-family:'Courier New',monospace;font-size:.82rem;color:#86efac;margin:8px 0}
+/* Scaling Tab */
+.scalers-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:900px){.scalers-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.scalers-grid{grid-template-columns:1fr}}
+.scaler-panel{background:#1e2130;border:1px solid #2d3147;border-radius:12px;padding:12px;text-align:center}
+.scaler-panel h4{color:#7dd3fc;font-size:.88rem;margin-bottom:8px}
+/* Missing Data Tab */
+.grid-viz{display:flex;flex-wrap:wrap;gap:3px;margin:12px 0}
+.grid-cell{width:36px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:600;transition:all .4s}
+.cell-present{background:#1e2130;color:#e2e8f0;border:1px solid #2d3147}
+.cell-missing{background:#2d1515;color:#f87171;border:1px solid #f87171}
+.cell-imputed{background:#0f2d1a;color:#86efac;border:1px solid #86efac}
+.strat-btns{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+/* Encoding Tab */
+.encoding-container{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin:14px 0}
+.enc-col{background:#1e2130;border:1px solid #2d3147;border-radius:10px;padding:14px;min-width:130px}
+.enc-col h4{color:#94a3b8;font-size:.78rem;text-transform:uppercase;margin-bottom:10px}
+.cat-cell{padding:6px 10px;border-radius:6px;font-size:.83rem;font-weight:600;margin-bottom:4px;border:1px solid #2d3147}
+.enc-arrow{display:flex;align-items:center;justify-content:center;color:#7dd3fc;font-size:1.6rem;padding:0 8px;align-self:center}
+.enc-matrix{background:#1e2130;border:1px solid #2d3147;border-radius:10px;padding:14px;overflow-x:auto}
+.enc-table{border-collapse:collapse;font-size:.78rem}
+.enc-table th{background:#252a3d;color:#7dd3fc;padding:5px 10px;border:1px solid #2d3147;text-align:center}
+.enc-table td{padding:4px 10px;border:1px solid #2d3147;text-align:center;color:#e2e8f0}
+.enc-table .one{color:#86efac;font-weight:700}
+.enc-table .zero{color:#64748b}
+/* SMOTE viz */
+.smote-legend{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0}
+.smote-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px}
+/* Generic table */
+.gen-table{width:100%;border-collapse:collapse;font-size:.83rem;margin-top:10px}
+.gen-table th{background:#252a3d;color:#7dd3fc;padding:8px 10px;border:1px solid #2d3147;text-align:left}
+.gen-table td{padding:6px 10px;border:1px solid #2d3147;color:#e2e8f0}
+.gen-table tr:nth-child(even) td{background:#1e2130}
+.decision-box{background:#0f172a;border:1px solid #2d3147;border-radius:10px;padding:14px;margin-top:14px}
+.decision-box h4{color:#fbbf24;margin-bottom:10px;font-size:.9rem}
+.decision-box p{color:#94a3b8;font-size:.83rem;line-height:1.6}
+.decision-box strong{color:#e2e8f0}
+
+  /* ── Shared improvements ── */
+  body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important; }
+  code, pre, .code-block, .formula, .mono, [style*="monospace"], [style*="Courier"] { font-family: 'JetBrains Mono', 'Cascadia Code', 'Courier New', monospace !important; }
+
+  /* Smoother scrolling */
+  html { scroll-behavior: smooth; }
+
+  /* Focus ring for accessibility */
+  button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid #7dd3fc;
+    outline-offset: 2px;
+  }
+
+  /* Improve tab-nav overflow on small screens */
+  .tab-nav, .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .tab-nav::-webkit-scrollbar, .tabs::-webkit-scrollbar { display: none; }
+
+  /* Mobile responsive improvements */
+  @media (max-width: 768px) {
+    .page-header { padding: 24px 20px 18px !important; }
+    .tab-panel { padding: 20px !important; }
+    .tab-nav { padding: 16px 20px 0 !important; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
+    .grid2, .grid3 { grid-template-columns: 1fr !important; }
+    .page-title { font-size: 22px !important; }
+    h1 { font-size: 1.4rem !important; }
+  }
+  @media (max-width: 480px) {
+    body { padding: 0 0 40px 0 !important; }
+    .tab-btn { padding: 8px 14px !important; font-size: 12px !important; }
+    .btn { padding: 6px 12px !important; font-size: 12px !important; }
+  }
+
+  /* Better selection color */
+  ::selection { background: #1d4ed880; color: #e0f2fe; }
+
+  /* Smoother canvas rendering */
+  canvas { image-rendering: -webkit-optimize-contrast; }
+
+  /* Tooltip z-index fix */
+  .tooltip { z-index: 9999 !important; }
+
+  /* Code block horizontal scroll indicator */
+  .code-block { overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>Chapter 4: Feature Engineering</h1>
+<p class="subtitle">Interactive visualizations for scaling, missing data, encoding, and class imbalance</p>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab(0)">Feature Scaling</div>
+  <div class="tab" onclick="switchTab(1)">Missing Data</div>
+  <div class="tab" onclick="switchTab(2)">Categorical Encoding</div>
+  <div class="tab" onclick="switchTab(3)">Class Imbalance</div>
+</div>
+
+<!-- TAB 1: Feature Scaling -->
+<div class="panel active" id="panel0">
+  <div class="ctrl-row">
+    <label>Outlier strength:</label>
+    <input type="range" id="outlierSlider" min="0" max="10" value="0" oninput="updateScaling()">
+    <div class="val-badge" id="outlierVal">None</div>
+    <label style="margin-left:16px;color:#94a3b8;font-size:.82rem">Move slider to add an outlier and see how each scaler responds</label>
+  </div>
+  <div class="scalers-grid" id="scalerGrid"></div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> KNN, SVM, and PCA are sensitive to feature scale — always scale first. Tree-based models (Decision Tree, Random Forest, XGBoost) are scale-invariant and don't require scaling. Neural networks typically benefit from standardization.
+  </div>
+  <table class="gen-table">
+    <thead><tr><th>Scaler</th><th>Formula</th><th>Output Range</th><th>Outlier Robust?</th><th>Best For</th></tr></thead>
+    <tbody>
+      <tr><td style="color:#86efac">StandardScaler</td><td style="font-family:monospace">(x - μ) / σ</td><td>~[-3, 3]</td><td style="color:#f87171">No</td><td>Most ML algorithms, PCA</td></tr>
+      <tr><td style="color:#7dd3fc">MinMaxScaler</td><td style="font-family:monospace">(x - min) / (max - min)</td><td>[0, 1]</td><td style="color:#f87171">No</td><td>Neural networks, image data</td></tr>
+      <tr><td style="color:#fbbf24">RobustScaler</td><td style="font-family:monospace">(x - Q2) / (Q3 - Q1)</td><td>Varies</td><td style="color:#86efac">Yes</td><td>Data with outliers</td></tr>
+      <tr><td style="color:#a78bfa">Raw Data</td><td style="font-family:monospace">x</td><td>Original</td><td style="color:#86efac">Yes</td><td>Tree models, interpretability</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- TAB 2: Missing Data -->
+<div class="panel" id="panel1">
+  <div class="ctrl-row">
+    <label>% Missing:</label>
+    <input type="range" id="missingPct" min="5" max="60" step="5" value="20" oninput="updateMissing()">
+    <div class="val-badge" id="missingPctVal">20%</div>
+    <label style="margin-left:16px">Pattern:</label>
+    <select id="missingPattern" onchange="updateMissing()" style="background:#0f172a;color:#e2e8f0;border:1px solid #2d3147;border-radius:6px;padding:5px 8px;font-size:.85rem">
+      <option value="MCAR">MCAR (Random)</option>
+      <option value="MAR">MAR (At Random)</option>
+      <option value="MNAR">MNAR (Not at Random)</option>
+    </select>
+  </div>
+  <div class="grid-viz" id="missingGrid"></div>
+  <div class="strat-btns" id="stratBtns">
+    <button class="btn active" onclick="setImpute('none')">Show Missing</button>
+    <button class="btn" onclick="setImpute('mean')">Mean</button>
+    <button class="btn" onclick="setImpute('median')">Median</button>
+    <button class="btn" onclick="setImpute('mode')">Mode</button>
+    <button class="btn" onclick="setImpute('knn')">KNN</button>
+    <button class="btn" onclick="setImpute('iterative')">Iterative</button>
+    <button class="btn" onclick="setImpute('drop')">Drop Rows</button>
+  </div>
+  <div class="insight-box" id="imputeInsight">Select an imputation strategy above to see the effect on the dataset.</div>
+  <table class="gen-table">
+    <thead><tr><th>Strategy</th><th>Best When</th><th>Missing %</th><th>MCAR</th><th>MAR</th><th>MNAR</th></tr></thead>
+    <tbody>
+      <tr><td style="color:#86efac">Mean/Median</td><td>Numerical, simple baseline</td><td>&lt;10%</td><td style="color:#86efac">Good</td><td style="color:#fbbf24">Fair</td><td style="color:#f87171">Poor</td></tr>
+      <tr><td style="color:#7dd3fc">KNN Impute</td><td>Correlated features</td><td>&lt;30%</td><td style="color:#86efac">Good</td><td style="color:#86efac">Good</td><td style="color:#fbbf24">Fair</td></tr>
+      <tr><td style="color:#a78bfa">Iterative (MICE)</td><td>Complex patterns</td><td>&lt;40%</td><td style="color:#86efac">Excellent</td><td style="color:#86efac">Excellent</td><td style="color:#fbbf24">Fair</td></tr>
+      <tr><td style="color:#fbbf24">Mode</td><td>Categorical features</td><td>&lt;15%</td><td style="color:#86efac">Good</td><td style="color:#fbbf24">Fair</td><td style="color:#f87171">Poor</td></tr>
+      <tr><td style="color:#f87171">Drop Rows</td><td>Very small % missing</td><td>&lt;5%</td><td style="color:#86efac">Safe</td><td style="color:#f87171">Risky</td><td style="color:#f87171">Dangerous</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- TAB 3: Categorical Encoding -->
+<div class="panel" id="panel2">
+  <div class="ctrl-row" style="flex-wrap:wrap;gap:8px">
+    <label>Encoding:</label>
+    <button class="btn active" onclick="setEncoding('onehot')">One-Hot</button>
+    <button class="btn" onclick="setEncoding('ordinal')">Ordinal</button>
+    <button class="btn" onclick="setEncoding('target')">Target</button>
+    <button class="btn" onclick="setEncoding('binary')">Binary</button>
+    <button class="btn" onclick="setEncoding('hash')">Hash</button>
+    <button class="btn" onclick="setEncoding('loo')">Leave-One-Out</button>
+  </div>
+  <div class="encoding-container" id="encodingContainer"></div>
+  <div class="insight-box" id="encodingInsight"></div>
+  <div style="margin-top:12px">
+    <strong style="color:#94a3b8;font-size:.85rem">Dimensionality added:</strong>
+    <svg id="dimChart" viewBox="0 0 500 80" style="width:100%;max-width:500px;display:block;margin-top:8px;background:#1e2130;border:1px solid #2d3147;border-radius:8px"></svg>
+  </div>
+  <div class="decision-box">
+    <h4>Decision Guide</h4>
+    <p>
+      <strong>High cardinality (&gt;20 categories)?</strong> → Target Encoding or Hash Encoding to avoid dimensionality explosion<br>
+      <strong>Ordinal/ordered categories?</strong> → Ordinal Encoding (e.g., Low=1, Med=2, High=3)<br>
+      <strong>Low cardinality (&lt;10 categories)?</strong> → One-Hot Encoding for tree models and linear models<br>
+      <strong>Repeated CV folds / leakage risk?</strong> → Leave-One-Out encoding with proper cross-validation splits<br>
+      <strong>Very high cardinality (e.g., zip codes)?</strong> → Hash Encoding with fixed output size
+    </p>
+  </div>
+</div>
+
+<!-- TAB 4: Class Imbalance -->
+<div class="panel" id="panel3">
+  <div class="ctrl-row">
+    <label>Minority class %:</label>
+    <input type="range" id="minorityPct" min="1" max="40" value="10" oninput="updateImbalance()">
+    <div class="val-badge" id="minorityPctVal">10%</div>
+  </div>
+  <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px">
+    <div style="flex:1;min-width:200px">
+      <svg id="donutChart" viewBox="0 0 200 200" style="width:200px;display:block"></svg>
+    </div>
+    <div style="flex:2;min-width:200px">
+      <div style="background:#1e2130;border:1px solid #2d3147;border-radius:10px;padding:14px;margin-bottom:10px">
+        <div style="color:#94a3b8;font-size:.82rem;margin-bottom:6px">Class Distribution</div>
+        <div id="classStats" style="font-size:.9rem"></div>
+      </div>
+      <div class="strat-btns" style="margin:0">
+        <button class="btn active" onclick="setImbalanceStrat('original')">Original</button>
+        <button class="btn" onclick="setImbalanceStrat('smote')">SMOTE</button>
+        <button class="btn" onclick="setImbalanceStrat('undersample')">Undersample</button>
+        <button class="btn" onclick="setImbalanceStrat('weights')">Class Weights</button>
+        <button class="btn" onclick="setImbalanceStrat('threshold')">Threshold Tuning</button>
+      </div>
+    </div>
+  </div>
+  <svg id="smoteChart" viewBox="0 0 500 200" style="width:100%;background:#1e2130;border:1px solid #2d3147;border-radius:10px;margin-bottom:14px"></svg>
+  <table class="gen-table" id="metricsTable">
+    <thead><tr><th>Strategy</th><th>Accuracy</th><th>F1 (Minority)</th><th>Recall (Minority)</th><th>Notes</th></tr></thead>
+    <tbody id="metricsBody"></tbody>
+  </table>
+  <div class="insight-box" style="margin-top:14px">
+    <strong>Key Insight:</strong> With 10% minority class, a model predicting "majority" always achieves 90% accuracy — yet has 0% recall on the important class. Use F1 or AUC-ROC as primary metrics for imbalanced datasets.
+  </div>
+</div>
+
+<script>
+// ============ TABS ============
+function switchTab(i){
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
+  document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('active',i===j));
+  if(i===3)updateImbalance();
+}
+
+// ============ TAB 1: SCALING ============
+// Generate base dataset
+const N=30;
+let baseData=[];
+for(let i=0;i<N;i++){
+  baseData.push({
+    age:20+Math.random()*60,
+    income:20000+Math.random()*180000
+  });
+}
+
+function getScaledData(data,type){
+  const ages=data.map(d=>d.age);
+  const incomes=data.map(d=>d.income);
+  function stats(arr){
+    const mu=arr.reduce((a,b)=>a+b,0)/arr.length;
+    const sd=Math.sqrt(arr.reduce((a,b)=>a+(b-mu)**2,0)/arr.length);
+    const sorted=[...arr].sort((a,b)=>a-b);
+    const q1=sorted[Math.floor(sorted.length*.25)];
+    const q2=sorted[Math.floor(sorted.length*.5)];
+    const q3=sorted[Math.floor(sorted.length*.75)];
+    return{mu,sd,min:Math.min(...arr),max:Math.max(...arr),q1,q2,q3};
+  }
+  const sa=stats(ages),si=stats(incomes);
+  return data.map(d=>{
+    let x=d.age,y=d.income;
+    if(type==='standard'){x=(d.age-sa.mu)/sa.sd;y=(d.income-si.mu)/si.sd}
+    else if(type==='minmax'){x=(d.age-sa.min)/(sa.max-sa.min);y=(d.income-si.min)/(si.max-si.min)}
+    else if(type==='robust'){x=(d.age-sa.q2)/(sa.q3-sa.q1);y=(d.income-si.q2)/(si.q3-si.q1)}
+    return{x,y,isOutlier:d.isOutlier};
+  });
+}
+
+function drawScatterPanel(svgId,data,title,color){
+  const svg=document.getElementById(svgId);
+  if(!svg)return;
+  const W=180,H=150,pad=20;
+  const xs=data.map(d=>d.x),ys=data.map(d=>d.y);
+  const xMin=Math.min(...xs),xMax=Math.max(...xs);
+  const yMin=Math.min(...ys),yMax=Math.max(...ys);
+  const sx=v=>(v-xMin)/(xMax-xMin||1)*(W-2*pad)+pad;
+  const sy=v=>H-pad-(v-yMin)/(yMax-yMin||1)*(H-2*pad);
+  let html=`<text x="${W/2}" y="14" fill="${color}" font-size="11" text-anchor="middle" font-weight="700">${title}</text>`;
+  data.forEach(d=>{
+    const fill=d.isOutlier?'#f87171':color;
+    html+=`<circle cx="${sx(d.x).toFixed(1)}" cy="${sy(d.y).toFixed(1)}" r="${d.isOutlier?5:3}" fill="${fill}" opacity="0.8"/>`;
+  });
+  svg.innerHTML=html;
+}
+
+const scalerDefs=[
+  {id:'raw',title:'Raw Data',color:'#a78bfa',type:'raw',formula:'No transformation\n(original values)'},
+  {id:'std',title:'StandardScaler',color:'#86efac',type:'standard',formula:'z = (x − μ) / σ\nMean=0, Std=1'},
+  {id:'mm',title:'MinMaxScaler',color:'#7dd3fc',type:'minmax',formula:'x\' = (x − min) / (max − min)\nRange: [0, 1]'},
+  {id:'rb',title:'RobustScaler',color:'#fbbf24',type:'robust',formula:'x\' = (x − Q2) / (Q3 − Q1)\nRobust to outliers'},
+];
+
+function buildScalerGrid(){
+  const grid=document.getElementById('scalerGrid');
+  grid.innerHTML='';
+  scalerDefs.forEach(s=>{
+    const div=document.createElement('div');
+    div.className='scaler-panel';
+    div.innerHTML=`<h4 style="color:${s.color}">${s.title}</h4><svg id="svg_${s.id}" viewBox="0 0 180 150" style="width:100%;background:#0f172a;border-radius:8px;border:1px solid #2d3147"></svg><div class="formula-box" style="font-size:.72rem;margin-top:6px;white-space:pre-line">${s.formula}</div>`;
+    grid.appendChild(div);
+  });
+}
+
+function updateScaling(){
+  const val=parseInt(document.getElementById('outlierSlider').value);
+  document.getElementById('outlierVal').textContent=val===0?'None':val;
+  let data=[...baseData.map(d=>({...d,isOutlier:false}))];
+  if(val>0){
+    data.push({age:200+val*20,income:2000000+val*200000,isOutlier:true});
+  }
+  scalerDefs.forEach(s=>{
+    const scaled=getScaledData(data,s.type);
+    drawScatterPanel('svg_'+s.id,scaled,s.title,s.color);
+  });
+}
+
+buildScalerGrid();
+updateScaling();
+
+// ============ TAB 2: MISSING DATA ============
+const ROWS=8,COLS=6;
+const colNames=['Age','Income','Score','City','Gender','Rating'];
+let missingMask=[];
+let currentImpute='none';
+
+function genMask(pct,pattern){
+  const total=ROWS*COLS;
+  const nMissing=Math.round(total*pct/100);
+  const mask=Array(ROWS).fill(null).map(()=>Array(COLS).fill(false));
+  let placed=0;
+  if(pattern==='MCAR'){
+    while(placed<nMissing){
+      const r=Math.floor(Math.random()*ROWS),c=Math.floor(Math.random()*COLS);
+      if(!mask[r][c]){mask[r][c]=true;placed++}
+    }
+  } else if(pattern==='MAR'){
+    // Missing concentrated in certain columns
+    const targetCols=[2,4];
+    while(placed<nMissing){
+      const c=targetCols[Math.floor(Math.random()*targetCols.length)];
+      const r=Math.floor(Math.random()*ROWS);
+      if(!mask[r][c]){mask[r][c]=true;placed++}
+    }
+  } else { // MNAR
+    // Missing correlated with value (higher rows more missing)
+    while(placed<nMissing){
+      const r=Math.floor(Math.pow(Math.random(),0.5)*ROWS);
+      const c=Math.floor(Math.random()*COLS);
+      if(!mask[r][c]){mask[r][c]=true;placed++}
+    }
+  }
+  return mask;
+}
+
+const sampleVals=[
+  [32,54000,78,'NYC','M',4.2],
+  [45,82000,91,'LA','F',3.8],
+  [28,41000,65,'NYC','M',4.5],
+  [51,120000,88,'SF','F',4.1],
+  [37,67000,72,'LA','M',3.9],
+  [29,39000,55,'NYC','F',4.7],
+  [43,95000,83,'SF','M',3.6],
+  [35,58000,79,'LA','F',4.3],
+];
+
+function updateMissing(){
+  const pct=parseInt(document.getElementById('missingPct').value);
+  const pattern=document.getElementById('missingPattern').value;
+  document.getElementById('missingPctVal').textContent=pct+'%';
+  missingMask=genMask(pct,pattern);
+  renderMissingGrid();
+}
+
+function setImpute(strat){
+  currentImpute=strat;
+  document.querySelectorAll('#panel1 .btn').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase().includes(strat)||(strat==='none'&&b.textContent==='Show Missing')));
+  const insights={
+    none:'Showing raw data with missing values highlighted in red.',
+    mean:'Mean imputation fills missing values with the column average. Fast but ignores relationships between features and reduces variance.',
+    median:'Median imputation is more robust to outliers than mean. Good for skewed distributions like income data.',
+    mode:'Mode imputation fills with the most frequent value. Best for categorical features (City, Gender).',
+    knn:'KNN imputation finds the k nearest complete rows and fills missing values using a weighted average. Captures feature correlations but is O(n²).',
+    iterative:'Iterative (MICE) imputation models each feature with missing values as a function of other features, iterating until convergence. Most accurate but slowest.',
+    drop:'Dropping rows with any missing value. Safe only when missingness is MCAR and <5% of data — otherwise biases the dataset.'
+  };
+  document.getElementById('imputeInsight').textContent=insights[strat];
+  renderMissingGrid();
+}
+
+function renderMissingGrid(){
+  const grid=document.getElementById('missingGrid');
+  const isDrop=currentImpute==='drop';
+  let html='';
+  // Header
+  html+=colNames.map(c=>`<div class="grid-cell" style="background:#252a3d;color:#7dd3fc;border:1px solid #2d3147">${c}</div>`).join('');
+  for(let r=0;r<ROWS;r++){
+    const rowHasMissing=missingMask[r].some(v=>v);
+    if(isDrop&&rowHasMissing)continue;
+    for(let c=0;c<COLS;c++){
+      const isMissing=missingMask[r][c];
+      const val=sampleVals[r][c];
+      if(isMissing&&currentImpute==='none'){
+        html+=`<div class="grid-cell cell-missing">NaN</div>`;
+      } else if(isMissing){
+        let fillVal;
+        if(currentImpute==='mean'){fillVal=c===0?'36':c===1?'69k':c===2?'76':val}
+        else if(currentImpute==='median'){fillVal=c===0?'35':c===1?'62k':c===2?'78':val}
+        else if(currentImpute==='mode'){fillVal=c===3?'NYC':c===4?'M':val}
+        else{fillVal='~'+val}
+        html+=`<div class="grid-cell cell-imputed">${fillVal}</div>`;
+      } else {
+        html+=`<div class="grid-cell cell-present">${val}</div>`;
+      }
+    }
+  }
+  grid.innerHTML=html;
+}
+
+updateMissing();
+
+// ============ TAB 3: ENCODING ============
+const categories=['Red','Green','Blue','Purple','Orange','Black'];
+const targetVals=[0.72,0.45,0.61,0.38,0.55,0.29];
+let currentEncoding='onehot';
+
+const encodingDefs={
+  onehot:{
+    label:'One-Hot Encoding',
+    color:'#86efac',
+    insight:'Creates a binary column for each category. Output is sparse but interpretable. Causes the "dummy variable trap" — drop one column for linear models. Cardinality scales linearly.',
+    dims:6,
+    genCols:()=>categories.map(c=>`is_${c}`),
+    genRow:(cat)=>categories.map(c=>c===cat?'1':'0'),
+  },
+  ordinal:{
+    label:'Ordinal Encoding',
+    color:'#7dd3fc',
+    insight:'Maps each category to an integer. Implies order (Red < Green < Blue...) which may mislead models. Only use when categories have a natural ordering (e.g., Low=1, Med=2, High=3).',
+    dims:1,
+    genCols:()=>['Color_ord'],
+    genRow:(cat)=>[String(categories.indexOf(cat)+1)],
+  },
+  target:{
+    label:'Target Encoding',
+    color:'#fbbf24',
+    insight:'Replaces each category with the mean target value of that category. Powerful for high cardinality but risks target leakage — always use within CV folds, never on the full dataset.',
+    dims:1,
+    genCols:()=>['Color_target'],
+    genRow:(cat)=>[targetVals[categories.indexOf(cat)].toFixed(3)],
+  },
+  binary:{
+    label:'Binary Encoding',
+    color:'#a78bfa',
+    insight:'Converts ordinal integers to binary bits. 6 categories → 3 bits (log₂6 ≈ 2.6). Much more compact than one-hot for high cardinality while preserving some distance information.',
+    dims:3,
+    genCols:()=>['bit_2','bit_1','bit_0'],
+    genRow:(cat)=>{const i=categories.indexOf(cat);return[((i>>2)&1).toString(),((i>>1)&1).toString(),(i&1).toString()]},
+  },
+  hash:{
+    label:'Hash Encoding',
+    color:'#fb923c',
+    insight:'Hashes category strings to a fixed-size vector. Can handle unseen categories and arbitrary cardinality. Risk of collisions (two categories mapping to the same bucket). Output size is fixed.',
+    dims:4,
+    genCols:()=>['h0','h1','h2','h3'],
+    genRow:(cat)=>{
+      let h=0;for(const c of cat)h=(h*31+c.charCodeAt(0))&0xFFFFFF;
+      return [h%2,(h>>1)%2,(h>>2)%2,(h>>3)%2].map(String);
+    },
+  },
+  loo:{
+    label:'Leave-One-Out',
+    color:'#2dd4bf',
+    insight:'Like target encoding but excludes the current row\'s target when computing the mean. Reduces overfitting vs. plain target encoding. Still requires careful CV implementation.',
+    dims:1,
+    genCols:()=>['Color_loo'],
+    genRow:(cat)=>{
+      const i=categories.indexOf(cat);
+      const loo=((targetVals.reduce((a,b)=>a+b,0)-targetVals[i])/(categories.length-1)).toFixed(3);
+      return[loo];
+    },
+  },
+};
+
+const catColors=['#f87171','#86efac','#7dd3fc','#a78bfa','#fb923c','#64748b'];
+
+function setEncoding(enc){
+  currentEncoding=enc;
+  document.querySelectorAll('#panel2 .btn').forEach(b=>{
+    const map={onehot:'One-Hot',ordinal:'Ordinal',target:'Target',binary:'Binary',hash:'Hash',loo:'Leave-One-Out'};
+    b.classList.toggle('active',b.textContent===map[enc]);
+  });
+  renderEncoding();
+}
+
+function renderEncoding(){
+  const def=encodingDefs[currentEncoding];
+  const cont=document.getElementById('encodingContainer');
+  // Source column
+  let html=`<div class="enc-col"><h4>Original</h4>`;
+  categories.forEach((c,i)=>html+=`<div class="cat-cell" style="color:${catColors[i]};border-color:${catColors[i]}40">${c}</div>`);
+  html+='</div><div class="enc-arrow">→</div>';
+  // Output matrix
+  const cols=def.genCols();
+  html+=`<div class="enc-matrix"><h4 style="color:${def.color}">${def.label}</h4><table class="enc-table"><thead><tr><th>Category</th>`;
+  cols.forEach(c=>html+=`<th>${c}</th>`);
+  html+='</tr></thead><tbody>';
+  categories.forEach((cat,i)=>{
+    const row=def.genRow(cat);
+    html+=`<tr><td style="color:${catColors[i]};font-weight:700">${cat}</td>`;
+    row.forEach(v=>html+=`<td class="${v==='1'?'one':v==='0'?'zero':''}">${v}</td>`);
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  cont.innerHTML=html;
+  document.getElementById('encodingInsight').textContent=def.insight;
+  drawDimChart(def.dims,def.color);
+}
+
+function drawDimChart(dims,color){
+  const svg=document.getElementById('dimChart');
+  const encs=[
+    {name:'One-Hot',dims:6,color:'#86efac'},
+    {name:'Binary',dims:3,color:'#a78bfa'},
+    {name:'Hash',dims:4,color:'#fb923c'},
+    {name:'Ordinal',dims:1,color:'#7dd3fc'},
+    {name:'Target',dims:1,color:'#fbbf24'},
+    {name:'LOO',dims:1,color:'#2dd4bf'},
+  ];
+  const W=500,H=80,pad=10,barH=16,gap=8;
+  const maxDims=6;
+  let html='';
+  encs.forEach((e,i)=>{
+    const y=pad+i*(barH+gap);
+    const w=(e.dims/maxDims)*(W-120-2*pad);
+    const isActive=e.dims===dims;
+    html+=`<text x="${pad}" y="${y+12}" fill="${isActive?e.color:'#64748b'}" font-size="11" font-weight="${isActive?'700':'400'}">${e.name}</text>`;
+    html+=`<rect x="${pad+80}" y="${y}" width="${w}" height="${barH}" rx="3" fill="${isActive?e.color:'#2d3147'}" opacity="${isActive?'1':'0.5'}"/>`;
+    html+=`<text x="${pad+80+w+4}" y="${y+12}" fill="${isActive?e.color:'#64748b'}" font-size="11">${e.dims} col${e.dims>1?'s':''}</text>`;
+  });
+  svg.setAttribute('viewBox',`0 0 ${W} ${encs.length*(barH+gap)+pad}`);
+  svg.innerHTML=html;
+}
+
+renderEncoding();
+
+// ============ TAB 4: IMBALANCE ============
+let currentImbalanceStrat='original';
+
+// Generate scatter points
+function genPoints(minority){
+  const pts=[];
+  const nMajority=80,nMinority=Math.round(nMajority*minority/(100-minority));
+  for(let i=0;i<nMajority;i++){
+    pts.push({x:60+Math.random()*200,y:30+Math.random()*140,cls:0});
+  }
+  for(let i=0;i<Math.min(nMinority,40);i++){
+    pts.push({x:160+Math.random()*80,y:90+Math.random()*60,cls:1});
+  }
+  return pts;
+}
+
+function drawDonut(pct){
+  const svg=document.getElementById('donutChart');
+  const cx=100,cy=100,r=70,ir=45;
+  const angle=pct/100*2*Math.PI;
+  const x1=cx+r*Math.sin(0),y1=cy-r*Math.cos(0);
+  const x2=cx+r*Math.sin(angle),y2=cy-r*Math.cos(angle);
+  const large=angle>Math.PI?1:0;
+  const xi1=cx+ir*Math.sin(0),yi1=cy-ir*Math.cos(0);
+  const xi2=cx+ir*Math.sin(angle),yi2=cy-ir*Math.cos(angle);
+  let html=`
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="#1e2130" stroke="#2d3147" stroke-width="1"/>
+    <path d="M${cx},${cy-r} A${r},${r} 0 1,1 ${cx-0.001},${cy-r} Z" fill="#7dd3fc" opacity="0.8"/>
+    <path d="M${cx},${cy-r} A${r},${r} 0 ${large},1 ${x2},${y2} L${xi2},${yi2} A${ir},${ir} 0 ${large},0 ${cx},${cy-ir} Z" fill="#f87171" opacity="0.9"/>
+    <circle cx="${cx}" cy="${cy}" r="${ir}" fill="#1a1f2e"/>
+    <text x="${cx}" y="${cy-8}" fill="#e2e8f0" font-size="22" text-anchor="middle" font-weight="700">${pct}%</text>
+    <text x="${cx}" y="${cy+12}" fill="#94a3b8" font-size="11" text-anchor="middle">minority</text>
+    <circle cx="30" cy="175" r="7" fill="#f87171"/><text x="42" y="179" fill="#94a3b8" font-size="11">Minority</text>
+    <circle cx="100" cy="175" r="7" fill="#7dd3fc"/><text x="112" y="179" fill="#94a3b8" font-size="11">Majority</text>
+  `;
+  svg.innerHTML=html;
+}
+
+function drawSMOTE(pts,strat,minority){
+  const svg=document.getElementById('smoteChart');
+  const W=500,H=200;
+  let html='';
+  const minPts=pts.filter(p=>p.cls===1);
+  const majPts=pts.filter(p=>p.cls===0);
+
+  // Title
+  const titles={
+    original:`Original Data (${minority}% minority)`,
+    smote:'SMOTE: Synthetic minority points (★) generated between neighbors',
+    undersample:'Undersample: Majority class randomly reduced to match minority',
+    weights:'Class Weights: All points kept, minority weighted higher in loss',
+    threshold:'Threshold Tuning: Decision boundary moved to catch more minority',
+  };
+  html+=`<text x="10" y="18" fill="#94a3b8" font-size="11">${titles[strat]}</text>`;
+
+  if(strat==='smote'){
+    // Draw synthetic points
+    for(let i=0;i<Math.min(minPts.length,6);i++){
+      const a=minPts[i],b=minPts[(i+1)%minPts.length];
+      const t=0.4+Math.random()*0.2;
+      const sx=a.x+t*(b.x-a.x),sy=a.y+t*(b.y-a.y);
+      html+=`<line x1="${a.x}" y1="${a.y+20}" x2="${b.x}" y2="${b.y+20}" stroke="#f87171" stroke-width="1" stroke-dasharray="3,2" opacity="0.5"/>`;
+      html+=`<text x="${sx-5}" y="${sy+25}" fill="#fbbf24" font-size="14">★</text>`;
+    }
+  }
+
+  // Draw minority boundary if threshold
+  if(strat==='threshold'){
+    html+=`<line x1="200" y1="25" x2="200" y2="${H-10}" stroke="#fbbf24" stroke-width="2" stroke-dasharray="5,3"/>`;
+    html+=`<text x="205" y="35" fill="#fbbf24" font-size="10">threshold=0.3</text>`;
+  }
+
+  // Draw points
+  let displayMaj=majPts;
+  if(strat==='undersample') displayMaj=majPts.slice(0,Math.max(5,minPts.length));
+
+  displayMaj.forEach(p=>{
+    html+=`<circle cx="${p.x}" cy="${p.y+20}" r="4" fill="#7dd3fc" opacity="${strat==='weights'?'0.4':'0.7'}"/>`;
+  });
+  minPts.forEach(p=>{
+    html+=`<circle cx="${p.x}" cy="${p.y+20}" r="${strat==='weights'?7:4}" fill="#f87171" opacity="0.9" stroke="${strat==='weights'?'#fbbf24':'none'}" stroke-width="2"/>`;
+  });
+
+  svg.innerHTML=html;
+}
+
+const stratMetrics={
+  original:{acc:'90%',f1:'0.15',recall:'0.09',note:'High accuracy hides terrible minority recall'},
+  smote:{acc:'87%',f1:'0.61',recall:'0.72',note:'Synthetic points help minority recall significantly'},
+  undersample:{acc:'83%',f1:'0.55',recall:'0.68',note:'Loses majority data but more balanced training'},
+  weights:{acc:'88%',f1:'0.58',recall:'0.65',note:'No data change — weights adjust loss function'},
+  threshold:{acc:'85%',f1:'0.52',recall:'0.78',note:'Lower threshold catches more minority, more FP'},
+};
+
+function setImbalanceStrat(s){
+  currentImbalanceStrat=s;
+  document.querySelectorAll('#panel3 .btn').forEach(b=>{
+    const map={original:'Original',smote:'SMOTE',undersample:'Undersample',weights:'Class Weights',threshold:'Threshold Tuning'};
+    b.classList.toggle('active',b.textContent===map[s]);
+  });
+  updateImbalance();
+}
+
+function updateImbalance(){
+  const pct=parseInt(document.getElementById('minorityPct').value);
+  document.getElementById('minorityPctVal').textContent=pct+'%';
+  drawDonut(pct);
+  const total=100;
+  const minority=Math.round(total*pct/100);
+  const majority=total-minority;
+  const ratio=(majority/minority).toFixed(1);
+  document.getElementById('classStats').innerHTML=
+    `<div style="color:#7dd3fc">Majority: <strong>${majority*10}</strong> samples</div>
+     <div style="color:#f87171">Minority: <strong>${minority*10}</strong> samples</div>
+     <div style="color:#fbbf24;margin-top:4px">Ratio: ${ratio}:1 &nbsp;|&nbsp; ${majority}% vs ${pct}%</div>`;
+  const pts=genPoints(pct);
+  drawSMOTE(pts,currentImbalanceStrat,pct);
+  // Metrics table
+  const body=document.getElementById('metricsBody');
+  body.innerHTML='';
+  Object.entries(stratMetrics).forEach(([k,v])=>{
+    const tr=document.createElement('tr');
+    const isActive=k===currentImbalanceStrat;
+    const bg=isActive?'background:#252a3d':'';
+    tr.style.cssText=bg;
+    const nameMap={original:'Original',smote:'SMOTE',undersample:'Undersample',weights:'Class Weights',threshold:'Threshold Tuning'};
+    tr.innerHTML=`<td style="${isActive?'color:#7dd3fc;font-weight:700':''}">${nameMap[k]}</td><td>${v.acc}</td><td style="color:${parseFloat(v.f1)>0.5?'#86efac':'#f87171'}">${v.f1}</td><td style="color:${parseFloat(v.recall)>0.5?'#86efac':'#f87171'}">${v.recall}</td><td style="color:#94a3b8;font-size:.8rem">${v.note}</td>`;
+    body.appendChild(tr);
+  });
+}
+
+updateImbalance();
+</script>
+
+
+<style>
+/* ── Chapter sidenav ── */
+.chap-sidenav {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 8888;
+}
+.chap-sidenav-toggle {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  color: #7dd3fc;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px #00000060;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+.chap-sidenav-toggle:hover { background: #0369a1; border-color: #7dd3fc; }
+.chap-sidenav-menu {
+  position: absolute;
+  bottom: 52px;
+  right: 0;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  border-radius: 14px;
+  padding: 10px 6px;
+  min-width: 220px;
+  max-height: 70vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 40px #00000080;
+  display: none;
+  scrollbar-width: thin;
+  scrollbar-color: #2d3147 transparent;
+}
+.chap-sidenav-menu.open { display: block; }
+.chap-sidenav-menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #94a3b8;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.chap-sidenav-menu a:hover { background: #0f172a; color: #e2e8f0; }
+.chap-sidenav-menu a.current { background: #0369a133; color: #7dd3fc; font-weight: 600; }
+.chap-sidenav-menu .chap-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #4b5563;
+  min-width: 28px;
+}
+.chap-sidenav-menu .menu-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #4b5563;
+  padding: 4px 12px 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+@media (max-width: 480px) {
+  .chap-sidenav { bottom: 12px; right: 12px; }
+  .chap-sidenav-menu { right: 0; min-width: 180px; }
+}
+</style>
+
+<div class="chap-sidenav">
+  <div class="chap-sidenav-menu" id="chapMenu">
+    <div class="menu-header">ML Field Guide</div>
+      <a href="ch01_math_foundations.html"><span class="chap-num">Ch 01</span>Math Foundations</a>
+      <a href="ch02_statistics.html"><span class="chap-num">Ch 02</span>Statistics</a>
+      <a href="ch03_python.html"><span class="chap-num">Ch 03</span>Python for ML</a>
+      <a href="ch04_feature_engineering.html" class="current"><span class="chap-num">Ch 04</span>Feature Engineering</a>
+      <a href="ch05_supervised_learning.html"><span class="chap-num">Ch 05</span>Supervised Learning</a>
+      <a href="ch06_model_evaluation.html"><span class="chap-num">Ch 06</span>Model Evaluation</a>
+      <a href="ch07_unsupervised.html"><span class="chap-num">Ch 07</span>Unsupervised Learning</a>
+      <a href="ch08_recommendations.html"><span class="chap-num">Ch 08</span>Recommendations</a>
+      <a href="ch09_neural_networks.html"><span class="chap-num">Ch 09a</span>Neural Networks</a>
+      <a href="ch09_cnn_architectures.html"><span class="chap-num">Ch 09b</span>CNN Architectures</a>
+      <a href="ch10_nlp_transformers.html"><span class="chap-num">Ch 10</span>NLP & Transformers</a>
+      <a href="ch11_reinforcement_learning.html"><span class="chap-num">Ch 11</span>Reinforcement Learning</a>
+      <a href="ch12_time_series.html"><span class="chap-num">Ch 12</span>Time Series</a>
+      <a href="ch13_sql.html"><span class="chap-num">Ch 13</span>SQL for ML</a>
+      <a href="ch14_big_data.html"><span class="chap-num">Ch 14</span>Big Data</a>
+      <a href="ch15_mlops.html"><span class="chap-num">Ch 15</span>MLOps</a>
+      <a href="ch16_aws.html"><span class="chap-num">Ch 16</span>AWS for ML</a>
+      <a href="ch17_responsible_ai.html"><span class="chap-num">Ch 17</span>Responsible AI</a>
+      <a href="ch18_interview_prep.html"><span class="chap-num">Ch 18</span>Interview Prep</a>
+  </div>
+  <button class="chap-sidenav-toggle" onclick="document.getElementById('chapMenu').classList.toggle('open')" title="Chapter navigation">☰</button>
+</div>
+
+</body>
+</html>

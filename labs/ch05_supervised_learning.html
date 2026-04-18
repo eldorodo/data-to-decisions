@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Supervised learning interactive explorer: decision trees, SVMs, linear models, and more.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 5 · Supervised Learning — The ML Field Guide</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0f1117;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;padding:20px}
+h1{text-align:center;color:#7dd3fc;font-size:1.6rem;margin-bottom:6px}
+.subtitle{text-align:center;color:#94a3b8;font-size:.9rem;margin-bottom:20px}
+.tabs{display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid #2d3147;flex-wrap:wrap}
+.tab{padding:9px 16px;border-radius:8px 8px 0 0;border:1px solid #2d3147;border-bottom:none;cursor:pointer;font-size:.85rem;color:#94a3b8;background:#1e2130;transition:all .2s;position:relative;top:1px}
+.tab.active{background:#1a1f2e;color:#7dd3fc;border-color:#7dd3fc;border-bottom-color:#1a1f2e}
+.tab:hover:not(.active){color:#e2e8f0;background:#252a3d}
+.panel{display:none;background:#1a1f2e;border:1px solid #2d3147;border-radius:0 12px 12px 12px;padding:22px}
+.panel.active{display:block}
+.ctrl-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;background:#1e2130;padding:10px 14px;border-radius:8px;border:1px solid #2d3147}
+label{color:#94a3b8;font-size:.83rem;white-space:nowrap}
+input[type=range]{accent-color:#7dd3fc;cursor:pointer;min-width:100px}
+.val-badge{background:#0f172a;color:#7dd3fc;padding:3px 9px;border-radius:6px;font-size:.83rem;font-weight:700;min-width:48px;text-align:center}
+select{background:#0f172a;color:#e2e8f0;border:1px solid #2d3147;border-radius:6px;padding:5px 8px;font-size:.83rem}
+.btn{padding:6px 14px;border-radius:8px;border:1.5px solid #2d3147;background:#1e2130;color:#e2e8f0;cursor:pointer;font-size:.83rem;transition:all .2s}
+.btn:hover,.btn.active{border-color:#7dd3fc;color:#7dd3fc;background:#252a3d}
+.insight{background:#0f172a;border-left:3px solid #7dd3fc;border-radius:0 8px 8px 0;padding:10px 14px;margin:10px 0;font-size:.83rem;color:#7dd3fc}
+.formula{background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:10px 14px;font-family:'Courier New',monospace;font-size:.82rem;color:#86efac;margin:8px 0}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:700px){.two-col{grid-template-columns:1fr}}
+.card{background:#1e2130;border:1px solid #2d3147;border-radius:10px;padding:14px}
+svg{display:block}
+/* GB Step */
+.gb-controls{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.step-indicator{display:flex;gap:6px;margin-bottom:14px}
+.step-dot{width:28px;height:28px;border-radius:50%;border:2px solid #2d3147;background:#1e2130;display:flex;align-items:center;justify-content:center;font-size:.78rem;color:#64748b;cursor:pointer;transition:all .2s}
+.step-dot.active{border-color:#7dd3fc;background:#252a3d;color:#7dd3fc}
+.step-dot.done{border-color:#86efac;background:#0f2d1a;color:#86efac}
+
+  /* ── Shared improvements ── */
+  body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important; }
+  code, pre, .code-block, .formula, .mono, [style*="monospace"], [style*="Courier"] { font-family: 'JetBrains Mono', 'Cascadia Code', 'Courier New', monospace !important; }
+
+  /* Smoother scrolling */
+  html { scroll-behavior: smooth; }
+
+  /* Focus ring for accessibility */
+  button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid #7dd3fc;
+    outline-offset: 2px;
+  }
+
+  /* Improve tab-nav overflow on small screens */
+  .tab-nav, .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .tab-nav::-webkit-scrollbar, .tabs::-webkit-scrollbar { display: none; }
+
+  /* Mobile responsive improvements */
+  @media (max-width: 768px) {
+    .page-header { padding: 24px 20px 18px !important; }
+    .tab-panel { padding: 20px !important; }
+    .tab-nav { padding: 16px 20px 0 !important; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
+    .grid2, .grid3 { grid-template-columns: 1fr !important; }
+    .page-title { font-size: 22px !important; }
+    h1 { font-size: 1.4rem !important; }
+  }
+  @media (max-width: 480px) {
+    body { padding: 0 0 40px 0 !important; }
+    .tab-btn { padding: 8px 14px !important; font-size: 12px !important; }
+    .btn { padding: 6px 12px !important; font-size: 12px !important; }
+  }
+
+  /* Better selection color */
+  ::selection { background: #1d4ed880; color: #e0f2fe; }
+
+  /* Smoother canvas rendering */
+  canvas { image-rendering: -webkit-optimize-contrast; }
+
+  /* Tooltip z-index fix */
+  .tooltip { z-index: 9999 !important; }
+
+  /* Code block horizontal scroll indicator */
+  .code-block { overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>Chapter 5: Supervised Learning</h1>
+<p class="subtitle">Decision boundaries, bias-variance tradeoff, gradient boosting, regression, and SVMs</p>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab(0)">Decision Boundaries</div>
+  <div class="tab" onclick="switchTab(1)">Bias-Variance</div>
+  <div class="tab" onclick="switchTab(2)">Gradient Boosting</div>
+  <div class="tab" onclick="switchTab(3)">Linear vs Logistic</div>
+  <div class="tab" onclick="switchTab(4)">SVM Margin</div>
+</div>
+
+<!-- TAB 1: Decision Boundary Explorer -->
+<div class="panel active" id="panel0">
+  <div class="ctrl-row">
+    <label>Model:</label>
+    <select id="modelSel" onchange="updateDB()">
+      <option value="logistic">Logistic Regression</option>
+      <option value="svm_linear">SVM (Linear)</option>
+      <option value="svm_rbf">SVM (RBF)</option>
+      <option value="dt">Decision Tree</option>
+      <option value="knn">KNN</option>
+    </select>
+    <label>Dataset:</label>
+    <button class="btn active" id="dsLinear" onclick="setDataset('linear')">Linear</button>
+    <button class="btn" id="dsMoon" onclick="setDataset('moon')">Moon</button>
+    <button class="btn" id="dsCircle" onclick="setDataset('circle')">Circle</button>
+    <button class="btn" id="dsXor" onclick="setDataset('xor')">XOR</button>
+    <button class="btn" onclick="addNoise()">Add Noise</button>
+  </div>
+  <div id="dbHyperparams" class="ctrl-row"></div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap">
+    <svg id="dbChart" viewBox="0 0 400 350" style="width:100%;max-width:420px;background:#1e2130;border:1px solid #2d3147;border-radius:10px;flex:1;min-width:280px"></svg>
+    <div style="flex:1;min-width:200px">
+      <div class="insight" id="dbInsight">Select a model and dataset to explore the decision boundary.</div>
+      <div class="formula" id="dbFormula"></div>
+      <div class="card" style="margin-top:10px">
+        <div style="color:#94a3b8;font-size:.82rem;margin-bottom:8px">Model Characteristics</div>
+        <div id="dbChars" style="font-size:.83rem;line-height:1.7;color:#e2e8f0"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 2: Bias-Variance Tradeoff -->
+<div class="panel" id="panel1">
+  <div class="ctrl-row">
+    <label>Model Complexity:</label>
+    <input type="range" id="complexitySlider" min="1" max="20" value="5" oninput="updateBV()">
+    <div class="val-badge" id="complexityVal">5</div>
+    <label style="margin-left:12px">Dataset Size:</label>
+    <input type="range" id="datasetSize" min="20" max="500" step="20" value="100" oninput="updateBV()">
+    <div class="val-badge" id="datasetSizeVal">100</div>
+  </div>
+  <svg id="bvChart" viewBox="0 0 700 320" style="width:100%;background:#1e2130;border:1px solid #2d3147;border-radius:10px"></svg>
+  <div id="bvZoneLabel" style="text-align:center;margin:10px 0;font-size:.95rem;font-weight:700"></div>
+  <div class="two-col" style="margin-top:12px">
+    <div class="card">
+      <div style="color:#f87171;font-weight:700;margin-bottom:6px">Underfitting (High Bias)</div>
+      <div style="font-size:.83rem;color:#94a3b8;line-height:1.6">Model is too simple to capture the underlying pattern. Both training and validation errors are high. Adding more data won't help. Fix: increase model complexity or add more features.</div>
+    </div>
+    <div class="card">
+      <div style="color:#f87171;font-weight:700;margin-bottom:6px">Overfitting (High Variance)</div>
+      <div style="font-size:.83rem;color:#94a3b8;line-height:1.6">Model memorizes training data, fails to generalize. Train error is low but validation error is high. Fix: regularization, dropout, more data, simpler model, pruning.</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:14px;margin-top:12px;flex-wrap:wrap">
+    <div class="card" style="flex:1;min-width:160px;text-align:center">
+      <div style="color:#94a3b8;font-size:.78rem;margin-bottom:4px">Train Error</div>
+      <div id="bvTrainErr" style="color:#86efac;font-size:1.4rem;font-weight:700"></div>
+    </div>
+    <div class="card" style="flex:1;min-width:160px;text-align:center">
+      <div style="color:#94a3b8;font-size:.78rem;margin-bottom:4px">Val Error</div>
+      <div id="bvValErr" style="color:#7dd3fc;font-size:1.4rem;font-weight:700"></div>
+    </div>
+    <div class="card" style="flex:1;min-width:160px;text-align:center">
+      <div style="color:#94a3b8;font-size:.78rem;margin-bottom:4px">Gap (Variance)</div>
+      <div id="bvGap" style="color:#fbbf24;font-size:1.4rem;font-weight:700"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 3: Gradient Boosting -->
+<div class="panel" id="panel2">
+  <div class="ctrl-row">
+    <label>Learning Rate (η):</label>
+    <input type="range" id="lrSlider" min="1" max="10" value="5" oninput="updateGBDisplay()">
+    <div class="val-badge" id="lrVal">0.5</div>
+    <label style="margin-left:12px">Speed:</label>
+    <input type="range" id="speedSlider" min="1" max="5" value="3">
+  </div>
+  <div class="step-indicator" id="stepIndicator"></div>
+  <div class="gb-controls">
+    <button class="btn" onclick="gbPrev()">⟵ Prev</button>
+    <button class="btn" id="gbPlayBtn" onclick="gbTogglePlay()">▶ Play</button>
+    <button class="btn" onclick="gbNext()">Next ⟶</button>
+    <button class="btn" onclick="gbReset()">Reset</button>
+  </div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap">
+    <svg id="gbChart" viewBox="0 0 450 280" style="flex:2;min-width:280px;background:#1e2130;border:1px solid #2d3147;border-radius:10px"></svg>
+    <div style="flex:1;min-width:200px">
+      <div class="formula" id="gbFormula" style="font-size:.8rem;min-height:60px"></div>
+      <div class="insight" id="gbInsight" style="margin-top:10px"></div>
+      <div class="card" style="margin-top:10px">
+        <div style="color:#94a3b8;font-size:.78rem;margin-bottom:6px">Step Progress</div>
+        <div id="gbProgress" style="font-size:.83rem;color:#e2e8f0;line-height:1.7"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 4: Linear vs Logistic Regression -->
+<div class="panel" id="panel3">
+  <div class="ctrl-row">
+    <label>Threshold (Logistic):</label>
+    <input type="range" id="threshSlider" min="10" max="90" value="50" oninput="updateRegression()">
+    <div class="val-badge" id="threshVal">0.50</div>
+    <button class="btn" onclick="addLinRegPoint()" style="margin-left:12px">+ Add Point</button>
+    <button class="btn" onclick="resetLinReg()">Reset</button>
+  </div>
+  <div class="two-col">
+    <div>
+      <h4 style="color:#86efac;margin-bottom:8px;font-size:.9rem">Linear Regression (OLS)</h4>
+      <svg id="linChart" viewBox="0 0 300 220" style="width:100%;background:#1e2130;border:1px solid #2d3147;border-radius:10px"></svg>
+      <div class="formula" style="margin-top:8px">ŷ = w₀ + w₁x<br>Loss: MSE = (1/n)Σ(y - ŷ)²</div>
+    </div>
+    <div>
+      <h4 style="color:#7dd3fc;margin-bottom:8px;font-size:.9rem">Logistic Regression (Sigmoid)</h4>
+      <svg id="logChart" viewBox="0 0 300 220" style="width:100%;background:#1e2130;border:1px solid #2d3147;border-radius:10px"></svg>
+      <div class="formula" style="margin-top:8px">P(y=1) = σ(w₀ + w₁x) = 1/(1+e⁻ᶻ)<br>Loss: -Σ[y·log(p) + (1-y)·log(1-p)]</div>
+    </div>
+  </div>
+  <div class="two-col" style="margin-top:12px">
+    <div>
+      <h4 style="color:#86efac;margin-bottom:8px;font-size:.9rem">MSE Loss Surface</h4>
+      <svg id="lossLinChart" viewBox="0 0 300 120" style="width:100%;background:#1e2130;border:1px solid #2d3147;border-radius:10px"></svg>
+    </div>
+    <div>
+      <h4 style="color:#7dd3fc;margin-bottom:8px;font-size:.9rem">Log-Loss Surface</h4>
+      <svg id="lossLogChart" viewBox="0 0 300 120" style="width:100%;background:#1e2130;border:1px solid #2d3147;border-radius:10px"></svg>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 5: SVM Margin -->
+<div class="panel" id="panel4">
+  <div class="ctrl-row">
+    <label>C (regularization):</label>
+    <input type="range" id="cSlider" min="1" max="20" value="5" oninput="updateSVM()">
+    <div class="val-badge" id="cVal">5</div>
+    <label style="margin-left:12px">Kernel:</label>
+    <button class="btn active" id="btnLinSVM" onclick="setKernel('linear')">Linear</button>
+    <button class="btn" id="btnRbfSVM" onclick="setKernel('rbf')">RBF</button>
+    <span id="gammaCtrl" style="display:none;align-items:center;gap:8px">
+      <label>γ:</label>
+      <input type="range" id="gammaSlider" min="1" max="20" value="5" oninput="updateSVM()">
+      <div class="val-badge" id="gammaVal">0.5</div>
+    </span>
+  </div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap">
+    <svg id="svmChart" viewBox="0 0 420 340" style="flex:2;min-width:280px;background:#1e2130;border:1px solid #2d3147;border-radius:10px"></svg>
+    <div style="flex:1;min-width:200px">
+      <div class="insight" id="svmInsight"></div>
+      <div class="formula" id="svmFormula" style="margin-top:8px;font-size:.8rem;line-height:1.7"></div>
+      <div class="card" style="margin-top:10px">
+        <div style="color:#94a3b8;font-size:.78rem;margin-bottom:8px">Margin Width</div>
+        <div id="svmMarginBar" style="height:20px;background:#0f172a;border-radius:6px;overflow:hidden;margin-bottom:6px">
+          <div id="svmMarginFill" style="height:100%;background:#a78bfa;border-radius:6px;transition:width .4s"></div>
+        </div>
+        <div id="svmMarginVal" style="color:#a78bfa;font-size:.9rem;font-weight:700"></div>
+        <div style="color:#94a3b8;font-size:.78rem;margin-top:8px">Large C = narrow margin (hard SVM)<br>Small C = wide margin (soft SVM)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ TABS ============
+function switchTab(i){
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
+  document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('active',i===j));
+  if(i===1)updateBV();
+  if(i===2)renderGB();
+  if(i===3)updateRegression();
+  if(i===4)updateSVM();
+}
+
+// ============ SEEDED RANDOM ============
+let seed=42;
+function seededRand(){seed=(seed*1664525+1013904223)&0xFFFFFFFF;return(seed>>>0)/0xFFFFFFFF}
+function resetSeed(){seed=42}
+
+// ============ TAB 1: DECISION BOUNDARIES ============
+let dbDataset='linear';
+let dbPoints=[];
+
+const datasetBtns={linear:'dsLinear',moon:'dsMoon',circle:'dsCircle',xor:'dsXor'};
+
+function setDataset(ds){
+  dbDataset=ds;
+  Object.entries(datasetBtns).forEach(([k,id])=>document.getElementById(id).classList.toggle('active',k===ds));
+  genDataset(ds);
+  updateDB();
+}
+
+function genDataset(type){
+  resetSeed();
+  dbPoints=[];
+  const n=60;
+  if(type==='linear'){
+    for(let i=0;i<n;i++){
+      const x=seededRand()*300+50,y=seededRand()*260+45;
+      const cls=(y<-0.8*x+340)?0:1;
+      dbPoints.push({x,y,cls});
+    }
+  } else if(type==='moon'){
+    for(let i=0;i<n/2;i++){
+      const a=Math.PI*seededRand();
+      dbPoints.push({x:100+120*Math.cos(a)+seededRand()*30-15,y:150+80*Math.sin(a)+seededRand()*30-15,cls:0});
+    }
+    for(let i=0;i<n/2;i++){
+      const a=Math.PI+Math.PI*seededRand();
+      dbPoints.push({x:220+120*Math.cos(a)+seededRand()*30-15,y:180+80*Math.sin(a)+seededRand()*30-15,cls:1});
+    }
+  } else if(type==='circle'){
+    for(let i=0;i<n;i++){
+      const r=(i<n/2)?70+seededRand()*30:130+seededRand()*40;
+      const a=seededRand()*2*Math.PI;
+      const cls=(r<105)?0:1;
+      dbPoints.push({x:200+r*Math.cos(a),y:175+r*Math.sin(a),cls});
+    }
+  } else {
+    for(let i=0;i<n;i++){
+      const x=seededRand()*300+50,y=seededRand()*260+45;
+      const cls=((x>200)===(y>175))?0:1;
+      dbPoints.push({x,y,cls});
+    }
+  }
+}
+
+function addNoise(){
+  const n=Math.floor(dbPoints.length*.1);
+  for(let i=0;i<n;i++){
+    const idx=Math.floor(Math.random()*dbPoints.length);
+    dbPoints[idx].cls=1-dbPoints[idx].cls;
+  }
+  updateDB();
+}
+
+const modelInfo={
+  logistic:{
+    formula:'P(y=1) = σ(w·x + b)',
+    insight:'Logistic regression draws a linear decision boundary. Works well for linearly separable classes.',
+    chars:'Linear boundary · Probabilistic output · Fast training · Interpretable weights · Add polynomial features for non-linear data'
+  },
+  svm_linear:{
+    formula:'Hyperplane: w·x + b = 0 · Margin: 2/||w||',
+    insight:'Linear SVM maximizes the margin between classes. C controls the trade-off between margin width and misclassification.',
+    chars:'Linear boundary · Max-margin classifier · C=regularization · Robust to outliers (soft SVM) · Best for high-dim sparse data'
+  },
+  svm_rbf:{
+    formula:'K(x,z) = exp(-γ||x-z||²)',
+    insight:'RBF kernel maps data to infinite-dimensional space, enabling non-linear boundaries. γ controls influence radius.',
+    chars:'Non-linear boundary · Kernel trick · Two hyperparameters (C, γ) · Scales poorly with n > 100k · Great for small datasets'
+  },
+  dt:{
+    formula:'Split: argmax_j,t [IG(D, j, t)] = H(D) - Σ(|Dv|/|D|)H(Dv)',
+    insight:'Decision trees create axis-aligned boundaries by recursively splitting features. Depth controls complexity.',
+    chars:'Axis-aligned splits · Highly interpretable · Prone to overfit · No feature scaling needed · Fast inference'
+  },
+  knn:{
+    formula:'ŷ = majority class of k nearest neighbors',
+    insight:'KNN makes local predictions based on k nearest training points. Small k = complex boundary, large k = smoother.',
+    chars:'Non-parametric · No training phase · O(n) prediction · Feature scaling required · k controls smoothness'
+  },
+};
+
+function getHyperparamVal(model){
+  const el=document.getElementById('dbHyperValue');
+  if(!el) return 5;
+  return parseInt(el.value);
+}
+
+function updateDB(){
+  const model=document.getElementById('modelSel').value;
+  // Build hyperparams
+  const hpDiv=document.getElementById('dbHyperparams');
+  hpDiv.innerHTML='';
+  if(model==='svm_linear'||model==='svm_rbf'){
+    hpDiv.innerHTML=`<label>C:</label><input type="range" id="dbHyperValue" min="1" max="20" value="5" oninput="drawDB()"><div class="val-badge" id="dbHyperDisplay">5</div>`;
+    if(model==='svm_rbf') hpDiv.innerHTML+=`<label style="margin-left:10px">γ:</label><input type="range" id="dbGamma" min="1" max="20" value="5" oninput="drawDB()"><div class="val-badge" id="dbGammaDisplay">0.5</div>`;
+  } else if(model==='dt'){
+    hpDiv.innerHTML=`<label>Max Depth:</label><input type="range" id="dbHyperValue" min="1" max="10" value="3" oninput="drawDB()"><div class="val-badge" id="dbHyperDisplay">3</div>`;
+  } else if(model==='knn'){
+    hpDiv.innerHTML=`<label>k:</label><input type="range" id="dbHyperValue" min="1" max="20" value="5" oninput="drawDB()"><div class="val-badge" id="dbHyperDisplay">5</div>`;
+  }
+  // Re-attach listeners
+  ['dbHyperValue','dbGamma'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.oninput=()=>{
+      const disp=document.getElementById(id==='dbGamma'?'dbGammaDisplay':'dbHyperDisplay');
+      if(disp) disp.textContent=id==='dbGamma'?(el.value/10).toFixed(1):el.value;
+      drawDB();
+    }}
+  });
+  document.getElementById('dbInsight').textContent=modelInfo[model].insight;
+  document.getElementById('dbFormula').textContent=modelInfo[model].formula;
+  document.getElementById('dbChars').innerHTML=modelInfo[model].chars.split('·').map(s=>`• ${s.trim()}`).join('<br>');
+  drawDB();
+}
+
+function classifyPoint(x,y,model,pts,hp){
+  const norm=(v,min,max)=>(v-min)/(max-min||1);
+  const nx=norm(x,50,350),ny=norm(y,45,305);
+  if(model==='logistic'){
+    const w=dbDataset==='linear'?[1,-0.8]:[1,1];
+    return(nx+w[1]*ny)>0.5?1:0;
+  } else if(model==='svm_linear'){
+    return(nx-ny+(hp-10)*0.02)>0?1:0;
+  } else if(model==='svm_rbf'){
+    const gamma=(document.getElementById('dbGamma')?parseInt(document.getElementById('dbGamma').value):5)/10;
+    let score=0;
+    pts.forEach(p=>{
+      const pnx=norm(p.x,50,350),pny=norm(p.y,45,305);
+      const d2=(nx-pnx)**2+(ny-pny)**2;
+      score+=(p.cls*2-1)*Math.exp(-gamma*d2);
+    });
+    return score>0?1:0;
+  } else if(model==='dt'){
+    const depth=hp;
+    if(dbDataset==='circle') return((nx-0.5)**2+(ny-0.5)**2>0.12)?1:0;
+    if(dbDataset==='xor') return((nx>0.5)===(ny>0.5))?0:1;
+    return(nx>0.5)?((ny>0.5)?1:0):(ny>0.5)?0:1;
+  } else {
+    const k=hp;
+    const dists=pts.map(p=>{
+      const pnx=norm(p.x,50,350),pny=norm(p.y,45,305);
+      return{d:(nx-pnx)**2+(ny-pny)**2,cls:p.cls};
+    }).sort((a,b)=>a.d-b.d).slice(0,k);
+    const votes=dists.filter(d=>d.cls===1).length;
+    return votes>k/2?1:0;
+  }
+}
+
+function drawDB(){
+  const svg=document.getElementById('dbChart');
+  const model=document.getElementById('modelSel').value;
+  const hpEl=document.getElementById('dbHyperValue');
+  const hp=hpEl?parseInt(hpEl.value):5;
+  if(hpEl){
+    const disp=document.getElementById('dbHyperDisplay');
+    if(disp)disp.textContent=hp;
+  }
+  const W=400,H=350,step=12;
+  let html='';
+  // Decision boundary heatmap
+  for(let x=0;x<W;x+=step){
+    for(let y=0;y<H;y+=step){
+      const cls=classifyPoint(x,y,model,dbPoints,hp);
+      html+=`<rect x="${x}" y="${y}" width="${step+1}" height="${step+1}" fill="${cls===0?'#1a2d3d':'#2d1a2d'}" opacity="0.6"/>`;
+    }
+  }
+  // Grid lines
+  for(let i=0;i<=4;i++){
+    const x=50+i*75,y=45+i*65;
+    html+=`<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="#2d3147" stroke-width="0.5" opacity="0.5"/>`;
+    html+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="#2d3147" stroke-width="0.5" opacity="0.5"/>`;
+  }
+  // Points
+  dbPoints.forEach(p=>{
+    const fill=p.cls===0?'#7dd3fc':'#f87171';
+    const shape=p.cls===0?`<circle cx="${p.x}" cy="${p.y}" r="5" fill="${fill}" stroke="#0f1117" stroke-width="1.2" opacity="0.9"/>`
+      :`<path d="M${p.x},${p.y-6} L${p.x+5},${p.y+4} L${p.x-5},${p.y+4}Z" fill="${fill}" stroke="#0f1117" stroke-width="1.2" opacity="0.9"/>`;
+    html+=shape;
+  });
+  // Boundary line (approximate)
+  if(model==='logistic'||model==='svm_linear'){
+    const offset=(hp-10)*4;
+    html+=`<line x1="50" y1="${300+offset}" x2="370" y2="${50+offset}" stroke="#fbbf24" stroke-width="2" stroke-dasharray="6,3"/>`;
+  }
+  // Legend
+  html+=`<circle cx="20" cy="20" r="5" fill="#7dd3fc"/><text x="30" y="24" fill="#94a3b8" font-size="11">Class 0</text>`;
+  html+=`<path d="M80,14 L85,24 L75,24Z" fill="#f87171"/><text x="92" y="24" fill="#94a3b8" font-size="11">Class 1</text>`;
+  svg.innerHTML=html;
+}
+
+genDataset('linear');
+updateDB();
+
+// ============ TAB 2: BIAS-VARIANCE ============
+function updateBV(){
+  const comp=parseInt(document.getElementById('complexitySlider').value);
+  const nData=parseInt(document.getElementById('datasetSize').value);
+  document.getElementById('complexityVal').textContent=comp;
+  document.getElementById('datasetSizeVal').textContent=nData;
+  const overfitBonus=Math.max(0,(nData-100)/400);
+  const trainErr=Math.max(1,20-comp*0.9-overfitBonus*5);
+  const valErr=comp<5
+    ?(35-comp*2)
+    :comp<12
+      ?(15+comp*0.4-overfitBonus*8)
+      :(20+comp*1.5-overfitBonus*15);
+  const testErr=valErr*(0.9+Math.random()*0.2);
+  document.getElementById('bvTrainErr').textContent=trainErr.toFixed(1)+'%';
+  document.getElementById('bvValErr').textContent=Math.max(trainErr,valErr).toFixed(1)+'%';
+  document.getElementById('bvGap').textContent=(Math.max(0,valErr-trainErr)).toFixed(1)+'%';
+  let zone='';
+  if(comp<5) zone='<span style="color:#f87171">Underfitting Zone (High Bias)</span>';
+  else if(comp<12) zone='<span style="color:#86efac">Sweet Spot</span>';
+  else zone='<span style="color:#f87171">Overfitting Zone (High Variance)</span>';
+  document.getElementById('bvZoneLabel').innerHTML=`Current: ${zone}`;
+  drawBVChart(comp,nData);
+}
+
+function drawBVChart(comp,nData){
+  const svg=document.getElementById('bvChart');
+  const W=700,H=320,pad={l:55,r:20,t:20,b:45};
+  const maxC=20,maxErr=50;
+  const sx=c=>(c/maxC)*(W-pad.l-pad.r)+pad.l;
+  const sy=e=>H-pad.b-(e/maxErr)*(H-pad.t-pad.b);
+  const overfitBonus=Math.max(0,(nData-100)/400);
+
+  let html=`<defs><clipPath id="bvclip"><rect x="${pad.l}" y="${pad.t}" width="${W-pad.l-pad.r}" height="${H-pad.t-pad.b}"/></clipPath></defs>`;
+  // Grid
+  for(let i=0;i<=5;i++){
+    const y=sy(i*10);
+    html+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="#2d3147" stroke-width="1"/>`;
+    html+=`<text x="${pad.l-6}" y="${y+4}" fill="#64748b" font-size="11" text-anchor="end">${i*10}%</text>`;
+  }
+  for(let c=0;c<=20;c+=4){
+    const x=sx(c);
+    html+=`<line x1="${x}" y1="${pad.t}" x2="${x}" y2="${H-pad.b}" stroke="#2d3147" stroke-width="1"/>`;
+    html+=`<text x="${x}" y="${H-pad.b+16}" fill="#64748b" font-size="11" text-anchor="middle">${c}</text>`;
+  }
+  // Axis labels
+  html+=`<text x="${W/2}" y="${H-2}" fill="#94a3b8" font-size="12" text-anchor="middle">Model Complexity</text>`;
+  html+=`<text x="14" y="${H/2}" fill="#94a3b8" font-size="12" text-anchor="middle" transform="rotate(-90,14,${H/2})">Error</text>`;
+
+  // Zone backgrounds
+  html+=`<rect x="${sx(0)}" y="${pad.t}" width="${sx(5)-sx(0)}" height="${H-pad.t-pad.b}" fill="#2d1515" opacity="0.3" clip-path="url(#bvclip)"/>`;
+  html+=`<rect x="${sx(12)}" y="${pad.t}" width="${sx(20)-sx(12)}" height="${H-pad.t-pad.b}" fill="#1a2d1a" opacity="0.3" clip-path="url(#bvclip)"/>`;
+  html+=`<text x="${sx(2.5)}" y="${pad.t+16}" fill="#f87171" font-size="11" text-anchor="middle">Underfitting</text>`;
+  html+=`<text x="${sx(8)}" y="${pad.t+16}" fill="#86efac" font-size="11" text-anchor="middle">Sweet Spot</text>`;
+  html+=`<text x="${sx(16)}" y="${pad.t+16}" fill="#fbbf24" font-size="11" text-anchor="middle">Overfitting</text>`;
+
+  // Curves
+  function makeTrainErr(c){return Math.max(1,20-c*0.9-overfitBonus*5)}
+  function makeValErr(c){
+    return c<5?(35-c*2):c<12?(15+c*0.4-overfitBonus*8):(20+c*1.5-overfitBonus*15);
+  }
+  let trainPath='',valPath='';
+  for(let c=0;c<=20;c+=0.5){
+    const te=makeTrainErr(c),ve=Math.max(makeTrainErr(c),makeValErr(c));
+    trainPath+=(c===0?'M':'L')+sx(c).toFixed(1)+','+sy(te).toFixed(1);
+    valPath+=(c===0?'M':'L')+sx(c).toFixed(1)+','+sy(ve).toFixed(1);
+  }
+  html+=`<path d="${trainPath}" fill="none" stroke="#86efac" stroke-width="2.5" clip-path="url(#bvclip)"/>`;
+  html+=`<path d="${valPath}" fill="none" stroke="#7dd3fc" stroke-width="2.5" clip-path="url(#bvclip)"/>`;
+
+  // Current complexity marker
+  const cx=sx(comp);
+  const cte=makeTrainErr(comp),cve=Math.max(makeTrainErr(comp),makeValErr(comp));
+  html+=`<line x1="${cx}" y1="${pad.t}" x2="${cx}" y2="${H-pad.b}" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,3"/>`;
+  html+=`<circle cx="${cx}" cy="${sy(cte)}" r="6" fill="#86efac" stroke="#0f1117" stroke-width="2"/>`;
+  html+=`<circle cx="${cx}" cy="${sy(cve)}" r="6" fill="#7dd3fc" stroke="#0f1117" stroke-width="2"/>`;
+
+  // Legend
+  html+=`<circle cx="${W-120}" cy="${pad.t+8}" r="5" fill="#86efac"/>`;
+  html+=`<text x="${W-112}" y="${pad.t+12}" fill="#86efac" font-size="11">Train Error</text>`;
+  html+=`<circle cx="${W-120}" cy="${pad.t+24}" r="5" fill="#7dd3fc"/>`;
+  html+=`<text x="${W-112}" y="${pad.t+28}" fill="#7dd3fc" font-size="11">Val Error</text>`;
+
+  svg.innerHTML=html;
+}
+
+updateBV();
+
+// ============ TAB 3: GRADIENT BOOSTING ============
+let gbStep=0,gbPlaying=false,gbTimer=null;
+const gbTotalSteps=5;
+
+// Generate 1D data
+const gbX=[];const gbY=[];
+for(let i=0;i<20;i++){
+  gbX.push(i*20+10+Math.sin(i)*15);
+  gbY.push(50+Math.sin(i*0.5)*80+Math.random()*20-10);
+}
+const gbMean=gbY.reduce((a,b)=>a+b,0)/gbY.length;
+
+function gbPredictions(step,lr){
+  const preds=gbY.map(()=>gbMean);
+  const trees=[
+    (x)=>x<200?15:-10,
+    (x)=>x<150?-8:x<300?12:-5,
+    (x)=>x<100?5:x<250?-6:8,
+    (x)=>x<180?-4:x<320?7:-3,
+  ];
+  for(let s=0;s<step&&s<trees.length;s++){
+    gbX.forEach((x,i)=>preds[i]+=lr*trees[s](x));
+  }
+  return preds;
+}
+
+const gbInsights=[
+  'Step 0: Initial prediction is just the mean of all target values. This is the baseline model F₀(x).',
+  'Step 1: Compute residuals = y - F₀(x). Fit a weak tree on residuals. Add to ensemble with learning rate η.',
+  'Step 2: New residuals are smaller. Each tree corrects the previous ensemble\'s mistakes.',
+  'Step 3: Residuals keep shrinking. The ensemble gradually fits the signal while η controls how aggressively.',
+  'Step 4: Final ensemble combines all weak learners. Smaller η means more trees needed but better generalization.',
+];
+const gbFormulas=[
+  'F₀(x) = ȳ (mean of targets)',
+  'F₁(x) = F₀(x) + η·h₁(x)\nwhere h₁ fits residuals: rᵢ = yᵢ - F₀(xᵢ)',
+  'F₂(x) = F₁(x) + η·h₂(x)\nresiduals: rᵢ = yᵢ - F₁(xᵢ)',
+  'F₃(x) = F₂(x) + η·h₃(x)',
+  'F₄(x) = F₃(x) + η·h₄(x)\nFinal: Fₜ(x) = Σₜ η·hₜ(x)',
+];
+
+function updateGBDisplay(){
+  const lrRaw=parseInt(document.getElementById('lrSlider').value)/10;
+  document.getElementById('lrVal').textContent=lrRaw.toFixed(1);
+  renderGB();
+}
+
+function renderGB(){
+  const lr=parseInt(document.getElementById('lrSlider').value)/10;
+  const preds=gbPredictions(gbStep,lr);
+  const svg=document.getElementById('gbChart');
+  const W=450,H=280,pad={l:45,r:20,t:20,b:35};
+  const allX=gbX,allY=gbY;
+  const xMin=0,xMax=420;
+  const yMin=0,yMax=250;
+  const sx=x=>(x-xMin)/(xMax-xMin)*(W-pad.l-pad.r)+pad.l;
+  const sy=y=>H-pad.b-(y-yMin)/(yMax-yMin)*(H-pad.t-pad.b);
+
+  let html='';
+  // Grid
+  for(let i=0;i<=5;i++){
+    const y=sy(i*50);
+    html+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="#2d3147" stroke-width="1"/>`;
+    html+=`<text x="${pad.l-4}" y="${y+4}" fill="#64748b" font-size="10" text-anchor="end">${i*50}</text>`;
+  }
+
+  // Data points
+  gbX.forEach((x,i)=>{
+    html+=`<circle cx="${sx(x)}" cy="${sy(gbY[i])}" r="5" fill="#fbbf24" stroke="#0f1117" stroke-width="1.5"/>`;
+  });
+
+  // Prediction line
+  let predPath='';
+  const sortIdx=[...Array(gbX.length).keys()].sort((a,b)=>gbX[a]-gbX[b]);
+  sortIdx.forEach((i,j)=>{
+    predPath+=(j===0?'M':'L')+sx(gbX[i]).toFixed(1)+','+sy(preds[i]).toFixed(1);
+  });
+  html+=`<path d="${predPath}" fill="none" stroke="#7dd3fc" stroke-width="2.5"/>`;
+
+  // Mean line (step 0)
+  html+=`<line x1="${pad.l}" y1="${sy(gbMean)}" x2="${W-pad.r}" y2="${sy(gbMean)}" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3"/>`;
+  html+=`<text x="${W-pad.r-2}" y="${sy(gbMean)-4}" fill="#64748b" font-size="10" text-anchor="end">ȳ=${gbMean.toFixed(0)}</text>`;
+
+  // Residuals (red bars)
+  if(gbStep>0){
+    gbX.forEach((x,i)=>{
+      const py=sy(preds[i]),ry=sy(gbY[i]);
+      html+=`<line x1="${sx(x)}" y1="${Math.min(py,ry)}" x2="${sx(x)}" y2="${Math.max(py,ry)}" stroke="#f87171" stroke-width="2" opacity="0.7"/>`;
+    });
+  }
+
+  // Legend
+  html+=`<circle cx="${pad.l+5}" cy="${pad.t+8}" r="4" fill="#fbbf24"/><text x="${pad.l+14}" y="${pad.t+12}" fill="#fbbf24" font-size="10">y (truth)</text>`;
+  html+=`<line x1="${pad.l+70}" y1="${pad.t+8}" x2="${pad.l+82}" y2="${pad.t+8}" stroke="#7dd3fc" stroke-width="2.5"/><text x="${pad.l+86}" y="${pad.t+12}" fill="#7dd3fc" font-size="10">F_t(x)</text>`;
+  if(gbStep>0) html+=`<line x1="${pad.l+130}" y1="${pad.t+4}" x2="${pad.l+130}" y2="${pad.t+12}" stroke="#f87171" stroke-width="2"/><text x="${pad.l+135}" y="${pad.t+12}" fill="#f87171" font-size="10">residuals</text>`;
+
+  html+=`<text x="${W/2}" y="${H-5}" fill="#94a3b8" font-size="11" text-anchor="middle">x</text>`;
+  svg.innerHTML=html;
+
+  document.getElementById('gbFormula').textContent=gbFormulas[gbStep];
+  document.getElementById('gbInsight').textContent=gbInsights[gbStep];
+
+  const mse=gbY.reduce((s,y,i)=>s+(y-preds[i])**2,0)/gbY.length;
+  document.getElementById('gbProgress').innerHTML=
+    `Step: ${gbStep} / ${gbTotalSteps-1}<br>MSE: ${mse.toFixed(1)}<br>Trees added: ${gbStep}<br>η = ${lr.toFixed(1)}`;
+
+  // Step dots
+  const ind=document.getElementById('stepIndicator');
+  ind.innerHTML='';
+  for(let s=0;s<gbTotalSteps;s++){
+    const d=document.createElement('div');
+    d.className='step-dot'+(s===gbStep?' active':s<gbStep?' done':'');
+    d.textContent=s;
+    d.onclick=(()=>{const ss=s;return()=>{gbStep=ss;renderGB();}})();
+    ind.appendChild(d);
+  }
+}
+
+function gbNext(){if(gbStep<gbTotalSteps-1){gbStep++;renderGB()}}
+function gbPrev(){if(gbStep>0){gbStep--;renderGB()}}
+function gbReset(){gbStep=0;gbPlaying=false;clearInterval(gbTimer);document.getElementById('gbPlayBtn').textContent='▶ Play';renderGB()}
+function gbTogglePlay(){
+  gbPlaying=!gbPlaying;
+  document.getElementById('gbPlayBtn').textContent=gbPlaying?'⏸ Pause':'▶ Play';
+  if(gbPlaying){
+    gbTimer=setInterval(()=>{
+      const speed=6-parseInt(document.getElementById('speedSlider').value);
+      if(gbStep<gbTotalSteps-1){gbStep++;renderGB()}
+      else{gbPlaying=false;clearInterval(gbTimer);document.getElementById('gbPlayBtn').textContent='▶ Play'}
+    },speed*400);
+  } else clearInterval(gbTimer);
+}
+
+renderGB();
+
+// ============ TAB 4: LINEAR vs LOGISTIC ============
+let linPoints=[];
+for(let i=0;i<16;i++){linPoints.push({x:20+i*17,y:30+i*9+Math.sin(i)*15,drag:false})}
+
+function addLinRegPoint(){
+  linPoints.push({x:20+Math.random()*260,y:20+Math.random()*180});
+  updateRegression();
+}
+function resetLinReg(){
+  linPoints=[];
+  for(let i=0;i<16;i++){linPoints.push({x:20+i*17,y:30+i*9+Math.sin(i)*15})}
+  updateRegression();
+}
+
+function ols(pts){
+  const n=pts.length;
+  const mx=pts.reduce((s,p)=>s+p.x,0)/n;
+  const my=pts.reduce((s,p)=>s+p.y,0)/n;
+  const num=pts.reduce((s,p)=>s+(p.x-mx)*(p.y-my),0);
+  const den=pts.reduce((s,p)=>s+(p.x-mx)**2,0);
+  const m=den?num/den:0;
+  const b=my-m*mx;
+  return{m,b};
+}
+
+function sigmoid(z){return 1/(1+Math.exp(-z))}
+
+function updateRegression(){
+  const thresh=parseInt(document.getElementById('threshSlider').value)/100;
+  document.getElementById('threshVal').textContent=thresh.toFixed(2);
+  drawLinear();
+  drawLogistic(thresh);
+  drawLossSurfaces();
+}
+
+function drawLinear(){
+  const svg=document.getElementById('linChart');
+  const {m,b}=ols(linPoints);
+  const W=300,H=220,pad=25;
+  let html='';
+  for(let i=0;i<=4;i++){
+    html+=`<line x1="${pad}" y1="${pad+i*(H-2*pad)/4}" x2="${W-pad}" y2="${pad+i*(H-2*pad)/4}" stroke="#2d3147" stroke-width="0.8"/>`;
+    html+=`<line x1="${pad+i*(W-2*pad)/4}" y1="${pad}" x2="${pad+i*(W-2*pad)/4}" y2="${H-pad}" stroke="#2d3147" stroke-width="0.8"/>`;
+  }
+  // Regression line
+  const x0=0,x1=280;
+  const y0=m*x0+b,y1=m*x1+b;
+  html+=`<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="#86efac" stroke-width="2" clip-path="url(#linclip)"/>`;
+  html+=`<defs><clipPath id="linclip"><rect x="${pad}" y="${pad}" width="${W-2*pad}" height="${H-2*pad}"/></clipPath></defs>`;
+  // Residuals
+  linPoints.forEach(p=>{
+    const py=m*p.x+b;
+    html+=`<line x1="${p.x}" y1="${p.y}" x2="${p.x}" y2="${py}" stroke="#f87171" stroke-width="1" opacity="0.4"/>`;
+    html+=`<circle cx="${p.x}" cy="${p.y}" r="4" fill="#7dd3fc" stroke="#0f1117" stroke-width="1.2"/>`;
+  });
+  svg.innerHTML=html;
+}
+
+function drawLogistic(thresh){
+  const svg=document.getElementById('logChart');
+  const W=300,H=220,pad=25;
+  const pts=linPoints.map((p,i)=>({x:p.x,y:i>7?1:0}));
+  let html='';
+  // Sigmoid curve
+  let path='';
+  for(let x=0;x<=W;x+=2){
+    const z=(x-W/2)*0.04;
+    const p=sigmoid(z);
+    const cy=H-pad-(p)*(H-2*pad);
+    path+=(x===0?'M':'L')+x+','+cy.toFixed(1);
+  }
+  html+=`<defs><clipPath id="logclip"><rect x="${pad}" y="${pad}" width="${W-2*pad}" height="${H-2*pad}"/></clipPath></defs>`;
+  html+=`<path d="${path}" fill="none" stroke="#7dd3fc" stroke-width="2.5" clip-path="url(#logclip)"/>`;
+  // Threshold line
+  const ty=H-pad-thresh*(H-2*pad);
+  html+=`<line x1="${pad}" y1="${ty}" x2="${W-pad}" y2="${ty}" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+  html+=`<text x="${W-pad+2}" y="${ty+4}" fill="#fbbf24" font-size="10">θ=${thresh.toFixed(2)}</text>`;
+  // Points
+  pts.forEach(p=>{
+    const fill=p.y===1?'#86efac':'#f87171';
+    html+=`<circle cx="${p.x}" cy="${p.y===1?pad+10:H-pad-10}" r="4" fill="${fill}" stroke="#0f1117" stroke-width="1.2"/>`;
+  });
+  // Labels
+  html+=`<text x="${pad+4}" y="${H-pad-4}" fill="#f87171" font-size="10">Class 0</text>`;
+  html+=`<text x="${pad+4}" y="${pad+14}" fill="#86efac" font-size="10">Class 1</text>`;
+  svg.innerHTML=html;
+}
+
+function drawLossSurfaces(){
+  // MSE loss (parabola)
+  const linSvg=document.getElementById('lossLinChart');
+  const W=300,H=120,pad=20;
+  let html='';
+  let path='';
+  for(let i=0;i<=W;i+=2){
+    const w=(i/W*4-2);
+    const loss=w*w*0.8+0.1;
+    const y=H-pad-(loss/3.5)*(H-2*pad);
+    path+=(i===0?'M':'L')+i+','+y.toFixed(1);
+  }
+  html+=`<path d="${path}" fill="none" stroke="#86efac" stroke-width="2"/>`;
+  html+=`<text x="${W/2}" y="${H-2}" fill="#94a3b8" font-size="10" text-anchor="middle">weight w</text>`;
+  html+=`<text x="${W/2}" y="14" fill="#86efac" font-size="10" text-anchor="middle">MSE Loss (convex ✓)</text>`;
+  html+=`<circle cx="${W/2}" cy="${H-pad-0.1/3.5*(H-2*pad)}" r="4" fill="#fbbf24"/>`;
+  linSvg.innerHTML=html;
+
+  // Log loss
+  const logSvg=document.getElementById('lossLogChart');
+  let lpath='';
+  for(let i=2;i<W;i+=2){
+    const p=i/W;
+    const loss=-Math.log(p+0.001)*0.3;
+    const y=H-pad-(Math.min(loss,3.5)/3.5)*(H-2*pad);
+    lpath+=(i===2?'M':'L')+i+','+y.toFixed(1);
+  }
+  let html2=`<path d="${lpath}" fill="none" stroke="#7dd3fc" stroke-width="2"/>`;
+  html2+=`<text x="${W/2}" y="${H-2}" fill="#94a3b8" font-size="10" text-anchor="middle">predicted probability</text>`;
+  html2+=`<text x="${W/2}" y="14" fill="#7dd3fc" font-size="10" text-anchor="middle">Log-Loss −log(p) (convex ✓)</text>`;
+  logSvg.innerHTML=html2;
+}
+
+updateRegression();
+
+// ============ TAB 5: SVM MARGIN ============
+let svmKernel='linear';
+
+// Fixed points (linearly separable)
+const svmPts=[
+  {x:80,y:120,cls:0},{x:100,y:160,cls:0},{x:120,y:100,cls:0},{x:90,y:200,cls:0},{x:140,y:140,cls:0},{x:70,y:80,cls:0},
+  {x:260,y:180,cls:1},{x:280,y:120,cls:1},{x:300,y:200,cls:1},{x:250,y:240,cls:1},{x:320,y:150,cls:1},{x:270,y:80,cls:1},
+];
+// Non-linear (circle) points
+const svmPtsNL=[
+  {x:170,y:160,cls:1},{x:200,y:140,cls:1},{x:180,y:190,cls:1},{x:210,y:180,cls:1},{x:160,y:140,cls:1},
+  {x:60,y:60,cls:0},{x:100,y:40,cls:0},{x:300,y:80,cls:0},{x:320,y:200,cls:0},{x:290,y:280,cls:0},
+  {x:130,y:280,cls:0},{x:50,y:200,cls:0},{x:180,y:30,cls:0},{x:350,y:160,cls:0},
+];
+
+function setKernel(k){
+  svmKernel=k;
+  document.getElementById('btnLinSVM').classList.toggle('active',k==='linear');
+  document.getElementById('btnRbfSVM').classList.toggle('active',k==='rbf');
+  document.getElementById('gammaCtrl').style.display=k==='rbf'?'flex':'none';
+  updateSVM();
+}
+
+function updateSVM(){
+  const C=parseInt(document.getElementById('cSlider').value);
+  document.getElementById('cVal').textContent=C;
+  if(document.getElementById('gammaSlider')){
+    const g=parseInt(document.getElementById('gammaSlider').value)/10;
+    document.getElementById('gammaVal').textContent=g.toFixed(1);
+  }
+  const margin=svmKernel==='linear'?Math.max(15,80-C*3):40+C*2;
+  const pct=Math.max(5,Math.min(95,(margin/80)*100));
+  document.getElementById('svmMarginFill').style.width=pct+'%';
+  document.getElementById('svmMarginVal').textContent='Margin = '+(margin).toFixed(0)+'px (relative)';
+
+  const insightMap={
+    linear:`C = ${C} → ${C>12?'Narrow margin, low tolerance for misclassification (Hard SVM)':'Wide margin, allows some misclassification (Soft SVM)'}`,
+    rbf:`RBF kernel with γ = ${(document.getElementById('gammaSlider')?parseInt(document.getElementById('gammaSlider').value)/10:0.5).toFixed(1)} → ${document.getElementById('gammaSlider')&&parseInt(document.getElementById('gammaSlider').value)>10?'Small γ: smooth boundary, each point has wide influence':'Large γ: wiggly boundary, overfitting risk'}`
+  };
+  document.getElementById('svmInsight').textContent=insightMap[svmKernel];
+  document.getElementById('svmFormula').textContent=svmKernel==='linear'
+    ?'Decision boundary: w·x + b = 0\nMargin boundaries: w·x + b = ±1\nMargin width: 2 / ||w||\nObjective: min ||w||² s.t. yᵢ(w·xᵢ+b) ≥ 1'
+    :'K(xᵢ,xⱼ) = exp(−γ||xᵢ − xⱼ||²)\nγ controls influence radius of support vectors\nLarge γ = sharp, local boundary\nSmall γ = smooth, global boundary';
+  drawSVM(C);
+}
+
+function drawSVM(C){
+  const svg=document.getElementById('svmChart');
+  const W=420,H=340,pad=20;
+  const pts=svmKernel==='rbf'?svmPtsNL:svmPts;
+  const margin=svmKernel==='linear'?Math.max(12,60-C*2.5):35+C*1.5;
+  let html='';
+
+  if(svmKernel==='linear'){
+    // Decision boundary + margin
+    const midX=W/2-10, slope=-0.25;
+    function lineY(x,offset){return H/2+slope*(x-midX)+offset}
+    // Margin fill
+    let marginFill='';
+    for(let x=pad;x<=W-pad;x+=4){
+      const y1=lineY(x,-margin),y2=lineY(x,+margin);
+      marginFill+=`<line x1="${x}" y1="${y1.toFixed(0)}" x2="${x}" y2="${y2.toFixed(0)}" stroke="#a78bfa" stroke-width="4" opacity="0.08"/>`;
+    }
+    html+=marginFill;
+    // Margin lines
+    let dbPath='',m1Path='',m2Path='';
+    for(let x=pad;x<=W-pad;x+=10){
+      dbPath+=(x===pad?'M':'L')+x+','+lineY(x,0).toFixed(1);
+      m1Path+=(x===pad?'M':'L')+x+','+lineY(x,-margin).toFixed(1);
+      m2Path+=(x===pad?'M':'L')+x+','+lineY(x,+margin).toFixed(1);
+    }
+    html+=`<path d="${m1Path}" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="6,4"/>`;
+    html+=`<path d="${m2Path}" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="6,4"/>`;
+    html+=`<path d="${dbPath}" fill="none" stroke="#fbbf24" stroke-width="2"/>`;
+    // Labels
+    html+=`<text x="${W-50}" y="${lineY(W-50,0)-8}" fill="#fbbf24" font-size="11">w·x+b=0</text>`;
+    html+=`<text x="${W-70}" y="${lineY(W-70,-margin)-5}" fill="#a78bfa" font-size="10">w·x+b=+1</text>`;
+    html+=`<text x="${W-70}" y="${lineY(W-70,+margin)+14}" fill="#a78bfa" font-size="10">w·x+b=−1</text>`;
+    // Margin width arrow
+    const mx=W-80;
+    html+=`<line x1="${mx}" y1="${lineY(mx,-margin)}" x2="${mx}" y2="${lineY(mx,+margin)}" stroke="#a78bfa" stroke-width="1.5"/>`;
+    html+=`<text x="${mx+5}" y="${H/2}" fill="#a78bfa" font-size="10">2/||w||</text>`;
+  } else {
+    // RBF: draw circular boundary
+    const gamma=document.getElementById('gammaSlider')?parseInt(document.getElementById('gammaSlider').value)/10:0.5;
+    const radius=70+C*2-gamma*5;
+    html+=`<circle cx="${W/2}" cy="${H/2}" r="${radius}" fill="none" stroke="#fbbf24" stroke-width="2"/>`;
+    html+=`<circle cx="${W/2}" cy="${H/2}" r="${radius+margin*0.3}" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="5,4"/>`;
+    html+=`<circle cx="${W/2}" cy="${H/2}" r="${radius-margin*0.3}" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="5,4"/>`;
+    html+=`<text x="${W/2}" y="${H/2-radius-8}" fill="#fbbf24" font-size="11" text-anchor="middle">RBF Boundary (γ=${gamma.toFixed(1)})</text>`;
+  }
+
+  // Points
+  pts.forEach((p,i)=>{
+    const isSV=svmKernel==='linear'&&((p.cls===0&&p.x>140&&p.x<200)||(p.cls===1&&p.x>200&&p.x<260));
+    const fill=p.cls===0?'#7dd3fc':'#f87171';
+    html+=`<circle cx="${p.x}" cy="${p.y}" r="${isSV?7:4}" fill="${fill}" stroke="${isSV?'#fbbf24':'#0f1117'}" stroke-width="${isSV?2:1.2}" opacity="0.9"/>`;
+    if(isSV) html+=`<text x="${p.x}" y="${p.y-10}" fill="#fbbf24" font-size="9" text-anchor="middle">SV</text>`;
+  });
+
+  // Legend
+  html+=`<circle cx="${pad+6}" cy="${pad+8}" r="4" fill="#7dd3fc"/><text x="${pad+14}" y="${pad+12}" fill="#7dd3fc" font-size="11">Class 0</text>`;
+  html+=`<circle cx="${pad+6}" cy="${pad+22}" r="4" fill="#f87171"/><text x="${pad+14}" y="${pad+26}" fill="#f87171" font-size="11">Class 1</text>`;
+  html+=`<circle cx="${pad+6}" cy="${pad+36}" r="5" fill="#7dd3fc" stroke="#fbbf24" stroke-width="2"/><text x="${pad+14}" y="${pad+40}" fill="#fbbf24" font-size="11">Support Vector</text>`;
+  html+=`<line x1="${pad+4}" y1="${pad+52}" x2="${pad+16}" y2="${pad+52}" stroke="#fbbf24" stroke-width="2"/><text x="${pad+20}" y="${pad+56}" fill="#fbbf24" font-size="11">Hyperplane</text>`;
+  html+=`<line x1="${pad+4}" y1="${pad+66}" x2="${pad+16}" y2="${pad+66}" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="4,3"/><text x="${pad+20}" y="${pad+70}" fill="#a78bfa" font-size="11">Margin</text>`;
+
+  svg.innerHTML=html;
+}
+
+updateSVM();
+</script>
+
+
+<style>
+/* ── Chapter sidenav ── */
+.chap-sidenav {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 8888;
+}
+.chap-sidenav-toggle {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  color: #7dd3fc;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px #00000060;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+.chap-sidenav-toggle:hover { background: #0369a1; border-color: #7dd3fc; }
+.chap-sidenav-menu {
+  position: absolute;
+  bottom: 52px;
+  right: 0;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  border-radius: 14px;
+  padding: 10px 6px;
+  min-width: 220px;
+  max-height: 70vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 40px #00000080;
+  display: none;
+  scrollbar-width: thin;
+  scrollbar-color: #2d3147 transparent;
+}
+.chap-sidenav-menu.open { display: block; }
+.chap-sidenav-menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #94a3b8;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.chap-sidenav-menu a:hover { background: #0f172a; color: #e2e8f0; }
+.chap-sidenav-menu a.current { background: #0369a133; color: #7dd3fc; font-weight: 600; }
+.chap-sidenav-menu .chap-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #4b5563;
+  min-width: 28px;
+}
+.chap-sidenav-menu .menu-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #4b5563;
+  padding: 4px 12px 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+@media (max-width: 480px) {
+  .chap-sidenav { bottom: 12px; right: 12px; }
+  .chap-sidenav-menu { right: 0; min-width: 180px; }
+}
+</style>
+
+<div class="chap-sidenav">
+  <div class="chap-sidenav-menu" id="chapMenu">
+    <div class="menu-header">ML Field Guide</div>
+      <a href="ch01_math_foundations.html"><span class="chap-num">Ch 01</span>Math Foundations</a>
+      <a href="ch02_statistics.html"><span class="chap-num">Ch 02</span>Statistics</a>
+      <a href="ch03_python.html"><span class="chap-num">Ch 03</span>Python for ML</a>
+      <a href="ch04_feature_engineering.html"><span class="chap-num">Ch 04</span>Feature Engineering</a>
+      <a href="ch05_supervised_learning.html" class="current"><span class="chap-num">Ch 05</span>Supervised Learning</a>
+      <a href="ch06_model_evaluation.html"><span class="chap-num">Ch 06</span>Model Evaluation</a>
+      <a href="ch07_unsupervised.html"><span class="chap-num">Ch 07</span>Unsupervised Learning</a>
+      <a href="ch08_recommendations.html"><span class="chap-num">Ch 08</span>Recommendations</a>
+      <a href="ch09_neural_networks.html"><span class="chap-num">Ch 09a</span>Neural Networks</a>
+      <a href="ch09_cnn_architectures.html"><span class="chap-num">Ch 09b</span>CNN Architectures</a>
+      <a href="ch10_nlp_transformers.html"><span class="chap-num">Ch 10</span>NLP & Transformers</a>
+      <a href="ch11_reinforcement_learning.html"><span class="chap-num">Ch 11</span>Reinforcement Learning</a>
+      <a href="ch12_time_series.html"><span class="chap-num">Ch 12</span>Time Series</a>
+      <a href="ch13_sql.html"><span class="chap-num">Ch 13</span>SQL for ML</a>
+      <a href="ch14_big_data.html"><span class="chap-num">Ch 14</span>Big Data</a>
+      <a href="ch15_mlops.html"><span class="chap-num">Ch 15</span>MLOps</a>
+      <a href="ch16_aws.html"><span class="chap-num">Ch 16</span>AWS for ML</a>
+      <a href="ch17_responsible_ai.html"><span class="chap-num">Ch 17</span>Responsible AI</a>
+      <a href="ch18_interview_prep.html"><span class="chap-num">Ch 18</span>Interview Prep</a>
+  </div>
+  <button class="chap-sidenav-toggle" onclick="document.getElementById('chapMenu').classList.toggle('open')" title="Chapter navigation">☰</button>
+</div>
+
+</body>
+</html>

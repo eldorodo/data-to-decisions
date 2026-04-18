@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Python for ML: Big-O complexity, data structures, NumPy, pandas, and sklearn interactive demos.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 3 · Python for ML — The ML Field Guide</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0f1117;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;padding:20px}
+h1{text-align:center;color:#7dd3fc;font-size:1.6rem;margin-bottom:6px;letter-spacing:.5px}
+.subtitle{text-align:center;color:#94a3b8;font-size:.9rem;margin-bottom:20px}
+.tabs{display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid #2d3147;padding-bottom:0}
+.tab{padding:10px 22px;border-radius:8px 8px 0 0;border:1px solid #2d3147;border-bottom:none;cursor:pointer;font-size:.9rem;color:#94a3b8;background:#1e2130;transition:all .2s;position:relative;top:1px}
+.tab.active{background:#1a1f2e;color:#7dd3fc;border-color:#7dd3fc;border-bottom-color:#1a1f2e}
+.tab:hover:not(.active){color:#e2e8f0;background:#252a3d}
+.panel{display:none;background:#1a1f2e;border:1px solid #2d3147;border-radius:0 12px 12px 12px;padding:24px}
+.panel.active{display:block}
+/* Big-O Tab */
+.chart-container{position:relative;width:100%}
+.controls-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;align-items:center}
+.toggle-btn{padding:6px 14px;border-radius:8px;border:1.5px solid;cursor:pointer;font-size:.82rem;font-weight:600;transition:all .2s;background:transparent}
+.toggle-btn.on{opacity:1}
+.toggle-btn.off{opacity:.35}
+.slider-row{display:flex;align-items:center;gap:12px;margin-bottom:16px;background:#1e2130;padding:12px 16px;border-radius:8px;border:1px solid #2d3147}
+label{color:#94a3b8;font-size:.85rem;white-space:nowrap}
+input[type=range]{accent-color:#7dd3fc;flex:1;cursor:pointer}
+.val-badge{background:#0f172a;color:#7dd3fc;padding:4px 10px;border-radius:6px;font-size:.85rem;font-weight:700;min-width:60px;text-align:center}
+svg{width:100%;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.legend-item{display:flex;align-items:center;gap:6px;background:#1e2130;border:1px solid #2d3147;border-radius:8px;padding:6px 12px;font-size:.82rem}
+.legend-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.grade{font-size:.75rem;margin-left:4px}
+.cmp-table{width:100%;border-collapse:collapse;margin-top:16px;font-size:.85rem}
+.cmp-table th{background:#252a3d;color:#7dd3fc;padding:8px 12px;text-align:left;border:1px solid #2d3147}
+.cmp-table td{padding:7px 12px;border:1px solid #2d3147;color:#e2e8f0}
+.cmp-table tr:nth-child(even) td{background:#1e2130}
+/* DS Tab */
+.ds-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:700px){.ds-grid{grid-template-columns:repeat(2,1fr)}}
+.ds-card{background:#1e2130;border:2px solid #2d3147;border-radius:12px;padding:14px;cursor:pointer;transition:all .2s}
+.ds-card:hover,.ds-card.selected{border-color:#7dd3fc;background:#252a3d}
+.ds-card h3{color:#7dd3fc;font-size:.95rem;margin-bottom:8px}
+.op-bars{display:flex;flex-direction:column;gap:4px}
+.op-bar-row{display:flex;align-items:center;gap:8px;font-size:.78rem}
+.op-label{width:62px;color:#94a3b8;flex-shrink:0}
+.bar-bg{flex:1;height:8px;background:#0f172a;border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .5s}
+.ds-detail{background:#252a3d;border:1px solid #7dd3fc;border-radius:12px;padding:18px;margin-bottom:20px;display:none}
+.ds-detail.show{display:block}
+.mem-viz{display:flex;align-items:center;gap:4px;margin:10px 0;flex-wrap:wrap}
+.mem-box{background:#0f172a;border:1.5px solid #7dd3fc;border-radius:6px;padding:6px 10px;font-size:.8rem;color:#7dd3fc;font-weight:600}
+.mem-arrow{color:#7dd3fc;font-size:1.1rem}
+.ops-table{width:100%;border-collapse:collapse;font-size:.83rem;margin-top:10px}
+.ops-table th{background:#1e2130;color:#86efac;padding:7px 10px;border:1px solid #2d3147;text-align:center}
+.ops-table td{padding:6px 10px;border:1px solid #2d3147;text-align:center;color:#e2e8f0}
+/* Wizard */
+.wizard{background:#1e2130;border:1px solid #2d3147;border-radius:12px;padding:18px;margin-top:20px}
+.wizard h3{color:#fbbf24;margin-bottom:14px;font-size:1rem}
+.q-step{display:none}
+.q-step.active{display:block}
+.q-title{color:#e2e8f0;margin-bottom:10px;font-size:.9rem}
+.q-btn{padding:8px 16px;border-radius:8px;border:1px solid #2d3147;background:#252a3d;color:#e2e8f0;cursor:pointer;font-size:.85rem;margin:4px;transition:all .2s}
+.q-btn:hover{border-color:#7dd3fc;color:#7dd3fc}
+.recommendation{background:#0f172a;border:1px solid #86efac;border-radius:10px;padding:14px;color:#86efac;font-size:.9rem;display:none;margin-top:10px}
+/* Pandas Tab */
+.pd-container{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
+.df-box{background:#1e2130;border:1px solid #2d3147;border-radius:10px;padding:14px;flex:1;min-width:200px}
+.df-box h4{color:#94a3b8;font-size:.8rem;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.df-table{border-collapse:collapse;font-size:.82rem;width:100%}
+.df-table th{background:#252a3d;color:#7dd3fc;padding:6px 10px;border:1px solid #2d3147}
+.df-table td{padding:5px 10px;border:1px solid #2d3147;color:#e2e8f0}
+.df-table tr:nth-child(even) td{background:#0f172a}
+.arrow-box{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 10px;color:#7dd3fc;font-size:1.4rem;min-width:40px}
+.arrow-box .op-name{font-size:.72rem;color:#94a3b8;text-align:center;margin-top:4px}
+.ops-btns{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.op-btn{padding:8px 18px;border-radius:8px;border:1.5px solid #2d3147;background:#1e2130;color:#e2e8f0;cursor:pointer;font-size:.85rem;font-weight:600;transition:all .2s}
+.op-btn:hover,.op-btn.active{border-color:#7dd3fc;color:#7dd3fc;background:#252a3d}
+.code-box{background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:12px 16px;font-family:'Courier New',monospace;font-size:.83rem;color:#86efac;margin:14px 0;white-space:pre-wrap}
+.insight-box{background:#0f172a;border-left:3px solid #fbbf24;border-radius:0 8px 8px 0;padding:12px 16px;margin:10px 0;font-size:.85rem;color:#fbbf24}
+.pitfalls{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}
+@media(max-width:600px){.pitfalls{grid-template-columns:1fr}}
+.pitfall-card{background:#1e2130;border:1px solid #f87171;border-radius:10px;padding:14px}
+.pitfall-card h4{color:#f87171;margin-bottom:8px;font-size:.9rem}
+.pitfall-card p{color:#94a3b8;font-size:.82rem;line-height:1.5}
+.highlight{background:#2d1515;border-radius:4px;padding:1px 4px;color:#f87171;font-family:monospace;font-size:.85em}
+
+  /* ── Shared improvements ── */
+  body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important; }
+  code, pre, .code-block, .formula, .mono, [style*="monospace"], [style*="Courier"] { font-family: 'JetBrains Mono', 'Cascadia Code', 'Courier New', monospace !important; }
+
+  /* Smoother scrolling */
+  html { scroll-behavior: smooth; }
+
+  /* Focus ring for accessibility */
+  button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid #7dd3fc;
+    outline-offset: 2px;
+  }
+
+  /* Improve tab-nav overflow on small screens */
+  .tab-nav, .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .tab-nav::-webkit-scrollbar, .tabs::-webkit-scrollbar { display: none; }
+
+  /* Mobile responsive improvements */
+  @media (max-width: 768px) {
+    .page-header { padding: 24px 20px 18px !important; }
+    .tab-panel { padding: 20px !important; }
+    .tab-nav { padding: 16px 20px 0 !important; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
+    .grid2, .grid3 { grid-template-columns: 1fr !important; }
+    .page-title { font-size: 22px !important; }
+    h1 { font-size: 1.4rem !important; }
+  }
+  @media (max-width: 480px) {
+    body { padding: 0 0 40px 0 !important; }
+    .tab-btn { padding: 8px 14px !important; font-size: 12px !important; }
+    .btn { padding: 6px 12px !important; font-size: 12px !important; }
+  }
+
+  /* Better selection color */
+  ::selection { background: #1d4ed880; color: #e0f2fe; }
+
+  /* Smoother canvas rendering */
+  canvas { image-rendering: -webkit-optimize-contrast; }
+
+  /* Tooltip z-index fix */
+  .tooltip { z-index: 9999 !important; }
+
+  /* Code block horizontal scroll indicator */
+  .code-block { overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>Chapter 3: Python for ML</h1>
+<p class="subtitle">Interactive visualizations for algorithmic complexity, data structures, and data manipulation</p>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab(0)">Big-O Complexity</div>
+  <div class="tab" onclick="switchTab(1)">Data Structures</div>
+  <div class="tab" onclick="switchTab(2)">Pandas Operations</div>
+</div>
+
+<!-- TAB 1: Big-O Complexity Visualizer -->
+<div class="panel active" id="panel0">
+  <div class="controls-row" id="toggles"></div>
+  <div class="slider-row">
+    <label>Input size n =</label>
+    <input type="range" id="nSlider" min="1" max="1000" value="100" oninput="updateNLine()">
+    <div class="val-badge" id="nVal">100</div>
+  </div>
+  <div class="chart-container">
+    <svg id="bigOChart" viewBox="0 0 800 400" style="background:#1e2130;border:1px solid #2d3147;border-radius:12px"></svg>
+  </div>
+  <div class="legend" id="legend"></div>
+  <table class="cmp-table" id="cmpTable">
+    <thead><tr><th>Complexity</th><th>Example</th><th>At n=100</th><th>At n=1000</th><th>Grade</th></tr></thead>
+    <tbody id="cmpBody"></tbody>
+  </table>
+</div>
+
+<!-- TAB 2: Data Structures -->
+<div class="panel" id="panel1">
+  <div class="ds-grid" id="dsGrid"></div>
+  <div class="ds-detail" id="dsDetail">
+    <h3 id="dsDetailTitle" style="color:#7dd3fc;margin-bottom:10px"></h3>
+    <div id="dsMemViz"></div>
+    <table class="ops-table" id="dsOpsTable">
+      <thead><tr><th>Operation</th><th>Average</th><th>Worst</th><th>Approx ns</th></tr></thead>
+      <tbody id="dsOpsBody"></tbody>
+    </table>
+  </div>
+  <div class="wizard">
+    <h3>Which structure should I use?</h3>
+    <div class="q-step active" id="q0">
+      <div class="q-title">1. What's your primary need?</div>
+      <button class="q-btn" onclick="wizardAnswer(0,'order')">Maintain insertion order</button>
+      <button class="q-btn" onclick="wizardAnswer(0,'fast_lookup')">Fast key-based lookup</button>
+      <button class="q-btn" onclick="wizardAnswer(0,'unique')">Store unique items only</button>
+      <button class="q-btn" onclick="wizardAnswer(0,'priority')">Priority / sorted access</button>
+    </div>
+    <div class="q-step" id="q1">
+      <div class="q-title">2. Will you frequently add/remove from both ends?</div>
+      <button class="q-btn" onclick="wizardAnswer(1,'yes')">Yes, both ends</button>
+      <button class="q-btn" onclick="wizardAnswer(1,'no')">No, only one end / middle</button>
+    </div>
+    <div class="q-step" id="q2">
+      <div class="q-title">3. Is the data numeric or complex objects?</div>
+      <button class="q-btn" onclick="wizardAnswer(2,'numeric')">Numeric / homogeneous</button>
+      <button class="q-btn" onclick="wizardAnswer(2,'complex')">Mixed / complex objects</button>
+    </div>
+    <div class="recommendation" id="recommendation"></div>
+    <button class="q-btn" onclick="resetWizard()" style="margin-top:10px;border-color:#94a3b8;color:#94a3b8">Reset</button>
+  </div>
+</div>
+
+<!-- TAB 3: Pandas Operations -->
+<div class="panel" id="panel2">
+  <div class="ops-btns">
+    <button class="op-btn active" onclick="setPdOp('groupby')">groupby</button>
+    <button class="op-btn" onclick="setPdOp('merge')">merge</button>
+    <button class="op-btn" onclick="setPdOp('pivot')">pivot</button>
+    <button class="op-btn" onclick="setPdOp('apply')">apply</button>
+    <button class="op-btn" onclick="setPdOp('filter')">filter</button>
+  </div>
+  <div class="pd-container" id="pdContainer"></div>
+  <div class="code-box" id="pdCode"></div>
+  <div class="insight-box" id="pdInsight"></div>
+  <h3 style="color:#f87171;margin:20px 0 10px;font-size:1rem">Common Pitfalls</h3>
+  <div class="pitfalls">
+    <div class="pitfall-card">
+      <h4>Chained Indexing</h4>
+      <p>Using <span class="highlight">df['A']['B']</span> is ambiguous — pandas may work on a copy. Always use <span class="highlight">.loc[row, col]</span> for assignments to avoid silent bugs.</p>
+      <div class="code-box" style="font-size:.78rem;margin-top:8px">
+# Bad: chained indexing
+df['col1'][df['col1'] > 0] = 99  # may fail silently
+
+# Good: use .loc
+df.loc[df['col1'] > 0, 'col1'] = 99</div>
+    </div>
+    <div class="pitfall-card">
+      <h4>SettingWithCopyWarning</h4>
+      <p>Triggered when modifying a DataFrame that might be a slice. Call <span class="highlight">.copy()</span> explicitly when slicing to own your data.</p>
+      <div class="code-box" style="font-size:.78rem;margin-top:8px">
+# Triggers warning:
+subset = df[df['age'] > 30]
+subset['score'] = 0  # ⚠️ Warning!
+
+# Fix:
+subset = df[df['age'] > 30].copy()
+subset['score'] = 0  # OK</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================== TAB SWITCHING =====================
+function switchTab(i){
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
+  document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('active',i===j));
+}
+
+// ===================== TAB 1: BIG-O =====================
+const complexities=[
+  {id:'o1',   label:'O(1)',      ex:'Dictionary lookup',   color:'#86efac', grade:'🟢 Excellent', fn:n=>1},
+  {id:'ologn', label:'O(log n)', ex:'Binary search',       color:'#7dd3fc', grade:'🟢 Excellent', fn:n=>Math.log2(n)},
+  {id:'on',   label:'O(n)',      ex:'Linear scan',          color:'#fbbf24', grade:'🟡 Good',      fn:n=>n},
+  {id:'onlogn',label:'O(n log n)',ex:'Merge sort',          color:'#fb923c', grade:'🟠 Fair',      fn:n=>n*Math.log2(n)},
+  {id:'on2',  label:'O(n²)',     ex:'Bubble sort',          color:'#f87171', grade:'🔴 Bad',       fn:n=>n*n},
+  {id:'o2n',  label:'O(2ⁿ)',     ex:'Brute-force subsets', color:'#a78bfa', grade:'🔴 Terrible',  fn:n=>Math.pow(2,Math.min(n,30))},
+];
+const active=new Set(complexities.map(c=>c.id));
+
+function buildToggles(){
+  const cont=document.getElementById('toggles');
+  complexities.forEach(c=>{
+    const b=document.createElement('button');
+    b.className='toggle-btn on';
+    b.id='btn_'+c.id;
+    b.style.borderColor=c.color;
+    b.style.color=c.color;
+    b.textContent=c.label;
+    b.onclick=()=>{
+      if(active.has(c.id)){active.delete(c.id);b.classList.replace('on','off')}
+      else{active.add(c.id);b.classList.replace('off','on')}
+      drawBigO();
+    };
+    cont.appendChild(b);
+  });
+}
+
+function buildLegend(){
+  const cont=document.getElementById('legend');
+  cont.innerHTML='';
+  complexities.forEach(c=>{
+    const d=document.createElement('div');
+    d.className='legend-item';
+    d.innerHTML=`<div class="legend-dot" style="background:${c.color}"></div><span style="color:${c.color};font-weight:700">${c.label}</span><span style="color:#94a3b8">= ${c.ex}</span><span class="grade">${c.grade}</span>`;
+    cont.appendChild(d);
+  });
+}
+
+function drawBigO(){
+  const svg=document.getElementById('bigOChart');
+  const W=800,H=400,pad={l:65,r:20,t:20,b:50};
+  const nVal=parseInt(document.getElementById('nSlider').value);
+  const nMax=1000;
+  const opMax=Math.min(5000, nMax*Math.log2(nMax)*2);
+  const scaleX=n=>(n/nMax)*(W-pad.l-pad.r)+pad.l;
+  const scaleY=v=>H-pad.b-(Math.min(v,opMax)/opMax)*(H-pad.t-pad.b);
+
+  let html=`<defs><clipPath id="clip"><rect x="${pad.l}" y="${pad.t}" width="${W-pad.l-pad.r}" height="${H-pad.t-pad.b}"/></clipPath></defs>`;
+  // Grid lines
+  for(let i=0;i<=5;i++){
+    const y=scaleY(i*opMax/5);
+    const v=(i*opMax/5).toFixed(0);
+    html+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="#2d3147" stroke-width="1"/>`;
+    html+=`<text x="${pad.l-6}" y="${y+4}" fill="#64748b" font-size="11" text-anchor="end">${v>999?Math.round(v/1000)+'k':v}</text>`;
+  }
+  for(let i=0;i<=10;i++){
+    const x=scaleX(i*100);
+    html+=`<line x1="${x}" y1="${pad.t}" x2="${x}" y2="${H-pad.b}" stroke="#2d3147" stroke-width="1"/>`;
+    html+=`<text x="${x}" y="${H-pad.b+18}" fill="#64748b" font-size="11" text-anchor="middle">${i*100}</text>`;
+  }
+  // Axis labels
+  html+=`<text x="${W/2}" y="${H-4}" fill="#94a3b8" font-size="13" text-anchor="middle">Input size (n)</text>`;
+  html+=`<text x="16" y="${H/2}" fill="#94a3b8" font-size="13" text-anchor="middle" transform="rotate(-90,16,${H/2})">Operations</text>`;
+
+  // Lines
+  complexities.forEach(c=>{
+    if(!active.has(c.id)) return;
+    let d='';
+    for(let n=1;n<=nMax;n+=2){
+      const v=c.fn(n);
+      const x=scaleX(n),y=scaleY(v);
+      d+=(n===1?'M':'L')+x.toFixed(1)+','+y.toFixed(1);
+    }
+    html+=`<path d="${d}" fill="none" stroke="${c.color}" stroke-width="2.5" clip-path="url(#clip)" opacity="0.9"/>`;
+    // End label
+    const endV=c.fn(nMax);
+    if(endV<=opMax){
+      const endY=scaleY(endV);
+      html+=`<text x="${W-pad.r+4}" y="${endY+4}" fill="${c.color}" font-size="10" dominant-baseline="middle">${c.label}</text>`;
+    }
+  });
+
+  // Vertical cursor
+  const cx=scaleX(nVal);
+  html+=`<line x1="${cx}" y1="${pad.t}" x2="${cx}" y2="${H-pad.b}" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+  complexities.forEach(c=>{
+    if(!active.has(c.id)) return;
+    const v=c.fn(nVal);
+    if(v<=opMax){
+      const cy=scaleY(v);
+      html+=`<circle cx="${cx}" cy="${cy}" r="4" fill="${c.color}"/>`;
+    }
+  });
+  html+=`<text x="${cx+4}" y="${pad.t+14}" fill="#fbbf24" font-size="11">n=${nVal}</text>`;
+
+  svg.innerHTML=html;
+  updateTable(nVal);
+}
+
+function updateTable(n){
+  const body=document.getElementById('cmpBody');
+  body.innerHTML='';
+  complexities.forEach(c=>{
+    const v100=c.fn(100),v1000=c.fn(1000);
+    const fmt=v=>v>1e9?'~∞':v>999999?(v/1e6).toFixed(1)+'M':v>999?(v/1000).toFixed(1)+'k':v.toFixed(1);
+    const row=document.createElement('tr');
+    row.innerHTML=`<td style="color:${c.color};font-weight:700">${c.label}</td><td style="color:#94a3b8">${c.ex}</td><td>${fmt(v100)}</td><td>${fmt(v1000)}</td><td>${c.grade}</td>`;
+    body.appendChild(row);
+  });
+}
+
+function updateNLine(){
+  const v=document.getElementById('nSlider').value;
+  document.getElementById('nVal').textContent=v;
+  drawBigO();
+}
+
+// ===================== TAB 2: DATA STRUCTURES =====================
+const dsData=[
+  {name:'List',color:'#7dd3fc',
+   ops:{Insert:'O(1)*',Delete:'O(n)',Search:'O(n)',Access:'O(1)'},
+   worst:{Insert:'O(n)',Delete:'O(n)',Search:'O(n)',Access:'O(1)'},
+   ns:{Insert:'~50ns',Delete:'~500ns',Search:'~1µs',Access:'~30ns'},
+   bars:{Insert:20,Delete:60,Search:65,Access:10},
+   mem:'Contiguous array with pointer overhead',
+   boxes:['[0]','[1]','[2]','[3]','...'],arrows:false,
+   desc:'Dynamic array. Append is amortized O(1). Great for sequential access and random indexing.'
+  },
+  {name:'Dict',color:'#86efac',
+   ops:{Insert:'O(1)',Delete:'O(1)',Search:'O(1)',Access:'O(1)'},
+   worst:{Insert:'O(n)',Delete:'O(n)',Search:'O(n)',Access:'O(n)'},
+   ns:{Insert:'~80ns',Delete:'~70ns',Search:'~60ns',Access:'~60ns'},
+   bars:{Insert:22,Delete:20,Search:18,Access:18},
+   mem:'Hash table: key → hash → bucket → value',
+   boxes:['key','hash()','bucket','value'],arrows:true,
+   desc:'Hash map. O(1) average for all operations. Ordered by insertion (Python 3.7+).'
+  },
+  {name:'Set',color:'#a78bfa',
+   ops:{Insert:'O(1)',Delete:'O(1)',Search:'O(1)',Access:'N/A'},
+   worst:{Insert:'O(n)',Delete:'O(n)',Search:'O(n)',Access:'N/A'},
+   ns:{Insert:'~80ns',Delete:'~70ns',Search:'~50ns',Access:'N/A'},
+   bars:{Insert:22,Delete:20,Search:15,Access:0},
+   mem:'Hash table (keys only, no values)',
+   boxes:['hash(a)','hash(b)','hash(c)'],arrows:false,
+   desc:'Unordered unique elements. Ideal for membership testing and set operations (union, intersection).'
+  },
+  {name:'Deque',color:'#fb923c',
+   ops:{Insert:'O(1)',Delete:'O(1)',Search:'O(n)',Access:'O(n)'},
+   worst:{Insert:'O(1)',Delete:'O(1)',Search:'O(n)',Access:'O(n)'},
+   ns:{Insert:'~60ns',Delete:'~60ns',Search:'~1µs',Access:'~500ns'},
+   bars:{Insert:18,Delete:18,Search:70,Access:65},
+   mem:'Doubly-linked list of fixed-length arrays',
+   boxes:['←','[head]','…','[tail]','→'],arrows:true,
+   desc:'Double-ended queue. O(1) append/pop from both ends. Use for BFS queues and sliding windows.'
+  },
+  {name:'Heap',color:'#fbbf24',
+   ops:{Insert:'O(log n)',Delete:'O(log n)',Search:'O(n)',Access:'O(1)*'},
+   worst:{Insert:'O(log n)',Delete:'O(log n)',Search:'O(n)',Access:'O(1)'},
+   ns:{Insert:'~200ns',Delete:'~300ns',Search:'~1µs',Access:'~30ns'},
+   bars:{Insert:35,Delete:40,Search:70,Access:10},
+   mem:'Array-backed binary tree (parent < children)',
+   boxes:['[0]min','[1]','[2]','[3]','[4]'],arrows:false,
+   desc:'Priority queue. O(log n) push/pop, O(1) peek min. Use heapq for Dijkstra, top-k problems.'
+  },
+  {name:'Array',color:'#f87171',
+   ops:{Insert:'O(n)',Delete:'O(n)',Search:'O(n)',Access:'O(1)'},
+   worst:{Insert:'O(n)',Delete:'O(n)',Search:'O(n)',Access:'O(1)'},
+   ns:{Insert:'~10ns*',Delete:'~10ns*',Search:'~1ns',Access:'~5ns'},
+   bars:{Insert:10,Delete:10,Search:60,Access:5},
+   mem:'Raw C array (array module / numpy), no Python overhead',
+   boxes:['0x00','0x04','0x08','0x0C'],arrows:false,
+   desc:'Fixed-type array via array module or numpy. Faster numeric ops, less memory than list.'
+  },
+];
+
+function buildDsGrid(){
+  const grid=document.getElementById('dsGrid');
+  dsData.forEach((ds,i)=>{
+    const card=document.createElement('div');
+    card.className='ds-card';
+    card.id='dscard_'+i;
+    let bars='';
+    Object.entries(ds.bars).forEach(([op,pct])=>{
+      const color=pct<30?'#86efac':pct<60?'#fbbf24':'#f87171';
+      bars+=`<div class="op-bar-row"><span class="op-label">${op}</span><div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div><span style="font-size:.75rem;color:#94a3b8;min-width:70px">${ds.ops[op]}</span></div>`;
+    });
+    card.innerHTML=`<h3 style="color:${ds.color}">${ds.name}</h3><div class="op-bars">${bars}</div>`;
+    card.onclick=()=>selectDs(i);
+    grid.appendChild(card);
+  });
+}
+
+function selectDs(i){
+  document.querySelectorAll('.ds-card').forEach((c,j)=>c.classList.toggle('selected',i===j));
+  const ds=dsData[i];
+  const detail=document.getElementById('dsDetail');
+  detail.classList.add('show');
+  document.getElementById('dsDetailTitle').textContent=ds.name+' — '+ds.desc;
+  // Memory viz
+  let memHtml=`<div style="color:#94a3b8;font-size:.82rem;margin-bottom:6px">${ds.mem}</div><div class="mem-viz">`;
+  ds.boxes.forEach((b,k)=>{
+    memHtml+=`<div class="mem-box">${b}</div>`;
+    if(ds.arrows && k<ds.boxes.length-1) memHtml+=`<span class="mem-arrow">→</span>`;
+  });
+  memHtml+='</div>';
+  document.getElementById('dsMemViz').innerHTML=memHtml;
+  // Ops table
+  const body=document.getElementById('dsOpsBody');
+  body.innerHTML='';
+  ['Insert','Delete','Search','Access'].forEach(op=>{
+    const tr=document.createElement('tr');
+    const avg=ds.ops[op],worst=ds.worst[op],ns=ds.ns[op];
+    const color=ds.bars[op]<30?'#86efac':ds.bars[op]<60?'#fbbf24':'#f87171';
+    tr.innerHTML=`<td style="font-weight:700">${op}</td><td style="color:${color}">${avg}</td><td style="color:#94a3b8">${worst}</td><td style="color:#64748b">${ns}</td>`;
+    body.appendChild(tr);
+  });
+}
+
+// Wizard
+let wizardState={order:null,ends:null,type:null};
+function wizardAnswer(q,ans){
+  if(q===0){wizardState.prim=ans;document.getElementById('q0').classList.remove('active');
+    if(ans==='order'){document.getElementById('q1').classList.add('active')}
+    else if(ans==='fast_lookup'){document.getElementById('q2').classList.add('active')}
+    else{showRec(ans)}}
+  else if(q===1){wizardState.ends=ans;showRec('order_'+ans)}
+  else if(q===2){wizardState.type=ans;showRec('lookup_'+ans)}
+}
+const recs={
+  'unique':'<strong>Set</strong> — O(1) membership testing, automatic deduplication. Use <code>set()</code> or <code>frozenset()</code>.',
+  'priority':'<strong>Heap (heapq)</strong> — O(log n) push/pop, O(1) peek. Use <code>heapq.heappush/heappop()</code>.',
+  'order_yes':'<strong>Deque</strong> — O(1) append/pop from both ends. Use <code>collections.deque()</code> for queues and sliding windows.',
+  'order_no':'<strong>List</strong> — Dynamic array with O(1) amortized append. Use <code>[]</code> for general ordered sequences.',
+  'lookup_numeric':'<strong>Array / NumPy Array</strong> — O(1) hash lookup + cache-friendly numeric storage. Use for ML feature vectors.',
+  'lookup_complex':'<strong>Dict</strong> — O(1) average key lookup, flexible values. Use <code>{}</code> for key-value mappings.',
+};
+function showRec(key){
+  const el=document.getElementById('recommendation');
+  el.style.display='block';
+  el.innerHTML='<strong style="color:#86efac">Recommendation:</strong> '+recs[key];
+  ['q0','q1','q2'].forEach(id=>document.getElementById(id).classList.remove('active'));
+}
+function resetWizard(){
+  wizardState={};
+  document.getElementById('recommendation').style.display='none';
+  ['q1','q2'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  document.getElementById('q0').classList.add('active');
+}
+
+// ===================== TAB 3: PANDAS =====================
+const inputDf=[
+  {Name:'Alice',Dept:'Eng',Salary:95000,Score:88},
+  {Name:'Bob',  Dept:'Mkt',Salary:72000,Score:74},
+  {Name:'Carol',Dept:'Eng',Salary:102000,Score:91},
+  {Name:'Dave', Dept:'Mkt',Salary:68000,Score:69},
+  {Name:'Eve',  Dept:'Eng',Salary:88000,Score:85},
+];
+const pdOps={
+  groupby:{
+    code:`df.groupby('Dept').agg({'Salary':'mean','Score':'mean'}).round(0)`,
+    insight:'groupby splits data into groups, applies an aggregation function, and combines results. This is the "Split-Apply-Combine" pattern.',
+    outDf:[{Dept:'Eng',Salary:95000,Score:88},{Dept:'Mkt',Salary:70000,Score:72}],
+    outCols:['Dept','Salary','Score'],
+    opName:'groupby + agg',
+  },
+  merge:{
+    code:`pd.merge(df, dept_df, on='Dept', how='left')`,
+    insight:'merge joins DataFrames like SQL JOINs. left/right/inner/outer control which rows are kept. Avoid repeated merge on large DataFrames — set index first.',
+    outDf:[
+      {Name:'Alice',Dept:'Eng',Budget:'$2M'},
+      {Name:'Bob',Dept:'Mkt',Budget:'$1M'},
+      {Name:'Carol',Dept:'Eng',Budget:'$2M'},
+      {Name:'Dave',Dept:'Mkt',Budget:'$1M'},
+      {Name:'Eve',Dept:'Eng',Budget:'$2M'},
+    ],
+    outCols:['Name','Dept','Budget'],
+    opName:'merge (left join)',
+  },
+  pivot:{
+    code:`df.pivot_table(values='Score', index='Name', columns='Dept', aggfunc='mean')`,
+    insight:'pivot_table reshapes data from long to wide format. Similar to Excel pivot tables. Use fill_value=0 to handle NaN from missing combinations.',
+    outDf:[
+      {Name:'Alice',Eng:88,Mkt:'NaN'},
+      {Name:'Bob',Eng:'NaN',Mkt:74},
+      {Name:'Carol',Eng:91,Mkt:'NaN'},
+      {Name:'Dave',Eng:'NaN',Mkt:69},
+      {Name:'Eve',Eng:85,Mkt:'NaN'},
+    ],
+    outCols:['Name','Eng','Mkt'],
+    opName:'pivot_table',
+  },
+  apply:{
+    code:`df['Grade'] = df['Score'].apply(lambda x: 'A' if x>=90 else 'B' if x>=80 else 'C')`,
+    insight:'apply() runs a Python function row/column-wise. Convenient but slow — prefer vectorized operations (df["Score"] >= 90) or np.where() for performance.',
+    outDf:[
+      {Name:'Alice',Score:88,Grade:'B'},
+      {Name:'Bob',Score:74,Grade:'C'},
+      {Name:'Carol',Score:91,Grade:'A'},
+      {Name:'Dave',Score:69,Grade:'C'},
+      {Name:'Eve',Score:85,Grade:'B'},
+    ],
+    outCols:['Name','Score','Grade'],
+    opName:'apply (lambda)',
+  },
+  filter:{
+    code:`df[df['Score'] > 80].sort_values('Salary', ascending=False)`,
+    insight:'Boolean indexing is vectorized and fast. Chain conditions with & (and) and | (or), NOT Python "and"/"or". Always wrap conditions in parentheses.',
+    outDf:[
+      {Name:'Carol',Dept:'Eng',Salary:102000,Score:91},
+      {Name:'Alice',Dept:'Eng',Salary:95000,Score:88},
+      {Name:'Eve',Dept:'Eng',Salary:88000,Score:85},
+    ],
+    outCols:['Name','Dept','Salary','Score'],
+    opName:'filter + sort',
+  },
+};
+
+function makeDfTable(rows,cols,title){
+  let html=`<div class="df-box"><div class="df-box" style="padding:0;border:none"><h4>${title}</h4></div><table class="df-table"><thead><tr>`;
+  cols.forEach(c=>html+=`<th>${c}</th>`);
+  html+='</tr></thead><tbody>';
+  rows.forEach(r=>{
+    html+='<tr>';
+    cols.forEach(c=>{
+      const v=r[c];
+      const color=v==='NaN'?'#64748b':'#e2e8f0';
+      html+=`<td style="color:${color}">${v??''}</td>`;
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  return html;
+}
+
+let currentPdOp='groupby';
+function setPdOp(op){
+  currentPdOp=op;
+  document.querySelectorAll('.op-btn').forEach(b=>b.classList.toggle('active',b.textContent===op));
+  renderPd();
+}
+
+function renderPd(){
+  const op=pdOps[currentPdOp];
+  const inCols=Object.keys(inputDf[0]);
+  let html=makeDfTable(inputDf,inCols,'Input DataFrame');
+  html+=`<div class="arrow-box"><div style="font-size:2rem">→</div><div class="op-name">${op.opName}</div></div>`;
+  html+=makeDfTable(op.outDf,op.outCols,'Output DataFrame');
+  document.getElementById('pdContainer').innerHTML=html;
+  document.getElementById('pdCode').textContent=op.code;
+  document.getElementById('pdInsight').textContent='💡 '+op.insight;
+}
+
+// Init
+buildToggles();
+buildLegend();
+drawBigO();
+buildDsGrid();
+renderPd();
+</script>
+
+
+<style>
+/* ── Chapter sidenav ── */
+.chap-sidenav {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 8888;
+}
+.chap-sidenav-toggle {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  color: #7dd3fc;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px #00000060;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+.chap-sidenav-toggle:hover { background: #0369a1; border-color: #7dd3fc; }
+.chap-sidenav-menu {
+  position: absolute;
+  bottom: 52px;
+  right: 0;
+  background: #1e2130;
+  border: 1px solid #2d3147;
+  border-radius: 14px;
+  padding: 10px 6px;
+  min-width: 220px;
+  max-height: 70vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 40px #00000080;
+  display: none;
+  scrollbar-width: thin;
+  scrollbar-color: #2d3147 transparent;
+}
+.chap-sidenav-menu.open { display: block; }
+.chap-sidenav-menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #94a3b8;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.chap-sidenav-menu a:hover { background: #0f172a; color: #e2e8f0; }
+.chap-sidenav-menu a.current { background: #0369a133; color: #7dd3fc; font-weight: 600; }
+.chap-sidenav-menu .chap-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #4b5563;
+  min-width: 28px;
+}
+.chap-sidenav-menu .menu-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #4b5563;
+  padding: 4px 12px 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+@media (max-width: 480px) {
+  .chap-sidenav { bottom: 12px; right: 12px; }
+  .chap-sidenav-menu { right: 0; min-width: 180px; }
+}
+</style>
+
+<div class="chap-sidenav">
+  <div class="chap-sidenav-menu" id="chapMenu">
+    <div class="menu-header">ML Field Guide</div>
+      <a href="ch01_math_foundations.html"><span class="chap-num">Ch 01</span>Math Foundations</a>
+      <a href="ch02_statistics.html"><span class="chap-num">Ch 02</span>Statistics</a>
+      <a href="ch03_python.html" class="current"><span class="chap-num">Ch 03</span>Python for ML</a>
+      <a href="ch04_feature_engineering.html"><span class="chap-num">Ch 04</span>Feature Engineering</a>
+      <a href="ch05_supervised_learning.html"><span class="chap-num">Ch 05</span>Supervised Learning</a>
+      <a href="ch06_model_evaluation.html"><span class="chap-num">Ch 06</span>Model Evaluation</a>
+      <a href="ch07_unsupervised.html"><span class="chap-num">Ch 07</span>Unsupervised Learning</a>
+      <a href="ch08_recommendations.html"><span class="chap-num">Ch 08</span>Recommendations</a>
+      <a href="ch09_neural_networks.html"><span class="chap-num">Ch 09a</span>Neural Networks</a>
+      <a href="ch09_cnn_architectures.html"><span class="chap-num">Ch 09b</span>CNN Architectures</a>
+      <a href="ch10_nlp_transformers.html"><span class="chap-num">Ch 10</span>NLP & Transformers</a>
+      <a href="ch11_reinforcement_learning.html"><span class="chap-num">Ch 11</span>Reinforcement Learning</a>
+      <a href="ch12_time_series.html"><span class="chap-num">Ch 12</span>Time Series</a>
+      <a href="ch13_sql.html"><span class="chap-num">Ch 13</span>SQL for ML</a>
+      <a href="ch14_big_data.html"><span class="chap-num">Ch 14</span>Big Data</a>
+      <a href="ch15_mlops.html"><span class="chap-num">Ch 15</span>MLOps</a>
+      <a href="ch16_aws.html"><span class="chap-num">Ch 16</span>AWS for ML</a>
+      <a href="ch17_responsible_ai.html"><span class="chap-num">Ch 17</span>Responsible AI</a>
+      <a href="ch18_interview_prep.html"><span class="chap-num">Ch 18</span>Interview Prep</a>
+  </div>
+  <button class="chap-sidenav-toggle" onclick="document.getElementById('chapMenu').classList.toggle('open')" title="Chapter navigation">☰</button>
+</div>
+
+</body>
+</html>
