@@ -585,6 +585,23 @@ th{
 }
 .site-footer a{ color:#1d4ed8; text-decoration:none; }
 
+/* ── AI Disclaimer ── */
+.disclaimer {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-left: 4px solid #f59e0b;
+  border-radius: 0 10px 10px 0;
+  padding: 16px 20px;
+  margin: 32px 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: #78350f;
+}
+.disclaimer strong {
+  color: #92400e;
+}
+
 /* Remove print-only page breaks for web */
 @media screen {
   h1 { page-break-before: auto !important; break-before: auto !important; }
