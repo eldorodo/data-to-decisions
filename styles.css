@@ -636,3 +636,220 @@ th{
   transition:background 0.2s;
 }
 .lab-card-links a:hover{ background:#1e40af; }
+
+/* ── Landing Page: Smooth Scroll + Animations ── */
+html { scroll-behavior: smooth; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Hero Section ── */
+.hero-section {
+  text-align: center;
+  padding: 56px 32px 48px;
+  background: linear-gradient(180deg, #f5f0e8 0%, #fff 100%);
+  margin: 0 -44px;
+  border-bottom: 1px solid #e2e8f0;
+  animation: fadeInUp 0.6s ease-out;
+}
+.hero-tagline {
+  font-family: Georgia, serif;
+  font-size: 22px;
+  color: #0f172a;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+.hero-sub {
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 15px;
+  color: #64748b;
+  margin: 0 0 32px;
+}
+.hero-cta {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.hero-cta a {
+  display: inline-block;
+  padding: 14px 32px;
+  border-radius: 10px;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.hero-cta a:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+}
+.hero-cta .cta-primary {
+  background: #1d4ed8;
+  color: #fff;
+}
+.hero-cta .cta-secondary {
+  background: #fff;
+  color: #1d4ed8;
+  border: 1.5px solid #93c5fd;
+}
+
+/* ── Stats Strip ── */
+.stats-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  padding: 40px 0;
+  margin: 0 0 16px;
+  animation: fadeInUp 0.7s ease-out 0.1s both;
+}
+.stat-card {
+  text-align: center;
+  padding: 20px 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+}
+.stat-num {
+  font-family: Georgia, serif;
+  font-size: 32px;
+  font-weight: bold;
+  color: #b83a1e;
+  line-height: 1.1;
+}
+.stat-label {
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 12px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 6px;
+}
+@media (max-width: 600px) {
+  .stats-strip { grid-template-columns: repeat(2, 1fr); }
+  .hero-section { padding: 36px 20px 32px; }
+}
+
+/* ── Interactive Labs Showcase ── */
+.labs-showcase {
+  margin: 48px 0 40px;
+  animation: fadeInUp 0.7s ease-out;
+}
+.labs-showcase h2 {
+  text-align: center;
+  margin-bottom: 8px;
+}
+.labs-showcase .labs-sub {
+  text-align: center;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 28px;
+}
+.labs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+.lab-preview {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.lab-preview:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(29,78,216,0.10);
+  border-color: #93c5fd;
+}
+.lab-preview-header {
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  padding: 24px 20px;
+  color: #fff;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+.lab-preview-header .lab-ch {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #60a5fa;
+  margin-bottom: 6px;
+}
+.lab-preview-header .lab-name {
+  font-size: 17px;
+  font-weight: 700;
+}
+.lab-preview-body {
+  padding: 16px 20px;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 13.5px;
+  color: #475569;
+  line-height: 1.6;
+}
+.lab-preview-body .lab-try {
+  display: inline-block;
+  margin-top: 10px;
+  color: #1d4ed8;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* ── Lab Preview Video ── */
+.lab-preview-video {
+  background: #0f1117;
+  overflow: hidden;
+}
+.lab-preview-video video {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ── Styled Stay Updated Banner ── */
+.community-block {
+  background: linear-gradient(135deg, #eff6ff, #ecfeff) !important;
+  border: 1.5px solid #93c5fd !important;
+  border-radius: 16px !important;
+  padding: 48px 40px !important;
+  margin: 48px 0 !important;
+}
+.community-block h2 {
+  font-size: 22px !important;
+  color: #0f172a !important;
+}
+.community-block .cta-subscribe {
+  display: inline-block;
+  background: #1d4ed8;
+  color: #fff;
+  padding: 12px 28px;
+  border-radius: 8px;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.2s;
+  border-bottom: none;
+}
+.community-block .cta-subscribe:hover {
+  background: #1e40af;
+  transform: translateY(-2px);
+}
+
+/* ── Chapter Card Color Accents ── */
+.toc-card.theme-foundations { border-left: 4px solid #2563eb; }
+.toc-card.theme-core       { border-left: 4px solid #059669; }
+.toc-card.theme-domains    { border-left: 4px solid #7c3aed; }
+.toc-card.theme-systems    { border-left: 4px solid #d97706; }
+.toc-card.theme-interview  { border-left: 4px solid #dc2626; }
+.toc-card.theme-bonus      { border-left: 4px solid #64748b; }
