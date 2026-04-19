@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Explainable AI interactive lab: SHAP waterfall, LIME local explainer, partial dependence plots.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 6 · Explainable AI — Interactive Lab</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0f1117;color:#e2e8f0;font-family:'Inter','Segoe UI',system-ui,sans-serif;min-height:100vh;padding:24px}
+  code,pre,.formula{font-family:'JetBrains Mono','Cascadia Code','Courier New',monospace!important}
+  html{scroll-behavior:smooth}
+  h1{text-align:center;font-size:1.6rem;color:#7dd3fc;margin-bottom:6px;letter-spacing:.5px}
+  .subtitle{text-align:center;color:#94a3b8;font-size:.9rem;margin-bottom:24px}
+  .tabs{display:flex;gap:4px;margin-bottom:20px;background:#1e2130;padding:6px;border-radius:12px;border:1px solid #2d3147}
+  .tab{flex:1;padding:10px 8px;background:transparent;border:none;color:#94a3b8;cursor:pointer;border-radius:8px;font-size:.85rem;font-family:inherit;transition:all .2s}
+  .tab.active{background:#0369a1;color:#e2e8f0;font-weight:600}
+  .tab:hover:not(.active){background:#2d3147;color:#e2e8f0}
+  .panel{display:none;animation:fadeIn .3s ease}
+  .panel.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .grid2{display:grid;grid-template-columns:320px 1fr;gap:16px}
+  .card{background:#1e2130;border:1px solid #2d3147;border-radius:12px;padding:16px}
+  .card-title{font-size:.8rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px}
+  label{font-size:.82rem;color:#94a3b8;display:block;margin-bottom:4px}
+  input[type=range]{width:100%;accent-color:#7dd3fc;cursor:pointer;margin-bottom:2px}
+  select{background:#0f172a;border:1px solid #2d3147;color:#e2e8f0;padding:6px 10px;border-radius:8px;font-size:.82rem;width:100%;cursor:pointer}
+  button{background:#0369a1;border:none;color:#e2e8f0;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:.82rem;font-family:inherit;transition:all .2s}
+  button:hover{background:#0284c7;transform:translateY(-1px)}
+  button.secondary{background:#2d3147}
+  button.secondary:hover{background:#3d4157}
+  canvas{display:block;border-radius:8px}
+  .info-box{background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:10px;font-size:.78rem;color:#94a3b8;margin-top:8px;line-height:1.5}
+  .formula{font-size:.75rem;color:#64748b;background:#0f172a;padding:6px 10px;border-radius:4px;margin-top:8px;line-height:1.6}
+  .slider-row{margin-bottom:10px}
+  .slider-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+  .slider-val{font-size:.82rem;font-weight:600;color:#7dd3fc}
+  .scenario-btns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .scenario-btn{background:#2d3147;border:none;color:#94a3b8;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:.78rem;font-family:inherit;transition:all .2s}
+  .scenario-btn:hover,.scenario-btn.active{background:#0369a1;color:#e2e8f0}
+  .toggle-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .toggle{display:flex;background:#0f172a;border-radius:8px;padding:3px;gap:2px}
+  .toggle-btn{padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:.78rem;font-family:inherit;color:#64748b;background:transparent;transition:all .2s}
+  .toggle-btn.active{background:#0369a1;color:#e2e8f0}
+  .big-metric{font-size:2rem;font-weight:700;color:#7dd3fc}
+  .big-metric-label{font-size:.78rem;color:#94a3b8;margin-top:2px}
+  .legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle}
+  .weight-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .weight-label{font-size:.78rem;color:#94a3b8;width:70px;flex-shrink:0}
+  .weight-bar-container{flex:1;height:14px;background:#0f172a;border-radius:4px;position:relative;overflow:hidden}
+  .weight-bar{height:100%;border-radius:4px;transition:width .4s ease}
+  .weight-val{font-size:.78rem;font-weight:600;width:52px;text-align:right;flex-shrink:0}
+  .prediction-badge{display:inline-block;padding:4px 14px;border-radius:20px;font-size:.85rem;font-weight:700;margin-left:8px}
+
+  @media (max-width:768px){
+    .grid2{grid-template-columns:1fr}
+    body{padding:12px}
+    .tabs{flex-wrap:wrap}
+    .tab{font-size:.75rem;padding:8px 4px}
+  }
+</style>
+</head>
+<body>
+
+<h1>Chapter 6 &middot; Explainable AI &mdash; Interactive Lab</h1>
+<p class="subtitle">SHAP values, LIME explanations &amp; Partial Dependence Plots</p>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab(0)">SHAP Waterfall Builder</button>
+  <button class="tab" onclick="switchTab(1)">LIME Local Explainer</button>
+  <button class="tab" onclick="switchTab(2)">Partial Dependence Plots</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- TAB 1: SHAP WATERFALL BUILDER                                      -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="panel active" id="panel0">
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Feature Values</div>
+      <p style="font-size:.75rem;color:#64748b;margin-bottom:12px">Adjust applicant features to see how each pushes the prediction toward approval or rejection.</p>
+
+      <div class="slider-row">
+        <div class="slider-label"><label>Income ($k)</label><span class="slider-val" id="sv-income">80</span></div>
+        <input type="range" min="30" max="200" value="80" id="sl-income" oninput="updateSHAP()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-label"><label>Credit Score</label><span class="slider-val" id="sv-credit">680</span></div>
+        <input type="range" min="300" max="850" value="680" id="sl-credit" oninput="updateSHAP()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-label"><label>Debt-to-Income (%)</label><span class="slider-val" id="sv-dti">35</span></div>
+        <input type="range" min="5" max="60" value="35" id="sl-dti" oninput="updateSHAP()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-label"><label>Employment Years</label><span class="slider-val" id="sv-employ">5</span></div>
+        <input type="range" min="0" max="30" value="5" id="sl-employ" oninput="updateSHAP()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-label"><label>Loan Amount ($k)</label><span class="slider-val" id="sv-loan">150</span></div>
+        <input type="range" min="10" max="500" value="150" id="sl-loan" oninput="updateSHAP()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-label"><label>Age</label><span class="slider-val" id="sv-age">35</span></div>
+        <input type="range" min="18" max="70" value="35" id="sl-age" oninput="updateSHAP()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-label"><label>Num Accounts</label><span class="slider-val" id="sv-accounts">4</span></div>
+        <input type="range" min="0" max="15" value="4" id="sl-accounts" oninput="updateSHAP()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-label"><label>Payment History (%)</label><span class="slider-val" id="sv-history">92</span></div>
+        <input type="range" min="50" max="100" value="92" id="sl-history" oninput="updateSHAP()">
+      </div>
+
+      <div style="margin-top:12px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:.82rem;color:#94a3b8">Prediction:</span>
+        <span class="big-metric" id="shap-pred">0.72</span>
+        <span class="prediction-badge" id="shap-badge" style="background:#065f46;color:#6ee7b7">Approved</span>
+      </div>
+      <div class="formula" id="shap-formula">f(x) = 0.50 + &Sigma; SHAP<sub>i</sub> = 0.72</div>
+      <div class="info-box" style="margin-top:8px">
+        <strong style="color:#7dd3fc">SHAP (SHapley Additive exPlanations)</strong> assigns each feature an importance value for a particular prediction. <span style="color:#5eead4">Green</span> bars push toward approval; <span style="color:#f87171">red</span> bars push toward rejection.
+      </div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column">
+      <div class="card-title">SHAP Waterfall Chart</div>
+      <canvas id="shap-canvas" style="flex:1;width:100%;background:#1a1f2e"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- TAB 2: LIME LOCAL EXPLAINER                                        -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel1">
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Controls</div>
+      <label style="margin-bottom:6px">Model Boundary Shape</label>
+      <div class="scenario-btns" id="lime-shapes">
+        <button class="scenario-btn active" onclick="setLimeShape('circle')">Circle</button>
+        <button class="scenario-btn" onclick="setLimeShape('moon')">Moon</button>
+        <button class="scenario-btn" onclick="setLimeShape('spiral')">Spiral</button>
+      </div>
+      <p style="font-size:.78rem;color:#94a3b8;margin-bottom:12px">Click anywhere on the scatter plot to select a point to explain.</p>
+
+      <div id="lime-selected" style="font-size:.82rem;color:#94a3b8;margin-bottom:10px">
+        Selected point: <span style="color:#7dd3fc" id="lime-point-coords">none</span>
+      </div>
+      <div id="lime-class-display" style="font-size:.82rem;margin-bottom:12px;color:#94a3b8">
+        True class: <span id="lime-true-class">--</span>
+      </div>
+
+      <div class="card-title" style="margin-top:12px">Local Linear Weights</div>
+      <div class="weight-bar-row">
+        <span class="weight-label">Feature X</span>
+        <div class="weight-bar-container"><div class="weight-bar" id="lime-wx" style="width:50%;background:#5eead4"></div></div>
+        <span class="weight-val" id="lime-wx-val">0.00</span>
+      </div>
+      <div class="weight-bar-row">
+        <span class="weight-label">Feature Y</span>
+        <div class="weight-bar-container"><div class="weight-bar" id="lime-wy" style="width:50%;background:#5eead4"></div></div>
+        <span class="weight-val" id="lime-wy-val">0.00</span>
+      </div>
+      <div style="margin-top:8px;font-size:.78rem;color:#94a3b8">
+        Local intercept: <span id="lime-intercept" style="color:#7dd3fc">--</span>
+      </div>
+
+      <div class="info-box" style="margin-top:12px">
+        <strong style="color:#c084fc">LIME (Local Interpretable Model-agnostic Explanations)</strong> approximates the complex model locally with a simple linear model. The perturbed samples (small dots) around the selected point are used to fit a local linear decision boundary (dashed line).
+      </div>
+      <div style="margin-top:10px;display:flex;gap:12px;font-size:.75rem">
+        <span><span class="legend-dot" style="background:#5eead4"></span>Class A</span>
+        <span><span class="legend-dot" style="background:#f472b6"></span>Class B</span>
+        <span><span class="legend-dot" style="background:rgba(255,255,255,0.3)"></span>Perturbed</span>
+      </div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column">
+      <div class="card-title">Classification Boundary &amp; Local Explanation</div>
+      <canvas id="lime-canvas" style="flex:1;width:100%;background:#1a1f2e;cursor:crosshair"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- TAB 3: PARTIAL DEPENDENCE PLOTS                                    -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel2">
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Controls</div>
+      <label>Select Feature</label>
+      <select id="pdp-feature" onchange="updatePDP()" style="margin-bottom:12px">
+        <option value="sqft">Square Feet</option>
+        <option value="bedrooms">Bedrooms</option>
+        <option value="age">House Age (years)</option>
+        <option value="distance">Distance to City (mi)</option>
+        <option value="lot">Lot Size (acres)</option>
+      </select>
+
+      <div class="toggle-row" style="margin-top:8px">
+        <span style="font-size:.82rem;color:#94a3b8">Show ICE Lines</span>
+        <div class="toggle">
+          <button class="toggle-btn active" id="ice-on" onclick="toggleICE(true)">On</button>
+          <button class="toggle-btn" id="ice-off" onclick="toggleICE(false)">Off</button>
+        </div>
+      </div>
+
+      <div style="margin-top:16px">
+        <div class="card-title">Feature Details</div>
+        <div id="pdp-details" style="font-size:.82rem;color:#94a3b8;line-height:1.6">
+          <strong style="color:#fbbf24">Square Feet</strong><br>
+          Range: 600 - 4,000 sq ft<br>
+          Mean: 1,800 sq ft<br>
+          Effect: Strong positive &mdash; larger homes have higher prices.
+        </div>
+      </div>
+
+      <div class="info-box" style="margin-top:12px">
+        <strong style="color:#fbbf24">Partial Dependence Plot (PDP)</strong> shows the marginal effect of a feature on the prediction, averaging over all other features. The bold line is the average; thin gray <strong>ICE</strong> (Individual Conditional Expectation) lines show individual predictions. Tick marks on the X-axis (rug plot) show the data distribution.
+      </div>
+      <div style="margin-top:10px;display:flex;gap:16px;font-size:.75rem">
+        <span><span class="legend-dot" style="background:#fbbf24"></span>PDP (average)</span>
+        <span><span class="legend-dot" style="background:rgba(148,163,184,0.3)"></span>ICE lines</span>
+      </div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column">
+      <div class="card-title">Partial Dependence Plot &mdash; House Price Prediction</div>
+      <canvas id="pdp-canvas" style="flex:1;width:100%;background:#1a1f2e"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// GLOBAL HELPERS
+// ═══════════════════════════════════════════════════════════════════
+function switchTab(i) {
+  document.querySelectorAll('.tab').forEach((t,j) => t.classList.toggle('active', j===i));
+  document.querySelectorAll('.panel').forEach((p,j) => p.classList.toggle('active', j===i));
+  if (i===0) updateSHAP();
+  if (i===1) drawLIME();
+  if (i===2) updatePDP();
+}
+
+function lerp(a,b,t){ return a + (b-a)*t; }
+function clamp(v,lo,hi){ return Math.max(lo, Math.min(hi, v)); }
+function sigmoid(x){ return 1/(1+Math.exp(-x)); }
+
+function resizeCanvas(canvas) {
+  const r = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const w = rect.width - 32;
+  const h = Math.max(360, rect.height - 60);
+  canvas.width = w * r;
+  canvas.height = h * r;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(r, 0, 0, r, 0, 0);
+  return { w, h, ctx };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TAB 1: SHAP WATERFALL BUILDER
+// ═══════════════════════════════════════════════════════════════════
+const shapFeatures = [
+  { id:'income',   name:'Income',          min:30, max:200, mean:85,  weight: 0.018, baseline:85 },
+  { id:'credit',   name:'Credit Score',    min:300,max:850, mean:680, weight: 0.012, baseline:680 },
+  { id:'dti',      name:'Debt-to-Income',  min:5,  max:60,  mean:32,  weight:-0.022, baseline:32 },
+  { id:'employ',   name:'Employment Yrs',  min:0,  max:30,  mean:7,   weight: 0.04,  baseline:7 },
+  { id:'loan',     name:'Loan Amount',     min:10, max:500, mean:180, weight:-0.005, baseline:180 },
+  { id:'age',      name:'Age',             min:18, max:70,  mean:38,  weight: 0.008, baseline:38 },
+  { id:'accounts', name:'Num Accounts',    min:0,  max:15,  mean:5,   weight: 0.02,  baseline:5 },
+  { id:'history',  name:'Payment History', min:50, max:100, mean:88,  weight: 0.025, baseline:88 }
+];
+
+const shapBaseValue = 0.50;
+let shapAnimTarget = [];
+let shapAnimCurrent = [];
+
+function computeSHAPValues() {
+  const vals = [];
+  shapFeatures.forEach(f => {
+    const el = document.getElementById('sl-' + f.id);
+    const v = +el.value;
+    document.getElementById('sv-' + f.id).textContent = v;
+    const diff = v - f.mean;
+    let shap = diff * f.weight;
+    // Add non-linearity
+    if (f.id === 'credit') shap = f.weight * (v - f.mean) + 0.000008 * Math.pow(v - f.mean, 2) * Math.sign(v - f.mean);
+    if (f.id === 'dti') shap = f.weight * (v - f.mean) - 0.0003 * Math.pow(Math.max(0, v - 45), 2);
+    if (f.id === 'income') shap = f.weight * (v - f.mean) * (1 + 0.002 * Math.max(0, v - 120));
+    vals.push({ name: f.name, shap: clamp(shap, -0.35, 0.35) });
+  });
+  // Sort by absolute value descending
+  vals.sort((a,b) => Math.abs(b.shap) - Math.abs(a.shap));
+  return vals;
+}
+
+function updateSHAP() {
+  const vals = computeSHAPValues();
+  const total = vals.reduce((s,v) => s + v.shap, 0);
+  const pred = clamp(shapBaseValue + total, 0.01, 0.99);
+
+  document.getElementById('shap-pred').textContent = pred.toFixed(2);
+  const badge = document.getElementById('shap-badge');
+  if (pred >= 0.5) {
+    badge.textContent = 'Approved';
+    badge.style.background = '#065f46';
+    badge.style.color = '#6ee7b7';
+  } else {
+    badge.textContent = 'Rejected';
+    badge.style.background = '#7f1d1d';
+    badge.style.color = '#fca5a5';
+  }
+  document.getElementById('shap-formula').innerHTML =
+    `f(x) = ${shapBaseValue.toFixed(2)} + &Sigma; SHAP<sub>i</sub> (${total >= 0 ? '+' : ''}${total.toFixed(2)}) = <strong>${pred.toFixed(2)}</strong>`;
+
+  shapAnimTarget = vals;
+  if (shapAnimCurrent.length === 0) shapAnimCurrent = vals.map(v => ({name:v.name, shap:0}));
+  animateSHAP();
+}
+
+let shapAnimFrame = null;
+function animateSHAP() {
+  if (shapAnimFrame) cancelAnimationFrame(shapAnimFrame);
+  const speed = 0.15;
+  let done = true;
+  for (let i = 0; i < shapAnimTarget.length; i++) {
+    if (!shapAnimCurrent[i]) shapAnimCurrent[i] = {name: shapAnimTarget[i].name, shap:0};
+    shapAnimCurrent[i].name = shapAnimTarget[i].name;
+    const diff = shapAnimTarget[i].shap - shapAnimCurrent[i].shap;
+    if (Math.abs(diff) > 0.001) {
+      shapAnimCurrent[i].shap += diff * speed;
+      done = false;
+    } else {
+      shapAnimCurrent[i].shap = shapAnimTarget[i].shap;
+    }
+  }
+  drawSHAPWaterfall(shapAnimCurrent);
+  if (!done) shapAnimFrame = requestAnimationFrame(animateSHAP);
+}
+
+function drawSHAPWaterfall(vals) {
+  const canvas = document.getElementById('shap-canvas');
+  const {w, h, ctx} = resizeCanvas(canvas);
+  ctx.clearRect(0, 0, w, h);
+
+  const pad = {top:40, bottom:40, left:130, right:60};
+  const chartW = w - pad.left - pad.right;
+  const chartH = h - pad.top - pad.bottom;
+  const n = vals.length;
+  const barH = Math.min(28, (chartH - 20) / (n + 2));
+  const gap = Math.min(8, (chartH - barH * (n + 2)) / (n + 2));
+
+  // Determine value range
+  let cumMin = shapBaseValue, cumMax = shapBaseValue, cum = shapBaseValue;
+  vals.forEach(v => { cum += v.shap; cumMin = Math.min(cumMin, cum); cumMax = Math.max(cumMax, cum); });
+  const finalPred = cum;
+  const rangeMin = Math.min(shapBaseValue, cumMin) - 0.05;
+  const rangeMax = Math.max(shapBaseValue, cumMax) + 0.05;
+  const xScale = chartW / (rangeMax - rangeMin);
+  const xOf = v => pad.left + (v - rangeMin) * xScale;
+
+  // Grid lines
+  ctx.strokeStyle = '#2d3147';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  for (let v = Math.ceil(rangeMin*10)/10; v <= rangeMax; v += 0.1) {
+    const x = xOf(v);
+    ctx.beginPath(); ctx.moveTo(x, pad.top - 10); ctx.lineTo(x, h - pad.bottom + 10); ctx.stroke();
+    ctx.fillStyle = '#64748b'; ctx.font = '11px Inter'; ctx.textAlign = 'center';
+    ctx.fillText(v.toFixed(1), x, h - pad.bottom + 25);
+  }
+  ctx.setLineDash([]);
+
+  // Base value bar
+  let y = pad.top;
+  const baseX = xOf(shapBaseValue);
+  ctx.fillStyle = '#334155';
+  ctx.fillRect(xOf(shapBaseValue) - 1, y, 2, barH);
+  ctx.fillStyle = '#94a3b8'; ctx.font = '600 12px Inter'; ctx.textAlign = 'right';
+  ctx.fillText('Base Value', pad.left - 8, y + barH / 2 + 4);
+  ctx.fillStyle = '#7dd3fc'; ctx.font = '600 12px JetBrains Mono'; ctx.textAlign = 'left';
+  ctx.fillText(shapBaseValue.toFixed(2), baseX + 6, y + barH / 2 + 4);
+
+  // Waterfall bars
+  cum = shapBaseValue;
+  y += barH + gap;
+  for (let i = 0; i < n; i++) {
+    const shap = vals[i].shap;
+    const startX = xOf(cum);
+    const endX = xOf(cum + shap);
+    const barLeft = Math.min(startX, endX);
+    const barWidth = Math.max(Math.abs(endX - startX), 2);
+    const positive = shap >= 0;
+    ctx.fillStyle = positive ? 'rgba(94,234,212,0.7)' : 'rgba(248,113,113,0.7)';
+    ctx.beginPath();
+    roundRect(ctx, barLeft, y, barWidth, barH, 4);
+    ctx.fill();
+
+    // Connector line from previous bar end
+    ctx.strokeStyle = '#4a5568';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3,3]);
+    ctx.beginPath();
+    ctx.moveTo(startX, y - gap);
+    ctx.lineTo(startX, y + barH/2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Feature label
+    ctx.fillStyle = '#e2e8f0'; ctx.font = '12px Inter'; ctx.textAlign = 'right';
+    ctx.fillText(vals[i].name, pad.left - 8, y + barH / 2 + 4);
+
+    // SHAP value text
+    const valText = (shap >= 0 ? '+' : '') + shap.toFixed(3);
+    ctx.fillStyle = positive ? '#5eead4' : '#f87171';
+    ctx.font = '600 11px JetBrains Mono';
+    if (barWidth > 40) {
+      ctx.textAlign = 'center';
+      ctx.fillText(valText, barLeft + barWidth/2, y + barH/2 + 4);
+    } else {
+      ctx.textAlign = positive ? 'left' : 'right';
+      ctx.fillText(valText, positive ? endX + 4 : endX - 4, y + barH/2 + 4);
+    }
+
+    cum += shap;
+    y += barH + gap;
+  }
+
+  // Final prediction bar
+  const predX = xOf(finalPred);
+  ctx.fillStyle = finalPred >= 0.5 ? '#065f46' : '#7f1d1d';
+  const predBarLeft = Math.min(xOf(rangeMin + 0.01), predX - 2);
+  ctx.beginPath();
+  roundRect(ctx, predX - 2, y, 4, barH, 2);
+  ctx.fill();
+
+  // Connector
+  ctx.strokeStyle = '#4a5568'; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.moveTo(xOf(cum), y - gap); ctx.lineTo(xOf(cum), y + barH/2); ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = '#94a3b8'; ctx.font = '600 12px Inter'; ctx.textAlign = 'right';
+  ctx.fillText('Prediction', pad.left - 8, y + barH/2 + 4);
+  ctx.fillStyle = finalPred >= 0.5 ? '#6ee7b7' : '#fca5a5';
+  ctx.font = '700 13px JetBrains Mono'; ctx.textAlign = 'left';
+  ctx.fillText(clamp(finalPred,0,1).toFixed(2), predX + 8, y + barH/2 + 4);
+
+  // Arrow head at base value line
+  ctx.fillStyle = '#64748b'; ctx.font = '10px Inter'; ctx.textAlign = 'center';
+  ctx.fillText('Probability', xOf((rangeMin + rangeMax)/2), h - 8);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  r = Math.min(r, w/2, h/2);
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TAB 2: LIME LOCAL EXPLAINER
+// ═══════════════════════════════════════════════════════════════════
+let limeShape = 'circle';
+let limeSelectedPoint = null;
+let limePerturbedPoints = [];
+let limeLocalWeights = {wx:0, wy:0, b:0};
+
+function setLimeShape(shape) {
+  limeShape = shape;
+  document.querySelectorAll('#lime-shapes .scenario-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  limeSelectedPoint = null;
+  limePerturbedPoints = [];
+  document.getElementById('lime-point-coords').textContent = 'none';
+  document.getElementById('lime-true-class').textContent = '--';
+  document.getElementById('lime-intercept').textContent = '--';
+  document.getElementById('lime-wx-val').textContent = '0.00';
+  document.getElementById('lime-wy-val').textContent = '0.00';
+  document.getElementById('lime-wx').style.width = '50%';
+  document.getElementById('lime-wy').style.width = '50%';
+  drawLIME();
+}
+
+function limeClassify(x, y, shape) {
+  if (shape === 'circle') {
+    return (x*x + y*y) < 0.55 ? 0 : 1;
+  } else if (shape === 'moon') {
+    const r1 = Math.sqrt(x*x + y*y);
+    const r2 = Math.sqrt((x-0.5)*(x-0.5) + (y+0.3)*(y+0.3));
+    return (r1 < 0.7 && y > -0.15) || (r2 < 0.55 && y < 0.15) ? 0 : 1;
+  } else { // spiral
+    const r = Math.sqrt(x*x + y*y);
+    const theta = Math.atan2(y, x);
+    const spiralVal = Math.sin(2.5 * r * Math.PI + theta * 1.5);
+    return spiralVal > 0 ? 0 : 1;
+  }
+}
+
+function generateLIMEPerturbed(cx, cy, n) {
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const r = 0.15 + Math.random() * 0.25;
+    const angle = Math.random() * Math.PI * 2;
+    const px = cx + r * Math.cos(angle);
+    const py = cy + r * Math.sin(angle);
+    const cls = limeClassify(px, py, limeShape);
+    const dist = Math.sqrt((px-cx)*(px-cx) + (py-cy)*(py-cy));
+    const weight = Math.exp(-dist * dist / (2 * 0.15 * 0.15));
+    pts.push({x:px, y:py, cls, weight});
+  }
+  return pts;
+}
+
+function fitLocalLinear(pts) {
+  // Weighted least squares for linear boundary: w0 + w1*x + w2*y = 0.5
+  // Predict class (0/1) from x,y with weights
+  let sumW=0, sumWx=0, sumWy=0, sumWc=0, sumWxx=0, sumWyy=0, sumWxy=0, sumWxc=0, sumWyc=0;
+  pts.forEach(p => {
+    const w = p.weight;
+    sumW += w; sumWx += w*p.x; sumWy += w*p.y; sumWc += w*p.cls;
+    sumWxx += w*p.x*p.x; sumWyy += w*p.y*p.y; sumWxy += w*p.x*p.y;
+    sumWxc += w*p.x*p.cls; sumWyc += w*p.y*p.cls;
+  });
+  // Normal equations for weighted regression: cls = b + wx*x + wy*y
+  const n = sumW;
+  const mx = sumWx/n, my = sumWy/n, mc = sumWc/n;
+  const sxx = sumWxx/n - mx*mx;
+  const syy = sumWyy/n - my*my;
+  const sxy = sumWxy/n - mx*my;
+  const sxc = sumWxc/n - mx*mc;
+  const syc = sumWyc/n - my*mc;
+  const det = sxx*syy - sxy*sxy;
+  if (Math.abs(det) < 1e-10) return {wx:0, wy:0, b:0.5};
+  const wx = (syy*sxc - sxy*syc) / det;
+  const wy = (sxx*syc - sxy*sxc) / det;
+  const b = mc - wx*mx - wy*my;
+  return {wx, wy, b};
+}
+
+function drawLIME() {
+  const canvas = document.getElementById('lime-canvas');
+  const {w, h, ctx} = resizeCanvas(canvas);
+  ctx.clearRect(0, 0, w, h);
+
+  const pad = 50;
+  const plotW = w - 2*pad;
+  const plotH = h - 2*pad;
+  const rangeX = [-1.5, 1.5], rangeY = [-1.5, 1.5];
+  const toSX = v => pad + (v - rangeX[0]) / (rangeX[1] - rangeX[0]) * plotW;
+  const toSY = v => pad + (1 - (v - rangeY[0]) / (rangeY[1] - rangeY[0])) * plotH;
+  const fromSX = s => rangeX[0] + (s - pad) / plotW * (rangeX[1] - rangeX[0]);
+  const fromSY = s => rangeY[0] + (1 - (s - pad) / plotH) * (rangeY[1] - rangeY[0]);
+
+  // Draw decision boundary as filled regions
+  const res = 4;
+  for (let sx = pad; sx < w - pad; sx += res) {
+    for (let sy = pad; sy < h - pad; sy += res) {
+      const x = fromSX(sx), y = fromSY(sy);
+      const cls = limeClassify(x, y, limeShape);
+      ctx.fillStyle = cls === 0 ? 'rgba(94,234,212,0.08)' : 'rgba(244,114,182,0.08)';
+      ctx.fillRect(sx, sy, res, res);
+    }
+  }
+
+  // Draw boundary contour (approximate)
+  ctx.strokeStyle = 'rgba(148,163,184,0.3)';
+  ctx.lineWidth = 1;
+  for (let sx = pad; sx < w - pad - res; sx += res) {
+    for (let sy = pad; sy < h - pad - res; sy += res) {
+      const x0 = fromSX(sx), y0 = fromSY(sy);
+      const x1 = fromSX(sx + res), y1 = fromSY(sy + res);
+      const c00 = limeClassify(x0, y0, limeShape);
+      const c10 = limeClassify(x1, y0, limeShape);
+      const c01 = limeClassify(x0, y1, limeShape);
+      if (c00 !== c10 || c00 !== c01) {
+        ctx.fillStyle = 'rgba(148,163,184,0.25)';
+        ctx.fillRect(sx, sy, res, res);
+      }
+    }
+  }
+
+  // Generate background scatter data points
+  const seed = limeShape === 'circle' ? 42 : limeShape === 'moon' ? 99 : 7;
+  const rng = mulberry32(seed);
+  for (let i = 0; i < 120; i++) {
+    const x = rangeX[0] + rng() * (rangeX[1] - rangeX[0]);
+    const y = rangeY[0] + rng() * (rangeY[1] - rangeY[0]);
+    const cls = limeClassify(x, y, limeShape);
+    ctx.beginPath();
+    ctx.arc(toSX(x), toSY(y), 4, 0, Math.PI*2);
+    ctx.fillStyle = cls === 0 ? 'rgba(94,234,212,0.5)' : 'rgba(244,114,182,0.5)';
+    ctx.fill();
+  }
+
+  // Draw perturbed points
+  if (limePerturbedPoints.length > 0) {
+    limePerturbedPoints.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(toSX(p.x), toSY(p.y), 3, 0, Math.PI*2);
+      ctx.fillStyle = p.cls === 0 ? 'rgba(94,234,212,0.35)' : 'rgba(244,114,182,0.35)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    });
+
+    // Draw local linear boundary: wx*x + wy*y + b = 0.5 => y = (0.5 - b - wx*x) / wy
+    const lw = limeLocalWeights;
+    if (Math.abs(lw.wy) > 0.001) {
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 6]);
+      ctx.beginPath();
+      let first = true;
+      for (let sx = pad; sx <= w - pad; sx += 2) {
+        const x = fromSX(sx);
+        const y = (0.5 - lw.b - lw.wx * x) / lw.wy;
+        const sy = toSY(y);
+        if (sy >= pad && sy <= h - pad) {
+          if (first) { ctx.moveTo(sx, sy); first = false; }
+          else ctx.lineTo(sx, sy);
+        }
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+    } else if (Math.abs(lw.wx) > 0.001) {
+      const xBound = (0.5 - lw.b) / lw.wx;
+      const sx = toSX(xBound);
+      if (sx >= pad && sx <= w - pad) {
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath();
+        ctx.moveTo(sx, pad);
+        ctx.lineTo(sx, h - pad);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+  }
+
+  // Draw selected point
+  if (limeSelectedPoint) {
+    const sx = toSX(limeSelectedPoint.x), sy = toSY(limeSelectedPoint.y);
+    ctx.beginPath();
+    ctx.arc(sx, sy, 8, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(253,224,71,0.3)';
+    ctx.fill();
+    ctx.strokeStyle = '#fde047';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    // Cross
+    ctx.strokeStyle = '#fde047'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(sx-5, sy); ctx.lineTo(sx+5, sy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx, sy-5); ctx.lineTo(sx, sy+5); ctx.stroke();
+  }
+
+  // Axes
+  ctx.strokeStyle = '#4a5568';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad, pad); ctx.lineTo(pad, h-pad); ctx.lineTo(w-pad, h-pad);
+  ctx.stroke();
+
+  ctx.fillStyle = '#64748b'; ctx.font = '11px Inter';
+  ctx.textAlign = 'center';
+  for (let v = -1; v <= 1; v += 0.5) {
+    ctx.fillText(v.toFixed(1), toSX(v), h - pad + 18);
+  }
+  ctx.textAlign = 'right';
+  for (let v = -1; v <= 1; v += 0.5) {
+    ctx.fillText(v.toFixed(1), pad - 8, toSY(v) + 4);
+  }
+  ctx.fillStyle = '#94a3b8'; ctx.font = '12px Inter'; ctx.textAlign = 'center';
+  ctx.fillText('Feature X', w/2, h - 6);
+  ctx.save();
+  ctx.translate(14, h/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('Feature Y', 0, 0);
+  ctx.restore();
+
+  // Label for dashed line
+  if (limePerturbedPoints.length > 0) {
+    ctx.fillStyle = '#fbbf24'; ctx.font = '600 11px Inter'; ctx.textAlign = 'left';
+    ctx.fillText('Local linear boundary', pad + 8, pad + 14);
+  }
+
+  // Store mapping for click handler
+  canvas._lime = {pad, plotW, plotH, rangeX, rangeY, fromSX, fromSY};
+}
+
+// Seeded PRNG
+function mulberry32(a) {
+  return function() {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    var t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+}
+
+document.getElementById('lime-canvas').addEventListener('click', function(e) {
+  const rect = this.getBoundingClientRect();
+  const sx = e.clientX - rect.left;
+  const sy = e.clientY - rect.top;
+  const L = this._lime;
+  if (!L) return;
+  const x = L.fromSX(sx);
+  const y = L.fromSY(sy);
+  if (x < L.rangeX[0] || x > L.rangeX[1] || y < L.rangeY[0] || y > L.rangeY[1]) return;
+
+  limeSelectedPoint = {x, y};
+  const cls = limeClassify(x, y, limeShape);
+  document.getElementById('lime-point-coords').textContent = `(${x.toFixed(2)}, ${y.toFixed(2)})`;
+  document.getElementById('lime-true-class').innerHTML =
+    cls === 0 ? '<span style="color:#5eead4">Class A</span>' : '<span style="color:#f472b6">Class B</span>';
+
+  limePerturbedPoints = generateLIMEPerturbed(x, y, 40);
+  limeLocalWeights = fitLocalLinear(limePerturbedPoints);
+
+  // Update UI
+  const maxW = Math.max(Math.abs(limeLocalWeights.wx), Math.abs(limeLocalWeights.wy), 0.01);
+  const wxPct = (Math.abs(limeLocalWeights.wx) / maxW) * 45 + 5;
+  const wyPct = (Math.abs(limeLocalWeights.wy) / maxW) * 45 + 5;
+  document.getElementById('lime-wx').style.width = wxPct + '%';
+  document.getElementById('lime-wx').style.background = limeLocalWeights.wx >= 0 ? '#5eead4' : '#f87171';
+  document.getElementById('lime-wy').style.width = wyPct + '%';
+  document.getElementById('lime-wy').style.background = limeLocalWeights.wy >= 0 ? '#5eead4' : '#f87171';
+  document.getElementById('lime-wx-val').textContent = (limeLocalWeights.wx >= 0 ? '+' : '') + limeLocalWeights.wx.toFixed(3);
+  document.getElementById('lime-wy-val').textContent = (limeLocalWeights.wy >= 0 ? '+' : '') + limeLocalWeights.wy.toFixed(3);
+  document.getElementById('lime-wx-val').style.color = limeLocalWeights.wx >= 0 ? '#5eead4' : '#f87171';
+  document.getElementById('lime-wy-val').style.color = limeLocalWeights.wy >= 0 ? '#5eead4' : '#f87171';
+  document.getElementById('lime-intercept').textContent = limeLocalWeights.b.toFixed(3);
+
+  drawLIME();
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// TAB 3: PARTIAL DEPENDENCE PLOTS
+// ═══════════════════════════════════════════════════════════════════
+const pdpFeatures = {
+  sqft:     {name:'Square Feet',       min:600,  max:4000, mean:1800, unit:'sq ft', desc:'Strong positive -- larger homes have higher prices.'},
+  bedrooms: {name:'Bedrooms',          min:1,    max:6,    mean:3,    unit:'',      desc:'Positive up to ~4 bedrooms, then marginal gains flatten.'},
+  age:      {name:'House Age (years)', min:0,    max:80,   mean:25,   unit:'yrs',   desc:'Negative effect -- older homes tend to be valued lower.'},
+  distance: {name:'Distance to City',  min:0.5,  max:40,   mean:12,   unit:'mi',    desc:'Strong negative -- farther from city lowers price significantly.'},
+  lot:      {name:'Lot Size (acres)',   min:0.1,  max:3,    mean:0.5,  unit:'acres', desc:'Moderate positive -- larger lots increase price with diminishing returns.'}
+};
+
+// Synthetic data (20 instances)
+let pdpData = [];
+let pdpShowICE = true;
+let pdpAnimProgress = 0;
+let pdpAnimFrame = null;
+let pdpPrevCurve = null;
+let pdpTargetCurve = null;
+
+function generatePDPData() {
+  const rng = mulberry32(123);
+  pdpData = [];
+  for (let i = 0; i < 20; i++) {
+    pdpData.push({
+      sqft: 800 + rng() * 2800,
+      bedrooms: 1 + Math.floor(rng() * 5),
+      age: rng() * 70,
+      distance: 1 + rng() * 35,
+      lot: 0.1 + rng() * 2.5
+    });
+  }
+}
+
+function predictHousePrice(d) {
+  // Synthetic house price model
+  let p = 100000;
+  p += d.sqft * 150;
+  p += d.bedrooms * 25000;
+  p -= d.age * 1200;
+  p -= d.distance * 5000;
+  p += d.lot * 40000;
+  // Non-linearities
+  p += Math.max(0, d.sqft - 2500) * 80; // premium for large homes
+  p -= Math.pow(Math.max(0, d.age - 40), 1.5) * 200; // older homes degrade faster
+  p -= Math.pow(Math.max(0, d.distance - 20), 2) * 150; // far suburbs penalty
+  p += Math.log(1 + d.lot) * 30000; // diminishing lot returns
+  if (d.bedrooms >= 5) p -= 10000; // too many bedrooms penalty
+  return Math.max(50000, p);
+}
+
+function computePDPCurve(featureKey) {
+  const feat = pdpFeatures[featureKey];
+  const steps = 50;
+  const xVals = [];
+  for (let i = 0; i <= steps; i++) {
+    xVals.push(feat.min + (feat.max - feat.min) * i / steps);
+  }
+
+  // PDP: average prediction across all data for each feature value
+  const pdpY = xVals.map(xv => {
+    let sum = 0;
+    pdpData.forEach(d => {
+      const dd = {...d};
+      dd[featureKey] = xv;
+      sum += predictHousePrice(dd);
+    });
+    return sum / pdpData.length;
+  });
+
+  // ICE: individual lines
+  const iceLines = pdpData.map(d => {
+    return xVals.map(xv => {
+      const dd = {...d};
+      dd[featureKey] = xv;
+      return predictHousePrice(dd);
+    });
+  });
+
+  // Rug plot: actual feature values
+  const rugVals = pdpData.map(d => d[featureKey]);
+
+  return {xVals, pdpY, iceLines, rugVals};
+}
+
+function toggleICE(on) {
+  pdpShowICE = on;
+  document.getElementById('ice-on').classList.toggle('active', on);
+  document.getElementById('ice-off').classList.toggle('active', !on);
+  drawPDP();
+}
+
+function updatePDP() {
+  const featureKey = document.getElementById('pdp-feature').value;
+  const feat = pdpFeatures[featureKey];
+  document.getElementById('pdp-details').innerHTML =
+    `<strong style="color:#fbbf24">${feat.name}</strong><br>` +
+    `Range: ${feat.min.toLocaleString()} - ${feat.max.toLocaleString()} ${feat.unit}<br>` +
+    `Mean: ${feat.mean.toLocaleString()} ${feat.unit}<br>` +
+    `Effect: ${feat.desc}`;
+
+  const newCurve = computePDPCurve(featureKey);
+
+  if (pdpPrevCurve && pdpPrevCurve.pdpY.length === newCurve.pdpY.length) {
+    pdpTargetCurve = newCurve;
+    pdpAnimProgress = 0;
+    animatePDP();
+  } else {
+    pdpPrevCurve = newCurve;
+    pdpTargetCurve = newCurve;
+    pdpAnimProgress = 1;
+    drawPDP();
+  }
+}
+
+function animatePDP() {
+  if (pdpAnimFrame) cancelAnimationFrame(pdpAnimFrame);
+  pdpAnimProgress += 0.06;
+  if (pdpAnimProgress >= 1) {
+    pdpAnimProgress = 1;
+    pdpPrevCurve = pdpTargetCurve;
+    drawPDP();
+    return;
+  }
+  drawPDP();
+  pdpAnimFrame = requestAnimationFrame(animatePDP);
+}
+
+function drawPDP() {
+  const canvas = document.getElementById('pdp-canvas');
+  const {w, h, ctx} = resizeCanvas(canvas);
+  ctx.clearRect(0, 0, w, h);
+
+  if (!pdpTargetCurve) return;
+  const featureKey = document.getElementById('pdp-feature').value;
+  const feat = pdpFeatures[featureKey];
+
+  const prev = pdpPrevCurve || pdpTargetCurve;
+  const tgt = pdpTargetCurve;
+  const t = pdpAnimProgress;
+
+  // Interpolate curves
+  const interpPDP = tgt.pdpY.map((v,i) => lerp(prev.pdpY[i] || v, v, t));
+  const interpICE = tgt.iceLines.map((line,li) =>
+    line.map((v,i) => lerp((prev.iceLines[li] && prev.iceLines[li][i]) || v, v, t))
+  );
+  const xVals = tgt.xVals.map((v,i) => lerp((prev.xVals[i] !== undefined ? prev.xVals[i] : v), v, t));
+
+  const pad = {top:30, bottom:60, left:80, right:30};
+  const plotW = w - pad.left - pad.right;
+  const plotH = h - pad.top - pad.bottom;
+
+  // Y range from all data
+  let yMin = Infinity, yMax = -Infinity;
+  interpPDP.forEach(v => { yMin = Math.min(yMin, v); yMax = Math.max(yMax, v); });
+  if (pdpShowICE) {
+    interpICE.forEach(line => line.forEach(v => { yMin = Math.min(yMin, v); yMax = Math.max(yMax, v); }));
+  }
+  const yPad = (yMax - yMin) * 0.1 || 10000;
+  yMin -= yPad; yMax += yPad;
+
+  const xMin = xVals[0], xMax = xVals[xVals.length - 1];
+  const toSX = v => pad.left + (v - xMin) / (xMax - xMin) * plotW;
+  const toSY = v => pad.top + (1 - (v - yMin) / (yMax - yMin)) * plotH;
+
+  // Grid
+  ctx.strokeStyle = '#2d3147'; ctx.lineWidth = 1;
+  ctx.setLineDash([4,4]);
+  const ySteps = 5;
+  for (let i = 0; i <= ySteps; i++) {
+    const yv = yMin + (yMax - yMin) * i / ySteps;
+    const sy = toSY(yv);
+    ctx.beginPath(); ctx.moveTo(pad.left, sy); ctx.lineTo(w - pad.right, sy); ctx.stroke();
+    ctx.fillStyle = '#64748b'; ctx.font = '11px JetBrains Mono'; ctx.textAlign = 'right';
+    ctx.fillText('$' + (yv/1000).toFixed(0) + 'k', pad.left - 8, sy + 4);
+  }
+  const xSteps = 6;
+  for (let i = 0; i <= xSteps; i++) {
+    const xv = xMin + (xMax - xMin) * i / xSteps;
+    const sx = toSX(xv);
+    ctx.beginPath(); ctx.moveTo(sx, pad.top); ctx.lineTo(sx, h - pad.bottom); ctx.stroke();
+    ctx.fillStyle = '#64748b'; ctx.font = '11px JetBrains Mono'; ctx.textAlign = 'center';
+    let label = xv.toFixed(xMax - xMin > 10 ? 0 : 1);
+    ctx.fillText(label, sx, h - pad.bottom + 18);
+  }
+  ctx.setLineDash([]);
+
+  // ICE lines
+  if (pdpShowICE) {
+    interpICE.forEach(line => {
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(148,163,184,0.15)';
+      ctx.lineWidth = 1;
+      line.forEach((v, i) => {
+        const sx = toSX(xVals[i]), sy = toSY(v);
+        if (i === 0) ctx.moveTo(sx, sy);
+        else ctx.lineTo(sx, sy);
+      });
+      ctx.stroke();
+    });
+  }
+
+  // PDP line
+  ctx.beginPath();
+  ctx.strokeStyle = '#fbbf24';
+  ctx.lineWidth = 3;
+  ctx.shadowColor = 'rgba(251,191,36,0.3)';
+  ctx.shadowBlur = 8;
+  interpPDP.forEach((v, i) => {
+    const sx = toSX(xVals[i]), sy = toSY(v);
+    if (i === 0) ctx.moveTo(sx, sy);
+    else ctx.lineTo(sx, sy);
+  });
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Rug plot
+  const rugY = h - pad.bottom;
+  ctx.strokeStyle = 'rgba(251,191,36,0.5)';
+  ctx.lineWidth = 1.5;
+  tgt.rugVals.forEach(rv => {
+    const sx = toSX(lerp(prev.rugVals ? prev.rugVals[0] : rv, rv, t));
+    // Actually use actual rug positions
+  });
+  // Redraw with correct rug values
+  tgt.rugVals.forEach(rv => {
+    const sx = toSX(rv);
+    ctx.beginPath();
+    ctx.moveTo(sx, rugY);
+    ctx.lineTo(sx, rugY + 8);
+    ctx.stroke();
+  });
+
+  // Axes
+  ctx.strokeStyle = '#4a5568'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top);
+  ctx.lineTo(pad.left, h - pad.bottom);
+  ctx.lineTo(w - pad.right, h - pad.bottom);
+  ctx.stroke();
+
+  // Labels
+  ctx.fillStyle = '#94a3b8'; ctx.font = '12px Inter'; ctx.textAlign = 'center';
+  ctx.fillText(feat.name + (feat.unit ? ' (' + feat.unit + ')' : ''), w/2, h - 8);
+  ctx.save();
+  ctx.translate(14, h/2 - 10);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('Avg. Predicted Price ($)', 0, 0);
+  ctx.restore();
+
+  // PDP value label at right end
+  const lastPDP = interpPDP[interpPDP.length - 1];
+  ctx.fillStyle = '#fbbf24';
+  ctx.font = '600 11px JetBrains Mono';
+  ctx.textAlign = 'left';
+  ctx.fillText('$' + (lastPDP/1000).toFixed(0) + 'k', toSX(xVals[xVals.length-1]) + 6, toSY(lastPDP) + 4);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT & RESIZE
+// ═══════════════════════════════════════════════════════════════════
+generatePDPData();
+
+function initAll() {
+  updateSHAP();
+  drawLIME();
+  pdpPrevCurve = computePDPCurve('sqft');
+  pdpTargetCurve = pdpPrevCurve;
+  pdpAnimProgress = 1;
+  drawPDP();
+}
+
+window.addEventListener('resize', () => {
+  const activeIdx = [...document.querySelectorAll('.panel')].findIndex(p => p.classList.contains('active'));
+  if (activeIdx === 0) updateSHAP();
+  else if (activeIdx === 1) drawLIME();
+  else if (activeIdx === 2) drawPDP();
+});
+
+initAll();
+</script>
+</body>
+</html>

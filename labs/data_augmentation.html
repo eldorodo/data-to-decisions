@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Data Augmentation Gallery — Interactive Lab: explore image augmentations with live canvas previews.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Augmentation Gallery — Interactive Lab</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0f1117;color:#e2e8f0;font-family:'Inter','Segoe UI',system-ui,sans-serif;min-height:100vh;padding:20px}
+code,pre,.code-block,.mono{font-family:'JetBrains Mono','Cascadia Code','Courier New',monospace!important}
+html{scroll-behavior:smooth}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #7dd3fc;outline-offset:2px}
+h1{text-align:center;color:#7dd3fc;font-size:1.6rem;margin-bottom:6px}
+.subtitle{text-align:center;color:#94a3b8;font-size:.9rem;margin-bottom:20px}
+.tabs{display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid #2d3147;flex-wrap:wrap}
+.tab{padding:10px 18px;border-radius:8px 8px 0 0;border:1px solid #2d3147;border-bottom:none;cursor:pointer;font-size:.88rem;color:#94a3b8;background:#1e2130;transition:all .2s;position:relative;top:1px}
+.tab.active{background:#1a1f2e;color:#7dd3fc;border-color:#7dd3fc;border-bottom-color:#1a1f2e}
+.tab:hover:not(.active){color:#e2e8f0;background:#252a3d}
+.panel{display:none;background:#1a1f2e;border:1px solid #2d3147;border-radius:0 12px 12px 12px;padding:24px}
+.panel.active{display:block}
+
+/* Layout */
+.main-layout{display:grid;grid-template-columns:280px 256px 1fr;gap:20px;align-items:start}
+@media(max-width:1100px){.main-layout{grid-template-columns:1fr 1fr;}.aug-grid-wrap{grid-column:1/-1}}
+@media(max-width:768px){.main-layout{grid-template-columns:1fr;}.source-wrap,.controls-wrap,.aug-grid-wrap{grid-column:1/-1}}
+
+/* Controls panel */
+.controls-wrap{background:#1e2130;border:1px solid #2d3147;border-radius:12px;padding:16px;order:-1}
+.controls-wrap h3{color:#7dd3fc;font-size:.92rem;margin-bottom:12px}
+.aug-control{margin-bottom:10px;padding:8px;border-radius:8px;background:#0f1117;border:1px solid #2d3147}
+.aug-control label{display:flex;align-items:center;gap:8px;color:#e2e8f0;font-size:.82rem;cursor:pointer;margin-bottom:4px}
+.aug-control input[type=checkbox]{accent-color:#7dd3fc;width:16px;height:16px;cursor:pointer}
+.aug-control input[type=range]{width:100%;accent-color:#7dd3fc;cursor:pointer;margin-top:4px}
+.aug-control .val{color:#7dd3fc;font-size:.78rem;font-family:'JetBrains Mono',monospace;float:right}
+
+/* Source */
+.source-wrap{text-align:center}
+.source-wrap h3{color:#7dd3fc;font-size:.92rem;margin-bottom:10px}
+.source-canvas{border:2px solid #2d3147;border-radius:10px;background:#0f1117;image-rendering:pixelated}
+.image-selector{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px}
+.img-btn{padding:5px 12px;border-radius:6px;border:1px solid #2d3147;background:#1e2130;color:#94a3b8;cursor:pointer;font-size:.78rem;transition:all .2s}
+.img-btn:hover,.img-btn.active{border-color:#7dd3fc;color:#7dd3fc;background:#252a3d}
+
+/* Augmentation grid */
+.aug-grid-wrap h3{color:#7dd3fc;font-size:.92rem;margin-bottom:10px}
+.aug-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:768px){.aug-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.aug-grid{grid-template-columns:1fr}}
+.aug-cell{background:#1e2130;border:1px solid #2d3147;border-radius:10px;padding:8px;text-align:center}
+.aug-cell canvas{border-radius:6px;background:#0f1117;image-rendering:pixelated;max-width:100%;height:auto}
+.aug-label{color:#94a3b8;font-size:.72rem;margin-top:4px;font-family:'JetBrains Mono',monospace;min-height:2em;line-height:1.3}
+
+/* Buttons */
+.btn-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.btn{padding:8px 16px;border-radius:8px;border:1.5px solid #2d3147;background:#1e2130;color:#e2e8f0;cursor:pointer;font-size:.85rem;transition:all .2s;font-family:'Inter',sans-serif}
+.btn:hover{border-color:#7dd3fc;color:#7dd3fc;background:#252a3d}
+.btn-primary{background:#0369a1;border-color:#0369a1;color:#fff}
+.btn-primary:hover{background:#0284c7;border-color:#0284c7}
+
+/* Code toggle */
+.code-toggle{margin-top:18px}
+.code-toggle summary{color:#7dd3fc;cursor:pointer;font-size:.88rem;padding:8px;background:#1e2130;border:1px solid #2d3147;border-radius:8px}
+.code-toggle summary:hover{background:#252a3d}
+.code-block{background:#0f1117;border:1px solid #2d3147;border-radius:8px;padding:14px;margin-top:8px;font-size:.78rem;color:#86efac;overflow-x:auto;white-space:pre;line-height:1.6}
+.code-tabs{display:flex;gap:6px;margin-top:8px}
+.code-tab{padding:4px 12px;border-radius:6px 6px 0 0;border:1px solid #2d3147;border-bottom:none;cursor:pointer;font-size:.78rem;color:#94a3b8;background:#1e2130}
+.code-tab.active{color:#7dd3fc;border-color:#7dd3fc;background:#0f1117}
+
+/* Info section */
+.info-section{margin-top:24px;background:#1e2130;border:1px solid #2d3147;border-radius:12px;padding:18px}
+.info-section h3{color:#7dd3fc;font-size:.95rem;margin-bottom:12px}
+.info-section p{color:#94a3b8;font-size:.84rem;line-height:1.7;margin-bottom:10px}
+.info-section strong{color:#e2e8f0}
+.insight-box{background:#0f172a;border-left:3px solid #7dd3fc;border-radius:0 8px 8px 0;padding:12px 16px;margin:12px 0;font-size:.84rem;color:#7dd3fc}
+.gen-table{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:10px}
+.gen-table th{background:#252a3d;color:#7dd3fc;padding:8px 10px;border:1px solid #2d3147;text-align:left}
+.gen-table td{padding:6px 10px;border:1px solid #2d3147;color:#e2e8f0}
+.gen-table tr:nth-child(even) td{background:#1a1f2e}
+</style>
+</head>
+<body>
+<h1>Data Augmentation Gallery -- Interactive Lab</h1>
+<p class="subtitle">Explore how image augmentations transform training data to improve model generalization</p>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab(0)">Data Augmentation Gallery</button>
+</div>
+
+<div class="panel active" id="panel0">
+  <div class="main-layout">
+    <!-- Controls -->
+    <div class="controls-wrap">
+      <h3>Augmentation Controls</h3>
+      <div id="augControls"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="randomizeAll()">Randomize All</button>
+        <button class="btn" onclick="generateBatch()">Generate Batch</button>
+      </div>
+    </div>
+
+    <!-- Source Image -->
+    <div class="source-wrap">
+      <h3>Source Image</h3>
+      <canvas id="sourceCanvas" class="source-canvas" width="256" height="256"></canvas>
+      <div class="image-selector" id="imageSelector"></div>
+    </div>
+
+    <!-- Augmented Grid -->
+    <div class="aug-grid-wrap">
+      <h3>Augmented Outputs (3x3 Grid)</h3>
+      <div class="aug-grid" id="augGrid"></div>
+    </div>
+  </div>
+
+  <!-- Code Toggle -->
+  <details class="code-toggle">
+    <summary>Show Equivalent Code (PyTorch / TensorFlow)</summary>
+    <div class="code-tabs">
+      <button class="code-tab active" onclick="switchCodeTab(this,'pytorch')">PyTorch</button>
+      <button class="code-tab" onclick="switchCodeTab(this,'tensorflow')">TensorFlow</button>
+    </div>
+    <pre class="code-block" id="codeBlockPytorch">import torchvision.transforms as T
+
+transform = T.Compose([
+    T.RandomHorizontalFlip(p=0.5),
+    T.RandomRotation(degrees=45),
+    T.RandomResizedCrop(size=128, scale=(0.6, 1.0)),
+    T.ColorJitter(
+        brightness=0.5,
+        contrast=0.5,
+        hue=0.1
+    ),
+    T.RandomErasing(p=0.5, scale=(0.02, 0.15)),
+    T.ToTensor(),
+    T.Normalize(mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225])
+])
+
+# Apply to dataset
+augmented_dataset = datasets.ImageFolder(
+    root='./data/train',
+    transform=transform
+)</pre>
+    <pre class="code-block" id="codeBlockTensorflow" style="display:none">import tensorflow as tf
+
+def augment(image, label):
+    image = tf.image.random_flip_left_right(image)
+    image = tf.image.random_brightness(image, 0.5)
+    image = tf.image.random_contrast(image, 0.5, 2.0)
+    image = tf.image.random_hue(image, 0.1)
+
+    # Random rotation
+    angle = tf.random.uniform([], -0.785, 0.785)
+    image = tfa.image.rotate(image, angle)
+
+    # Random crop and resize
+    image = tf.image.random_crop(image, [96, 96, 3])
+    image = tf.image.resize(image, [128, 128])
+
+    # Cutout / Random erasing
+    image = tfa.image.random_cutout(
+        tf.expand_dims(image, 0),
+        mask_size=(20, 20)
+    )[0]
+
+    return image, label
+
+dataset = dataset.map(augment)
+dataset = dataset.batch(32).prefetch(tf.data.AUTOTUNE)</pre>
+  </details>
+
+  <!-- Info Section -->
+  <div class="info-section">
+    <h3>Why Data Augmentation Works</h3>
+    <p>Data augmentation <strong>artificially expands</strong> the training set by applying label-preserving transformations to existing images.
+       This forces the model to learn <strong>invariant features</strong> rather than memorizing pixel-level patterns, which
+       dramatically reduces overfitting -- especially when labeled data is scarce.</p>
+
+    <div class="insight-box">
+      A model trained on 5,000 images with augmentation can outperform one trained on 50,000 images without it.
+      Augmentation acts as a powerful regularizer akin to dropout or weight decay.
+    </div>
+
+    <h3 style="margin-top:16px">Best Practices</h3>
+    <p><strong>1. Match augmentations to the domain.</strong> Horizontal flips make sense for natural photos but not for text recognition or medical scans with laterality.
+       <strong>2. Keep augmentations label-preserving.</strong> Rotating a "6" by 180 degrees turns it into a "9."
+       <strong>3. Start mild, then increase.</strong> Overly aggressive augmentation can hurt early training.
+       <strong>4. Combine augmentations stochastically.</strong> Each sample should see a different random combination per epoch.</p>
+
+    <h3 style="margin-top:16px">Common Augmentations by Domain</h3>
+    <table class="gen-table">
+      <thead>
+        <tr><th>Domain</th><th>Common Augmentations</th><th>Avoid</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Natural Images (ImageNet)</td><td>Flip, Crop, Color Jitter, Cutout, MixUp</td><td>Extreme rotation</td></tr>
+        <tr><td>Medical Imaging</td><td>Rotation, Elastic Deform, Brightness, Noise</td><td>Horizontal flip (laterality matters)</td></tr>
+        <tr><td>Satellite / Aerial</td><td>90-degree rotations, Flip, Scale, Haze</td><td>Hue shifts (color is semantic)</td></tr>
+        <tr><td>OCR / Document</td><td>Slight rotation, Noise, Blur, Elastic</td><td>Horizontal flip, heavy crop</td></tr>
+        <tr><td>Object Detection</td><td>Mosaic, MixUp, Flip, Scale, Color</td><td>Cutout on small objects</td></tr>
+        <tr><td>Audio Spectrograms</td><td>Time shift, Freq mask, SpecAugment</td><td>Vertical flip</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+/* ───── Configuration ───── */
+const SRC_SIZE = 128;
+const DISP_SIZE = 256;
+const AUG_SIZE = 160;
+const GRID_COUNT = 9;
+
+const augDefs = [
+  {id:'hflip',   name:'Horizontal Flip',   type:'toggle'},
+  {id:'rotate',  name:'Rotation',          type:'range', min:-45, max:45, step:1, unit:'\u00b0', def:0},
+  {id:'crop',    name:'Random Crop',       type:'range', min:10, max:40, step:1, unit:'%', def:20},
+  {id:'bright',  name:'Brightness',        type:'range', min:-50, max:50, step:1, unit:'%', def:0},
+  {id:'contrast',name:'Contrast',          type:'range', min:50, max:200, step:5, unit:'%', def:100},
+  {id:'noise',   name:'Gaussian Noise',    type:'range', min:0, max:50, step:1, unit:'', def:0},
+  {id:'hue',     name:'Color Jitter / Hue',type:'range', min:-30, max:30, step:1, unit:'\u00b0', def:0},
+  {id:'cutout',  name:'Cutout / Erasing',  type:'range', min:0, max:5, step:1, unit:' patches', def:0},
+  {id:'zoom',    name:'Scale / Zoom',      type:'range', min:70, max:130, step:1, unit:'%', def:100}
+];
+
+const imageShapes = ['Cat Face','House','Digit 7','Arrow','Star'];
+let currentImage = 0;
+let sourceData = null;
+
+/* ───── Build Controls ───── */
+function buildControls(){
+  const wrap = document.getElementById('augControls');
+  wrap.innerHTML = '';
+  augDefs.forEach(a => {
+    const d = document.createElement('div');
+    d.className = 'aug-control';
+    if(a.type === 'toggle'){
+      d.innerHTML = `<label><input type="checkbox" id="chk_${a.id}"> ${a.name}</label>`;
+    } else {
+      d.innerHTML = `<label><input type="checkbox" id="chk_${a.id}" checked> ${a.name}
+        <span class="val" id="val_${a.id}">${a.def}${a.unit}</span></label>
+        <input type="range" id="rng_${a.id}" min="${a.min}" max="${a.max}" step="${a.step}" value="${a.def}">`;
+      const rng = d.querySelector('input[type=range]');
+      const vl = d.querySelector('.val');
+      rng.addEventListener('input', () => { vl.textContent = rng.value + a.unit; });
+    }
+    wrap.appendChild(d);
+  });
+}
+
+/* ───── Build Image Selector ───── */
+function buildImageSelector(){
+  const wrap = document.getElementById('imageSelector');
+  imageShapes.forEach((name, i) => {
+    const b = document.createElement('button');
+    b.className = 'img-btn' + (i === 0 ? ' active' : '');
+    b.textContent = name;
+    b.onclick = () => {
+      document.querySelectorAll('.img-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      currentImage = i;
+      drawSource();
+      generateBatch();
+    };
+    wrap.appendChild(b);
+  });
+}
+
+/* ───── Build Augmentation Grid ───── */
+function buildGrid(){
+  const grid = document.getElementById('augGrid');
+  grid.innerHTML = '';
+  for(let i = 0; i < GRID_COUNT; i++){
+    const cell = document.createElement('div');
+    cell.className = 'aug-cell';
+    cell.innerHTML = `<canvas id="augC${i}" width="${AUG_SIZE}" height="${AUG_SIZE}"></canvas>
+      <div class="aug-label" id="augL${i}">--</div>`;
+    grid.appendChild(cell);
+  }
+}
+
+/* ───── Draw Source Images ───── */
+function drawSource(){
+  const c = document.getElementById('sourceCanvas');
+  const ctx = c.getContext('2d');
+  // Draw at SRC_SIZE then scale
+  const off = document.createElement('canvas');
+  off.width = off.height = SRC_SIZE;
+  const g = off.getContext('2d');
+  g.fillStyle = '#1a1a2e';
+  g.fillRect(0, 0, SRC_SIZE, SRC_SIZE);
+  drawShape(g, currentImage, SRC_SIZE);
+  // Scale to display
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, DISP_SIZE, DISP_SIZE);
+  ctx.drawImage(off, 0, 0, DISP_SIZE, DISP_SIZE);
+  // Store source pixel data at SRC_SIZE
+  sourceData = g.getImageData(0, 0, SRC_SIZE, SRC_SIZE);
+}
+
+function drawShape(g, idx, S){
+  const cx = S/2, cy = S/2;
+  switch(idx){
+    case 0: // Cat Face
+      g.fillStyle = '#f59e0b';
+      g.beginPath(); g.arc(cx, cy+4, S*0.32, 0, Math.PI*2); g.fill();
+      // Ears
+      g.fillStyle = '#d97706';
+      g.beginPath(); g.moveTo(cx-S*0.28, cy-S*0.12); g.lineTo(cx-S*0.15, cy-S*0.38);
+      g.lineTo(cx-S*0.02, cy-S*0.12); g.fill();
+      g.beginPath(); g.moveTo(cx+S*0.02, cy-S*0.12); g.lineTo(cx+S*0.15, cy-S*0.38);
+      g.lineTo(cx+S*0.28, cy-S*0.12); g.fill();
+      // Eyes
+      g.fillStyle = '#1e293b';
+      g.beginPath(); g.arc(cx-S*0.11, cy, S*0.05, 0, Math.PI*2); g.fill();
+      g.beginPath(); g.arc(cx+S*0.11, cy, S*0.05, 0, Math.PI*2); g.fill();
+      // Eye shine
+      g.fillStyle = '#fff';
+      g.beginPath(); g.arc(cx-S*0.09, cy-S*0.02, S*0.018, 0, Math.PI*2); g.fill();
+      g.beginPath(); g.arc(cx+S*0.13, cy-S*0.02, S*0.018, 0, Math.PI*2); g.fill();
+      // Nose
+      g.fillStyle = '#f472b6';
+      g.beginPath(); g.moveTo(cx, cy+S*0.08); g.lineTo(cx-S*0.04, cy+S*0.14);
+      g.lineTo(cx+S*0.04, cy+S*0.14); g.fill();
+      // Whiskers
+      g.strokeStyle = '#fbbf24';
+      g.lineWidth = 1.2;
+      [[-0.28, 0.1], [-0.28, 0.15], [0.28, 0.1], [0.28, 0.15]].forEach(([dx,dy]) => {
+        g.beginPath(); g.moveTo(cx, cy+S*0.12); g.lineTo(cx+S*dx, cy+S*dy); g.stroke();
+      });
+      break;
+    case 1: // House
+      // Wall
+      g.fillStyle = '#dc2626';
+      g.fillRect(cx-S*0.25, cy, S*0.5, S*0.35);
+      // Roof
+      g.fillStyle = '#7c2d12';
+      g.beginPath(); g.moveTo(cx-S*0.32, cy); g.lineTo(cx, cy-S*0.3);
+      g.lineTo(cx+S*0.32, cy); g.fill();
+      // Door
+      g.fillStyle = '#92400e';
+      g.fillRect(cx-S*0.06, cy+S*0.12, S*0.12, S*0.23);
+      // Doorknob
+      g.fillStyle = '#fbbf24';
+      g.beginPath(); g.arc(cx+S*0.03, cy+S*0.24, S*0.015, 0, Math.PI*2); g.fill();
+      // Windows
+      g.fillStyle = '#7dd3fc';
+      g.fillRect(cx-S*0.2, cy+S*0.06, S*0.1, S*0.1);
+      g.fillRect(cx+S*0.1, cy+S*0.06, S*0.1, S*0.1);
+      // Window cross
+      g.strokeStyle = '#1e293b'; g.lineWidth = 1;
+      [[-0.15, 0.11, 0.1, 0], [-0.15, 0.11, 0, 0.1], [0.15, 0.11, 0.1, 0], [0.15, 0.11, 0, 0.1]].forEach(
+        ([x,y,w,h]) => { g.beginPath(); g.moveTo(cx+S*x, cy+S*y); g.lineTo(cx+S*(x+w), cy+S*(y+h)); g.stroke(); });
+      // Chimney
+      g.fillStyle = '#6b7280';
+      g.fillRect(cx+S*0.12, cy-S*0.22, S*0.08, S*0.14);
+      break;
+    case 2: // Digit 7
+      g.strokeStyle = '#22d3ee';
+      g.lineWidth = S*0.08;
+      g.lineCap = 'round';
+      g.lineJoin = 'round';
+      g.beginPath();
+      g.moveTo(cx-S*0.2, cy-S*0.25);
+      g.lineTo(cx+S*0.2, cy-S*0.25);
+      g.lineTo(cx-S*0.05, cy+S*0.3);
+      g.stroke();
+      // Serif
+      g.beginPath();
+      g.moveTo(cx-S*0.02, cy-S*0.05);
+      g.lineTo(cx+S*0.1, cy-S*0.05);
+      g.stroke();
+      break;
+    case 3: // Arrow
+      g.fillStyle = '#10b981';
+      // Shaft
+      g.fillRect(cx-S*0.04, cy-S*0.05, S*0.08, S*0.35);
+      // Head
+      g.beginPath();
+      g.moveTo(cx, cy-S*0.32);
+      g.lineTo(cx-S*0.18, cy-S*0.05);
+      g.lineTo(cx+S*0.18, cy-S*0.05);
+      g.fill();
+      break;
+    case 4: // Star
+      g.fillStyle = '#eab308';
+      g.beginPath();
+      for(let i = 0; i < 5; i++){
+        const a1 = (i*72 - 90) * Math.PI/180;
+        const a2 = ((i*72+36) - 90) * Math.PI/180;
+        const r1 = S*0.34, r2 = S*0.14;
+        if(i===0) g.moveTo(cx+r1*Math.cos(a1), cy+r1*Math.sin(a1));
+        else g.lineTo(cx+r1*Math.cos(a1), cy+r1*Math.sin(a1));
+        g.lineTo(cx+r2*Math.cos(a2), cy+r2*Math.sin(a2));
+      }
+      g.closePath();
+      g.fill();
+      // Inner glow
+      g.fillStyle = '#fde047';
+      g.beginPath();
+      for(let i = 0; i < 5; i++){
+        const a1 = (i*72 - 90) * Math.PI/180;
+        const a2 = ((i*72+36) - 90) * Math.PI/180;
+        const r1 = S*0.18, r2 = S*0.08;
+        if(i===0) g.moveTo(cx+r1*Math.cos(a1), cy+r1*Math.sin(a1));
+        else g.lineTo(cx+r1*Math.cos(a1), cy+r1*Math.sin(a1));
+        g.lineTo(cx+r2*Math.cos(a2), cy+r2*Math.sin(a2));
+      }
+      g.closePath();
+      g.fill();
+      break;
+  }
+}
+
+/* ───── Augmentation Engine ───── */
+function getAugState(id){
+  const chk = document.getElementById('chk_'+id);
+  const rng = document.getElementById('rng_'+id);
+  return { enabled: chk ? chk.checked : false, value: rng ? parseFloat(rng.value) : 0 };
+}
+
+function applyAugmentation(srcData, augId, randomVal){
+  // Work on a copy
+  const w = srcData.width, h = srcData.height;
+  const tmpCanvas = document.createElement('canvas');
+  tmpCanvas.width = w; tmpCanvas.height = h;
+  const tmpCtx = tmpCanvas.getContext('2d');
+  tmpCtx.putImageData(cloneImageData(tmpCtx, srcData), 0, 0);
+  let resultCanvas = tmpCanvas;
+  let resultCtx = tmpCtx;
+
+  switch(augId){
+    case 'hflip':
+      resultCtx.clearRect(0, 0, w, h);
+      resultCtx.save();
+      resultCtx.translate(w, 0);
+      resultCtx.scale(-1, 1);
+      resultCtx.putImageData(srcData, 0, 0);
+      // putImageData ignores transforms, so do pixel-level flip
+      resultCtx.restore();
+      const fd = cloneImageData(resultCtx, srcData);
+      for(let y = 0; y < h; y++){
+        for(let x = 0; x < w; x++){
+          const si = (y * w + x) * 4;
+          const di = (y * w + (w - 1 - x)) * 4;
+          fd.data[di] = srcData.data[si];
+          fd.data[di+1] = srcData.data[si+1];
+          fd.data[di+2] = srcData.data[si+2];
+          fd.data[di+3] = srcData.data[si+3];
+        }
+      }
+      resultCtx.putImageData(fd, 0, 0);
+      break;
+
+    case 'rotate': {
+      const angle = randomVal * Math.PI / 180;
+      const rc = document.createElement('canvas');
+      rc.width = w; rc.height = h;
+      const rctx = rc.getContext('2d');
+      rctx.fillStyle = '#1a1a2e';
+      rctx.fillRect(0, 0, w, h);
+      rctx.save();
+      rctx.translate(w/2, h/2);
+      rctx.rotate(angle);
+      rctx.drawImage(tmpCanvas, -w/2, -h/2);
+      rctx.restore();
+      resultCanvas = rc;
+      resultCtx = rctx;
+      break;
+    }
+
+    case 'crop': {
+      const pct = randomVal / 100;
+      const cropW = Math.floor(w * (1 - pct));
+      const cropH = Math.floor(h * (1 - pct));
+      const ox = Math.floor(Math.random() * (w - cropW));
+      const oy = Math.floor(Math.random() * (h - cropH));
+      const cc = document.createElement('canvas');
+      cc.width = w; cc.height = h;
+      const cctx = cc.getContext('2d');
+      cctx.imageSmoothingEnabled = false;
+      cctx.drawImage(tmpCanvas, ox, oy, cropW, cropH, 0, 0, w, h);
+      resultCanvas = cc;
+      resultCtx = cctx;
+      break;
+    }
+
+    case 'bright': {
+      const factor = randomVal / 100;
+      const d = resultCtx.getImageData(0, 0, w, h);
+      for(let i = 0; i < d.data.length; i += 4){
+        d.data[i]   = clamp(d.data[i]   + d.data[i]   * factor);
+        d.data[i+1] = clamp(d.data[i+1] + d.data[i+1] * factor);
+        d.data[i+2] = clamp(d.data[i+2] + d.data[i+2] * factor);
+      }
+      resultCtx.putImageData(d, 0, 0);
+      break;
+    }
+
+    case 'contrast': {
+      const f = randomVal / 100;
+      const d = resultCtx.getImageData(0, 0, w, h);
+      const intercept = 128 * (1 - f);
+      for(let i = 0; i < d.data.length; i += 4){
+        d.data[i]   = clamp(d.data[i]   * f + intercept);
+        d.data[i+1] = clamp(d.data[i+1] * f + intercept);
+        d.data[i+2] = clamp(d.data[i+2] * f + intercept);
+      }
+      resultCtx.putImageData(d, 0, 0);
+      break;
+    }
+
+    case 'noise': {
+      const sigma = randomVal;
+      const d = resultCtx.getImageData(0, 0, w, h);
+      for(let i = 0; i < d.data.length; i += 4){
+        const n = gaussianRandom() * sigma;
+        d.data[i]   = clamp(d.data[i]   + n);
+        d.data[i+1] = clamp(d.data[i+1] + n);
+        d.data[i+2] = clamp(d.data[i+2] + n);
+      }
+      resultCtx.putImageData(d, 0, 0);
+      break;
+    }
+
+    case 'hue': {
+      const shift = randomVal;
+      const d = resultCtx.getImageData(0, 0, w, h);
+      for(let i = 0; i < d.data.length; i += 4){
+        let [hh, s, l] = rgbToHsl(d.data[i], d.data[i+1], d.data[i+2]);
+        hh = ((hh + shift / 360) % 1 + 1) % 1;
+        const [r, gg, b] = hslToRgb(hh, s, l);
+        d.data[i] = r; d.data[i+1] = gg; d.data[i+2] = b;
+      }
+      resultCtx.putImageData(d, 0, 0);
+      break;
+    }
+
+    case 'cutout': {
+      const patches = Math.round(randomVal);
+      const d = resultCtx.getImageData(0, 0, w, h);
+      for(let p = 0; p < patches; p++){
+        const pw = Math.floor(w * 0.15 + Math.random() * w * 0.1);
+        const ph = Math.floor(h * 0.15 + Math.random() * h * 0.1);
+        const px = Math.floor(Math.random() * (w - pw));
+        const py = Math.floor(Math.random() * (h - ph));
+        for(let y = py; y < py + ph && y < h; y++){
+          for(let x = px; x < px + pw && x < w; x++){
+            const idx = (y * w + x) * 4;
+            d.data[idx] = 80; d.data[idx+1] = 80; d.data[idx+2] = 80; d.data[idx+3] = 255;
+          }
+        }
+      }
+      resultCtx.putImageData(d, 0, 0);
+      break;
+    }
+
+    case 'zoom': {
+      const scale = randomVal / 100;
+      const sw = Math.floor(w / scale);
+      const sh = Math.floor(h / scale);
+      const ox = Math.floor((w - sw) / 2);
+      const oy = Math.floor((h - sh) / 2);
+      const zc = document.createElement('canvas');
+      zc.width = w; zc.height = h;
+      const zctx = zc.getContext('2d');
+      zctx.fillStyle = '#1a1a2e';
+      zctx.fillRect(0, 0, w, h);
+      zctx.imageSmoothingEnabled = false;
+      zctx.drawImage(tmpCanvas, ox, oy, sw, sh, 0, 0, w, h);
+      resultCanvas = zc;
+      resultCtx = zctx;
+      break;
+    }
+  }
+  return resultCtx.getImageData(0, 0, w, h);
+}
+
+function cloneImageData(ctx, src){
+  const d = ctx.createImageData(src.width, src.height);
+  d.data.set(src.data);
+  return d;
+}
+
+function clamp(v){ return Math.max(0, Math.min(255, Math.round(v))); }
+
+function gaussianRandom(){
+  let u = 0, v = 0;
+  while(u === 0) u = Math.random();
+  while(v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+/* ───── HSL Utilities ───── */
+function rgbToHsl(r, g, b){
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+  if(max === min){ h = s = 0; }
+  else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch(max){
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+  }
+  return [h, s, l];
+}
+
+function hslToRgb(h, s, l){
+  let r, g, b;
+  if(s === 0){ r = g = b = l; }
+  else {
+    const hue2rgb = (p, q, t) => {
+      if(t < 0) t += 1; if(t > 1) t -= 1;
+      if(t < 1/6) return p + (q - p) * 6 * t;
+      if(t < 1/2) return q;
+      if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1/3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1/3);
+  }
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+
+/* ───── Generate Batch ───── */
+function generateBatch(){
+  if(!sourceData) return;
+  const enabledAugs = [];
+  augDefs.forEach(a => {
+    const st = getAugState(a.id);
+    if(st.enabled){
+      enabledAugs.push({...a, value: st.value});
+    }
+  });
+
+  for(let i = 0; i < GRID_COUNT; i++){
+    const c = document.getElementById('augC'+i);
+    const ctx = c.getContext('2d');
+    const label = document.getElementById('augL'+i);
+
+    if(enabledAugs.length === 0){
+      // Just show original scaled
+      ctx.imageSmoothingEnabled = false;
+      const tc = document.createElement('canvas');
+      tc.width = SRC_SIZE; tc.height = SRC_SIZE;
+      tc.getContext('2d').putImageData(sourceData, 0, 0);
+      ctx.clearRect(0, 0, AUG_SIZE, AUG_SIZE);
+      ctx.drawImage(tc, 0, 0, AUG_SIZE, AUG_SIZE);
+      label.textContent = '(no augmentation)';
+      continue;
+    }
+
+    // Pick a random subset of enabled augmentations (1 to all)
+    const count = 1 + Math.floor(Math.random() * Math.min(enabledAugs.length, 3));
+    const shuffled = [...enabledAugs].sort(() => Math.random() - 0.5);
+    const picked = shuffled.slice(0, count);
+
+    // Apply augmentations sequentially
+    const tmpCtx = document.createElement('canvas').getContext('2d');
+    tmpCtx.canvas.width = SRC_SIZE;
+    tmpCtx.canvas.height = SRC_SIZE;
+    let current = cloneImageData(tmpCtx, sourceData);
+
+    const appliedNames = [];
+    picked.forEach(aug => {
+      let val;
+      if(aug.type === 'toggle'){
+        val = 1;
+      } else {
+        // Randomize around the set value with some jitter
+        const range = aug.max - aug.min;
+        const jitter = (Math.random() - 0.5) * range * 0.5;
+        val = Math.max(aug.min, Math.min(aug.max, aug.value + jitter));
+        if(aug.step >= 1) val = Math.round(val);
+      }
+
+      tmpCtx.putImageData(current, 0, 0);
+      current = applyAugmentation(current, aug.id, val);
+
+      let shortName = aug.name.split('/')[0].split('(')[0].trim();
+      if(shortName.length > 12) shortName = shortName.substring(0, 11) + '.';
+      if(aug.type !== 'toggle'){
+        const dispVal = aug.step >= 1 ? Math.round(val) : val.toFixed(1);
+        appliedNames.push(shortName + ':' + dispVal + (aug.unit || ''));
+      } else {
+        appliedNames.push(shortName);
+      }
+    });
+
+    // Draw to augmented canvas
+    const src = document.createElement('canvas');
+    src.width = SRC_SIZE; src.height = SRC_SIZE;
+    src.getContext('2d').putImageData(current, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, AUG_SIZE, AUG_SIZE);
+    ctx.drawImage(src, 0, 0, AUG_SIZE, AUG_SIZE);
+    label.textContent = appliedNames.join(' + ');
+  }
+}
+
+/* ───── Randomize All ───── */
+function randomizeAll(){
+  augDefs.forEach(a => {
+    const chk = document.getElementById('chk_'+a.id);
+    chk.checked = Math.random() > 0.35;
+    if(a.type === 'range'){
+      const rng = document.getElementById('rng_'+a.id);
+      const val = a.min + Math.random() * (a.max - a.min);
+      const snapped = a.step >= 1 ? Math.round(val) : parseFloat(val.toFixed(1));
+      rng.value = snapped;
+      document.getElementById('val_'+a.id).textContent = snapped + a.unit;
+    }
+  });
+  generateBatch();
+}
+
+/* ───── Tab Switching ───── */
+function switchTab(i){
+  document.querySelectorAll('.tab').forEach((t,j) => t.classList.toggle('active', j===i));
+  document.querySelectorAll('.panel').forEach((p,j) => p.classList.toggle('active', j===i));
+}
+
+function switchCodeTab(btn, id){
+  document.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('codeBlockPytorch').style.display = id==='pytorch' ? 'block' : 'none';
+  document.getElementById('codeBlockTensorflow').style.display = id==='tensorflow' ? 'block' : 'none';
+}
+
+/* ───── Initialize ───── */
+buildControls();
+buildImageSelector();
+buildGrid();
+drawSource();
+
+// Add change listeners to all controls
+augDefs.forEach(a => {
+  const chk = document.getElementById('chk_'+a.id);
+  chk.addEventListener('change', generateBatch);
+  if(a.type === 'range'){
+    document.getElementById('rng_'+a.id).addEventListener('input', generateBatch);
+  }
+});
+
+generateBatch();
+</script>
+</body>
+</html>

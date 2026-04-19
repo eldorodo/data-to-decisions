@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Advanced NLP — RAG Pipeline Simulator & Attention Head Inspector interactive labs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced NLP — Interactive Lab</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0f1117;color:#e2e8f0;font-family:'Inter','Segoe UI',system-ui,sans-serif;min-height:100vh}
+code,pre,.mono{font-family:'JetBrains Mono','Cascadia Code','Courier New',monospace!important}
+html{scroll-behavior:smooth}
+
+.header{padding:24px 32px;border-bottom:1px solid #2d3147;background:#1e2130}
+.header h1{font-size:1.5rem;font-weight:700;color:#7dd3fc;letter-spacing:-0.02em}
+.header p{color:#94a3b8;font-size:0.875rem;margin-top:4px}
+
+.tabs{display:flex;gap:4px;padding:16px 32px;background:#1e2130;border-bottom:1px solid #2d3147;overflow-x:auto;flex-wrap:nowrap}
+.tab{padding:8px 18px;border-radius:8px;border:1px solid #2d3147;background:transparent;color:#94a3b8;cursor:pointer;font-size:0.8rem;font-weight:500;white-space:nowrap;transition:all .2s;font-family:inherit}
+.tab.active{background:#0369a1;color:#fff;border-color:#0369a1}
+.tab:hover:not(.active){background:#1e2130;color:#e2e8f0;border-color:#7dd3fc}
+
+.panel{display:none;padding:28px 32px;max-width:1300px;margin:0 auto}
+.panel.active{display:block}
+.card{background:#1e2130;border:1px solid #2d3147;border-radius:12px;padding:20px;margin-bottom:16px}
+.card h3{font-size:1rem;font-weight:600;color:#7dd3fc;margin-bottom:12px}
+
+.row{display:flex;gap:16px;flex-wrap:wrap}
+.col{flex:1;min-width:280px}
+.col-left{flex:0 0 340px;min-width:280px}
+.col-right{flex:1;min-width:400px}
+
+label{font-size:0.8rem;color:#94a3b8;display:block;margin-bottom:6px}
+input[type=text],select,textarea{width:100%;padding:8px 12px;background:#0f172a;border:1px solid #2d3147;border-radius:8px;color:#e2e8f0;font-size:0.85rem;font-family:inherit;outline:none;transition:border .2s}
+input[type=text]:focus,select:focus,textarea:focus{border-color:#7dd3fc}
+input[type=range]{width:100%;accent-color:#7dd3fc}
+
+.btn{padding:8px 16px;border-radius:8px;border:1px solid #2d3147;background:#1e2130;color:#e2e8f0;cursor:pointer;font-size:0.8rem;font-weight:500;transition:all .2s;display:inline-flex;align-items:center;gap:6px;font-family:inherit}
+.btn:hover{background:#0369a1;border-color:#7dd3fc;color:#fff}
+.btn.active,.btn.primary{background:#0369a1;border-color:#0369a1;color:#fff}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+
+.info-box{background:#0f172a;border-left:3px solid #7dd3fc;border-radius:0 8px 8px 0;padding:12px 16px;font-size:0.8rem;color:#94a3b8;line-height:1.6;margin-top:12px}
+.info-box strong{color:#e2e8f0}
+
+/* RAG specific */
+.rag-flow{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.rag-step{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#0f172a;border:1px solid #2d3147;border-radius:8px;font-size:0.82rem;transition:all .4s;opacity:.4}
+.rag-step.active{opacity:1;border-color:#7dd3fc;background:#0c1929}
+.rag-step.done{opacity:.7;border-color:#2d3147}
+.rag-step-num{width:28px;height:28px;border-radius:50%;background:#2d3147;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;color:#94a3b8;flex-shrink:0;transition:all .3s}
+.rag-step.active .rag-step-num{background:#0369a1;color:#fff}
+.rag-step.done .rag-step-num{background:#14532d;color:#86efac}
+.rag-step-label{font-weight:600;color:#e2e8f0}
+.rag-step-desc{color:#94a3b8;font-size:0.75rem}
+
+.chunk-card{background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:10px 14px;margin-bottom:8px;transition:all .3s;font-size:0.78rem}
+.chunk-card.highlight{border-color:#7dd3fc;background:#0c1929}
+.chunk-card .chunk-topic{font-weight:600;color:#7dd3fc;font-size:0.75rem;margin-bottom:4px}
+.chunk-card .chunk-text{color:#94a3b8;line-height:1.5}
+.chunk-card .chunk-score{margin-top:6px}
+
+.score-bar-bg{height:6px;background:#2d3147;border-radius:3px;overflow:hidden;margin-top:4px}
+.score-bar-fill{height:100%;border-radius:3px;transition:width .6s ease}
+
+.vector-display{font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#86efac;background:#0f172a;border:1px solid #2d3147;border-radius:6px;padding:8px 12px;margin-top:8px;word-break:break-all}
+
+.prompt-template{font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:#fbbf24;background:#0f172a;border:1px solid #2d3147;border-radius:6px;padding:10px 14px;margin-top:8px;white-space:pre-wrap;line-height:1.6}
+
+.llm-output{font-size:0.85rem;color:#e2e8f0;background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:12px 16px;margin-top:8px;min-height:60px;line-height:1.6}
+.llm-output .cursor-blink{display:inline-block;width:2px;height:14px;background:#7dd3fc;animation:blink 1s infinite;vertical-align:text-bottom;margin-left:2px}
+@keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
+
+.toggle-group{display:flex;border:1px solid #2d3147;border-radius:8px;overflow:hidden;margin-bottom:12px}
+.toggle-opt{padding:6px 16px;font-size:0.78rem;cursor:pointer;background:transparent;color:#94a3b8;border:none;font-family:inherit;transition:all .2s}
+.toggle-opt.active{background:#0369a1;color:#fff}
+
+/* Attention specific */
+.token-row{display:flex;gap:2px;flex-wrap:wrap;margin-bottom:8px}
+.token-chip{display:inline-block;padding:5px 10px;border-radius:6px;font-size:0.78rem;font-weight:500;cursor:pointer;font-family:'JetBrains Mono',monospace;background:#2d3147;color:#e2e8f0;transition:all .2s;border:2px solid transparent}
+.token-chip:hover{border-color:#7dd3fc}
+.token-chip.selected{border-color:#7dd3fc;background:#0369a1;color:#fff}
+
+.head-btn{padding:6px 12px;border-radius:6px;border:1px solid #2d3147;background:transparent;color:#94a3b8;cursor:pointer;font-size:0.72rem;font-family:inherit;transition:all .2s;text-align:left;line-height:1.3}
+.head-btn:hover{border-color:#7dd3fc;color:#e2e8f0}
+.head-btn.active{background:#0369a1;border-color:#0369a1;color:#fff}
+.head-btn .head-label{display:block;font-weight:600;font-size:0.75rem}
+.head-btn .head-desc{display:block;font-size:0.65rem;opacity:.7;margin-top:2px}
+
+.heatmap-wrap{overflow-x:auto;margin-top:12px}
+canvas{border-radius:8px;display:block}
+
+.legend-bar{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:0.72rem;color:#94a3b8}
+.legend-gradient{width:120px;height:12px;border-radius:3px;background:linear-gradient(to right,#0f172a,#0369a1,#7dd3fc,#fbbf24)}
+
+.arc-canvas-wrap{position:relative;margin-top:12px;overflow-x:auto}
+
+@media(max-width:768px){
+  .row{flex-direction:column}
+  .col-left{flex:1 1 100%}
+  .col-right{flex:1 1 100%;min-width:0}
+  .panel{padding:16px}
+  .header{padding:16px}
+  .tabs{padding:12px 16px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Advanced NLP &mdash; Interactive Lab</h1>
+  <p>Explore RAG pipelines and multi-head attention mechanisms</p>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab(0)">RAG Pipeline Simulator</button>
+  <button class="tab" onclick="switchTab(1)">Attention Head Inspector</button>
+</div>
+
+<!-- ─────────── TAB 1: RAG Pipeline Simulator ─────────── -->
+<div class="panel active" id="panel-0">
+  <div class="row">
+    <div class="col-left">
+      <div class="card">
+        <h3>Query Input</h3>
+        <label>Select a preset question</label>
+        <select id="rag-preset" onchange="ragSelectPreset()" style="margin-bottom:12px">
+          <option value="0">What is the capital of France?</option>
+          <option value="1">How does photosynthesis work?</option>
+          <option value="2">What causes ocean tides?</option>
+          <option value="3">What is the speed of light?</option>
+        </select>
+        <label>Or type your own question</label>
+        <input type="text" id="rag-query" value="What is the capital of France?" placeholder="Type a question...">
+
+        <div style="margin-top:14px">
+          <label>Mode</label>
+          <div class="toggle-group">
+            <button class="toggle-opt active" id="tog-rag" onclick="ragSetMode('rag')">With RAG</button>
+            <button class="toggle-opt" id="tog-norag" onclick="ragSetMode('norag')">Without RAG</button>
+          </div>
+        </div>
+
+        <div style="margin-top:8px">
+          <label>Animation Speed</label>
+          <input type="range" id="rag-speed" min="1" max="5" value="3">
+          <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:#64748b"><span>Slow</span><span>Fast</span></div>
+        </div>
+
+        <button class="btn primary" id="rag-run-btn" onclick="ragRun()" style="margin-top:14px;width:100%;justify-content:center">
+          <span>&#9654;</span> Run Pipeline
+        </button>
+      </div>
+
+      <div class="card">
+        <h3>Pipeline Stages</h3>
+        <div class="rag-flow" id="rag-flow">
+          <div class="rag-step" id="rag-s0"><div class="rag-step-num">1</div><div><div class="rag-step-label">Query</div><div class="rag-step-desc">User question received</div></div></div>
+          <div class="rag-step" id="rag-s1"><div class="rag-step-num">2</div><div><div class="rag-step-label">Embedding</div><div class="rag-step-desc">Vectorize query</div></div></div>
+          <div class="rag-step" id="rag-s2"><div class="rag-step-num">3</div><div><div class="rag-step-label">Retrieval</div><div class="rag-step-desc">Find similar chunks</div></div></div>
+          <div class="rag-step" id="rag-s3"><div class="rag-step-num">4</div><div><div class="rag-step-label">Context Assembly</div><div class="rag-step-desc">Build prompt</div></div></div>
+          <div class="rag-step" id="rag-s4"><div class="rag-step-num">5</div><div><div class="rag-step-label">Generation</div><div class="rag-step-desc">LLM produces answer</div></div></div>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <strong>RAG</strong> (Retrieval-Augmented Generation) grounds LLM responses in retrieved facts, reducing hallucination. Without retrieval, the model relies solely on its parametric memory and may fabricate plausible but incorrect answers.
+      </div>
+    </div>
+
+    <div class="col-right">
+      <div class="card" id="rag-viz-card">
+        <h3>Visualization</h3>
+
+        <!-- Step 1: Query display -->
+        <div id="rag-v-query" style="display:none">
+          <div style="font-size:0.8rem;color:#94a3b8;margin-bottom:6px">User Query:</div>
+          <div style="font-size:1rem;color:#e2e8f0;font-weight:600;padding:10px 14px;background:#0f172a;border:1px solid #2d3147;border-radius:8px" id="rag-v-query-text"></div>
+        </div>
+
+        <!-- Step 2: Embedding -->
+        <div id="rag-v-embed" style="display:none">
+          <div style="font-size:0.8rem;color:#94a3b8;margin-bottom:6px">Query Vector (768-d embedding, showing first 12 dims):</div>
+          <div class="vector-display" id="rag-v-vector"></div>
+        </div>
+
+        <!-- Step 3: Retrieval scores -->
+        <div id="rag-v-retrieval" style="display:none">
+          <div style="font-size:0.8rem;color:#94a3b8;margin-bottom:10px">Cosine Similarity Scores &mdash; Top 3 highlighted:</div>
+          <div id="rag-v-scores"></div>
+        </div>
+
+        <!-- Step 4: Context assembly -->
+        <div id="rag-v-context" style="display:none">
+          <div style="font-size:0.8rem;color:#94a3b8;margin-bottom:6px">Assembled Prompt:</div>
+          <div class="prompt-template" id="rag-v-prompt"></div>
+        </div>
+
+        <!-- Step 5: Generation -->
+        <div id="rag-v-gen" style="display:none">
+          <div style="font-size:0.8rem;color:#94a3b8;margin-bottom:6px" id="rag-v-gen-label">LLM Output (with RAG):</div>
+          <div class="llm-output" id="rag-v-output"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Knowledge Base (6 Document Chunks)</h3>
+        <div id="rag-chunks" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── TAB 2: Attention Head Inspector ─────────── -->
+<div class="panel" id="panel-1">
+  <div class="row">
+    <div class="col-left">
+      <div class="card">
+        <h3>Sentence</h3>
+        <label>Select a sentence</label>
+        <select id="attn-sentence" onchange="attnChangeSentence()" style="margin-bottom:12px">
+          <option value="0">The cat sat on the mat because it was tired</option>
+          <option value="1">The doctor told the nurse that she was late</option>
+          <option value="2">Banks along the river bank were closed on Monday</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <h3>Attention Heads</h3>
+        <div id="attn-head-btns" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+
+      <div class="card">
+        <h3>Token Selector</h3>
+        <div style="font-size:0.78rem;color:#94a3b8;margin-bottom:8px">Click a token to see its attention pattern:</div>
+        <div id="attn-token-select" class="token-row"></div>
+      </div>
+
+      <div class="info-box">
+        <strong>Multi-head attention</strong> lets the model attend to information from different representation subspaces at different positions. Different heads learn to capture different linguistic relationships &mdash; syntax, coreference, positional proximity, and more.
+      </div>
+    </div>
+
+    <div class="col-right">
+      <div class="card">
+        <h3>Attention Heatmap &mdash; All Heads Overview</h3>
+        <div style="font-size:0.78rem;color:#94a3b8;margin-bottom:8px">Rows = heads, columns = tokens. Brightness = attention weight from selected token.</div>
+        <div class="heatmap-wrap">
+          <canvas id="attn-overview-canvas"></canvas>
+        </div>
+        <div class="legend-bar">
+          <span>Low</span>
+          <div class="legend-gradient"></div>
+          <span>High</span>
+          <span style="margin-left:16px;color:#64748b">Attention Weight</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 id="attn-detail-title">Full Attention Pattern &mdash; Head 1</h3>
+        <div style="font-size:0.78rem;color:#94a3b8;margin-bottom:8px">N&times;N matrix: row = query token, column = key token.</div>
+        <div class="heatmap-wrap">
+          <canvas id="attn-detail-canvas"></canvas>
+        </div>
+        <div class="legend-bar">
+          <span>0.0</span>
+          <div class="legend-gradient"></div>
+          <span>1.0</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Attention Arcs</h3>
+        <div style="font-size:0.78rem;color:#94a3b8;margin-bottom:8px">Arcs show where the selected token attends (thicker = stronger).</div>
+        <div class="arc-canvas-wrap">
+          <canvas id="attn-arc-canvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   GLOBALS & TAB SWITCHING
+   ========================================================= */
+function switchTab(idx) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===idx));
+  document.querySelectorAll('.panel').forEach((p,i) => p.classList.toggle('active', i===idx));
+  if (idx === 1) attnRender();
+}
+
+/* =========================================================
+   TAB 1 — RAG PIPELINE SIMULATOR
+   ========================================================= */
+const ragKB = [
+  {topic:"Geography: France", text:"Paris is the capital and largest city of France, situated on the Seine river. France is a country in Western Europe with a population of about 67 million."},
+  {topic:"Geography: Germany", text:"Berlin is the capital and largest city of Germany, located in northeastern Germany on the River Spree. Germany has a population of approximately 83 million."},
+  {topic:"Biology: Photosynthesis", text:"Photosynthesis is the process by which plants convert sunlight, water, and carbon dioxide into glucose and oxygen. It occurs primarily in the chloroplasts of leaf cells using chlorophyll."},
+  {topic:"Astronomy: Light", text:"The speed of light in vacuum is approximately 299,792,458 meters per second (about 3 x 10^8 m/s). Light is an electromagnetic wave and its speed is a fundamental constant of physics."},
+  {topic:"Oceanography: Tides", text:"Ocean tides are caused primarily by the gravitational pull of the Moon and, to a lesser extent, the Sun. The Moon's gravity creates tidal bulges on opposite sides of the Earth."},
+  {topic:"History: France", text:"France has a rich history dating back to the Gauls. The French Revolution in 1789 transformed the nation. Napoleon Bonaparte rose to power in 1799 and reshaped Europe."}
+];
+
+const ragPresets = [
+  { q:"What is the capital of France?",
+    scores:[0.94, 0.61, 0.12, 0.08, 0.10, 0.72],
+    vec:[0.23,0.87,-0.14,0.55,0.02,-0.41,0.68,0.11,-0.33,0.76,0.09,-0.58],
+    ragAnswer:"The capital of France is Paris. It is the largest city in France and is situated on the Seine river. France is a Western European country with a population of about 67 million people.",
+    noragAnswer:"The capital of France is Paris. It is known as the City of Light and was founded in the 3rd century BC by a Celtic people called the Parisii. [Note: While correct here, without retrieval the model may add unverified details.]"
+  },
+  { q:"How does photosynthesis work?",
+    scores:[0.05, 0.04, 0.96, 0.11, 0.08, 0.03],
+    vec:[0.41,-0.22,0.88,0.15,-0.67,0.33,0.05,0.72,-0.19,0.44,-0.56,0.28],
+    ragAnswer:"Photosynthesis is the process by which plants convert sunlight, water, and carbon dioxide into glucose and oxygen. This process occurs primarily in the chloroplasts of leaf cells, which contain the pigment chlorophyll that captures light energy.",
+    noragAnswer:"Photosynthesis is how plants make food using sunlight. They absorb light through their roots and convert it into sugar through a process called cellular respiration. [WARNING: This contains hallucinated errors — light is absorbed through leaves, not roots, and cellular respiration is a different process.]"
+  },
+  { q:"What causes ocean tides?",
+    scores:[0.06, 0.04, 0.07, 0.09, 0.95, 0.05],
+    vec:[-0.31,0.64,0.12,-0.48,0.81,0.27,-0.55,0.39,0.08,-0.72,0.46,0.15],
+    ragAnswer:"Ocean tides are caused primarily by the gravitational pull of the Moon and, to a lesser extent, the Sun. The Moon's gravity creates tidal bulges on opposite sides of the Earth, resulting in the regular rise and fall of sea levels.",
+    noragAnswer:"Ocean tides are caused by underwater volcanic activity and the rotation of the Earth, which pushes water toward the coastlines through centrifugal force. [WARNING: This is hallucinated. Tides are caused by gravitational forces, not volcanic activity.]"
+  },
+  { q:"What is the speed of light?",
+    scores:[0.05, 0.07, 0.09, 0.97, 0.06, 0.04],
+    vec:[0.56,-0.38,0.14,0.91,-0.07,0.63,-0.29,0.47,0.18,-0.61,0.35,-0.44],
+    ragAnswer:"The speed of light in a vacuum is approximately 299,792,458 meters per second (about 3 x 10^8 m/s). Light is an electromagnetic wave, and its speed is a fundamental constant of physics, often denoted by the letter c.",
+    noragAnswer:"The speed of light is approximately 300,000 kilometers per second, or about 186,000 miles per second. It was first measured by Albert Einstein in 1905. [WARNING: While the speed is roughly correct, Einstein did not measure it — Ole Roemer first estimated it in 1676.]"
+  }
+];
+
+let ragMode = 'rag';
+let ragAnimating = false;
+let ragAnimTimer = null;
+
+function ragInit() {
+  const cont = document.getElementById('rag-chunks');
+  cont.innerHTML = '';
+  ragKB.forEach((c,i) => {
+    cont.innerHTML += `<div class="chunk-card" id="rag-chunk-${i}"><div class="chunk-topic">${c.topic}</div><div class="chunk-text">${c.text}</div><div class="chunk-score" id="rag-cscore-${i}"></div></div>`;
+  });
+}
+
+function ragSelectPreset() {
+  const idx = +document.getElementById('rag-preset').value;
+  document.getElementById('rag-query').value = ragPresets[idx].q;
+}
+
+function ragSetMode(m) {
+  ragMode = m;
+  document.getElementById('tog-rag').classList.toggle('active', m==='rag');
+  document.getElementById('tog-norag').classList.toggle('active', m==='norag');
+}
+
+function ragGetPreset() {
+  const q = document.getElementById('rag-query').value.trim().toLowerCase();
+  for (let i=0;i<ragPresets.length;i++) {
+    if (q === ragPresets[i].q.toLowerCase()) return ragPresets[i];
+  }
+  // Fallback: use first preset with user query
+  const p = {...ragPresets[0]};
+  p.q = document.getElementById('rag-query').value.trim();
+  p.ragAnswer = "Based on the retrieved context: Paris is the capital of France, situated on the Seine river.";
+  p.noragAnswer = "I believe the answer relates to the topic you asked about, but without specific context I may produce inaccurate information. [Potential hallucination warning]";
+  return p;
+}
+
+function ragResetViz() {
+  for(let i=0;i<5;i++) {
+    const s = document.getElementById('rag-s'+i);
+    s.classList.remove('active','done');
+  }
+  ['rag-v-query','rag-v-embed','rag-v-retrieval','rag-v-context','rag-v-gen'].forEach(id => {
+    document.getElementById(id).style.display='none';
+  });
+  ragKB.forEach((_,i) => {
+    document.getElementById('rag-chunk-'+i).classList.remove('highlight');
+    document.getElementById('rag-cscore-'+i).innerHTML='';
+  });
+}
+
+function ragDelay() {
+  const speed = +document.getElementById('rag-speed').value;
+  return [2000,1500,1000,600,350][speed-1];
+}
+
+async function ragRun() {
+  if (ragAnimating) return;
+  ragAnimating = true;
+  document.getElementById('rag-run-btn').disabled = true;
+  ragResetViz();
+
+  const preset = ragGetPreset();
+  const delay = ragDelay();
+
+  // Step 1: Query
+  document.getElementById('rag-s0').classList.add('active');
+  document.getElementById('rag-v-query').style.display='block';
+  document.getElementById('rag-v-query-text').textContent = preset.q;
+  await sleep(delay);
+  document.getElementById('rag-s0').classList.remove('active');
+  document.getElementById('rag-s0').classList.add('done');
+
+  if (ragMode === 'norag') {
+    // Skip to generation
+    document.getElementById('rag-s4').classList.add('active');
+    document.getElementById('rag-v-gen').style.display='block';
+    document.getElementById('rag-v-gen-label').textContent='LLM Output (WITHOUT RAG — potential hallucination):';
+    document.getElementById('rag-v-gen-label').style.color='#f87171';
+    await typeWriter('rag-v-output', preset.noragAnswer, delay/10);
+    document.getElementById('rag-s4').classList.remove('active');
+    document.getElementById('rag-s4').classList.add('done');
+    ragAnimating = false;
+    document.getElementById('rag-run-btn').disabled = false;
+    return;
+  }
+
+  // Step 2: Embedding
+  document.getElementById('rag-s1').classList.add('active');
+  document.getElementById('rag-v-embed').style.display='block';
+  const vecStr = '[' + preset.vec.map(v => v.toFixed(2)).join(', ') + ', ...]';
+  document.getElementById('rag-v-vector').textContent = vecStr;
+  await sleep(delay);
+  document.getElementById('rag-s1').classList.remove('active');
+  document.getElementById('rag-s1').classList.add('done');
+
+  // Step 3: Retrieval
+  document.getElementById('rag-s2').classList.add('active');
+  document.getElementById('rag-v-retrieval').style.display='block';
+  const sorted = preset.scores.map((s,i) => ({s,i})).sort((a,b) => b.s - a.s);
+  const top3 = new Set(sorted.slice(0,3).map(x => x.i));
+
+  const scoresDiv = document.getElementById('rag-v-scores');
+  scoresDiv.innerHTML = '';
+  for (let k=0;k<ragKB.length;k++) {
+    const isTop = top3.has(k);
+    const barColor = isTop ? '#7dd3fc' : '#475569';
+    const labelColor = isTop ? '#7dd3fc' : '#94a3b8';
+    scoresDiv.innerHTML += `<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:0.75rem"><span style="color:${labelColor}">${ragKB[k].topic}</span><span class="mono" style="color:${labelColor}">${preset.scores[k].toFixed(2)}</span></div><div class="score-bar-bg"><div class="score-bar-fill" id="rag-bar-${k}" style="width:0%;background:${barColor}"></div></div></div>`;
+  }
+
+  // Animate bars
+  await sleep(100);
+  for (let k=0;k<ragKB.length;k++) {
+    document.getElementById('rag-bar-'+k).style.width = (preset.scores[k]*100)+'%';
+  }
+  // Highlight top 3 chunks
+  top3.forEach(i => {
+    document.getElementById('rag-chunk-'+i).classList.add('highlight');
+    document.getElementById('rag-cscore-'+i).innerHTML = `<span class="mono" style="font-size:0.72rem;color:#7dd3fc">cosine sim: ${preset.scores[i].toFixed(2)}</span>`;
+  });
+  await sleep(delay);
+  document.getElementById('rag-s2').classList.remove('active');
+  document.getElementById('rag-s2').classList.add('done');
+
+  // Step 4: Context Assembly
+  document.getElementById('rag-s3').classList.add('active');
+  document.getElementById('rag-v-context').style.display='block';
+  const ctxChunks = sorted.slice(0,3).map(x => `[${ragKB[x.i].topic}]: ${ragKB[x.i].text}`).join('\n\n');
+  const promptText = `Context:\n${ctxChunks}\n\nQuestion: ${preset.q}\n\nAnswer:`;
+  document.getElementById('rag-v-prompt').textContent = promptText;
+  await sleep(delay);
+  document.getElementById('rag-s3').classList.remove('active');
+  document.getElementById('rag-s3').classList.add('done');
+
+  // Step 5: Generation
+  document.getElementById('rag-s4').classList.add('active');
+  document.getElementById('rag-v-gen').style.display='block';
+  document.getElementById('rag-v-gen-label').textContent='LLM Output (with RAG):';
+  document.getElementById('rag-v-gen-label').style.color='#94a3b8';
+  await typeWriter('rag-v-output', preset.ragAnswer, delay/10);
+  document.getElementById('rag-s4').classList.remove('active');
+  document.getElementById('rag-s4').classList.add('done');
+
+  ragAnimating = false;
+  document.getElementById('rag-run-btn').disabled = false;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function typeWriter(elId, text, charDelay) {
+  const el = document.getElementById(elId);
+  el.innerHTML = '<span class="cursor-blink"></span>';
+  const words = text.split(' ');
+  let out = '';
+  for (let i=0;i<words.length;i++) {
+    out += (i>0?' ':'') + words[i];
+    el.innerHTML = out + '<span class="cursor-blink"></span>';
+    await sleep(Math.max(charDelay, 20));
+  }
+  el.innerHTML = out;
+}
+
+/* =========================================================
+   TAB 2 — ATTENTION HEAD INSPECTOR
+   ========================================================= */
+const attnSentences = [
+  {
+    text: "The cat sat on the mat because it was tired",
+    tokens: ["The","cat","sat","on","the","mat","because","it","was","tired"],
+    headLabels: [
+      "Positional (next token)", "Syntactic (subject-verb)", "Coreference (it\u2192cat)",
+      "Object focus", "Determiner-noun", "Clause boundary", "Verb-modifier", "Global summary"
+    ]
+  },
+  {
+    text: "The doctor told the nurse that she was late",
+    tokens: ["The","doctor","told","the","nurse","that","she","was","late"],
+    headLabels: [
+      "Positional (next token)", "Syntactic (subject-verb)", "Coreference (she\u2192nurse)",
+      "Object focus", "Determiner-noun", "Complementizer", "Verb-argument", "Global summary"
+    ]
+  },
+  {
+    text: "Banks along the river bank were closed on Monday",
+    tokens: ["Banks","along","the","river","bank","were","closed","on","Monday"],
+    headLabels: [
+      "Positional (next token)", "Syntactic (subject-verb)", "Word sense (bank)",
+      "Prepositional", "Determiner-noun", "Temporal focus", "Verb-modifier", "Global summary"
+    ]
+  }
+];
+
+// Pre-compute attention weights for each sentence, each head, NxN
+function generateAttentionWeights() {
+  attnSentences.forEach((sent, si) => {
+    const N = sent.tokens.length;
+    sent.weights = [];
+    for (let h=0;h<8;h++) {
+      const mat = [];
+      for (let i=0;i<N;i++) {
+        const row = [];
+        for (let j=0;j<N;j++) {
+          row.push(0);
+        }
+        mat.push(row);
+      }
+      sent.weights.push(mat);
+    }
+
+    // Head 0: Positional - attend to next token
+    for (let i=0;i<N;i++) {
+      for (let j=0;j<N;j++) {
+        const dist = j - i;
+        if (dist === 1) sent.weights[0][i][j] = 0.6 + Math.random()*0.15;
+        else if (dist === 0) sent.weights[0][i][j] = 0.15 + Math.random()*0.05;
+        else if (Math.abs(dist) === 2) sent.weights[0][i][j] = 0.08 + Math.random()*0.05;
+        else sent.weights[0][i][j] = Math.random()*0.04;
+      }
+      normRow(sent.weights[0][i]);
+    }
+
+    // Head 1: Syntactic — subject-verb
+    for (let i=0;i<N;i++) {
+      for (let j=0;j<N;j++) sent.weights[1][i][j] = Math.random()*0.03;
+    }
+    if (si === 0) { // cat -> sat
+      sent.weights[1][1][2] = 0.7; sent.weights[1][2][1] = 0.65;
+      sent.weights[1][7][8] = 0.5; sent.weights[1][8][7] = 0.45;
+    } else if (si === 1) { // doctor -> told
+      sent.weights[1][1][2] = 0.7; sent.weights[1][2][1] = 0.65;
+      sent.weights[1][6][7] = 0.5; sent.weights[1][7][6] = 0.45;
+    } else { // Banks -> were
+      sent.weights[1][0][5] = 0.7; sent.weights[1][5][0] = 0.65;
+      sent.weights[1][5][6] = 0.45;
+    }
+    sent.weights[1].forEach(r => normRow(r));
+
+    // Head 2: Coreference
+    for (let i=0;i<N;i++) {
+      for (let j=0;j<N;j++) sent.weights[2][i][j] = Math.random()*0.03;
+    }
+    if (si === 0) { // it -> cat
+      sent.weights[2][7][1] = 0.75; sent.weights[2][1][7] = 0.4;
+      sent.weights[2][7][5] = 0.15;
+    } else if (si === 1) { // she -> nurse
+      sent.weights[2][6][4] = 0.72; sent.weights[2][6][1] = 0.15;
+      sent.weights[2][4][6] = 0.35;
+    } else { // bank-bank sense
+      sent.weights[2][0][4] = 0.6; sent.weights[2][4][0] = 0.55;
+      sent.weights[2][4][3] = 0.3;
+    }
+    sent.weights[2].forEach(r => normRow(r));
+
+    // Head 3: Object focus
+    for (let i=0;i<N;i++) {
+      for (let j=0;j<N;j++) {
+        sent.weights[3][i][j] = Math.random()*0.04;
+        if (si===0 && (j===5||j===1)) sent.weights[3][i][j] += 0.15;
+        if (si===1 && (j===4||j===1)) sent.weights[3][i][j] += 0.15;
+        if (si===2 && (j===3||j===4)) sent.weights[3][i][j] += 0.15;
+      }
+    }
+    sent.weights[3].forEach(r => normRow(r));
+
+    // Head 4: Determiner-noun
+    for (let i=0;i<N;i++) {
+      for (let j=0;j<N;j++) sent.weights[4][i][j] = Math.random()*0.03;
+    }
+    if (si===0) {
+      sent.weights[4][0][1]=0.7; sent.weights[4][4][5]=0.7;
+    } else if (si===1) {
+      sent.weights[4][0][1]=0.7; sent.weights[4][3][4]=0.7;
+    } else {
+      sent.weights[4][2][3]=0.65; sent.weights[4][3][4]=0.5;
+    }
+    sent.weights[4].forEach(r => normRow(r));
+
+    // Head 5: Clause boundary / complementizer / temporal
+    for (let i=0;i<N;i++) {
+      for (let j=0;j<N;j++) sent.weights[5][i][j] = Math.random()*0.04;
+    }
+    if (si===0) { // because
+      for (let i=0;i<N;i++) sent.weights[5][i][6] += 0.25;
+    } else if (si===1) { // that
+      for (let i=0;i<N;i++) sent.weights[5][i][5] += 0.25;
+    } else { // Monday
+      for (let i=0;i<N;i++) sent.weights[5][i][8] += 0.25;
+    }
+    sent.weights[5].forEach(r => normRow(r));
+
+    // Head 6: Verb-modifier
+    for (let i=0;i<N;i++) {
+      for (let j=0;j<N;j++) sent.weights[6][i][j] = Math.random()*0.04;
+    }
+    if (si===0) {
+      sent.weights[6][2][3]=0.5; sent.weights[6][8][9]=0.55; // sat-on, was-tired
+    } else if (si===1) {
+      sent.weights[6][2][4]=0.5; sent.weights[6][7][8]=0.55; // told-nurse, was-late
+    } else {
+      sent.weights[6][5][6]=0.55; sent.weights[6][6][7]=0.4; // were-closed, closed-on
+    }
+    sent.weights[6].forEach(r => normRow(r));
+
+    // Head 7: Global summary — relatively uniform
+    for (let i=0;i<N;i++) {
+      for (let j=0;j<N;j++) {
+        sent.weights[7][i][j] = 0.08 + Math.random()*0.06;
+      }
+      normRow(sent.weights[7][i]);
+    }
+  });
+}
+
+function normRow(row) {
+  const sum = row.reduce((a,b) => a+b, 0);
+  if (sum > 0) for (let i=0;i<row.length;i++) row[i] /= sum;
+}
+
+let attnSentIdx = 0;
+let attnHeadIdx = 0;
+let attnTokenIdx = 0;
+
+function attnChangeSentence() {
+  attnSentIdx = +document.getElementById('attn-sentence').value;
+  attnTokenIdx = 0;
+  attnHeadIdx = 0;
+  attnBuildUI();
+  attnRender();
+}
+
+function attnBuildUI() {
+  const sent = attnSentences[attnSentIdx];
+
+  // Head buttons
+  const hc = document.getElementById('attn-head-btns');
+  hc.innerHTML = '';
+  for (let h=0;h<8;h++) {
+    const btn = document.createElement('button');
+    btn.className = 'head-btn' + (h===attnHeadIdx?' active':'');
+    btn.innerHTML = `<span class="head-label">Head ${h+1}</span><span class="head-desc">${sent.headLabels[h]}</span>`;
+    btn.onclick = () => { attnHeadIdx=h; attnBuildUI(); attnRender(); };
+    hc.appendChild(btn);
+  }
+
+  // Token selector
+  const tc = document.getElementById('attn-token-select');
+  tc.innerHTML = '';
+  sent.tokens.forEach((t,i) => {
+    const chip = document.createElement('span');
+    chip.className = 'token-chip' + (i===attnTokenIdx?' selected':'');
+    chip.textContent = t;
+    chip.onclick = () => { attnTokenIdx=i; attnBuildUI(); attnRender(); };
+    tc.appendChild(chip);
+  });
+
+  document.getElementById('attn-detail-title').textContent = `Full Attention Pattern \u2014 Head ${attnHeadIdx+1}: ${sent.headLabels[attnHeadIdx]}`;
+}
+
+function attnWeightColor(w) {
+  // 0 -> dark (#0f172a), mid -> blue (#0369a1), high -> yellow (#fbbf24)
+  if (w < 0.15) {
+    const t = w / 0.15;
+    return lerpColor(15,23,42, 3,105,161, t);
+  } else {
+    const t = Math.min((w - 0.15) / 0.35, 1);
+    return lerpColor(3,105,161, 251,191,36, t);
+  }
+}
+
+function lerpColor(r1,g1,b1,r2,g2,b2,t) {
+  return `rgb(${Math.round(r1+(r2-r1)*t)},${Math.round(g1+(g2-g1)*t)},${Math.round(b1+(b2-b1)*t)})`;
+}
+
+function attnRender() {
+  attnRenderOverview();
+  attnRenderDetail();
+  attnRenderArcs();
+}
+
+function attnRenderOverview() {
+  const sent = attnSentences[attnSentIdx];
+  const N = sent.tokens.length;
+  const canvas = document.getElementById('attn-overview-canvas');
+  const cellW = 50, cellH = 32, labelW = 60, labelH = 30;
+  canvas.width = labelW + N * cellW;
+  canvas.height = labelH + 8 * cellH;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // Column labels (tokens)
+  ctx.font = '11px JetBrains Mono, monospace';
+  ctx.fillStyle = '#94a3b8';
+  ctx.textAlign = 'center';
+  for (let j=0;j<N;j++) {
+    ctx.fillText(sent.tokens[j], labelW + j*cellW + cellW/2, labelH - 6);
+  }
+
+  // Row labels (heads) and cells
+  for (let h=0;h<8;h++) {
+    ctx.fillStyle = h===attnHeadIdx ? '#7dd3fc' : '#64748b';
+    ctx.textAlign = 'right';
+    ctx.fillText('H'+(h+1), labelW - 8, labelH + h*cellH + cellH/2 + 4);
+
+    for (let j=0;j<N;j++) {
+      const w = sent.weights[h][attnTokenIdx][j];
+      ctx.fillStyle = attnWeightColor(w);
+      const x = labelW + j*cellW + 1;
+      const y = labelH + h*cellH + 1;
+      ctx.fillRect(x, y, cellW-2, cellH-2);
+
+      // Show value
+      ctx.fillStyle = w > 0.25 ? '#0f1117' : '#94a3b8';
+      ctx.textAlign = 'center';
+      ctx.font = '9px JetBrains Mono, monospace';
+      ctx.fillText(w.toFixed(2), x + cellW/2 - 1, y + cellH/2 + 3);
+      ctx.font = '11px JetBrains Mono, monospace';
+    }
+  }
+
+  // Highlight selected head row
+  ctx.strokeStyle = '#7dd3fc';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(labelW, labelH + attnHeadIdx*cellH, N*cellW, cellH);
+}
+
+function attnRenderDetail() {
+  const sent = attnSentences[attnSentIdx];
+  const N = sent.tokens.length;
+  const canvas = document.getElementById('attn-detail-canvas');
+  const cellSize = 44, labelW = 70, labelH = 50;
+  canvas.width = labelW + N * cellSize;
+  canvas.height = labelH + N * cellSize;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // Column labels
+  ctx.font = '10px JetBrains Mono, monospace';
+  ctx.fillStyle = '#94a3b8';
+  ctx.textAlign = 'center';
+  for (let j=0;j<N;j++) {
+    ctx.save();
+    ctx.translate(labelW + j*cellSize + cellSize/2, labelH - 6);
+    ctx.rotate(-0.5);
+    ctx.fillText(sent.tokens[j], 0, 0);
+    ctx.restore();
+  }
+
+  // Row labels and cells
+  const mat = sent.weights[attnHeadIdx];
+  for (let i=0;i<N;i++) {
+    ctx.fillStyle = i===attnTokenIdx ? '#7dd3fc' : '#94a3b8';
+    ctx.textAlign = 'right';
+    ctx.font = '10px JetBrains Mono, monospace';
+    ctx.fillText(sent.tokens[i], labelW - 6, labelH + i*cellSize + cellSize/2 + 3);
+
+    for (let j=0;j<N;j++) {
+      const w = mat[i][j];
+      ctx.fillStyle = attnWeightColor(w);
+      const x = labelW + j*cellSize + 1;
+      const y = labelH + i*cellSize + 1;
+      ctx.fillRect(x, y, cellSize-2, cellSize-2);
+
+      ctx.fillStyle = w > 0.25 ? '#0f1117' : '#94a3b8';
+      ctx.textAlign = 'center';
+      ctx.font = '9px JetBrains Mono, monospace';
+      ctx.fillText(w.toFixed(2), x + cellSize/2 - 1, y + cellSize/2 + 3);
+    }
+  }
+
+  // Highlight selected token row
+  ctx.strokeStyle = '#7dd3fc';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(labelW, labelH + attnTokenIdx*cellSize, N*cellSize, cellSize);
+  // Highlight selected token column
+  ctx.setLineDash([4,4]);
+  ctx.strokeRect(labelW + attnTokenIdx*cellSize, labelH, cellSize, N*cellSize);
+  ctx.setLineDash([]);
+}
+
+function attnRenderArcs() {
+  const sent = attnSentences[attnSentIdx];
+  const N = sent.tokens.length;
+  const canvas = document.getElementById('attn-arc-canvas');
+  const tokenW = 64, gap = 8, padX = 30, padTop = 100, padBot = 40;
+  const totalW = padX * 2 + N * (tokenW + gap);
+  canvas.width = totalW;
+  canvas.height = padTop + padBot + 30;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  const baseY = padTop + 10;
+
+  // Draw tokens
+  ctx.font = '11px JetBrains Mono, monospace';
+  ctx.textAlign = 'center';
+  const tokenCenters = [];
+  for (let i=0;i<N;i++) {
+    const cx = padX + i*(tokenW+gap) + tokenW/2;
+    tokenCenters.push(cx);
+    const isSelected = i === attnTokenIdx;
+    ctx.fillStyle = isSelected ? '#0369a1' : '#2d3147';
+    ctx.beginPath();
+    ctx.roundRect(cx - tokenW/2, baseY, tokenW, 26, 5);
+    ctx.fill();
+    ctx.fillStyle = isSelected ? '#fff' : '#e2e8f0';
+    ctx.fillText(sent.tokens[i], cx, baseY + 17);
+  }
+
+  // Draw arcs from selected token to all others
+  const weights = sent.weights[attnHeadIdx][attnTokenIdx];
+  for (let j=0;j<N;j++) {
+    if (j === attnTokenIdx) continue;
+    const w = weights[j];
+    if (w < 0.02) continue;
+    const fromX = tokenCenters[attnTokenIdx];
+    const toX = tokenCenters[j];
+    const midX = (fromX + toX) / 2;
+    const dist = Math.abs(j - attnTokenIdx);
+    const arcH = 15 + dist * 10 + w * 30;
+
+    ctx.beginPath();
+    ctx.moveTo(fromX, baseY);
+    ctx.quadraticCurveTo(midX, baseY - arcH, toX, baseY);
+    ctx.strokeStyle = attnWeightColor(w);
+    ctx.lineWidth = 1 + w * 6;
+    ctx.globalAlpha = 0.4 + w * 0.6;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Arrow head
+    const angle = Math.atan2(baseY - (baseY - arcH), toX - midX);
+    const arrLen = 6;
+    ctx.beginPath();
+    ctx.moveTo(toX, baseY);
+    ctx.lineTo(toX - arrLen*Math.cos(angle - 0.4), baseY - arrLen*Math.sin(angle - 0.4));
+    ctx.lineTo(toX - arrLen*Math.cos(angle + 0.4), baseY - arrLen*Math.sin(angle + 0.4));
+    ctx.closePath();
+    ctx.fillStyle = attnWeightColor(w);
+    ctx.fill();
+
+    // Weight label
+    if (w > 0.08) {
+      ctx.font = '9px JetBrains Mono, monospace';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText(w.toFixed(2), midX, baseY - arcH - 3);
+      ctx.font = '11px JetBrains Mono, monospace';
+    }
+  }
+}
+
+/* =========================================================
+   INITIALIZATION
+   ========================================================= */
+generateAttentionWeights();
+ragInit();
+attnBuildUI();
+// Defer attention rendering to ensure canvas is visible if needed
+setTimeout(() => { if (document.getElementById('panel-1').classList.contains('active')) attnRender(); }, 100);
+</script>
+</body>
+</html>

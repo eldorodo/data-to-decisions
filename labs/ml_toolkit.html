@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="ML Toolkit Interactive Lab: Model Picker, Loss Functions, Overfitting, Hyperparameter Tuning, Feature Importance.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ML Toolkit — Interactive Lab</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:#0f1117;color:#e2e8f0;font-family:'Inter','Segoe UI',system-ui,sans-serif;min-height:100vh;padding:24px}
+  code,pre,.formula,.mono{font-family:'JetBrains Mono','Cascadia Code','Courier New',monospace!important}
+  h1{text-align:center;font-size:1.6rem;color:#7dd3fc;margin-bottom:6px;letter-spacing:.5px}
+  .subtitle{text-align:center;color:#94a3b8;font-size:.9rem;margin-bottom:24px}
+  .tabs{display:flex;gap:4px;margin-bottom:20px;background:#1e2130;padding:6px;border-radius:12px;border:1px solid #2d3147;flex-wrap:wrap}
+  .tab{flex:1;padding:10px 8px;background:transparent;border:none;color:#94a3b8;cursor:pointer;border-radius:8px;font-size:.82rem;font-family:inherit;transition:all .2s;min-width:120px}
+  .tab.active{background:#0369a1;color:#e2e8f0;font-weight:600}
+  .tab:hover:not(.active){background:#2d3147;color:#e2e8f0}
+  .panel{display:none;animation:fadeIn .3s ease}
+  .panel.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid2x2{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;gap:16px}
+  .card{background:#1e2130;border:1px solid #2d3147;border-radius:12px;padding:16px}
+  .card-title{font-size:.8rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px}
+  label{font-size:.82rem;color:#94a3b8;display:block;margin-bottom:4px}
+  input[type=range]{width:100%;accent-color:#7dd3fc;cursor:pointer}
+  select{background:#0f172a;border:1px solid #2d3147;color:#e2e8f0;padding:6px 10px;border-radius:8px;font-size:.82rem;width:100%;cursor:pointer}
+  button{background:#0369a1;border:none;color:#e2e8f0;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:.82rem;font-family:inherit;transition:all .2s}
+  button:hover{background:#0284c7;transform:translateY(-1px)}
+  button.secondary{background:#2d3147}
+  button.secondary:hover{background:#3d4157}
+  canvas{display:block;border-radius:8px}
+  .flex{display:flex;gap:12px;align-items:center}
+  .flex-wrap{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600;margin:2px}
+  .info-box{background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:10px;font-size:.78rem;color:#94a3b8;margin-top:8px}
+  .legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px}
+
+  /* Tab 1: Wizard */
+  .breadcrumb{display:flex;gap:6px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+  .breadcrumb span{font-size:.78rem;color:#64748b}
+  .breadcrumb .crumb{color:#7dd3fc;font-size:.78rem}
+  .breadcrumb .sep{color:#3d4157}
+  .q-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:12px}
+  .q-card{background:#1e2130;border:2px solid #2d3147;border-radius:12px;padding:16px;cursor:pointer;transition:all .25s;text-align:center}
+  .q-card:hover{border-color:#0369a1;background:#1a2540;transform:translateY(-2px)}
+  .q-card .icon{font-size:1.8rem;margin-bottom:8px}
+  .q-card .label{font-size:.88rem;font-weight:600;color:#e2e8f0}
+  .q-card .desc{font-size:.72rem;color:#64748b;margin-top:4px}
+  .rec-card{background:#1e2130;border:1px solid #2d3147;border-radius:12px;padding:14px;margin-bottom:10px}
+  .rec-rank{font-size:1.4rem;font-weight:700;color:#0369a1;margin-right:10px;min-width:28px}
+  .rec-name{font-size:1rem;font-weight:600;color:#7dd3fc}
+  .rec-badges{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+  .badge{padding:2px 8px;border-radius:12px;font-size:.68rem;font-weight:600;border:1px solid}
+  .badge-speed{color:#86efac;border-color:#22c55e;background:#14532d30}
+  .badge-complex{color:#fbbf24;border-color:#d97706;background:#78350f30}
+  .badge-interp{color:#c4b5fd;border-color:#7c3aed;background:#4c1d9530}
+  .rec-pros{font-size:.75rem;color:#86efac;margin-top:6px}
+  .rec-cons{font-size:.75rem;color:#f87171;margin-top:3px}
+  .question-text{font-size:1.1rem;font-weight:600;color:#e2e8f0;margin-bottom:4px}
+  .question-sub{font-size:.8rem;color:#64748b;margin-bottom:12px}
+
+  /* Tab 2: Loss */
+  .loss-stat{display:flex;align-items:baseline;gap:8px;margin:6px 0}
+  .loss-stat .val{font-size:1.6rem;font-weight:700;color:#7dd3fc}
+  .loss-stat .lbl{font-size:.78rem;color:#94a3b8}
+
+  /* Tab 4: Race */
+  .scoreboard{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px}
+  .score-card{background:#0f172a;border-radius:8px;padding:10px;text-align:center}
+  .score-card .strategy{font-size:.75rem;font-weight:600;margin-bottom:4px}
+  .score-card .best{font-size:1.3rem;font-weight:700}
+  .score-card .evals{font-size:.7rem;color:#64748b;margin-top:2px}
+
+  /* Tab 5: Feature Importance */
+  .rank-table{width:100%;border-collapse:collapse;font-size:.78rem;margin-top:10px}
+  .rank-table th{background:#0f172a;color:#94a3b8;padding:8px;text-align:left;border-bottom:1px solid #2d3147;font-weight:600}
+  .rank-table td{padding:7px 8px;border-bottom:1px solid #2d314740}
+  .rank-table tr:hover td{background:#1a2540}
+  .rank-disagree{color:#fbbf24;font-weight:700}
+
+  @media(max-width:768px){
+    body{padding:12px}
+    .grid2,.grid2x2,.scoreboard{grid-template-columns:1fr}
+    .tab{min-width:0;font-size:.74rem;padding:8px 4px}
+    h1{font-size:1.2rem}
+    .q-cards{grid-template-columns:1fr 1fr}
+  }
+</style>
+</head>
+<body>
+<h1>ML Toolkit &mdash; Interactive Lab</h1>
+<p class="subtitle">Five hands-on tools to build machine-learning intuition</p>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab(0)">Model Picker</button>
+  <button class="tab" onclick="switchTab(1)">Loss Playground</button>
+  <button class="tab" onclick="switchTab(2)">Overfitting Sim</button>
+  <button class="tab" onclick="switchTab(3)">Tuning Race</button>
+  <button class="tab" onclick="switchTab(4)">Feature Importance</button>
+</div>
+
+<!-- ══════════════ TAB 1: ML MODEL PICKER WIZARD ══════════════ -->
+<div class="panel active" id="panel0">
+  <div class="card">
+    <div class="breadcrumb" id="wizard-breadcrumb"><span class="crumb">Start</span></div>
+    <div id="wizard-content"></div>
+    <div style="margin-top:16px">
+      <button class="secondary" onclick="wizardReset()">Start Over</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ TAB 2: LOSS FUNCTION PLAYGROUND ══════════════ -->
+<div class="panel" id="panel1">
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Scatter &amp; Prediction Line</div>
+      <canvas id="loss-canvas" width="520" height="380"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Controls</div>
+      <label>Loss Function</label>
+      <select id="loss-fn" onchange="drawLoss()">
+        <option value="mse">MSE (Mean Squared Error)</option>
+        <option value="mae">MAE (Mean Absolute Error)</option>
+        <option value="huber">Huber Loss</option>
+        <option value="logcosh">Log-Cosh Loss</option>
+      </select>
+      <label style="margin-top:12px">Slope: <span id="slope-val">1.00</span></label>
+      <input type="range" id="slope" min="-3" max="3" step="0.05" value="1" oninput="drawLoss()">
+      <label>Intercept: <span id="int-val">0.00</span></label>
+      <input type="range" id="intercept" min="-5" max="5" step="0.1" value="0" oninput="drawLoss()">
+      <div id="huber-ctrl" style="display:none">
+        <label>Huber delta: <span id="delta-val">1.0</span></label>
+        <input type="range" id="huber-delta" min="0.1" max="5" step="0.1" value="1" oninput="drawLoss()">
+      </div>
+      <div class="loss-stat"><span class="val" id="total-loss">0.00</span><span class="lbl">Total Loss</span></div>
+      <div class="flex-wrap" style="margin-top:8px">
+        <label style="cursor:pointer;display:flex;align-items:center;gap:4px;margin:0"><input type="checkbox" id="outlier-tog" onchange="toggleOutlier()"> Add Outlier</label>
+        <button onclick="autoFit()" style="margin-left:auto">Auto-Fit</button>
+      </div>
+      <div class="card-title" style="margin-top:16px">Loss Curve</div>
+      <canvas id="loss-curve" width="520" height="150"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ TAB 3: OVERFITTING SIMULATOR ══════════════ -->
+<div class="panel" id="panel2">
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Polynomial Fit</div>
+      <canvas id="overfit-canvas" width="520" height="380"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Controls</div>
+      <label>Polynomial Degree: <span id="deg-val">1</span></label>
+      <input type="range" id="poly-deg" min="1" max="15" step="1" value="1" oninput="drawOverfit()">
+      <label style="margin-top:10px">Noise Level: <span id="noise-val">0.30</span></label>
+      <input type="range" id="noise-lvl" min="0.05" max="1" step="0.05" value="0.3" oninput="regenOverfit()">
+      <div class="flex-wrap" style="margin-top:10px">
+        <button onclick="regenOverfit()">New Data</button>
+      </div>
+      <div class="card-title" style="margin-top:16px">Train vs Test Error</div>
+      <canvas id="error-curve" width="520" height="200"></canvas>
+      <div class="info-box" id="overfit-info">Degree 1: Underfitting zone</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ TAB 4: HYPERPARAMETER TUNING RACE ══════════════ -->
+<div class="panel" id="panel3">
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Search Space (Contour + Evaluations)</div>
+      <canvas id="race-canvas" width="520" height="440"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Controls</div>
+      <label>Max Evaluations: <span id="eval-val">50</span></label>
+      <input type="range" id="max-evals" min="10" max="100" step="5" value="50" oninput="document.getElementById('eval-val').textContent=this.value">
+      <label style="margin-top:10px">Speed: <span id="speed-val">Normal</span></label>
+      <input type="range" id="race-speed" min="1" max="5" step="1" value="3" oninput="updateSpeedLabel()">
+      <div style="margin-top:12px"><button onclick="runRace()">Run Race</button> <button class="secondary" onclick="resetRace()">Reset</button></div>
+      <div class="card-title" style="margin-top:16px">Scoreboard</div>
+      <div class="scoreboard">
+        <div class="score-card"><div class="strategy" style="color:#60a5fa">Grid Search</div><div class="best" id="grid-best" style="color:#60a5fa">--</div><div class="evals" id="grid-evals">0 evals</div></div>
+        <div class="score-card"><div class="strategy" style="color:#4ade80">Random Search</div><div class="best" id="rand-best" style="color:#4ade80">--</div><div class="evals" id="rand-evals">0 evals</div></div>
+        <div class="score-card"><div class="strategy" style="color:#c084fc">Bayesian Opt</div><div class="best" id="bayes-best" style="color:#c084fc">--</div><div class="evals" id="bayes-evals">0 evals</div></div>
+      </div>
+      <div class="info-box" style="margin-top:12px">
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <span><span class="legend-dot" style="background:#60a5fa"></span>Grid: exhaustive</span>
+          <span><span class="legend-dot" style="background:#4ade80"></span>Random: stochastic</span>
+          <span><span class="legend-dot" style="background:#c084fc"></span>Bayesian: informed</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ TAB 5: FEATURE IMPORTANCE SHOWDOWN ══════════════ -->
+<div class="panel" id="panel4">
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title">House Price Dataset &mdash; 6 Features</div>
+    <div class="info-box">Features: <strong>SqFt</strong> (square footage), <strong>Beds</strong> (bedrooms), <strong>Age</strong> (years old), <strong>Distance</strong> (miles to city center), <strong>Garage</strong> (spaces), <strong>Schools</strong> (nearby school rating). Target: sale price.</div>
+  </div>
+  <div class="grid2x2">
+    <div class="card"><div class="card-title">Permutation Importance</div><canvas id="fi-perm" width="380" height="220"></canvas></div>
+    <div class="card"><div class="card-title">SHAP Values (mean |SHAP|)</div><canvas id="fi-shap" width="380" height="220"></canvas></div>
+    <div class="card"><div class="card-title">Gini / MDI Importance</div><canvas id="fi-gini" width="380" height="220"></canvas></div>
+    <div class="card"><div class="card-title">Drop-Column Importance</div><canvas id="fi-drop" width="380" height="220"></canvas></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="card-title">Rank Comparison Table</div>
+    <table class="rank-table" id="rank-table"></table>
+  </div>
+</div>
+
+<script>
+/* ─────── Global Tab Logic ─────── */
+function switchTab(i){
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',j===i));
+  document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('active',j===i));
+  if(i===1) drawLoss();
+  if(i===2) drawOverfit();
+  if(i===4) drawFeatureImportance();
+}
+
+/* ═══════════════════════════════════════════
+   TAB 1: ML MODEL PICKER WIZARD
+   ═══════════════════════════════════════════ */
+const wizardTree = {
+  questions: [
+    {id:'problem', text:'What type of problem?', sub:'Select the nature of your prediction task',
+     options:[
+       {label:'Classification',desc:'Predict categories',icon:'\u2B50'},
+       {label:'Regression',desc:'Predict numbers',icon:'\uD83D\uDCC8'},
+       {label:'Clustering',desc:'Find groups',icon:'\uD83C\uDFAF'},
+       {label:'Dimensionality Reduction',desc:'Reduce features',icon:'\uD83D\uDD0D'}
+     ]},
+    {id:'datasize', text:'How large is your dataset?', sub:'Number of training samples',
+     options:[
+       {label:'Small (<1K)',desc:'Hundreds of samples',icon:'\uD83D\uDCC4'},
+       {label:'Medium (1K-100K)',desc:'Thousands of samples',icon:'\uD83D\uDCDA'},
+       {label:'Large (100K+)',desc:'Massive dataset',icon:'\uD83C\uDF0A'}
+     ]},
+    {id:'interpretability', text:'Need interpretability?', sub:'Must the model explain its decisions?',
+     options:[
+       {label:'High',desc:'Full transparency required',icon:'\uD83D\uDD0E'},
+       {label:'Moderate',desc:'Some insight helpful',icon:'\u2696\uFE0F'},
+       {label:'Low',desc:'Performance is king',icon:'\uD83D\uDE80'}
+     ]},
+    {id:'features', text:'What kind of features?', sub:'Primary data type in your feature set',
+     options:[
+       {label:'Numerical',desc:'Continuous values',icon:'\uD83D\uDD22'},
+       {label:'Categorical',desc:'Discrete labels',icon:'\uD83C\uDFF7\uFE0F'},
+       {label:'Mixed',desc:'Both types',icon:'\uD83E\uDDE9'},
+       {label:'Text / Images',desc:'Unstructured data',icon:'\uD83D\uDDBC\uFE0F'}
+     ]}
+  ],
+  models:{
+    'Linear Regression':{speed:'Fast',complexity:'Low',interp:'High',pros:'Simple, interpretable, fast training',cons:'Assumes linearity, sensitive to outliers'},
+    'Logistic Regression':{speed:'Fast',complexity:'Low',interp:'High',pros:'Probabilistic output, well-calibrated',cons:'Linear decision boundary only'},
+    'Decision Tree':{speed:'Fast',complexity:'Low',interp:'High',pros:'Easy to visualize, handles mixed data',cons:'Prone to overfitting, unstable'},
+    'Random Forest':{speed:'Medium',complexity:'Medium',interp:'Moderate',pros:'Robust, handles missing data, low bias',cons:'Slower than single tree, less interpretable'},
+    'Gradient Boosting':{speed:'Medium',complexity:'Medium',interp:'Moderate',pros:'Top accuracy on tabular data',cons:'Tuning-heavy, overfitting risk'},
+    'SVM':{speed:'Medium',complexity:'Medium',interp:'Low',pros:'Effective in high-D spaces, kernel trick',cons:'Slow on large data, needs scaling'},
+    'KNN':{speed:'Fast',complexity:'Low',interp:'Moderate',pros:'No training phase, intuitive',cons:'Slow at prediction, curse of dimensionality'},
+    'Neural Network':{speed:'Slow',complexity:'High',interp:'Low',pros:'Universal approximator, handles unstructured data',cons:'Needs lots of data, black box'},
+    'K-Means':{speed:'Fast',complexity:'Low',interp:'Moderate',pros:'Simple, scalable, fast convergence',cons:'Must choose K, assumes spherical clusters'},
+    'DBSCAN':{speed:'Medium',complexity:'Medium',interp:'Moderate',pros:'Finds arbitrary shapes, detects outliers',cons:'Sensitive to epsilon, struggles with varying density'},
+    'PCA':{speed:'Fast',complexity:'Low',interp:'Moderate',pros:'Linear, fast, variance preservation',cons:'Only linear relationships captured'},
+    't-SNE':{speed:'Slow',complexity:'Medium',interp:'Low',pros:'Excellent 2D visualization of clusters',cons:'Non-deterministic, not for feature engineering'},
+    'XGBoost':{speed:'Medium',complexity:'Medium',interp:'Moderate',pros:'State-of-art tabular performance, regularized',cons:'Many hyperparameters, complex to tune'},
+    'Naive Bayes':{speed:'Fast',complexity:'Low',interp:'High',pros:'Fast, works well with text, small data',cons:'Strong independence assumption'},
+    'Ridge / Lasso':{speed:'Fast',complexity:'Low',interp:'High',pros:'Regularized, feature selection (Lasso)',cons:'Still assumes linearity'}
+  }
+};
+
+let wizardState = {answers:{}, step:0};
+
+function wizardReset(){
+  wizardState = {answers:{}, step:0};
+  renderWizard();
+}
+
+function renderWizard(){
+  const bc = document.getElementById('wizard-breadcrumb');
+  const content = document.getElementById('wizard-content');
+  let crumbs = '<span class="crumb" style="cursor:pointer" onclick="wizardReset()">Start</span>';
+  const keys = Object.keys(wizardState.answers);
+  keys.forEach(k=>{
+    crumbs += '<span class="sep">\u203A</span><span class="crumb">'+wizardState.answers[k]+'</span>';
+  });
+  bc.innerHTML = crumbs;
+
+  if(wizardState.step < wizardTree.questions.length){
+    const q = wizardTree.questions[wizardState.step];
+    let html = '<div class="question-text">'+q.text+'</div><div class="question-sub">'+q.sub+'</div>';
+    html += '<div class="q-cards">';
+    q.options.forEach(o=>{
+      html += '<div class="q-card" onclick="wizardAnswer(\''+q.id+'\',\''+o.label+'\')">';
+      html += '<div class="icon">'+o.icon+'</div><div class="label">'+o.label+'</div><div class="desc">'+o.desc+'</div></div>';
+    });
+    html += '</div>';
+    content.innerHTML = html;
+  } else {
+    content.innerHTML = buildRecommendations();
+  }
+}
+
+function wizardAnswer(qid, val){
+  wizardState.answers[qid] = val;
+  wizardState.step++;
+  renderWizard();
+}
+
+function buildRecommendations(){
+  const a = wizardState.answers;
+  let candidates = [];
+  const M = wizardTree.models;
+  const prob = a.problem || '';
+  const size = a.datasize || '';
+  const interp = a.interpretability || '';
+  const feat = a.features || '';
+
+  // Scoring rules
+  const all = Object.keys(M);
+  all.forEach(name=>{
+    let score = 0;
+    const m = M[name];
+    // Problem-type fit
+    if(prob==='Classification' && ['Logistic Regression','Decision Tree','Random Forest','Gradient Boosting','SVM','KNN','Neural Network','XGBoost','Naive Bayes'].includes(name)) score+=3;
+    if(prob==='Regression' && ['Linear Regression','Decision Tree','Random Forest','Gradient Boosting','SVM','KNN','Neural Network','XGBoost','Ridge / Lasso'].includes(name)) score+=3;
+    if(prob==='Clustering' && ['K-Means','DBSCAN'].includes(name)) score+=5;
+    if(prob==='Dimensionality Reduction' && ['PCA','t-SNE'].includes(name)) score+=5;
+    // Data size
+    if(size==='Small (<1K)'){if(m.speed==='Fast') score+=2; if(name==='KNN'||name==='Naive Bayes'||name==='Decision Tree'||name==='Ridge / Lasso') score+=1;}
+    if(size==='Medium (1K-100K)') score+=1;
+    if(size==='Large (100K+)'){if(name==='Neural Network'||name==='XGBoost'||name==='Gradient Boosting'||name==='Random Forest') score+=2;}
+    // Interpretability
+    if(interp==='High' && m.interp==='High') score+=2;
+    if(interp==='Moderate' && (m.interp==='High'||m.interp==='Moderate')) score+=1;
+    if(interp==='Low' && m.interp==='Low') score+=1;
+    // Features
+    if(feat==='Categorical' && ['Decision Tree','Random Forest','Gradient Boosting','XGBoost','Naive Bayes'].includes(name)) score+=1;
+    if(feat==='Text / Images' && name==='Neural Network') score+=3;
+    if(feat==='Text / Images' && name==='Naive Bayes') score+=1;
+    if(feat==='Mixed' && ['Random Forest','Gradient Boosting','XGBoost','Decision Tree'].includes(name)) score+=2;
+    if(feat==='Numerical' && ['SVM','Linear Regression','Logistic Regression','Ridge / Lasso','PCA','KNN'].includes(name)) score+=1;
+
+    if(score>0) candidates.push({name,score,...m});
+  });
+
+  candidates.sort((a,b)=>b.score-a.score);
+  candidates = candidates.slice(0,5);
+
+  let html = '<div class="question-text">Recommended Models</div><div class="question-sub">Ranked by fit to your criteria</div>';
+  candidates.forEach((c,i)=>{
+    html += '<div class="rec-card" style="display:flex;align-items:flex-start">';
+    html += '<span class="rec-rank">#'+(i+1)+'</span>';
+    html += '<div style="flex:1"><span class="rec-name">'+c.name+'</span>';
+    html += '<div class="rec-badges">';
+    html += '<span class="badge badge-speed">'+c.speed+'</span>';
+    html += '<span class="badge badge-complex">'+c.complexity+'</span>';
+    html += '<span class="badge badge-interp">Interp: '+c.interp+'</span>';
+    html += '</div>';
+    html += '<div class="rec-pros">+ '+c.pros+'</div>';
+    html += '<div class="rec-cons">- '+c.cons+'</div>';
+    html += '</div></div>';
+  });
+  return html;
+}
+
+wizardReset();
+
+/* ═══════════════════════════════════════════
+   TAB 2: LOSS FUNCTION PLAYGROUND
+   ═══════════════════════════════════════════ */
+let lossPoints = [];
+let hasOutlier = false;
+let autoFitting = false;
+
+function initLossPoints(){
+  lossPoints = [];
+  for(let i=0;i<20;i++){
+    const x = Math.random()*8 - 1;
+    const y = 0.8*x + 1.5 + (Math.random()-0.5)*3;
+    lossPoints.push({x,y,outlier:false});
+  }
+}
+initLossPoints();
+
+function toggleOutlier(){
+  hasOutlier = document.getElementById('outlier-tog').checked;
+  if(hasOutlier){
+    lossPoints.push({x:6, y:-5, outlier:true});
+  } else {
+    lossPoints = lossPoints.filter(p=>!p.outlier);
+  }
+  drawLoss();
+}
+
+function computeLoss(pts, m, b, fn, delta){
+  let total=0;
+  pts.forEach(p=>{
+    const pred = m*p.x + b;
+    const r = p.y - pred;
+    if(fn==='mse') total += r*r;
+    else if(fn==='mae') total += Math.abs(r);
+    else if(fn==='huber'){
+      if(Math.abs(r)<=delta) total += 0.5*r*r;
+      else total += delta*(Math.abs(r)-0.5*delta);
+    } else { // logcosh
+      total += Math.log(Math.cosh(r));
+    }
+  });
+  return total/pts.length;
+}
+
+function drawLoss(){
+  const fn = document.getElementById('loss-fn').value;
+  document.getElementById('huber-ctrl').style.display = fn==='huber'?'block':'none';
+  const m = parseFloat(document.getElementById('slope').value);
+  const b = parseFloat(document.getElementById('intercept').value);
+  const delta = parseFloat(document.getElementById('huber-delta').value);
+  document.getElementById('slope-val').textContent = m.toFixed(2);
+  document.getElementById('int-val').textContent = b.toFixed(2);
+  document.getElementById('delta-val').textContent = delta.toFixed(1);
+
+  const loss = computeLoss(lossPoints, m, b, fn, delta);
+  document.getElementById('total-loss').textContent = loss.toFixed(3);
+
+  // Main scatter
+  const cvs = document.getElementById('loss-canvas');
+  const ctx = cvs.getContext('2d');
+  const W = cvs.width, H = cvs.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#1a1f2e'; ctx.fillRect(0,0,W,H);
+
+  // Axes
+  const pad = 50;
+  const xMin=-2, xMax=9, yMin=-8, yMax=12;
+  const sx = x => pad + (x-xMin)/(xMax-xMin)*(W-2*pad);
+  const sy = y => H - pad - (y-yMin)/(yMax-yMin)*(H-2*pad);
+
+  // Grid
+  ctx.strokeStyle='#2d3147'; ctx.lineWidth=0.5;
+  for(let v=Math.ceil(xMin);v<=xMax;v++){ctx.beginPath();ctx.moveTo(sx(v),pad);ctx.lineTo(sx(v),H-pad);ctx.stroke();}
+  for(let v=Math.ceil(yMin);v<=yMax;v++){ctx.beginPath();ctx.moveTo(pad,sy(v));ctx.lineTo(W-pad,sy(v));ctx.stroke();}
+
+  // Axis labels
+  ctx.fillStyle='#64748b'; ctx.font='11px Inter'; ctx.textAlign='center';
+  for(let v=Math.ceil(xMin);v<=xMax;v+=2) ctx.fillText(v,sx(v),H-pad+16);
+  ctx.textAlign='right';
+  for(let v=Math.ceil(yMin);v<=yMax;v+=2) ctx.fillText(v,pad-8,sy(v)+4);
+
+  // Prediction line
+  ctx.strokeStyle='#7dd3fc'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(sx(xMin),sy(m*xMin+b)); ctx.lineTo(sx(xMax),sy(m*xMax+b)); ctx.stroke();
+
+  // Residual bars
+  lossPoints.forEach(p=>{
+    const pred = m*p.x + b;
+    ctx.strokeStyle = p.outlier?'#f8717180':'#fbbf2440'; ctx.lineWidth=1.5;
+    ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.moveTo(sx(p.x),sy(p.y)); ctx.lineTo(sx(p.x),sy(pred)); ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // Points
+  lossPoints.forEach(p=>{
+    ctx.beginPath(); ctx.arc(sx(p.x),sy(p.y),5,0,Math.PI*2);
+    ctx.fillStyle = p.outlier?'#f87171':'#38bdf8'; ctx.fill();
+    ctx.strokeStyle='#0f172a'; ctx.lineWidth=1.5; ctx.stroke();
+  });
+
+  // Inset loss curve
+  drawLossCurve(m, b, fn, delta);
+}
+
+function drawLossCurve(currentM, currentB, fn, delta){
+  const cvs = document.getElementById('loss-curve');
+  const ctx = cvs.getContext('2d');
+  const W = cvs.width, H = cvs.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#1a1f2e'; ctx.fillRect(0,0,W,H);
+
+  const pad = 40;
+  // Sweep slope from -3 to 3 with fixed intercept
+  const steps = 100;
+  const vals=[];
+  for(let i=0;i<=steps;i++){
+    const mTest = -3 + 6*i/steps;
+    vals.push({m:mTest, loss:computeLoss(lossPoints, mTest, currentB, fn, delta)});
+  }
+  const maxL = Math.max(...vals.map(v=>v.loss),0.01);
+
+  const sx = i => pad + i/steps*(W-2*pad);
+  const sy = v => H - pad - (v/maxL)*(H-2*pad);
+
+  ctx.strokeStyle='#2d3147'; ctx.lineWidth=0.5;
+  ctx.beginPath(); ctx.moveTo(pad,pad); ctx.lineTo(pad,H-pad); ctx.lineTo(W-pad,H-pad); ctx.stroke();
+
+  // Curve
+  ctx.strokeStyle='#fbbf24'; ctx.lineWidth=2; ctx.beginPath();
+  vals.forEach((v,i)=>{ i===0?ctx.moveTo(sx(i),sy(v.loss)):ctx.lineTo(sx(i),sy(v.loss)); });
+  ctx.stroke();
+
+  // Current position marker
+  const ci = Math.round((currentM+3)/6*steps);
+  if(ci>=0 && ci<=steps){
+    ctx.beginPath(); ctx.arc(sx(ci),sy(vals[ci].loss),5,0,Math.PI*2);
+    ctx.fillStyle='#f87171'; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+  }
+
+  ctx.fillStyle='#94a3b8'; ctx.font='10px Inter'; ctx.textAlign='center';
+  ctx.fillText('Slope',(pad+W-pad)/2,H-6);
+  ctx.fillText('-3',pad,H-pad+14); ctx.fillText('3',W-pad,H-pad+14);
+  ctx.save(); ctx.translate(12,(pad+H-pad)/2); ctx.rotate(-Math.PI/2); ctx.fillText('Loss',0,0); ctx.restore();
+}
+
+function autoFit(){
+  if(autoFitting) return;
+  autoFitting = true;
+  const fn = document.getElementById('loss-fn').value;
+  const delta = parseFloat(document.getElementById('huber-delta').value);
+  let m = parseFloat(document.getElementById('slope').value);
+  let b = parseFloat(document.getElementById('intercept').value);
+  const lr = 0.005;
+  let iter = 0;
+
+  function step(){
+    if(iter>=200){autoFitting=false;return;}
+    // Numerical gradient
+    const eps=0.001;
+    const l0=computeLoss(lossPoints,m,b,fn,delta);
+    const gm=(computeLoss(lossPoints,m+eps,b,fn,delta)-l0)/eps;
+    const gb=(computeLoss(lossPoints,m,b+eps,fn,delta)-l0)/eps;
+    m -= lr*gm; b -= lr*gb;
+    m = Math.max(-3,Math.min(3,m)); b = Math.max(-5,Math.min(5,b));
+    document.getElementById('slope').value = m;
+    document.getElementById('intercept').value = b;
+    drawLoss();
+    iter++;
+    requestAnimationFrame(step);
+  }
+  step();
+}
+
+/* ═══════════════════════════════════════════
+   TAB 3: OVERFITTING SIMULATOR
+   ═══════════════════════════════════════════ */
+let trainPts=[], testPts=[];
+
+function genOverfitData(){
+  const noise = parseFloat(document.getElementById('noise-lvl').value);
+  document.getElementById('noise-val').textContent = noise.toFixed(2);
+  trainPts=[]; testPts=[];
+  for(let i=0;i<15;i++){
+    const x = Math.random()*2*Math.PI;
+    const y = Math.sin(x) + (Math.random()-0.5)*2*noise;
+    trainPts.push({x,y});
+  }
+  for(let i=0;i<10;i++){
+    const x = Math.random()*2*Math.PI;
+    const y = Math.sin(x) + (Math.random()-0.5)*2*noise;
+    testPts.push({x,y});
+  }
+}
+
+function regenOverfit(){
+  genOverfitData();
+  drawOverfit();
+}
+
+function polyFit(pts, deg){
+  const n=pts.length;
+  if(deg>=n) deg=n-1;
+  // Build Vandermonde
+  const X=[], Y=[];
+  pts.forEach(p=>{
+    const row=[];
+    for(let d=0;d<=deg;d++) row.push(Math.pow(p.x,d));
+    X.push(row); Y.push(p.y);
+  });
+  // Normal equations: (X^T X) c = X^T Y
+  const cols=deg+1;
+  const XtX=Array.from({length:cols},()=>new Array(cols).fill(0));
+  const XtY=new Array(cols).fill(0);
+  for(let i=0;i<n;i++){
+    for(let j=0;j<cols;j++){
+      XtY[j]+=X[i][j]*Y[i];
+      for(let k=0;k<cols;k++) XtX[j][k]+=X[i][j]*X[i][k];
+    }
+  }
+  // Ridge regularization for stability
+  for(let j=0;j<cols;j++) XtX[j][j]+=1e-8;
+  // Gaussian elimination
+  const A=XtX.map((r,i)=>[...r,XtY[i]]);
+  for(let i=0;i<cols;i++){
+    let maxR=i;
+    for(let r=i+1;r<cols;r++) if(Math.abs(A[r][i])>Math.abs(A[maxR][i])) maxR=r;
+    [A[i],A[maxR]]=[A[maxR],A[i]];
+    if(Math.abs(A[i][i])<1e-12) continue;
+    for(let r=i+1;r<cols;r++){
+      const f=A[r][i]/A[i][i];
+      for(let c=i;c<=cols;c++) A[r][c]-=f*A[i][c];
+    }
+  }
+  const c=new Array(cols).fill(0);
+  for(let i=cols-1;i>=0;i--){
+    let s=A[i][cols];
+    for(let j=i+1;j<cols;j++) s-=A[i][j]*c[j];
+    c[i]= Math.abs(A[i][i])>1e-12 ? s/A[i][i] : 0;
+  }
+  return c;
+}
+
+function polyEval(c, x){
+  let v=0;
+  for(let i=0;i<c.length;i++) v+=c[i]*Math.pow(x,i);
+  return v;
+}
+
+function mse(pts, c){
+  let s=0;
+  pts.forEach(p=>{ const e=p.y-polyEval(c,p.x); s+=e*e; });
+  return s/pts.length;
+}
+
+function drawOverfit(){
+  if(trainPts.length===0) genOverfitData();
+  const deg = parseInt(document.getElementById('poly-deg').value);
+  document.getElementById('deg-val').textContent = deg;
+
+  const c = polyFit(trainPts, deg);
+
+  // Main canvas
+  const cvs = document.getElementById('overfit-canvas');
+  const ctx = cvs.getContext('2d');
+  const W=cvs.width, H=cvs.height, pad=50;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#1a1f2e'; ctx.fillRect(0,0,W,H);
+
+  const xMin=-0.3, xMax=6.7, yMin=-2.5, yMax=2.5;
+  const sx=x=>pad+(x-xMin)/(xMax-xMin)*(W-2*pad);
+  const sy=y=>H-pad-(y-yMin)/(yMax-yMin)*(H-2*pad);
+
+  // Grid
+  ctx.strokeStyle='#2d3147'; ctx.lineWidth=0.5;
+  for(let v=0;v<=6;v++){ctx.beginPath();ctx.moveTo(sx(v),pad);ctx.lineTo(sx(v),H-pad);ctx.stroke();}
+  for(let v=-2;v<=2;v++){ctx.beginPath();ctx.moveTo(pad,sy(v));ctx.lineTo(W-pad,sy(v));ctx.stroke();}
+
+  // True sine
+  ctx.strokeStyle='#64748b40'; ctx.lineWidth=1; ctx.setLineDash([5,5]); ctx.beginPath();
+  for(let x=xMin;x<=xMax;x+=0.05){const y=Math.sin(x); x===xMin?ctx.moveTo(sx(x),sy(y)):ctx.lineTo(sx(x),sy(y));}
+  ctx.stroke(); ctx.setLineDash([]);
+
+  // Fitted curve
+  ctx.strokeStyle='#7dd3fc'; ctx.lineWidth=2.5; ctx.beginPath();
+  let first=true;
+  for(let px=xMin;px<=xMax;px+=0.02){
+    let y=polyEval(c,px);
+    y=Math.max(yMin-1,Math.min(yMax+1,y));
+    if(first){ctx.moveTo(sx(px),sy(y));first=false;} else ctx.lineTo(sx(px),sy(y));
+  }
+  ctx.stroke();
+
+  // Points
+  trainPts.forEach(p=>{
+    ctx.beginPath(); ctx.arc(sx(p.x),sy(p.y),5,0,Math.PI*2);
+    ctx.fillStyle='#38bdf8'; ctx.fill(); ctx.strokeStyle='#0f172a'; ctx.lineWidth=1.5; ctx.stroke();
+  });
+  testPts.forEach(p=>{
+    ctx.beginPath(); ctx.arc(sx(p.x),sy(p.y),5,0,Math.PI*2);
+    ctx.fillStyle='#f87171'; ctx.fill(); ctx.strokeStyle='#0f172a'; ctx.lineWidth=1.5; ctx.stroke();
+  });
+
+  // Legend
+  ctx.fillStyle='#38bdf8'; ctx.fillRect(W-130,14,10,10);
+  ctx.fillStyle='#94a3b8'; ctx.font='11px Inter'; ctx.textAlign='left'; ctx.fillText('Train',W-116,23);
+  ctx.fillStyle='#f87171'; ctx.fillRect(W-130,30,10,10);
+  ctx.fillStyle='#94a3b8'; ctx.fillText('Test',W-116,39);
+
+  // Axis labels
+  ctx.fillStyle='#64748b'; ctx.font='11px Inter'; ctx.textAlign='center';
+  for(let v=0;v<=6;v++) ctx.fillText(v,sx(v),H-pad+16);
+  ctx.textAlign='right';
+  for(let v=-2;v<=2;v++) ctx.fillText(v,pad-8,sy(v)+4);
+
+  // Error curve
+  drawErrorCurve(deg);
+}
+
+function drawErrorCurve(currentDeg){
+  const cvs=document.getElementById('error-curve');
+  const ctx=cvs.getContext('2d');
+  const W=cvs.width, H=cvs.height, pad=45;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#1a1f2e'; ctx.fillRect(0,0,W,H);
+
+  const maxDeg=15;
+  const trainErrs=[], testErrs=[];
+  for(let d=1;d<=maxDeg;d++){
+    const c=polyFit(trainPts,d);
+    trainErrs.push(mse(trainPts,c));
+    testErrs.push(mse(testPts,c));
+  }
+
+  const allErrs=[...trainErrs,...testErrs];
+  const maxE=Math.min(Math.max(...allErrs)*1.1, 10);
+  const sx=d=>pad+(d-1)/(maxDeg-1)*(W-2*pad);
+  const sy=e=>H-pad-(Math.min(e,maxE)/maxE)*(H-2*pad);
+
+  // Zones
+  const zoneW=(W-2*pad)/3;
+  ctx.fillStyle='#ef444420'; ctx.fillRect(pad,pad,zoneW,H-2*pad);
+  ctx.fillStyle='#22c55e15'; ctx.fillRect(pad+zoneW,pad,zoneW,H-2*pad);
+  ctx.fillStyle='#f59e0b20'; ctx.fillRect(pad+2*zoneW,pad,zoneW,H-2*pad);
+  ctx.fillStyle='#64748b'; ctx.font='10px Inter'; ctx.textAlign='center';
+  ctx.fillText('Underfit',pad+zoneW/2,pad+14);
+  ctx.fillText('Sweet Spot',pad+1.5*zoneW,pad+14);
+  ctx.fillText('Overfit',pad+2.5*zoneW,pad+14);
+
+  // Train error line
+  ctx.strokeStyle='#38bdf8'; ctx.lineWidth=2; ctx.beginPath();
+  trainErrs.forEach((e,i)=>{ i===0?ctx.moveTo(sx(i+1),sy(e)):ctx.lineTo(sx(i+1),sy(e)); });
+  ctx.stroke();
+
+  // Test error line
+  ctx.strokeStyle='#f87171'; ctx.lineWidth=2; ctx.beginPath();
+  testErrs.forEach((e,i)=>{ i===0?ctx.moveTo(sx(i+1),sy(e)):ctx.lineTo(sx(i+1),sy(e)); });
+  ctx.stroke();
+
+  // Current degree marker
+  ctx.beginPath(); ctx.setLineDash([4,4]); ctx.strokeStyle='#fbbf2480'; ctx.lineWidth=1;
+  ctx.moveTo(sx(currentDeg),pad); ctx.lineTo(sx(currentDeg),H-pad); ctx.stroke(); ctx.setLineDash([]);
+
+  // Axis labels
+  ctx.fillStyle='#64748b'; ctx.font='10px Inter'; ctx.textAlign='center';
+  for(let d=1;d<=maxDeg;d+=2) ctx.fillText(d,sx(d),H-pad+14);
+  ctx.fillText('Degree',(pad+W-pad)/2,H-4);
+  ctx.textAlign='right'; ctx.fillText('Error',pad-6,pad+10);
+
+  // Legend
+  ctx.fillStyle='#38bdf8'; ctx.fillRect(W-120,H-30,10,3);
+  ctx.fillStyle='#94a3b8'; ctx.font='10px Inter'; ctx.textAlign='left'; ctx.fillText('Train',W-106,H-26);
+  ctx.fillStyle='#f87171'; ctx.fillRect(W-120,H-18,10,3);
+  ctx.fillStyle='#94a3b8'; ctx.fillText('Test',W-106,H-14);
+
+  // Info box
+  const info=document.getElementById('overfit-info');
+  const trE=trainErrs[currentDeg-1].toFixed(3), teE=testErrs[currentDeg-1].toFixed(3);
+  let zone='Underfitting zone';
+  if(currentDeg>=4 && currentDeg<=7) zone='Sweet spot';
+  else if(currentDeg>7) zone='Overfitting zone';
+  info.innerHTML='Degree '+currentDeg+': <strong>'+zone+'</strong> &nbsp;|&nbsp; Train MSE: <span style="color:#38bdf8">'+trE+'</span> &nbsp; Test MSE: <span style="color:#f87171">'+teE+'</span>';
+}
+
+/* ═══════════════════════════════════════════
+   TAB 4: HYPERPARAMETER TUNING RACE
+   ═══════════════════════════════════════════ */
+let raceRunning=false, raceAnim=null;
+
+// Objective: peaks function for interesting landscape
+function objective(x,y){
+  return 3*(1-x)*(1-x)*Math.exp(-x*x-(y+1)*(y+1))
+    - 10*(x/5-x*x*x-y*y*y*y*y)*Math.exp(-x*x-y*y)
+    - (1/3)*Math.exp(-(x+1)*(x+1)-y*y);
+}
+
+function drawContour(ctx,W,H){
+  const pad=40;
+  const pw=W-2*pad, ph=H-2*pad;
+  const res=2;
+  const xMin=-3,xMax=3,yMin=-3,yMax=3;
+
+  // Pre-compute values
+  const vals=[];
+  let mn=Infinity, mx=-Infinity;
+  for(let py=0;py<ph;py+=res){
+    for(let px=0;px<pw;px+=res){
+      const x=xMin+px/pw*(xMax-xMin);
+      const y=yMax-py/ph*(yMax-yMin);
+      const v=objective(x,y);
+      vals.push({px:pad+px,py:pad+py,v});
+      if(v<mn)mn=v;if(v>mx)mx=v;
+    }
+  }
+
+  // Color map
+  vals.forEach(({px,py,v})=>{
+    const t=(v-mn)/(mx-mn);
+    const r=Math.round(15+t*40);
+    const g=Math.round(20+t*60);
+    const b=Math.round(50+t*120);
+    ctx.fillStyle='rgb('+r+','+g+','+b+')';
+    ctx.fillRect(px,py,res,res);
+  });
+
+  // Contour lines (simplified)
+  const levels=10;
+  ctx.strokeStyle='#ffffff15'; ctx.lineWidth=0.5;
+  for(let l=0;l<levels;l++){
+    const threshold=mn+(mx-mn)*(l/levels);
+    for(let py=0;py<ph-res;py+=res*3){
+      for(let px=0;px<pw-res;px+=res*3){
+        const x1=xMin+px/pw*(xMax-xMin), y1=yMax-py/ph*(yMax-yMin);
+        const x2=xMin+(px+res*3)/pw*(xMax-xMin);
+        const v1=objective(x1,y1), v2=objective(x2,y1);
+        if((v1-threshold)*(v2-threshold)<0){
+          ctx.beginPath(); ctx.arc(pad+px+res,pad+py+res,0.5,0,Math.PI*2); ctx.stroke();
+        }
+      }
+    }
+  }
+
+  // Axis labels
+  ctx.fillStyle='#64748b'; ctx.font='10px Inter'; ctx.textAlign='center';
+  for(let v=-3;v<=3;v++) ctx.fillText(v, pad+((v-xMin)/(xMax-xMin))*pw, H-pad+14);
+  ctx.textAlign='right';
+  for(let v=-3;v<=3;v++) ctx.fillText(v, pad-6, pad+((yMax-v)/(yMax-yMin))*ph+4);
+  ctx.fillStyle='#94a3b8'; ctx.font='11px Inter'; ctx.textAlign='center';
+  ctx.fillText('Hyperparameter 1', W/2, H-6);
+  ctx.save(); ctx.translate(10, H/2); ctx.rotate(-Math.PI/2); ctx.fillText('Hyperparameter 2',0,0); ctx.restore();
+}
+
+function runRace(){
+  if(raceRunning) return;
+  raceRunning=true;
+  const maxE=parseInt(document.getElementById('max-evals').value);
+  const speed=parseInt(document.getElementById('race-speed').value);
+  const delay=[200,100,50,25,10][speed-1];
+
+  const xMin=-3,xMax=3,yMin=-3,yMax=3;
+  const cvs=document.getElementById('race-canvas');
+  const ctx=cvs.getContext('2d');
+  const W=cvs.width, H=cvs.height, pad=40;
+  const pw=W-2*pad, ph=H-2*pad;
+  const sx=x=>pad+(x-xMin)/(xMax-xMin)*pw;
+  const sy=y=>pad+(yMax-y)/(yMax-yMin)*ph;
+
+  // Generate all search points upfront
+  // Grid
+  const gridN=Math.ceil(Math.sqrt(maxE));
+  const gridPts=[];
+  for(let i=0;i<gridN&&gridPts.length<maxE;i++){
+    for(let j=0;j<gridN&&gridPts.length<maxE;j++){
+      const x=xMin+i/(gridN-1)*(xMax-xMin);
+      const y=yMin+j/(gridN-1)*(yMax-yMin);
+      gridPts.push({x,y,v:objective(x,y)});
+    }
+  }
+
+  // Random
+  const randPts=[];
+  for(let i=0;i<maxE;i++){
+    const x=xMin+Math.random()*(xMax-xMin);
+    const y=yMin+Math.random()*(yMax-yMin);
+    randPts.push({x,y,v:objective(x,y)});
+  }
+
+  // Bayesian (simulated: start random, then exploit around best with shrinking radius)
+  const bayesPts=[];
+  let bayesBestX=0, bayesBestY=0, bayesBestV=-Infinity;
+  for(let i=0;i<maxE;i++){
+    let x,y;
+    if(i<5){
+      x=xMin+Math.random()*(xMax-xMin);
+      y=yMin+Math.random()*(yMax-yMin);
+    } else {
+      // Mix of exploitation and exploration
+      if(Math.random()<0.3){
+        x=xMin+Math.random()*(xMax-xMin);
+        y=yMin+Math.random()*(yMax-yMin);
+      } else {
+        const radius=3*Math.exp(-i/maxE*2);
+        x=bayesBestX+(Math.random()-0.5)*2*radius;
+        y=bayesBestY+(Math.random()-0.5)*2*radius;
+        x=Math.max(xMin,Math.min(xMax,x));
+        y=Math.max(yMin,Math.min(yMax,y));
+      }
+    }
+    const v=objective(x,y);
+    if(v>bayesBestV){bayesBestV=v;bayesBestX=x;bayesBestY=y;}
+    bayesPts.push({x,y,v});
+  }
+
+  let step=0;
+  let gBest=-Infinity, rBest=-Infinity, bBest=-Infinity;
+  const allGridDrawn=[], allRandDrawn=[], allBayesDrawn=[];
+
+  function animate(){
+    if(step>=maxE){raceRunning=false;return;}
+
+    // Redraw contour base
+    ctx.clearRect(0,0,W,H);
+    drawContour(ctx,W,H);
+
+    // Draw all previous + current
+    if(step<gridPts.length){allGridDrawn.push(gridPts[step]); if(gridPts[step].v>gBest)gBest=gridPts[step].v;}
+    if(step<randPts.length){allRandDrawn.push(randPts[step]); if(randPts[step].v>rBest)rBest=randPts[step].v;}
+    if(step<bayesPts.length){allBayesDrawn.push(bayesPts[step]); if(bayesPts[step].v>bBest)bBest=bayesPts[step].v;}
+
+    // Draw points
+    function drawPts(pts, color, ring){
+      pts.forEach((p,i)=>{
+        ctx.beginPath(); ctx.arc(sx(p.x),sy(p.y), i===pts.length-1?6:3.5, 0,Math.PI*2);
+        ctx.fillStyle=color; ctx.globalAlpha= i===pts.length-1?1:0.6; ctx.fill();
+        ctx.globalAlpha=1;
+        if(i===pts.length-1){ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();}
+      });
+    }
+    drawPts(allGridDrawn,'#60a5fa');
+    drawPts(allRandDrawn,'#4ade80');
+    drawPts(allBayesDrawn,'#c084fc');
+
+    // Update scoreboard
+    document.getElementById('grid-best').textContent = gBest>-Infinity?gBest.toFixed(3):'--';
+    document.getElementById('rand-best').textContent = rBest>-Infinity?rBest.toFixed(3):'--';
+    document.getElementById('bayes-best').textContent = bBest>-Infinity?bBest.toFixed(3):'--';
+    document.getElementById('grid-evals').textContent = allGridDrawn.length+' evals';
+    document.getElementById('rand-evals').textContent = allRandDrawn.length+' evals';
+    document.getElementById('bayes-evals').textContent = allBayesDrawn.length+' evals';
+
+    step++;
+    raceAnim=setTimeout(animate, delay);
+  }
+
+  // Initial contour
+  ctx.clearRect(0,0,W,H);
+  drawContour(ctx,W,H);
+  animate();
+}
+
+function resetRace(){
+  raceRunning=false;
+  if(raceAnim) clearTimeout(raceAnim);
+  const cvs=document.getElementById('race-canvas');
+  const ctx=cvs.getContext('2d');
+  ctx.clearRect(0,0,cvs.width,cvs.height);
+  drawContour(ctx,cvs.width,cvs.height);
+  document.getElementById('grid-best').textContent='--';
+  document.getElementById('rand-best').textContent='--';
+  document.getElementById('bayes-best').textContent='--';
+  document.getElementById('grid-evals').textContent='0 evals';
+  document.getElementById('rand-evals').textContent='0 evals';
+  document.getElementById('bayes-evals').textContent='0 evals';
+}
+
+function updateSpeedLabel(){
+  const v=parseInt(document.getElementById('race-speed').value);
+  const labels=['Slow','Moderate','Normal','Fast','Ultra'];
+  document.getElementById('speed-val').textContent=labels[v-1];
+}
+
+/* ═══════════════════════════════════════════
+   TAB 5: FEATURE IMPORTANCE SHOWDOWN
+   ═══════════════════════════════════════════ */
+const featureNames=['SqFt','Beds','Age','Distance','Garage','Schools'];
+const featureColors=['#38bdf8','#f87171','#fbbf24','#4ade80','#c084fc','#fb923c'];
+
+// Simulated importance scores (realistic for house pricing)
+const importanceData = {
+  permutation:[0.42, 0.18, 0.12, 0.15, 0.08, 0.05],
+  shap:       [0.38, 0.15, 0.10, 0.19, 0.09, 0.09],
+  gini:       [0.35, 0.20, 0.14, 0.11, 0.12, 0.08],
+  drop:       [0.40, 0.12, 0.15, 0.17, 0.06, 0.10]
+};
+
+function getRanks(scores){
+  const indexed=scores.map((v,i)=>({v,i}));
+  indexed.sort((a,b)=>b.v-a.v);
+  const ranks=new Array(scores.length);
+  indexed.forEach((item,rank)=>ranks[item.i]=rank+1);
+  return ranks;
+}
+
+function drawBarChart(canvasId, scores, title){
+  const cvs=document.getElementById(canvasId);
+  const ctx=cvs.getContext('2d');
+  const W=cvs.width, H=cvs.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#1a1f2e'; ctx.fillRect(0,0,W,H);
+
+  const pad={l:55,r:15,t:10,b:30};
+  const n=scores.length;
+  const maxV=Math.max(...scores)*1.15;
+  const barH=(H-pad.t-pad.b)/n - 6;
+  const barGap=6;
+
+  scores.forEach((v,i)=>{
+    const y=pad.t + i*(barH+barGap);
+    const w=(v/maxV)*(W-pad.l-pad.r);
+
+    // Bar
+    ctx.fillStyle=featureColors[i];
+    ctx.globalAlpha=0.85;
+    ctx.beginPath();
+    ctx.roundRect(pad.l, y, w, barH, 4);
+    ctx.fill();
+    ctx.globalAlpha=1;
+
+    // Value label
+    ctx.fillStyle='#e2e8f0'; ctx.font='bold 11px Inter'; ctx.textAlign='left';
+    ctx.fillText(v.toFixed(3), pad.l+w+6, y+barH/2+4);
+
+    // Feature name
+    ctx.fillStyle='#94a3b8'; ctx.font='11px Inter'; ctx.textAlign='right';
+    ctx.fillText(featureNames[i], pad.l-6, y+barH/2+4);
+  });
+}
+
+function drawFeatureImportance(){
+  drawBarChart('fi-perm', importanceData.permutation);
+  drawBarChart('fi-shap', importanceData.shap);
+  drawBarChart('fi-gini', importanceData.gini);
+  drawBarChart('fi-drop', importanceData.drop);
+  buildRankTable();
+}
+
+function buildRankTable(){
+  const methods=['permutation','shap','gini','drop'];
+  const methodLabels=['Permutation','SHAP','Gini/MDI','Drop-Column'];
+  const allRanks=methods.map(m=>getRanks(importanceData[m]));
+
+  let html='<thead><tr><th>Feature</th>';
+  methodLabels.forEach(l=>html+='<th>'+l+'</th>');
+  html+='<th>Spread</th></tr></thead><tbody>';
+
+  featureNames.forEach((f,i)=>{
+    const ranks=allRanks.map(r=>r[i]);
+    const spread=Math.max(...ranks)-Math.min(...ranks);
+    html+='<tr><td style="color:'+featureColors[i]+';font-weight:600">'+f+'</td>';
+    ranks.forEach(r=>{
+      const cls=spread>=2?'rank-disagree':'';
+      html+='<td class="'+cls+'">#'+r+'</td>';
+    });
+    html+='<td'+(spread>=2?' class="rank-disagree"':'')+'>'+spread+'</td>';
+    html+='</tr>';
+  });
+
+  html+='</tbody>';
+  document.getElementById('rank-table').innerHTML=html;
+}
+
+/* ─────── Canvas roundRect polyfill ─────── */
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+    if(typeof r==='number') r={tl:r,tr:r,br:r,bl:r};
+    this.moveTo(x+r.tl,y);
+    this.lineTo(x+w-r.tr,y); this.quadraticCurveTo(x+w,y,x+w,y+r.tr);
+    this.lineTo(x+w,y+h-r.br); this.quadraticCurveTo(x+w,y+h,x+w-r.br,y+h);
+    this.lineTo(x+r.bl,y+h); this.quadraticCurveTo(x,y+h,x,y+h-r.bl);
+    this.lineTo(x,y+r.tl); this.quadraticCurveTo(x,y,x+r.tl,y);
+    return this;
+  };
+}
+
+/* ─────── Canvas DPI scaling for sharpness ─────── */
+function scaleCanvas(id){
+  const cvs=document.getElementById(id);
+  const dpr=window.devicePixelRatio||1;
+  const rect=cvs.getBoundingClientRect();
+  if(rect.width===0) return; // not visible yet
+  cvs.width=rect.width*dpr;
+  cvs.height=rect.height*dpr;
+  const ctx=cvs.getContext('2d');
+  ctx.scale(dpr,dpr);
+  cvs.style.width=rect.width+'px';
+  cvs.style.height=rect.height+'px';
+}
+
+/* ─────── Responsive canvas sizing ─────── */
+function resizeCanvases(){
+  document.querySelectorAll('canvas').forEach(c=>{
+    c.style.width='100%';
+    c.style.maxWidth=c.getAttribute('width')+'px';
+  });
+}
+resizeCanvases();
+window.addEventListener('resize', resizeCanvases);
+
+/* ─────── Init contour on first load ─────── */
+setTimeout(()=>{
+  const cvs=document.getElementById('race-canvas');
+  const ctx=cvs.getContext('2d');
+  drawContour(ctx,cvs.width,cvs.height);
+},100);
+</script>
+</body>
+</html>

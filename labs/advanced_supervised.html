@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Advanced supervised learning interactive lab: regularization paths (L1/L2/Elastic Net) and random forest vote visualizer.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced Supervised Learning — Interactive Lab</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0f1117;color:#e2e8f0;font-family:'Inter','Segoe UI',system-ui,sans-serif;min-height:100vh;padding:24px}
+code,pre,.formula,.mono{font-family:'JetBrains Mono','Cascadia Code','Courier New',monospace!important}
+html{scroll-behavior:smooth}
+h1{text-align:center;font-size:1.6rem;color:#7dd3fc;margin-bottom:6px;letter-spacing:.5px}
+.subtitle{text-align:center;color:#94a3b8;font-size:.9rem;margin-bottom:24px}
+.tabs{display:flex;gap:4px;margin-bottom:20px;background:#1e2130;padding:6px;border-radius:12px;border:1px solid #2d3147;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1;padding:10px 8px;background:transparent;border:none;color:#94a3b8;cursor:pointer;border-radius:8px;font-size:.85rem;font-family:inherit;transition:all .2s;white-space:nowrap}
+.tab.active{background:#0369a1;color:#e2e8f0;font-weight:600}
+.tab:hover:not(.active){background:#2d3147;color:#e2e8f0}
+.panel{display:none;animation:fadeIn .3s ease}
+.panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.grid2{display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start}
+.card{background:#1e2130;border:1px solid #2d3147;border-radius:12px;padding:16px}
+.card-title{font-size:.8rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px}
+label{font-size:.82rem;color:#94a3b8;display:block;margin-bottom:4px}
+input[type=range]{width:100%;accent-color:#7dd3fc;cursor:pointer}
+select{background:#0f172a;border:1px solid #2d3147;color:#e2e8f0;padding:6px 10px;border-radius:8px;font-size:.82rem;width:100%;cursor:pointer}
+button{background:#0369a1;border:none;color:#e2e8f0;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:.82rem;font-family:inherit;transition:all .2s}
+button:hover{background:#0284c7;transform:translateY(-1px)}
+button.secondary{background:#2d3147}
+button.secondary:hover{background:#3d4157}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #7dd3fc;outline-offset:2px}
+.toggle{display:flex;background:#0f172a;border-radius:8px;padding:3px;gap:2px;margin-bottom:10px}
+.toggle-btn{padding:6px 12px;border-radius:6px;border:none;cursor:pointer;font-size:.78rem;font-family:inherit;color:#64748b;background:transparent;transition:all .2s}
+.toggle-btn.active{background:#0369a1;color:#e2e8f0}
+.info-box{background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:10px 14px;font-size:.78rem;color:#94a3b8;margin-top:10px;line-height:1.5}
+.info-box strong{color:#7dd3fc}
+.val-badge{background:#0f172a;color:#7dd3fc;padding:3px 9px;border-radius:6px;font-size:.82rem;font-weight:700;min-width:48px;text-align:center;display:inline-block}
+canvas{display:block;border-radius:8px;background:#1a1f2e}
+.section-title{font-size:.9rem;font-weight:600;color:#e2e8f0;margin-bottom:8px}
+.coeff-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.coeff-label{font-size:.75rem;width:20px;text-align:right;flex-shrink:0;font-weight:600}
+.coeff-bar-bg{flex:1;background:#0f172a;border-radius:4px;height:12px;overflow:hidden;position:relative}
+.coeff-bar{height:100%;border-radius:4px;transition:width .3s ease;position:absolute;top:0}
+.coeff-val{font-size:.75rem;width:50px;text-align:right;flex-shrink:0;font-family:'JetBrains Mono',monospace}
+.active-count{font-size:.85rem;font-weight:600;color:#7dd3fc;margin-bottom:8px}
+.tree-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tree-card{background:#0f172a;border:1px solid #2d3147;border-radius:10px;padding:10px;text-align:center;transition:all .4s}
+.tree-card.voted{border-color:#7dd3fc;box-shadow:0 0 12px #0369a133}
+.tree-card.voted-a{border-color:#86efac;box-shadow:0 0 12px #86efac33}
+.tree-card.voted-b{border-color:#f87171;box-shadow:0 0 12px #f8717133}
+.tree-label{font-size:.72rem;color:#64748b;margin-bottom:4px}
+.tree-vote{font-size:.78rem;font-weight:700;padding:3px 8px;border-radius:12px;display:inline-block;margin-top:4px}
+.vote-a{background:#0f2d1a;color:#86efac;border:1px solid #86efac55}
+.vote-b{background:#2d1a1a;color:#f87171;border:1px solid #f8717155}
+.vote-pending{background:#1e2130;color:#64748b;border:1px solid #2d3147}
+.vote-bar-container{display:flex;gap:4px;align-items:center;margin:10px 0}
+.vote-bar-bg{flex:1;height:24px;background:#0f172a;border-radius:8px;overflow:hidden;display:flex}
+.vote-bar-a{background:linear-gradient(90deg,#065f46,#86efac);height:100%;transition:width .4s ease;border-radius:8px 0 0 8px}
+.vote-bar-b{background:linear-gradient(90deg,#f87171,#991b1b);height:100%;transition:width .4s ease;border-radius:0 8px 8px 0}
+.vote-label{font-size:.75rem;font-weight:600;width:28px;text-align:center;flex-shrink:0}
+.sample-box{background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:10px;margin-bottom:10px;font-size:.78rem}
+.sample-feature{display:flex;justify-content:space-between;margin:2px 0}
+.sample-feature span:first-child{color:#94a3b8}
+.sample-feature span:last-child{color:#7dd3fc;font-weight:600;font-family:'JetBrains Mono',monospace}
+.importance-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.importance-name{font-size:.75rem;width:70px;color:#94a3b8;flex-shrink:0}
+.importance-bar-bg{flex:1;background:#0f172a;border-radius:4px;height:10px;overflow:hidden}
+.importance-bar{height:100%;border-radius:4px;background:linear-gradient(90deg,#0369a1,#7dd3fc);transition:width .4s}
+.importance-val{font-size:.72rem;width:28px;text-align:right;color:#7dd3fc;font-weight:600;flex-shrink:0}
+.prediction-result{text-align:center;padding:12px;background:#0f172a;border-radius:8px;margin-top:8px;border:1px solid #2d3147}
+.prediction-result .pred-class{font-size:1.3rem;font-weight:700}
+.prediction-result .pred-conf{font-size:.82rem;color:#94a3b8;margin-top:2px}
+.oob-box{background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:10px;margin-top:8px;font-size:.78rem;text-align:center}
+.oob-val{font-size:1.4rem;font-weight:700;color:#fbbf24}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+::selection{background:#1d4ed880;color:#e0f2fe}
+canvas{image-rendering:-webkit-optimize-contrast}
+@media(max-width:768px){
+  .grid2{grid-template-columns:1fr!important}
+  h1{font-size:1.4rem!important}
+  .tree-grid{grid-template-columns:repeat(2,1fr)}
+  body{padding:12px}
+}
+@media(max-width:480px){
+  body{padding:8px 8px 40px 8px!important}
+  .tab{padding:8px 10px!important;font-size:.78rem!important}
+  .tree-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<h1>Advanced Supervised Learning &mdash; Interactive Lab</h1>
+<p class="subtitle">Regularization paths and random forest ensembles</p>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab(0)">Regularization Path</button>
+  <button class="tab" onclick="switchTab(1)">Random Forest Votes</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- TAB 0: Regularization Path                                  -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="panel active" id="panel0">
+<div class="grid2">
+  <div>
+    <div class="card">
+      <div class="card-title">Regularization Type</div>
+      <div class="toggle" id="regToggle">
+        <button class="toggle-btn active" onclick="setRegType('l1')">L1 (Lasso)</button>
+        <button class="toggle-btn" onclick="setRegType('l2')">L2 (Ridge)</button>
+        <button class="toggle-btn" onclick="setRegType('en')">Elastic Net</button>
+      </div>
+      <div id="alphaControl" style="display:none;margin-bottom:10px">
+        <label>Alpha (L1 ratio): <span class="val-badge" id="alphaVal">0.50</span></label>
+        <input type="range" id="alphaSlider" min="0" max="100" value="50" oninput="updateAlpha()">
+        <div style="display:flex;justify-content:space-between;font-size:.7rem;color:#64748b"><span>0 = Ridge</span><span>1 = Lasso</span></div>
+      </div>
+      <label>log(&lambda;): <span class="val-badge" id="lambdaVal">0.00</span></label>
+      <input type="range" id="lambdaSlider" min="0" max="800" value="400" oninput="updateLambda()">
+      <div style="display:flex;justify-content:space-between;font-size:.7rem;color:#64748b;margin-bottom:10px"><span>-4 (weak)</span><span>4 (strong)</span></div>
+    </div>
+
+    <div class="card" style="margin-top:10px">
+      <div class="card-title">Current Coefficients</div>
+      <div class="active-count" id="activeCount">Active features: 6 / 6</div>
+      <div id="coeffBars"></div>
+    </div>
+
+    <div class="info-box" id="regInfoBox">
+      <strong>L1 (Lasso):</strong> Drives coefficients to exactly zero, performing automatic feature selection. Useful when you suspect many features are irrelevant.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Regularization Path &mdash; Coefficient Shrinkage</div>
+    <canvas id="regCanvas" width="700" height="420"></canvas>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-size:.72rem;color:#94a3b8" id="regLegend"></div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- TAB 1: Random Forest Vote Visualizer                        -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel1">
+<div class="grid2" style="grid-template-columns:300px 1fr">
+  <div>
+    <div class="card">
+      <div class="card-title">Test Sample</div>
+      <div class="sample-box" id="sampleBox"></div>
+      <div class="btn-row">
+        <button onclick="classifyAnimate()">Classify</button>
+        <button class="secondary" onclick="newSample()">New Sample</button>
+        <button class="secondary" onclick="newForest()">New Forest</button>
+      </div>
+      <label style="margin-top:4px"><input type="checkbox" id="oobToggle" onchange="toggleOOB()" style="accent-color:#7dd3fc;margin-right:4px"> Show OOB Error</label>
+    </div>
+
+    <div class="card" style="margin-top:10px">
+      <div class="card-title">Majority Vote</div>
+      <div class="vote-bar-container">
+        <span class="vote-label" style="color:#86efac" id="voteACount">0</span>
+        <div class="vote-bar-bg"><div class="vote-bar-a" id="voteBarA" style="width:50%"></div><div class="vote-bar-b" id="voteBarB" style="width:50%"></div></div>
+        <span class="vote-label" style="color:#f87171" id="voteBCount">0</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:.72rem;color:#64748b"><span>Class A (Healthy)</span><span>Class B (At Risk)</span></div>
+      <div class="prediction-result" id="predResult">
+        <div class="pred-class" style="color:#64748b">Awaiting classification...</div>
+      </div>
+      <div class="oob-box" id="oobBox" style="display:none">
+        <div style="color:#94a3b8;margin-bottom:4px">Out-of-Bag Error Estimate</div>
+        <div class="oob-val" id="oobVal">--</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:10px">
+      <div class="card-title">Feature Importance</div>
+      <div id="featureImportance"></div>
+    </div>
+
+    <div class="info-box">
+      <strong>Bagging:</strong> Each tree is trained on a bootstrap sample (random subset with replacement). <strong>Random subsets:</strong> At each split, only a random subset of features is considered, decorrelating the trees. The <strong>ensemble</strong> averages out individual errors, reducing variance without increasing bias.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Decision Trees in the Forest</div>
+    <div class="tree-grid" id="treeGrid"></div>
+  </div>
+</div>
+</div>
+
+<script>
+// ─── Tab switching ───────────────────────────────────────────
+function switchTab(i){
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',j===i));
+  document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('active',j===i));
+  if(i===0)drawRegPath();
+  if(i===1&&!forestReady)newForest();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TAB 0: REGULARIZATION PATH
+// ═══════════════════════════════════════════════════════════════
+const COEFF_COLORS=['#7dd3fc','#86efac','#fbbf24','#f87171','#c084fc','#fb923c'];
+const COEFF_NAMES=['x1','x2','x3','x4','x5','x6'];
+// OLS coefficients: mix of strong and weak/noise features
+const OLS_COEFFS=[2.4, -1.8, 1.1, -0.5, 0.25, -0.12];
+// L1 zero-crossing log(lambda) for each coefficient (larger = shrinks later)
+const L1_ZERO=[2.8, 2.2, 1.4, 0.4, -0.3, -1.0];
+let regType='l1';
+let currentLambdaLog=0;
+let elasticAlpha=0.5;
+
+function setRegType(t){
+  regType=t;
+  document.querySelectorAll('#regToggle .toggle-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('#regToggle .toggle-btn[onclick*="'+t+'"]').classList.add('active');
+  document.getElementById('alphaControl').style.display=t==='en'?'block':'none';
+  const infoBox=document.getElementById('regInfoBox');
+  if(t==='l1') infoBox.innerHTML='<strong>L1 (Lasso):</strong> Drives coefficients to exactly zero, performing automatic feature selection. Useful when you suspect many features are irrelevant.';
+  else if(t==='l2') infoBox.innerHTML='<strong>L2 (Ridge):</strong> Shrinks all coefficients toward zero but never sets them exactly to zero. All features are retained, which is suitable when most features are expected to contribute.';
+  else infoBox.innerHTML='<strong>Elastic Net:</strong> Combines L1 and L2 penalties. The alpha parameter controls the mix &mdash; at alpha=1 it behaves like Lasso, at alpha=0 like Ridge. Useful when features are correlated.';
+  drawRegPath();
+  updateCoeffBars();
+}
+
+function updateLambda(){
+  const v=document.getElementById('lambdaSlider').value;
+  currentLambdaLog=-4+(v/800)*8;
+  document.getElementById('lambdaVal').textContent=currentLambdaLog.toFixed(2);
+  drawRegPath();
+  updateCoeffBars();
+}
+
+function updateAlpha(){
+  elasticAlpha=document.getElementById('alphaSlider').value/100;
+  document.getElementById('alphaVal').textContent=elasticAlpha.toFixed(2);
+  drawRegPath();
+  updateCoeffBars();
+}
+
+function getCoeffAtLambda(i,logLam,type,alpha){
+  const ols=OLS_COEFFS[i];
+  const lam=Math.pow(10,logLam);
+  if(type==='l2'){
+    // Ridge: beta_ols / (1 + lambda * scale)
+    const scale=0.5;
+    return ols/(1+lam*scale);
+  }else if(type==='l1'){
+    // Lasso: soft-threshold, coefficients hit zero at specific lambda
+    const zeroLog=L1_ZERO[i];
+    const zeroLam=Math.pow(10,zeroLog);
+    if(lam>=zeroLam) return 0;
+    // Smooth shrinkage before zero
+    const t=lam/zeroLam;
+    // Use a curve that gives sharp transition near zero
+    return ols*(1-Math.pow(t,1.5));
+  }else{
+    // Elastic Net: blend
+    const l1Coeff=getCoeffAtLambda(i,logLam,'l1',1);
+    const l2Coeff=getCoeffAtLambda(i,logLam,'l2',0);
+    return alpha*l1Coeff+(1-alpha)*l2Coeff;
+  }
+}
+
+function drawRegPath(){
+  const canvas=document.getElementById('regCanvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  const pad={l:52,r:20,t:20,b:40};
+  const pw=W-pad.l-pad.r, ph=H-pad.t-pad.b;
+  ctx.clearRect(0,0,W,H);
+
+  // Background
+  ctx.fillStyle='#1a1f2e';
+  ctx.fillRect(0,0,W,H);
+
+  // Grid
+  ctx.strokeStyle='#2d314744';
+  ctx.lineWidth=1;
+  for(let i=0;i<=8;i++){
+    const x=pad.l+(i/8)*pw;
+    ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,pad.t+ph);ctx.stroke();
+  }
+  for(let i=0;i<=6;i++){
+    const y=pad.t+(i/6)*ph;
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+pw,y);ctx.stroke();
+  }
+
+  // Axes labels
+  ctx.fillStyle='#64748b';
+  ctx.font='11px Inter,sans-serif';
+  ctx.textAlign='center';
+  for(let v=-4;v<=4;v+=2){
+    const x=pad.l+((v+4)/8)*pw;
+    ctx.fillText(v.toString(),x,H-pad.b+18);
+  }
+  ctx.fillText('log(\u03BB)',pad.l+pw/2,H-4);
+  ctx.textAlign='right';
+  for(let v=-3;v<=3;v++){
+    const y=pad.t+((3-v)/6)*ph;
+    ctx.fillText(v.toFixed(0),pad.l-8,y+4);
+  }
+  ctx.save();
+  ctx.translate(12,pad.t+ph/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.textAlign='center';
+  ctx.fillText('Coefficient value',0,0);
+  ctx.restore();
+
+  // Zero line
+  ctx.strokeStyle='#94a3b844';
+  ctx.lineWidth=1;
+  ctx.setLineDash([4,4]);
+  const zeroY=pad.t+(3/6)*ph;
+  ctx.beginPath();ctx.moveTo(pad.l,zeroY);ctx.lineTo(pad.l+pw,zeroY);ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Coefficient curves
+  const steps=200;
+  const type=regType==='en'?'en':regType;
+  for(let ci=0;ci<6;ci++){
+    ctx.strokeStyle=COEFF_COLORS[ci];
+    ctx.lineWidth=2.5;
+    ctx.beginPath();
+    for(let s=0;s<=steps;s++){
+      const logLam=-4+(s/steps)*8;
+      const coeff=getCoeffAtLambda(ci,logLam,type,elasticAlpha);
+      const x=pad.l+(s/steps)*pw;
+      const y=pad.t+((3-coeff)/6)*ph;
+      if(s===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+
+  // Vertical lambda indicator
+  const lamX=pad.l+((currentLambdaLog+4)/8)*pw;
+  ctx.strokeStyle='#e2e8f0';
+  ctx.lineWidth=1.5;
+  ctx.setLineDash([6,4]);
+  ctx.beginPath();ctx.moveTo(lamX,pad.t);ctx.lineTo(lamX,pad.t+ph);ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Dots at intersection
+  for(let ci=0;ci<6;ci++){
+    const coeff=getCoeffAtLambda(ci,currentLambdaLog,type,elasticAlpha);
+    const y=pad.t+((3-coeff)/6)*ph;
+    ctx.fillStyle=COEFF_COLORS[ci];
+    ctx.beginPath();ctx.arc(lamX,y,5,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#0f1117';ctx.lineWidth=1.5;ctx.stroke();
+  }
+
+  // Lambda label on the line
+  ctx.fillStyle='#e2e8f0';
+  ctx.font='bold 11px Inter,sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('\u03BB='+Math.pow(10,currentLambdaLog).toFixed(currentLambdaLog<0?4:2),lamX,pad.t-6);
+
+  // Build legend
+  const legendEl=document.getElementById('regLegend');
+  legendEl.innerHTML=COEFF_NAMES.map((n,i)=>'<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:'+COEFF_COLORS[i]+';display:inline-block"></span>'+n+'</span>').join('');
+}
+
+function updateCoeffBars(){
+  const type=regType==='en'?'en':regType;
+  const container=document.getElementById('coeffBars');
+  let html='';
+  let active=0;
+  for(let i=0;i<6;i++){
+    const c=getCoeffAtLambda(i,currentLambdaLog,type,elasticAlpha);
+    const isZero=Math.abs(c)<0.005;
+    if(!isZero) active++;
+    const maxAbs=3;
+    const pct=Math.abs(c)/maxAbs*100;
+    const isNeg=c<0;
+    const color=isZero?'#2d3147':COEFF_COLORS[i];
+    const textColor=isZero?'#4a5168':'#e2e8f0';
+    // Bar rendered from center: left 50% for negative, right 50% for positive
+    const barStyle=isNeg
+      ?'right:50%;width:'+pct/2+'%;background:'+color
+      :'left:50%;width:'+pct/2+'%;background:'+color;
+    html+='<div class="coeff-bar-row">'
+      +'<span class="coeff-label" style="color:'+color+'">'+COEFF_NAMES[i]+'</span>'
+      +'<div class="coeff-bar-bg"><div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:#2d3147"></div>'
+      +'<div class="coeff-bar" style="'+barStyle+';border-radius:4px"></div></div>'
+      +'<span class="coeff-val" style="color:'+textColor+'">'+(isZero?'0.00':c.toFixed(2))+'</span>'
+      +'</div>';
+  }
+  container.innerHTML=html;
+  document.getElementById('activeCount').textContent='Active features: '+active+' / 6';
+  document.getElementById('activeCount').style.color=active<6?'#fbbf24':'#7dd3fc';
+}
+
+// Initialize regularization tab
+updateLambda();
+drawRegPath();
+updateCoeffBars();
+
+// ═══════════════════════════════════════════════════════════════
+//  TAB 1: RANDOM FOREST VOTE VISUALIZER
+// ═══════════════════════════════════════════════════════════════
+const RF_FEATURES=['Age','BMI','Glucose','BP','Chol'];
+const RF_FEATURE_RANGES=[[25,75],[18,40],[70,200],[60,140],[120,300]];
+const NUM_TREES=9;
+let forest=[];
+let testSample=[];
+let treeVotes=[];
+let forestReady=false;
+let animating=false;
+let featureUsage=[];
+
+// Simple decision tree node
+function makeNode(depth,maxDepth,availFeatures){
+  if(depth>=maxDepth){
+    return{leaf:true,cls:Math.random()<0.5?'A':'B'};
+  }
+  // Pick random feature subset (sqrt of features)
+  const subsetSize=Math.max(2,Math.floor(Math.sqrt(availFeatures.length)));
+  const subset=shuffle([...availFeatures]).slice(0,subsetSize);
+  const fi=subset[Math.floor(Math.random()*subset.length)];
+  const range=RF_FEATURE_RANGES[fi];
+  const threshold=range[0]+Math.random()*(range[1]-range[0]);
+  return{
+    leaf:false,
+    feature:fi,
+    threshold:Math.round(threshold),
+    left:makeNode(depth+1,maxDepth,availFeatures),
+    right:makeNode(depth+1,maxDepth,availFeatures)
+  };
+}
+
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;
+}
+
+function classifyNode(node,sample){
+  if(node.leaf) return node.cls;
+  if(sample[node.feature]<=node.threshold) return classifyNode(node.left,sample);
+  return classifyNode(node.right,sample);
+}
+
+function newForest(){
+  forest=[];
+  featureUsage=new Array(RF_FEATURES.length).fill(0);
+  for(let t=0;t<NUM_TREES;t++){
+    const depth=2+Math.floor(Math.random()*2); // depth 2 or 3
+    const tree=makeNode(0,depth,[0,1,2,3,4]);
+    forest.push(tree);
+  }
+  countFeatureUsage();
+  forestReady=true;
+  treeVotes=new Array(NUM_TREES).fill(null);
+  renderTrees();
+  updateVoteBar();
+  renderFeatureImportance();
+  if(!testSample.length) newSample();
+  document.getElementById('predResult').innerHTML='<div class="pred-class" style="color:#64748b">Awaiting classification...</div>';
+}
+
+function countFeatureUsage(){
+  featureUsage=new Array(RF_FEATURES.length).fill(0);
+  forest.forEach(tree=>countNodeFeatures(tree));
+}
+function countNodeFeatures(node){
+  if(node.leaf) return;
+  featureUsage[node.feature]++;
+  countNodeFeatures(node.left);
+  countNodeFeatures(node.right);
+}
+
+function newSample(){
+  testSample=RF_FEATURE_RANGES.map(r=>Math.round(r[0]+Math.random()*(r[1]-r[0])));
+  treeVotes=new Array(NUM_TREES).fill(null);
+  renderSampleBox();
+  renderTrees();
+  updateVoteBar();
+  document.getElementById('predResult').innerHTML='<div class="pred-class" style="color:#64748b">Awaiting classification...</div>';
+}
+
+function renderSampleBox(){
+  const box=document.getElementById('sampleBox');
+  box.innerHTML=RF_FEATURES.map((f,i)=>'<div class="sample-feature"><span>'+f+'</span><span>'+testSample[i]+'</span></div>').join('');
+}
+
+function renderTrees(){
+  const grid=document.getElementById('treeGrid');
+  let html='';
+  for(let t=0;t<NUM_TREES;t++){
+    const vote=treeVotes[t];
+    let cls='tree-card';
+    if(vote==='A') cls+=' voted voted-a';
+    else if(vote==='B') cls+=' voted voted-b';
+    html+='<div class="'+cls+'" id="tree'+t+'">';
+    html+='<div class="tree-label">Tree '+(t+1)+'</div>';
+    html+='<canvas id="treeCanvas'+t+'" width="160" height="110" style="margin:0 auto;display:block"></canvas>';
+    if(vote){
+      html+='<div class="tree-vote '+(vote==='A'?'vote-a':'vote-b')+'">Class '+vote+'</div>';
+    }else{
+      html+='<div class="tree-vote vote-pending">?</div>';
+    }
+    html+='</div>';
+  }
+  grid.innerHTML=html;
+  // Draw each tree
+  for(let t=0;t<NUM_TREES;t++){
+    drawTreeDiagram(t);
+  }
+}
+
+function drawTreeDiagram(treeIdx){
+  const canvas=document.getElementById('treeCanvas'+treeIdx);
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  drawNode(ctx,forest[treeIdx],W/2,14,W/2-10,0,3,treeIdx);
+}
+
+function drawNode(ctx,node,x,y,spread,depth,maxVisDepth,treeIdx){
+  const vote=treeVotes[treeIdx];
+  if(node.leaf){
+    // Leaf node
+    const c=node.cls==='A'?'#86efac':'#f87171';
+    const bg=node.cls==='A'?'#0f2d1a':'#2d1a1a';
+    ctx.fillStyle=bg;
+    ctx.strokeStyle=c;
+    ctx.lineWidth=1.5;
+    roundRect(ctx,x-14,y-8,28,16,6);
+    ctx.fill();ctx.stroke();
+    ctx.fillStyle=c;
+    ctx.font='bold 9px Inter,sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText(node.cls,x,y+3);
+    return;
+  }
+
+  // Internal node
+  const highlighted=vote!==null;
+  const borderColor=highlighted?'#7dd3fc':'#2d3147';
+  ctx.fillStyle='#1e2130';
+  ctx.strokeStyle=borderColor;
+  ctx.lineWidth=1.5;
+  roundRect(ctx,x-28,y-9,56,18,5);
+  ctx.fill();ctx.stroke();
+
+  ctx.fillStyle='#94a3b8';
+  ctx.font='8px JetBrains Mono,monospace';
+  ctx.textAlign='center';
+  const label=RF_FEATURES[node.feature].substring(0,4)+'\u2264'+node.threshold;
+  ctx.fillText(label,x,y+3);
+
+  if(depth<maxVisDepth-1){
+    const childY=y+32;
+    const childSpread=spread*0.5;
+    // Lines
+    ctx.strokeStyle='#2d314788';
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x,y+9);ctx.lineTo(x-childSpread,childY-9);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x,y+9);ctx.lineTo(x+childSpread,childY-9);ctx.stroke();
+    // Yes/No labels
+    ctx.fillStyle='#4a5168';
+    ctx.font='7px Inter,sans-serif';
+    ctx.textAlign='right';
+    ctx.fillText('Y',x-childSpread+10,childY-14);
+    ctx.textAlign='left';
+    ctx.fillText('N',x+childSpread-10,childY-14);
+
+    drawNode(ctx,node.left,x-childSpread,childY,childSpread,depth+1,maxVisDepth,treeIdx);
+    drawNode(ctx,node.right,x+childSpread,childY,childSpread,depth+1,maxVisDepth,treeIdx);
+  }else{
+    // Draw truncated leaves
+    const childY=y+28;
+    const cs=spread*0.45;
+    ctx.strokeStyle='#2d314788';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x,y+9);ctx.lineTo(x-cs,childY-8);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x,y+9);ctx.lineTo(x+cs,childY-8);ctx.stroke();
+    drawLeafSimple(ctx,node.left,x-cs,childY);
+    drawLeafSimple(ctx,node.right,x+cs,childY);
+  }
+}
+
+function drawLeafSimple(ctx,node,x,y){
+  // Walk to a leaf
+  let n=node;
+  while(!n.leaf){n=Math.random()<0.5?n.left:n.right;}
+  const c=n.cls==='A'?'#86efac':'#f87171';
+  const bg=n.cls==='A'?'#0f2d1a':'#2d1a1a';
+  ctx.fillStyle=bg;ctx.strokeStyle=c;ctx.lineWidth=1.5;
+  roundRect(ctx,x-12,y-7,24,14,5);ctx.fill();ctx.stroke();
+  ctx.fillStyle=c;ctx.font='bold 8px Inter,sans-serif';ctx.textAlign='center';
+  ctx.fillText(n.cls,x,y+3);
+}
+
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+}
+
+function classifyAnimate(){
+  if(animating) return;
+  if(!forestReady) newForest();
+  treeVotes=new Array(NUM_TREES).fill(null);
+  renderTrees();
+  updateVoteBar();
+  document.getElementById('predResult').innerHTML='<div class="pred-class" style="color:#64748b">Classifying...</div>';
+  animating=true;
+  let idx=0;
+  function step(){
+    if(idx>=NUM_TREES){
+      animating=false;
+      showFinalPrediction();
+      return;
+    }
+    const vote=classifyNode(forest[idx],testSample);
+    treeVotes[idx]=vote;
+    renderTrees();
+    updateVoteBar();
+    idx++;
+    setTimeout(step,350);
+  }
+  step();
+}
+
+function updateVoteBar(){
+  const aCount=treeVotes.filter(v=>v==='A').length;
+  const bCount=treeVotes.filter(v=>v==='B').length;
+  const total=aCount+bCount;
+  document.getElementById('voteACount').textContent=aCount;
+  document.getElementById('voteBCount').textContent=bCount;
+  if(total===0){
+    document.getElementById('voteBarA').style.width='50%';
+    document.getElementById('voteBarB').style.width='50%';
+  }else{
+    document.getElementById('voteBarA').style.width=(aCount/total*100)+'%';
+    document.getElementById('voteBarB').style.width=(bCount/total*100)+'%';
+  }
+}
+
+function showFinalPrediction(){
+  const aCount=treeVotes.filter(v=>v==='A').length;
+  const bCount=treeVotes.filter(v=>v==='B').length;
+  const total=aCount+bCount;
+  const winner=aCount>=bCount?'A':'B';
+  const conf=Math.max(aCount,bCount);
+  const pct=Math.round(conf/total*100);
+  const color=winner==='A'?'#86efac':'#f87171';
+  document.getElementById('predResult').innerHTML=
+    '<div class="pred-class" style="color:'+color+'">Class '+winner+(winner==='A'?' (Healthy)':' (At Risk)')+'</div>'
+    +'<div class="pred-conf">'+conf+'/'+total+' trees = '+pct+'% confidence</div>';
+  if(document.getElementById('oobToggle').checked) computeOOB();
+}
+
+function renderFeatureImportance(){
+  const container=document.getElementById('featureImportance');
+  const maxUsage=Math.max(...featureUsage,1);
+  container.innerHTML=RF_FEATURES.map((f,i)=>{
+    const pct=featureUsage[i]/maxUsage*100;
+    return '<div class="importance-row">'
+      +'<span class="importance-name">'+f+'</span>'
+      +'<div class="importance-bar-bg"><div class="importance-bar" style="width:'+pct+'%"></div></div>'
+      +'<span class="importance-val">'+featureUsage[i]+'</span></div>';
+  }).join('');
+}
+
+function toggleOOB(){
+  const show=document.getElementById('oobToggle').checked;
+  document.getElementById('oobBox').style.display=show?'block':'none';
+  if(show&&treeVotes.filter(v=>v!==null).length===NUM_TREES) computeOOB();
+}
+
+function computeOOB(){
+  // Simulate OOB error: for each tree, ~37% of data is OOB
+  // We generate 20 synthetic points and compute OOB accuracy
+  const nSamples=20;
+  const samples=[];
+  for(let s=0;s<nSamples;s++){
+    const x=RF_FEATURE_RANGES.map(r=>Math.round(r[0]+Math.random()*(r[1]-r[0])));
+    // True label: simple rule based on features for realism
+    const trueLabel=(x[0]>50||x[2]>140)?'B':'A';
+    samples.push({x,label:trueLabel});
+  }
+  let correct=0,counted=0;
+  for(const sample of samples){
+    // Each tree has ~63% chance of including this sample in its bag
+    const oobTrees=[];
+    for(let t=0;t<NUM_TREES;t++){
+      if(Math.random()<0.37) oobTrees.push(t);
+    }
+    if(oobTrees.length===0) continue;
+    let aVotes=0,bVotes=0;
+    for(const t of oobTrees){
+      const v=classifyNode(forest[t],sample.x);
+      if(v==='A') aVotes++;else bVotes++;
+    }
+    const pred=aVotes>=bVotes?'A':'B';
+    if(pred===sample.label) correct++;
+    counted++;
+  }
+  const err=counted>0?((1-correct/counted)*100).toFixed(1):'--';
+  document.getElementById('oobVal').textContent=err+'%';
+}
+
+// Initialize
+newSample();
+</script>
+</body>
+</html>

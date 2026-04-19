@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Advanced Time Series: Autocorrelation Explorer — interactive ARMA model identification lab.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced Time Series — Interactive Lab</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0f1117;color:#e2e8f0;font-family:'Inter','Segoe UI',system-ui,sans-serif;min-height:100vh}
+code,pre,.mono{font-family:'JetBrains Mono','Cascadia Code','Courier New',monospace!important}
+html{scroll-behavior:smooth}
+
+.header{padding:24px 32px;border-bottom:1px solid #2d3147;background:#1e2130}
+.header h1{font-size:1.5rem;font-weight:700;color:#7dd3fc;letter-spacing:-0.02em}
+.header p{color:#94a3b8;font-size:0.875rem;margin-top:4px}
+
+.tabs{display:flex;gap:4px;padding:16px 32px;background:#1e2130;border-bottom:1px solid #2d3147;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:8px 20px;border-radius:8px;border:1px solid #2d3147;background:transparent;color:#94a3b8;cursor:pointer;font-size:0.85rem;font-weight:500;white-space:nowrap;transition:all .2s;font-family:inherit}
+.tab.active{background:#0c4a6e;color:#7dd3fc;border-color:#7dd3fc}
+.tab:hover:not(.active){background:#1e2130;color:#e2e8f0;border-color:#7dd3fc}
+
+.panel{display:none;padding:28px 32px;max-width:1400px;margin:0 auto}
+.panel.active{display:block}
+
+.card{background:#1e2130;border:1px solid #2d3147;border-radius:12px;padding:20px;margin-bottom:16px}
+.card h3{font-size:1rem;font-weight:600;color:#7dd3fc;margin-bottom:14px}
+.card h4{font-size:0.875rem;font-weight:600;color:#e2e8f0;margin-bottom:10px}
+
+.row{display:flex;gap:16px;flex-wrap:wrap}
+.col{flex:1;min-width:280px}
+.col-ctrl{flex:0 0 340px;min-width:280px}
+
+label{font-size:0.8rem;color:#94a3b8;display:block;margin-bottom:5px}
+input[type=range]{width:100%;accent-color:#7dd3fc}
+.param-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.param-row label{min-width:100px;margin:0}
+.param-val{color:#7dd3fc;font-weight:600;font-size:0.85rem;min-width:45px;font-family:'JetBrains Mono',monospace}
+
+.btn{padding:8px 16px;border-radius:8px;border:1px solid #2d3147;background:#1e2130;color:#e2e8f0;cursor:pointer;font-size:0.8rem;font-weight:500;transition:all .2s;font-family:inherit}
+.btn:hover{background:#0c4a6e;border-color:#7dd3fc;color:#7dd3fc}
+.btn.primary{background:#0369a1;border-color:#7dd3fc;color:#fff}
+.btn.primary:hover{background:#0c4a6e}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+
+canvas{border-radius:8px;display:block}
+
+.info-box{background:#0f1117;border-left:3px solid #7dd3fc;border-radius:0 8px 8px 0;padding:12px 16px;font-size:0.8rem;color:#94a3b8;line-height:1.6}
+.info-box strong{color:#e2e8f0}
+
+.toggle-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.toggle{position:relative;width:36px;height:20px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle .slider{position:absolute;inset:0;background:#2d3147;border-radius:10px;transition:.2s}
+.toggle .slider:before{content:'';position:absolute;height:14px;width:14px;left:3px;bottom:3px;background:#94a3b8;border-radius:50%;transition:.2s}
+.toggle input:checked+.slider{background:#0369a1}
+.toggle input:checked+.slider:before{transform:translateX(16px);background:#7dd3fc}
+
+.preset-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.preset{padding:6px 12px;border-radius:6px;border:1px solid #2d3147;background:#0f1117;color:#94a3b8;cursor:pointer;font-size:0.75rem;font-weight:500;transition:all .2s;font-family:'JetBrains Mono',monospace}
+.preset:hover{border-color:#7dd3fc;color:#7dd3fc}
+.preset.active{background:#0c4a6e;border-color:#7dd3fc;color:#7dd3fc}
+
+.model-box{background:#0f1117;border:1px solid #2d3147;border-radius:10px;padding:14px 18px;margin-top:12px}
+.model-box h4{color:#7dd3fc;font-size:0.9rem;margin-bottom:8px;font-weight:600}
+.model-suggestion{font-size:0.95rem;font-weight:700;color:#38bdf8;font-family:'JetBrains Mono',monospace;margin-bottom:6px}
+.model-reason{font-size:0.78rem;color:#94a3b8;line-height:1.5}
+
+.section-label{font-size:0.72rem;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;margin:14px 0 6px;font-weight:600}
+
+.grid-bottom{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+
+button:focus-visible,input:focus-visible{outline:2px solid #7dd3fc;outline-offset:2px}
+
+@media(max-width:768px){
+  .header{padding:20px 16px}
+  .tabs{padding:12px 16px}
+  .panel{padding:16px}
+  .row{flex-direction:column}
+  .col-ctrl{flex:1 1 100%}
+  .grid-bottom{grid-template-columns:1fr}
+  .preset-row{gap:4px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Advanced Time Series — Interactive Lab</h1>
+  <p>Explore autocorrelation structures, identify ARMA models, and build intuition for time series diagnostics</p>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab(0)">Autocorrelation Explorer</button>
+</div>
+
+<div class="panel active" id="panel0">
+  <div class="row">
+    <!-- LEFT: Controls -->
+    <div class="col-ctrl">
+      <div class="card">
+        <h3>Model Parameters</h3>
+
+        <div class="section-label">Presets</div>
+        <div class="preset-row" id="presetRow">
+          <button class="preset" onclick="applyPreset('ar1')">AR(1)</button>
+          <button class="preset" onclick="applyPreset('ma1')">MA(1)</button>
+          <button class="preset" onclick="applyPreset('ar2')">AR(2)</button>
+          <button class="preset" onclick="applyPreset('arma11')">ARMA(1,1)</button>
+          <button class="preset" onclick="applyPreset('seasonal')">Seasonal</button>
+        </div>
+
+        <div class="section-label">Autoregressive (AR) Component</div>
+        <div class="param-row">
+          <label>AR Order (p)</label>
+          <input type="range" id="arOrder" min="0" max="3" value="1" step="1" oninput="onOrderChange()">
+          <span class="param-val" id="arOrderVal">1</span>
+        </div>
+        <div id="arCoeffs">
+          <div class="param-row" id="phi1Row">
+            <label>&phi;<sub>1</sub></label>
+            <input type="range" id="phi1" min="-0.9" max="0.9" value="0.7" step="0.05">
+            <span class="param-val" id="phi1Val">0.70</span>
+          </div>
+          <div class="param-row" id="phi2Row" style="display:none">
+            <label>&phi;<sub>2</sub></label>
+            <input type="range" id="phi2" min="-0.9" max="0.9" value="0" step="0.05">
+            <span class="param-val" id="phi2Val">0.00</span>
+          </div>
+          <div class="param-row" id="phi3Row" style="display:none">
+            <label>&phi;<sub>3</sub></label>
+            <input type="range" id="phi3" min="-0.9" max="0.9" value="0" step="0.05">
+            <span class="param-val" id="phi3Val">0.00</span>
+          </div>
+        </div>
+
+        <div class="section-label">Moving Average (MA) Component</div>
+        <div class="param-row">
+          <label>MA Order (q)</label>
+          <input type="range" id="maOrder" min="0" max="2" value="0" step="1" oninput="onOrderChange()">
+          <span class="param-val" id="maOrderVal">0</span>
+        </div>
+        <div id="maCoeffs">
+          <div class="param-row" id="theta1Row" style="display:none">
+            <label>&theta;<sub>1</sub></label>
+            <input type="range" id="theta1" min="-0.9" max="0.9" value="0.5" step="0.05">
+            <span class="param-val" id="theta1Val">0.50</span>
+          </div>
+          <div class="param-row" id="theta2Row" style="display:none">
+            <label>&theta;<sub>2</sub></label>
+            <input type="range" id="theta2" min="-0.9" max="0.9" value="0" step="0.05">
+            <span class="param-val" id="theta2Val">0.00</span>
+          </div>
+        </div>
+
+        <div class="section-label">Seasonality</div>
+        <div class="toggle-row">
+          <label class="toggle"><input type="checkbox" id="seasonToggle" onchange="onOrderChange()"><span class="slider"></span></label>
+          <label style="margin:0;color:#e2e8f0;font-size:0.82rem">Enable Seasonality</label>
+        </div>
+        <div class="param-row" id="seasonPeriodRow" style="display:none">
+          <label>Period</label>
+          <select id="seasonPeriod" onchange="updateDisplay()">
+            <option value="4">4 (Quarterly)</option>
+            <option value="7">7 (Weekly)</option>
+            <option value="12" selected>12 (Monthly)</option>
+            <option value="24">24 (Hourly)</option>
+          </select>
+        </div>
+        <div class="param-row" id="seasonAmpRow" style="display:none">
+          <label>Amplitude</label>
+          <input type="range" id="seasonAmp" min="0.1" max="3" value="1.5" step="0.1">
+          <span class="param-val" id="seasonAmpVal">1.50</span>
+        </div>
+
+        <div class="section-label">Noise</div>
+        <div class="param-row">
+          <label>Noise &sigma;</label>
+          <input type="range" id="noiseLevel" min="0.1" max="3" value="1" step="0.1">
+          <span class="param-val" id="noiseLevelVal">1.00</span>
+        </div>
+
+        <div class="btn-row" style="margin-top:16px">
+          <button class="btn primary" onclick="generate()">Generate</button>
+          <button class="btn" onclick="newNoise()">New Noise</button>
+        </div>
+      </div>
+
+      <!-- Model identification box -->
+      <div class="card">
+        <div class="model-box" id="modelBox">
+          <h4>Model Identification</h4>
+          <div class="model-suggestion" id="modelSuggestion">AR(1)</div>
+          <div class="model-reason" id="modelReason">ACF decays exponentially. PACF cuts off after lag 1. This is the signature of an AR(1) process.</div>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <strong>How to read ACF/PACF:</strong><br>
+        <strong>AR(p):</strong> ACF decays (exponential/oscillating). PACF cuts off after lag p.<br>
+        <strong>MA(q):</strong> ACF cuts off after lag q. PACF decays gradually.<br>
+        <strong>ARMA(p,q):</strong> Both ACF and PACF decay gradually.<br>
+        Bars outside the blue dashed bounds are <strong>statistically significant</strong> at the 95% level.
+      </div>
+    </div>
+
+    <!-- RIGHT: Visualizations -->
+    <div class="col">
+      <div class="card">
+        <h3>Time Series</h3>
+        <canvas id="tsCanvas" width="800" height="220"></canvas>
+      </div>
+      <div class="grid-bottom">
+        <div class="card">
+          <h3>ACF (Autocorrelation Function)</h3>
+          <canvas id="acfCanvas" width="400" height="260"></canvas>
+        </div>
+        <div class="card">
+          <h3>PACF (Partial Autocorrelation)</h3>
+          <canvas id="pacfCanvas" width="400" height="260"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   Advanced Time Series — Autocorrelation Explorer
+   Vanilla JS + Canvas, no external dependencies
+   ================================================================ */
+
+// ── Globals ──
+const N = 200;
+const MAX_LAG = 20;
+let noiseCache = [];
+let seriesData = [];
+let acfData = [];
+let pacfData = [];
+
+// ── Tab switching ──
+function switchTab(idx) {
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+  document.querySelectorAll('.panel').forEach((p, i) => p.classList.toggle('active', i === idx));
+}
+
+// ── Seeded random (Box-Muller) ──
+function gaussRandom() {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function generateNoise(n) {
+  const arr = [];
+  for (let i = 0; i < n; i++) arr.push(gaussRandom());
+  return arr;
+}
+
+// ── Slider helpers ──
+function val(id) { return parseFloat(document.getElementById(id).value); }
+function ival(id) { return parseInt(document.getElementById(id).value, 10); }
+function show(id, v) { document.getElementById(id).style.display = v ? '' : 'none'; }
+
+function onOrderChange() {
+  const p = ival('arOrder');
+  const q = ival('maOrder');
+  const seasonal = document.getElementById('seasonToggle').checked;
+
+  document.getElementById('arOrderVal').textContent = p;
+  document.getElementById('maOrderVal').textContent = q;
+
+  show('phi1Row', p >= 1);
+  show('phi2Row', p >= 2);
+  show('phi3Row', p >= 3);
+  show('theta1Row', q >= 1);
+  show('theta2Row', q >= 2);
+  show('seasonPeriodRow', seasonal);
+  show('seasonAmpRow', seasonal);
+
+  updateDisplay();
+}
+
+function updateDisplay() {
+  // Sync all value labels
+  document.getElementById('phi1Val').textContent = val('phi1').toFixed(2);
+  document.getElementById('phi2Val').textContent = val('phi2').toFixed(2);
+  document.getElementById('phi3Val').textContent = val('phi3').toFixed(2);
+  document.getElementById('theta1Val').textContent = val('theta1').toFixed(2);
+  document.getElementById('theta2Val').textContent = val('theta2').toFixed(2);
+  document.getElementById('noiseLevelVal').textContent = val('noiseLevel').toFixed(2);
+  document.getElementById('seasonAmpVal').textContent = val('seasonAmp').toFixed(2);
+}
+
+// Attach live update listeners to all sliders
+document.querySelectorAll('input[type=range]').forEach(s => {
+  s.addEventListener('input', updateDisplay);
+});
+
+// ── Generate ARMA series ──
+function buildSeries() {
+  const p = ival('arOrder');
+  const q = ival('maOrder');
+  const phi = [val('phi1'), val('phi2'), val('phi3')];
+  const theta = [val('theta1'), val('theta2')];
+  const sigma = val('noiseLevel');
+  const seasonal = document.getElementById('seasonToggle').checked;
+  const period = ival('seasonPeriod');
+  const amp = val('seasonAmp');
+
+  // Use cached noise scaled by sigma
+  const eps = noiseCache.map(e => e * sigma);
+  const y = new Array(N).fill(0);
+
+  // Burn-in: generate extra points to stabilize
+  const burn = 50;
+  const yFull = new Array(N + burn).fill(0);
+  const epsFull = new Array(N + burn).fill(0);
+  for (let i = 0; i < N + burn; i++) {
+    epsFull[i] = (i < burn ? gaussRandom() * sigma : eps[i - burn]);
+  }
+
+  for (let t = 0; t < N + burn; t++) {
+    let arPart = 0;
+    for (let i = 0; i < p; i++) {
+      if (t - 1 - i >= 0) arPart += phi[i] * yFull[t - 1 - i];
+    }
+    let maPart = 0;
+    for (let j = 0; j < q; j++) {
+      if (t - 1 - j >= 0) maPart += theta[j] * epsFull[t - 1 - j];
+    }
+    yFull[t] = arPart + maPart + epsFull[t];
+  }
+
+  // Trim burn-in
+  for (let i = 0; i < N; i++) {
+    y[i] = yFull[i + burn];
+    if (seasonal) y[i] += amp * Math.sin(2 * Math.PI * i / period);
+  }
+
+  return y;
+}
+
+// ── ACF ──
+function computeACF(y, maxLag) {
+  const n = y.length;
+  const mean = y.reduce((a, b) => a + b, 0) / n;
+  let c0 = 0;
+  for (let i = 0; i < n; i++) c0 += (y[i] - mean) * (y[i] - mean);
+  c0 /= n;
+
+  const acf = [1];
+  for (let k = 1; k <= maxLag; k++) {
+    let ck = 0;
+    for (let i = 0; i < n - k; i++) {
+      ck += (y[i] - mean) * (y[i + k] - mean);
+    }
+    ck /= n;
+    acf.push(c0 === 0 ? 0 : ck / c0);
+  }
+  return acf;
+}
+
+// ── PACF via Durbin-Levinson recursion ──
+function computePACF(acf, maxLag) {
+  const pacf = [1]; // lag 0
+  const phi = [];
+
+  for (let k = 1; k <= maxLag; k++) {
+    // Build phi matrix for order k
+    const a = new Array(k).fill(0);
+    if (k === 1) {
+      a[0] = acf[1];
+    } else {
+      // Use previous iteration
+      const prev = phi[phi.length - 1].slice();
+      let num = acf[k];
+      let den = 1;
+      for (let j = 0; j < k - 1; j++) {
+        num -= prev[j] * acf[k - 1 - j];
+        den -= prev[j] * acf[j + 1];
+      }
+      a[k - 1] = den === 0 ? 0 : num / den;
+      for (let j = 0; j < k - 1; j++) {
+        a[j] = prev[j] - a[k - 1] * prev[k - 2 - j];
+      }
+    }
+    phi.push(a.slice());
+    pacf.push(a[k - 1]);
+  }
+  return pacf;
+}
+
+// ── Model identification heuristic ──
+function identifyModel() {
+  const bound = 1.96 / Math.sqrt(N);
+  const p = ival('arOrder');
+  const q = ival('maOrder');
+  const seasonal = document.getElementById('seasonToggle').checked;
+
+  // Count significant ACF and PACF lags (ignoring lag 0)
+  let sigACF = 0, lastSigACF = 0;
+  let sigPACF = 0, lastSigPACF = 0;
+  for (let k = 1; k <= MAX_LAG; k++) {
+    if (Math.abs(acfData[k]) > bound) { sigACF++; lastSigACF = k; }
+    if (Math.abs(pacfData[k]) > bound) { sigPACF++; lastSigPACF = k; }
+  }
+
+  // Check for ACF cutoff: significant up to some lag, then nothing
+  function cutoffLag(data) {
+    let last = 0;
+    for (let k = 1; k <= MAX_LAG; k++) {
+      if (Math.abs(data[k]) > bound) last = k;
+    }
+    // Check if there are no significant lags after 'last'
+    let gapCount = 0;
+    for (let k = last + 1; k <= Math.min(last + 5, MAX_LAG); k++) {
+      if (Math.abs(data[k]) <= bound) gapCount++;
+    }
+    return (gapCount >= Math.min(4, MAX_LAG - last)) ? last : -1;
+  }
+
+  const acfCutoff = cutoffLag(acfData);
+  const pacfCutoff = cutoffLag(pacfData);
+
+  let suggestion = '';
+  let reason = '';
+
+  if (seasonal) {
+    const per = ival('seasonPeriod');
+    if (p === 0 && q === 0) {
+      suggestion = 'Seasonal pattern (period ' + per + ')';
+      reason = 'The ACF shows periodic spikes at multiples of the seasonal period. Consider seasonal differencing or a SARIMA model.';
+    } else {
+      suggestion = 'ARMA(' + p + ',' + q + ') + Seasonal(' + per + ')';
+      reason = 'Both ARMA dynamics and seasonal spikes are visible in the ACF. A SARIMA model would be appropriate.';
+    }
+  } else if (sigACF === 0 && sigPACF === 0) {
+    suggestion = 'White Noise';
+    reason = 'No significant autocorrelations detected. The series appears to be white noise with no temporal dependence.';
+  } else if (acfCutoff > 0 && pacfCutoff < 0) {
+    // ACF cuts off, PACF decays -> MA
+    suggestion = 'MA(' + acfCutoff + ')';
+    reason = 'ACF cuts off sharply after lag ' + acfCutoff + ' while PACF decays gradually. This is the classic signature of an MA(' + acfCutoff + ') process.';
+  } else if (pacfCutoff > 0 && acfCutoff < 0) {
+    // PACF cuts off, ACF decays -> AR
+    suggestion = 'AR(' + pacfCutoff + ')';
+    reason = 'PACF cuts off after lag ' + pacfCutoff + ' while ACF decays (exponentially or oscillating). This is the classic signature of an AR(' + pacfCutoff + ') process.';
+  } else if (acfCutoff > 0 && pacfCutoff > 0) {
+    // Both cut off — could be low-order ARMA
+    suggestion = 'ARMA(' + pacfCutoff + ',' + acfCutoff + ')';
+    reason = 'Both ACF and PACF show distinct cutoff patterns. Consider an ARMA(' + pacfCutoff + ',' + acfCutoff + ') model.';
+  } else {
+    // Both decay
+    if (p > 0 && q > 0) {
+      suggestion = 'ARMA(' + p + ',' + q + ')';
+      reason = 'Both ACF and PACF decay gradually without sharp cutoff. This pattern is consistent with a mixed ARMA process.';
+    } else if (p > 0) {
+      suggestion = 'AR(' + lastSigPACF + ') or ARMA';
+      reason = 'The PACF has significant spikes through lag ' + lastSigPACF + '. The gradual ACF decay suggests an AR process, though an ARMA model may also fit.';
+    } else {
+      suggestion = 'MA(' + lastSigACF + ') or ARMA';
+      reason = 'The ACF has significant spikes through lag ' + lastSigACF + '. The pattern suggests an MA process or possibly a mixed ARMA model.';
+    }
+  }
+
+  document.getElementById('modelSuggestion').textContent = suggestion;
+  document.getElementById('modelReason').textContent = reason;
+}
+
+// ── Canvas drawing utilities ──
+function dpr() { return window.devicePixelRatio || 1; }
+
+function setupCanvas(canvas) {
+  const rect = canvas.getBoundingClientRect();
+  const r = dpr();
+  canvas.width = rect.width * r;
+  canvas.height = rect.height * r;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(r, r);
+  return { ctx, w: rect.width, h: rect.height };
+}
+
+function drawTimeSeries() {
+  const canvas = document.getElementById('tsCanvas');
+  const { ctx, w, h } = setupCanvas(canvas);
+
+  const pad = { top: 20, right: 20, bottom: 35, left: 55 };
+  const plotW = w - pad.left - pad.right;
+  const plotH = h - pad.top - pad.bottom;
+
+  // Background
+  ctx.fillStyle = '#0f1117';
+  ctx.fillRect(0, 0, w, h);
+
+  if (seriesData.length === 0) return;
+
+  const yMin = Math.min(...seriesData);
+  const yMax = Math.max(...seriesData);
+  const yRange = yMax - yMin || 1;
+  const yPad = yRange * 0.1;
+
+  // Grid
+  ctx.strokeStyle = '#2d3147';
+  ctx.lineWidth = 1;
+  const nGrid = 5;
+  ctx.font = '11px JetBrains Mono, monospace';
+  ctx.fillStyle = '#64748b';
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= nGrid; i++) {
+    const yy = pad.top + (plotH / nGrid) * i;
+    ctx.beginPath(); ctx.moveTo(pad.left, yy); ctx.lineTo(w - pad.right, yy); ctx.stroke();
+    const label = (yMax + yPad - (i / nGrid) * (yRange + 2 * yPad)).toFixed(1);
+    ctx.fillText(label, pad.left - 8, yy + 4);
+  }
+
+  // X-axis labels
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#64748b';
+  for (let i = 0; i <= 4; i++) {
+    const idx = Math.round((N - 1) * i / 4);
+    const xx = pad.left + (idx / (N - 1)) * plotW;
+    ctx.fillText(idx.toString(), xx, h - pad.bottom + 20);
+  }
+
+  // Axis label
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Time (t)', w / 2, h - 4);
+
+  // Zero line
+  const zeroY = pad.top + plotH - ((0 - (yMin - yPad)) / (yRange + 2 * yPad)) * plotH;
+  if (zeroY > pad.top && zeroY < pad.top + plotH) {
+    ctx.strokeStyle = '#475569';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(pad.left, zeroY); ctx.lineTo(w - pad.right, zeroY); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Line
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let i = 0; i < N; i++) {
+    const x = pad.left + (i / (N - 1)) * plotW;
+    const y = pad.top + plotH - ((seriesData[i] - (yMin - yPad)) / (yRange + 2 * yPad)) * plotH;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+}
+
+function drawCorrelogram(canvasId, data, title) {
+  const canvas = document.getElementById(canvasId);
+  const { ctx, w, h } = setupCanvas(canvas);
+
+  const pad = { top: 20, right: 20, bottom: 40, left: 50 };
+  const plotW = w - pad.left - pad.right;
+  const plotH = h - pad.top - pad.bottom;
+
+  // Background
+  ctx.fillStyle = '#0f1117';
+  ctx.fillRect(0, 0, w, h);
+
+  const nBars = data.length - 1; // skip lag 0 for display, or include it
+  const bound = 1.96 / Math.sqrt(N);
+
+  // Y range: -1 to 1
+  const yMin = -1, yMax = 1;
+
+  function toY(v) {
+    return pad.top + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
+  }
+  function toX(lag) {
+    return pad.left + (lag / MAX_LAG) * plotW;
+  }
+
+  // Grid lines
+  ctx.strokeStyle = '#2d3147';
+  ctx.lineWidth = 1;
+  ctx.font = '10px JetBrains Mono, monospace';
+  ctx.fillStyle = '#64748b';
+  ctx.textAlign = 'right';
+  for (let v = -1; v <= 1; v += 0.5) {
+    const yy = toY(v);
+    ctx.beginPath(); ctx.moveTo(pad.left, yy); ctx.lineTo(w - pad.right, yy); ctx.stroke();
+    ctx.fillText(v.toFixed(1), pad.left - 8, yy + 4);
+  }
+
+  // Zero line
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.left, toY(0)); ctx.lineTo(w - pad.right, toY(0)); ctx.stroke();
+
+  // Significance bounds (dashed blue)
+  ctx.strokeStyle = '#0369a1';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath(); ctx.moveTo(pad.left, toY(bound)); ctx.lineTo(w - pad.right, toY(bound)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.left, toY(-bound)); ctx.lineTo(w - pad.right, toY(-bound)); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Label the bound
+  ctx.fillStyle = '#0369a1';
+  ctx.font = '9px JetBrains Mono, monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('+1.96/\u221An', w - pad.right - 62, toY(bound) - 4);
+  ctx.fillText('-1.96/\u221An', w - pad.right - 62, toY(-bound) + 12);
+
+  // Bars
+  const barW = Math.max(2, (plotW / (MAX_LAG + 1)) * 0.55);
+  for (let k = 0; k <= MAX_LAG; k++) {
+    const v = data[k];
+    const x = toX(k);
+    const y0 = toY(0);
+    const yBar = toY(v);
+    const significant = Math.abs(v) > bound;
+
+    // Bar color
+    if (k === 0) {
+      ctx.fillStyle = '#475569';
+    } else if (significant) {
+      ctx.fillStyle = '#38bdf8';
+    } else {
+      ctx.fillStyle = '#334155';
+    }
+
+    ctx.fillRect(x - barW / 2, Math.min(y0, yBar), barW, Math.abs(yBar - y0));
+
+    // Stem line
+    ctx.strokeStyle = ctx.fillStyle;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, yBar); ctx.stroke();
+  }
+
+  // X-axis tick labels
+  ctx.fillStyle = '#64748b';
+  ctx.font = '10px JetBrains Mono, monospace';
+  ctx.textAlign = 'center';
+  for (let k = 0; k <= MAX_LAG; k += (MAX_LAG <= 10 ? 1 : 2)) {
+    ctx.fillText(k.toString(), toX(k), h - pad.bottom + 16);
+  }
+
+  // Axis label
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Lag', w / 2, h - 4);
+}
+
+// ── Presets ──
+function applyPreset(name) {
+  // Clear active state
+  document.querySelectorAll('.preset').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  const sets = {
+    ar1:    { p: 1, phi: [0.7, 0, 0],     q: 0, theta: [0.5, 0],  seasonal: false, period: 12, amp: 1.5, noise: 1 },
+    ma1:    { p: 0, phi: [0.7, 0, 0],     q: 1, theta: [0.7, 0],  seasonal: false, period: 12, amp: 1.5, noise: 1 },
+    ar2:    { p: 2, phi: [0.5, -0.3, 0],  q: 0, theta: [0.5, 0],  seasonal: false, period: 12, amp: 1.5, noise: 1 },
+    arma11: { p: 1, phi: [0.6, 0, 0],     q: 1, theta: [0.4, 0],  seasonal: false, period: 12, amp: 1.5, noise: 1 },
+    seasonal: { p: 0, phi: [0, 0, 0],     q: 0, theta: [0.5, 0],  seasonal: true,  period: 12, amp: 2.0, noise: 0.5 }
+  };
+  const s = sets[name];
+  if (!s) return;
+
+  document.getElementById('arOrder').value = s.p;
+  document.getElementById('phi1').value = s.phi[0];
+  document.getElementById('phi2').value = s.phi[1];
+  document.getElementById('phi3').value = s.phi[2];
+  document.getElementById('maOrder').value = s.q;
+  document.getElementById('theta1').value = s.theta[0];
+  document.getElementById('theta2').value = s.theta[1];
+  document.getElementById('seasonToggle').checked = s.seasonal;
+  document.getElementById('seasonPeriod').value = s.period;
+  document.getElementById('seasonAmp').value = s.amp;
+  document.getElementById('noiseLevel').value = s.noise;
+
+  onOrderChange();
+  generate();
+}
+
+// ── Generate / New Noise ──
+function newNoise() {
+  noiseCache = generateNoise(N);
+  generate();
+}
+
+function generate() {
+  if (noiseCache.length === 0) noiseCache = generateNoise(N);
+
+  seriesData = buildSeries();
+
+  // Check for instability (NaN or Infinity)
+  const hasInvalid = seriesData.some(v => !isFinite(v));
+  if (hasInvalid) {
+    // Clamp and warn
+    seriesData = seriesData.map(v => isFinite(v) ? v : 0);
+  }
+
+  acfData = computeACF(seriesData, MAX_LAG);
+  pacfData = computePACF(acfData, MAX_LAG);
+
+  drawTimeSeries();
+  drawCorrelogram('acfCanvas', acfData, 'ACF');
+  drawCorrelogram('pacfCanvas', pacfData, 'PACF');
+  identifyModel();
+}
+
+// ── Responsive resize ──
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (seriesData.length > 0) {
+      drawTimeSeries();
+      drawCorrelogram('acfCanvas', acfData, 'ACF');
+      drawCorrelogram('pacfCanvas', pacfData, 'PACF');
+    }
+  }, 100);
+});
+
+// ── Init ──
+onOrderChange();
+generate();
+</script>
+</body>
+</html>

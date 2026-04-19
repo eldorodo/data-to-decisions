@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Advanced Deep Learning interactive lab: vanishing gradients, learning rate schedulers.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced Deep Learning — Interactive Lab | The ML Field Guide</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh;padding:20px}
+h1{font-size:1.5rem;font-weight:700;color:#7dd3fc;margin-bottom:4px}
+.subtitle{color:#64748b;font-size:0.85rem;margin-bottom:20px}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap}
+.tab-btn{padding:8px 16px;border-radius:8px;border:1px solid #2d3147;background:#1e2130;color:#94a3b8;font-size:0.82rem;cursor:pointer;transition:all .15s;font-family:inherit}
+.tab-btn:hover{border-color:#7dd3fc;color:#7dd3fc}
+.tab-btn.active{background:#0369a1;border-color:#7dd3fc;color:#e0f2fe;font-weight:600}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* Panels */
+.panel{background:#1e2130;border:1px solid #2d3147;border-radius:12px;padding:20px;margin-bottom:16px}
+.panel h2{font-size:0.8rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px}
+.row{display:flex;gap:16px;flex-wrap:wrap}
+.col{flex:1;min-width:280px}
+
+/* Canvas */
+.canvas-wrap{background:#1a1f2e;border:1px solid #2d3147;border-radius:12px;overflow:hidden;margin-bottom:12px}
+canvas{display:block;border-radius:8px}
+
+/* Buttons */
+.btn{padding:7px 14px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#94a3b8;font-size:0.82rem;cursor:pointer;transition:all .15s;font-family:inherit}
+.btn:hover{border-color:#7dd3fc;color:#7dd3fc}
+.btn.active{background:#0369a1;border-color:#7dd3fc;color:#e0f2fe;font-weight:600}
+.btn.green{border-color:#86efac;color:#86efac}
+.btn.green:hover{background:#166534}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+
+/* Info boxes */
+.info-box{background:#0f172a;border-left:3px solid #7dd3fc;border-radius:6px;padding:12px 14px;font-size:0.82rem;line-height:1.7;color:#cbd5e1;margin-top:12px}
+.info-box strong{color:#7dd3fc}
+.insight{background:#0f172a;border-left:3px solid #fbbf24;border-radius:6px;padding:10px 14px;font-size:0.8rem;color:#fde68a;margin-top:8px}
+
+/* Sliders */
+.slider-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:0.82rem}
+.slider-row label{color:#94a3b8;min-width:120px}
+.slider-row input[type=range]{flex:1;accent-color:#7dd3fc}
+.slider-row span{color:#7dd3fc;min-width:48px;font-family:'JetBrains Mono',monospace;font-size:0.8rem}
+
+/* Select */
+select{padding:6px 10px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#94a3b8;font-size:0.82rem;font-family:inherit;cursor:pointer}
+select:focus{border-color:#7dd3fc;outline:none}
+
+/* Radio group */
+.radio-group{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.radio-group label{display:flex;align-items:center;gap:8px;font-size:0.82rem;color:#94a3b8;cursor:pointer}
+.radio-group input[type=radio]{accent-color:#7dd3fc}
+
+/* Gradient table */
+.grad-table{width:100%;border-collapse:collapse;font-size:0.78rem;margin-top:8px}
+.grad-table th{background:#0f172a;color:#94a3b8;padding:6px 8px;text-align:center;border-bottom:1px solid #2d3147;font-weight:500}
+.grad-table td{padding:5px 8px;border-bottom:1px solid #1a1f2e;color:#cbd5e1;text-align:center;font-family:'JetBrains Mono',monospace;font-size:0.75rem}
+
+/* Checkbox toggle */
+.toggle-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:0.82rem}
+.toggle-row label{color:#94a3b8}
+.toggle-row input[type=checkbox]{accent-color:#7dd3fc}
+
+/* Scheduler-specific controls */
+.sched-params{margin-top:8px;padding:10px;background:#0f172a;border-radius:8px;border:1px solid #2d3147}
+
+/* Compare legend */
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-size:0.78rem}
+.legend-item{display:flex;align-items:center;gap:6px}
+.legend-swatch{width:14px;height:14px;border-radius:3px}
+
+@media(max-width:768px){
+  .row{flex-direction:column}
+  .col{min-width:100%}
+  .tabs{gap:2px}
+  .tab-btn{padding:6px 10px;font-size:0.75rem}
+  body{padding:10px}
+  .slider-row label{min-width:90px}
+}
+</style>
+</head>
+<body>
+
+<h1>Advanced Deep Learning &mdash; Interactive Lab</h1>
+<p class="subtitle">Vanishing gradients &amp; learning rate scheduling &mdash; experiment live</p>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab(0)">1 &middot; Vanishing Gradient Demo</button>
+  <button class="tab-btn" onclick="switchTab(1)">2 &middot; Learning Rate Scheduler</button>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB 1 : VANISHING GRADIENT DEMO                              -->
+<!-- ============================================================ -->
+<div class="tab-content active" id="tab0">
+<div class="row">
+  <!-- Controls -->
+  <div class="col" style="max-width:340px">
+    <div class="panel">
+      <h2>Network Configuration</h2>
+      <div class="slider-row">
+        <label>Depth (layers)</label>
+        <input type="range" id="vg-depth" min="3" max="12" value="6" oninput="vgUpdate()">
+        <span id="vg-depth-val">6</span>
+      </div>
+      <div class="slider-row">
+        <label>Activation</label>
+        <select id="vg-activation" onchange="vgUpdate()">
+          <option value="sigmoid">Sigmoid</option>
+          <option value="tanh">Tanh</option>
+          <option value="relu" selected>ReLU</option>
+          <option value="leaky_relu">Leaky ReLU</option>
+        </select>
+      </div>
+      <div class="slider-row">
+        <label>Weight Init</label>
+        <select id="vg-init" onchange="vgUpdate()">
+          <option value="random">Random (0.5)</option>
+          <option value="xavier">Xavier / Glorot</option>
+          <option value="he" selected>He / Kaiming</option>
+        </select>
+      </div>
+      <button class="btn green" onclick="vgAnimate()" id="vg-run-btn" style="width:100%;margin-top:12px;padding:10px">
+        Forward + Backward Pass
+      </button>
+    </div>
+    <div class="panel">
+      <h2>Gradient Magnitudes</h2>
+      <table class="grad-table" id="vg-grad-table">
+        <thead><tr><th>Layer</th><th>Gradient</th><th>Status</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="info-box">
+      <strong>Why do gradients vanish?</strong><br>
+      During backpropagation, gradients are multiplied through each layer. <strong>Sigmoid</strong> saturates
+      with a max derivative of 0.25, so gradients shrink by ~75% per layer &mdash; after 10 layers, the
+      gradient is &lt; 0.001% of the output gradient. <strong>ReLU</strong> has a derivative of exactly 1 for
+      positive inputs, preserving gradient flow (though ~50% of neurons &ldquo;die&rdquo; with zero gradient).
+      <strong>Weight initialization</strong> matters too: Xavier keeps variance stable for sigmoid/tanh, while
+      He initialization is designed for ReLU&rsquo;s half-active nature.
+    </div>
+  </div>
+
+  <!-- Visualizations -->
+  <div class="col">
+    <div class="panel">
+      <h2>Network Architecture</h2>
+      <div class="canvas-wrap">
+        <canvas id="vg-net-canvas" width="700" height="280"></canvas>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Gradient Magnitude by Layer (Log Scale)</h2>
+      <div class="canvas-wrap">
+        <canvas id="vg-bar-canvas" width="700" height="260"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB 2 : LEARNING RATE SCHEDULER                              -->
+<!-- ============================================================ -->
+<div class="tab-content" id="tab1">
+<div class="row">
+  <!-- Controls -->
+  <div class="col" style="max-width:360px">
+    <div class="panel">
+      <h2>Scheduler Selection</h2>
+      <div class="radio-group" id="lr-sched-group">
+        <label><input type="radio" name="lr-sched" value="constant" checked onchange="lrSchedChanged()"> Constant</label>
+        <label><input type="radio" name="lr-sched" value="step" onchange="lrSchedChanged()"> Step Decay</label>
+        <label><input type="radio" name="lr-sched" value="exponential" onchange="lrSchedChanged()"> Exponential Decay</label>
+        <label><input type="radio" name="lr-sched" value="cosine" onchange="lrSchedChanged()"> Cosine Annealing</label>
+        <label><input type="radio" name="lr-sched" value="warmup_cosine" onchange="lrSchedChanged()"> Warmup + Cosine</label>
+        <label><input type="radio" name="lr-sched" value="one_cycle" onchange="lrSchedChanged()"> One Cycle</label>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Parameters</h2>
+      <div class="slider-row">
+        <label>Initial LR</label>
+        <input type="range" id="lr-init" min="-4" max="-1" step="0.1" value="-2" oninput="lrParamUpdate()">
+        <span id="lr-init-val">0.0100</span>
+      </div>
+      <div id="lr-params-container">
+        <!-- Scheduler-specific params injected here -->
+      </div>
+      <div class="slider-row">
+        <label>Anim Speed</label>
+        <input type="range" id="lr-speed" min="1" max="10" value="5">
+        <span id="lr-speed-val">5</span>
+      </div>
+      <button class="btn green" onclick="lrRunTraining()" id="lr-run-btn" style="width:100%;margin-top:8px;padding:10px">
+        Run Training
+      </button>
+    </div>
+    <div class="panel">
+      <h2>Compare Mode</h2>
+      <div class="toggle-row">
+        <input type="checkbox" id="lr-compare" onchange="lrCompareToggled()">
+        <label for="lr-compare">Overlay a second scheduler</label>
+      </div>
+      <div id="lr-compare-container" style="display:none">
+        <select id="lr-compare-sched" onchange="lrParamUpdate()">
+          <option value="constant">Constant</option>
+          <option value="step">Step Decay</option>
+          <option value="exponential">Exponential Decay</option>
+          <option value="cosine" selected>Cosine Annealing</option>
+          <option value="warmup_cosine">Warmup + Cosine</option>
+          <option value="one_cycle">One Cycle</option>
+        </select>
+      </div>
+      <div class="legend" id="lr-legend" style="display:none">
+        <div class="legend-item"><div class="legend-swatch" style="background:#7dd3fc"></div> Primary</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#f472b6"></div> Compare</div>
+      </div>
+    </div>
+    <div class="info-box">
+      <strong>Why schedule the learning rate?</strong><br>
+      A large LR helps escape saddle points early but causes oscillation near the optimum.
+      Scheduling gradually reduces LR for smooth convergence. <strong>Cosine Annealing</strong> provides
+      a gentle decay curve. <strong>Warmup</strong> prevents instability from large early gradients.
+      <strong>One Cycle</strong> ramps up then down, often reaching lower final loss in fewer epochs.
+    </div>
+  </div>
+
+  <!-- Visualizations -->
+  <div class="col">
+    <div class="panel">
+      <h2>Learning Rate Schedule</h2>
+      <div class="canvas-wrap">
+        <canvas id="lr-sched-canvas" width="700" height="200"></canvas>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Training Loss Over Epochs</h2>
+      <div class="canvas-wrap">
+        <canvas id="lr-loss-canvas" width="700" height="300"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+/* =================================================================
+   GLOBAL HELPERS
+   ================================================================= */
+function switchTab(idx){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  document.querySelectorAll('.tab-content').forEach((c,i)=>c.classList.toggle('active',i===idx));
+}
+
+function getCtx(id){
+  const c=document.getElementById(id);
+  const dpr=window.devicePixelRatio||1;
+  const rect=c.getBoundingClientRect();
+  c.width=rect.width*dpr;
+  c.height=rect.height*dpr;
+  const ctx=c.getContext('2d');
+  ctx.scale(dpr,dpr);
+  ctx.cw=rect.width;ctx.ch=rect.height;
+  return ctx;
+}
+
+function lerp(a,b,t){return a+(b-a)*t}
+function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v))}
+
+/* =================================================================
+   TAB 1 — VANISHING GRADIENT DEMO
+   ================================================================= */
+let vgGradients=[];
+let vgAnimProgress=0;
+let vgAnimId=null;
+
+function computeGradients(){
+  const depth=+document.getElementById('vg-depth').value;
+  const act=document.getElementById('vg-activation').value;
+  const init=document.getElementById('vg-init').value;
+  document.getElementById('vg-depth-val').textContent=depth;
+
+  // Compute per-layer gradient multiplier
+  let actMult, weightMult;
+  switch(act){
+    case 'sigmoid': actMult=0.25; break;
+    case 'tanh':    actMult=0.65; break;
+    case 'relu':    actMult=0.5;  break;  // ~50% alive
+    case 'leaky_relu': actMult=0.55; break;
+  }
+  switch(init){
+    case 'random': weightMult=0.5; break;
+    case 'xavier': weightMult= (act==='relu'||act==='leaky_relu') ? 0.82 : 1.0; break;
+    case 'he':     weightMult= (act==='relu'||act==='leaky_relu') ? 1.0 : 1.15; break;
+  }
+
+  // For ReLU/LeakyReLU with He: gradient ≈ 1 per alive neuron
+  // Adjust so ReLU+He gives nearly 1.0 multiplier
+  let layerMult;
+  if(act==='relu' && init==='he') layerMult=0.98;
+  else if(act==='relu' && init==='xavier') layerMult=0.85;
+  else if(act==='relu' && init==='random') layerMult=0.5*0.5;
+  else if(act==='leaky_relu' && init==='he') layerMult=0.99;
+  else if(act==='leaky_relu' && init==='xavier') layerMult=0.88;
+  else if(act==='leaky_relu' && init==='random') layerMult=0.55*0.5;
+  else layerMult=actMult*weightMult;
+
+  // Add small random noise for realism
+  const grads=[];
+  let g=1.0; // start from output layer
+  for(let i=0;i<depth;i++){
+    grads.push(g);
+    const noise=1.0+(Math.random()-0.5)*0.1;
+    g*=layerMult*noise;
+  }
+  // Reverse so index 0 = input layer, last = output layer
+  grads.reverse();
+  vgGradients=grads;
+  return grads;
+}
+
+function gradColor(g){
+  if(g>0.01) return '#4ade80';      // green
+  if(g>0.001) return '#facc15';     // yellow
+  return '#f87171';                  // red
+}
+
+function gradStatus(g){
+  if(g>0.01) return 'Healthy';
+  if(g>0.001) return 'Warning';
+  return 'Vanishing';
+}
+
+function drawNetwork(progress){
+  const ctx=getCtx('vg-net-canvas');
+  const W=ctx.cw, H=ctx.ch;
+  ctx.clearRect(0,0,W,H);
+  const depth=vgGradients.length;
+  if(depth===0)return;
+  const nodesPerLayer=4;
+  const padX=50, padY=30;
+  const layerSpacing=(W-2*padX)/(depth-1);
+  const nodeSpacing=(H-2*padY-30)/(nodesPerLayer-1);
+  const nodeR=8;
+
+  // Draw connections
+  for(let l=0;l<depth-1;l++){
+    const x1=padX+l*layerSpacing;
+    const x2=padX+(l+1)*layerSpacing;
+    const gIdx=l;
+    const g=vgGradients[gIdx];
+    const alpha=clamp(progress*(0.15+0.85*Math.min(1,g*10)),0.05,1);
+    const col=gradColor(g);
+    for(let n1=0;n1<nodesPerLayer;n1++){
+      for(let n2=0;n2<nodesPerLayer;n2++){
+        const y1=padY+n1*nodeSpacing;
+        const y2=padY+n2*nodeSpacing;
+        ctx.beginPath();
+        ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);
+        ctx.strokeStyle=col;
+        ctx.globalAlpha=alpha;
+        ctx.lineWidth=1+Math.min(2,g*3);
+        ctx.stroke();
+      }
+    }
+  }
+  ctx.globalAlpha=1;
+
+  // Draw nodes
+  for(let l=0;l<depth;l++){
+    const x=padX+l*layerSpacing;
+    const g=vgGradients[l];
+    for(let n=0;n<nodesPerLayer;n++){
+      const y=padY+n*nodeSpacing;
+      ctx.beginPath();
+      ctx.arc(x,y,nodeR*progress,0,Math.PI*2);
+      ctx.fillStyle=gradColor(g);
+      ctx.globalAlpha=clamp(0.3+0.7*Math.min(1,g*5),0.15,1)*progress;
+      ctx.fill();
+      ctx.globalAlpha=1;
+      ctx.strokeStyle='#475569';ctx.lineWidth=1;ctx.stroke();
+    }
+    // Label
+    ctx.fillStyle='#94a3b8';ctx.font='11px Inter';ctx.textAlign='center';
+    const lbl=l===0?'Input':l===depth-1?'Output':'H'+l;
+    ctx.fillText(lbl,x,H-10);
+    // Gradient magnitude below label
+    if(progress>0.5){
+      ctx.fillStyle=gradColor(g);
+      ctx.font='10px JetBrains Mono';
+      ctx.fillText(g.toExponential(1),x,H-0);
+    }
+  }
+}
+
+function drawGradientBars(progress){
+  const ctx=getCtx('vg-bar-canvas');
+  const W=ctx.cw, H=ctx.ch;
+  ctx.clearRect(0,0,W,H);
+  const depth=vgGradients.length;
+  if(depth===0)return;
+  const padL=60,padR=20,padT=20,padB=40;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+
+  // Log scale: -8 to 0
+  const logMin=-8, logMax=0;
+  function yForLog(v){
+    const lv=Math.max(logMin,Math.log10(Math.max(v,1e-12)));
+    return padT+plotH*(1-(lv-logMin)/(logMax-logMin));
+  }
+
+  // Grid lines
+  ctx.strokeStyle='#2d3147';ctx.lineWidth=0.5;
+  ctx.fillStyle='#64748b';ctx.font='10px JetBrains Mono';ctx.textAlign='right';
+  for(let p=logMin;p<=logMax;p++){
+    const y=yForLog(Math.pow(10,p));
+    ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(W-padR,y);ctx.stroke();
+    ctx.fillText('1e'+p,padL-6,y+4);
+  }
+
+  // Threshold lines
+  const thresholds=[
+    {v:0.01,c:'#4ade80',l:'Healthy'},
+    {v:0.001,c:'#facc15',l:'Warning'}
+  ];
+  thresholds.forEach(t=>{
+    const y=yForLog(t.v);
+    ctx.setLineDash([4,4]);ctx.strokeStyle=t.c;ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(W-padR,y);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle=t.c;ctx.font='9px Inter';ctx.textAlign='left';
+    ctx.fillText(t.l,W-padR-50,y-4);
+  });
+
+  // Bars — display from output (right) to input (left)
+  const barW=Math.min(40,plotW/depth-4);
+  const baseY=yForLog(Math.pow(10,logMin));
+  // Reversed order: output layer first on the left of the chart
+  for(let i=0;i<depth;i++){
+    const displayIdx=depth-1-i; // output layer at index 0 of display
+    const g=vgGradients[displayIdx];
+    const targetY=yForLog(g);
+    const curY=lerp(baseY,targetY,progress);
+    const x=padL+(i+0.5)*(plotW/depth)-barW/2;
+    const barH=baseY-curY;
+
+    ctx.fillStyle=gradColor(g);
+    ctx.globalAlpha=0.8*progress;
+    ctx.fillRect(x,curY,barW,barH);
+    ctx.globalAlpha=1;
+    ctx.strokeStyle=gradColor(g);ctx.lineWidth=1;
+    ctx.strokeRect(x,curY,barW,barH);
+
+    // X label
+    ctx.fillStyle='#94a3b8';ctx.font='10px Inter';ctx.textAlign='center';
+    const layerLabel=displayIdx===depth-1?'Out':displayIdx===0?'In':'L'+(displayIdx);
+    ctx.fillText(layerLabel,x+barW/2,H-padB+14);
+  }
+
+  // Axis labels
+  ctx.fillStyle='#94a3b8';ctx.font='11px Inter';ctx.textAlign='center';
+  ctx.fillText('Layer (Output \u2192 Input)',padL+plotW/2,H-4);
+  ctx.save();ctx.translate(14,padT+plotH/2);ctx.rotate(-Math.PI/2);
+  ctx.fillText('Gradient Magnitude',0,0);ctx.restore();
+}
+
+function updateGradTable(){
+  const tbody=document.querySelector('#vg-grad-table tbody');
+  tbody.innerHTML='';
+  const depth=vgGradients.length;
+  for(let i=depth-1;i>=0;i--){
+    const g=vgGradients[i];
+    const lbl=i===0?'Input':i===depth-1?'Output':'Hidden '+i;
+    const status=gradStatus(g);
+    const color=gradColor(g);
+    tbody.innerHTML+=`<tr><td>${lbl}</td><td style="color:${color}">${g.toExponential(3)}</td><td style="color:${color}">${status}</td></tr>`;
+  }
+}
+
+function vgUpdate(){
+  computeGradients();
+  vgAnimProgress=1;
+  drawNetwork(1);
+  drawGradientBars(1);
+  updateGradTable();
+}
+
+function vgAnimate(){
+  if(vgAnimId){cancelAnimationFrame(vgAnimId);vgAnimId=null}
+  computeGradients();
+  updateGradTable();
+  vgAnimProgress=0;
+  const start=performance.now();
+  const dur=1200;
+  function frame(now){
+    vgAnimProgress=clamp((now-start)/dur,0,1);
+    const ease=1-Math.pow(1-vgAnimProgress,3);
+    drawNetwork(ease);
+    drawGradientBars(ease);
+    if(vgAnimProgress<1) vgAnimId=requestAnimationFrame(frame);
+    else vgAnimId=null;
+  }
+  vgAnimId=requestAnimationFrame(frame);
+}
+
+/* =================================================================
+   TAB 2 — LEARNING RATE SCHEDULER
+   ================================================================= */
+let lrAnimId=null;
+let lrAnimEpoch=0;
+let lrCurves={primary:null,compare:null};
+
+function getSelectedScheduler(){
+  return document.querySelector('input[name="lr-sched"]:checked').value;
+}
+
+function getInitLR(){
+  return Math.pow(10,+document.getElementById('lr-init').value);
+}
+
+function getSchedParam(id,def){
+  const el=document.getElementById(id);
+  return el?+el.value:def;
+}
+
+/* Scheduler-specific parameter UIs */
+const schedParams={
+  constant:[],
+  step:[
+    {id:'lr-step-size',label:'Step Size',min:5,max:50,step:5,def:20,fmt:v=>v},
+    {id:'lr-step-gamma',label:'Gamma',min:0.1,max:0.9,step:0.05,def:0.5,fmt:v=>v.toFixed(2)}
+  ],
+  exponential:[
+    {id:'lr-exp-gamma',label:'Gamma',min:0.9,max:0.999,step:0.001,def:0.97,fmt:v=>v.toFixed(3)}
+  ],
+  cosine:[
+    {id:'lr-cos-min',label:'LR Min',min:-6,max:-3,step:0.5,def:-5,fmt:v=>(Math.pow(10,v)).toExponential(1)}
+  ],
+  warmup_cosine:[
+    {id:'lr-wu-epochs',label:'Warmup Epochs',min:2,max:30,step:1,def:10,fmt:v=>v},
+    {id:'lr-wc-min',label:'LR Min',min:-6,max:-3,step:0.5,def:-5,fmt:v=>(Math.pow(10,v)).toExponential(1)}
+  ],
+  one_cycle:[
+    {id:'lr-oc-peak',label:'Peak LR Mult',min:2,max:20,step:1,def:10,fmt:v=>v+'x'},
+    {id:'lr-oc-div',label:'Final Div',min:10,max:1000,step:10,def:100,fmt:v=>v}
+  ]
+};
+
+function lrSchedChanged(){
+  renderSchedParams();
+  lrParamUpdate();
+}
+
+function renderSchedParams(){
+  const sched=getSelectedScheduler();
+  const container=document.getElementById('lr-params-container');
+  const params=schedParams[sched]||[];
+  let html='';
+  if(params.length>0){
+    html='<div class="sched-params">';
+    params.forEach(p=>{
+      html+=`<div class="slider-row">
+        <label>${p.label}</label>
+        <input type="range" id="${p.id}" min="${p.min}" max="${p.max}" step="${p.step}" value="${p.def}" oninput="lrParamUpdate()">
+        <span id="${p.id}-val">${p.fmt(p.def)}</span>
+      </div>`;
+    });
+    html+='</div>';
+  }
+  container.innerHTML=html;
+}
+
+function lrParamUpdate(){
+  document.getElementById('lr-init-val').textContent=getInitLR().toFixed(4);
+  document.getElementById('lr-speed-val').textContent=document.getElementById('lr-speed').value;
+  // Update scheduler param display values
+  const sched=getSelectedScheduler();
+  (schedParams[sched]||[]).forEach(p=>{
+    const el=document.getElementById(p.id);
+    const valEl=document.getElementById(p.id+'-val');
+    if(el&&valEl) valEl.textContent=p.fmt(+el.value);
+  });
+  // Redraw static preview
+  const primary=computeLRSchedule(getSelectedScheduler(),getInitLR());
+  lrCurves.primary={lrs:primary.lrs,losses:primary.losses,label:getSelectedScheduler()};
+  if(document.getElementById('lr-compare').checked){
+    const comp=document.getElementById('lr-compare-sched').value;
+    const c=computeLRSchedule(comp,getInitLR());
+    lrCurves.compare={lrs:c.lrs,losses:c.losses,label:comp};
+  } else {
+    lrCurves.compare=null;
+  }
+  drawLRCanvas(100);
+  drawLossCanvas(100);
+}
+
+function lrCompareToggled(){
+  const on=document.getElementById('lr-compare').checked;
+  document.getElementById('lr-compare-container').style.display=on?'block':'none';
+  document.getElementById('lr-legend').style.display=on?'flex':'none';
+  lrParamUpdate();
+}
+
+/* Compute LR for a given scheduler over 100 epochs */
+function computeLRSchedule(sched,initLR){
+  const epochs=100;
+  const lrs=[];
+  for(let e=0;e<epochs;e++){
+    let lr=initLR;
+    switch(sched){
+      case 'constant':
+        lr=initLR; break;
+      case 'step':{
+        const ss=getSchedParam('lr-step-size',20);
+        const g=getSchedParam('lr-step-gamma',0.5);
+        lr=initLR*Math.pow(g,Math.floor(e/ss));
+        break;
+      }
+      case 'exponential':{
+        const g=getSchedParam('lr-exp-gamma',0.97);
+        lr=initLR*Math.pow(g,e);
+        break;
+      }
+      case 'cosine':{
+        const lrMin=Math.pow(10,getSchedParam('lr-cos-min',-5));
+        lr=lrMin+0.5*(initLR-lrMin)*(1+Math.cos(Math.PI*e/epochs));
+        break;
+      }
+      case 'warmup_cosine':{
+        const wu=getSchedParam('lr-wu-epochs',10);
+        const lrMin=Math.pow(10,getSchedParam('lr-wc-min',-5));
+        if(e<wu){
+          lr=initLR*((e+1)/wu);
+        } else {
+          const t=(e-wu)/(epochs-wu);
+          lr=lrMin+0.5*(initLR-lrMin)*(1+Math.cos(Math.PI*t));
+        }
+        break;
+      }
+      case 'one_cycle':{
+        const peakMult=getSchedParam('lr-oc-peak',10);
+        const finalDiv=getSchedParam('lr-oc-div',100);
+        const peakLR=initLR*peakMult;
+        const minLR=initLR/finalDiv;
+        const riseEnd=Math.floor(epochs*0.3);
+        const fallEnd=Math.floor(epochs*0.85);
+        if(e<riseEnd){
+          lr=initLR+(peakLR-initLR)*(e/riseEnd);
+        } else if(e<fallEnd){
+          const t=(e-riseEnd)/(fallEnd-riseEnd);
+          lr=peakLR+(initLR-peakLR)*t;
+        } else {
+          const t=(e-fallEnd)/(epochs-fallEnd);
+          lr=initLR+(minLR-initLR)*t;
+        }
+        break;
+      }
+    }
+    lrs.push(lr);
+  }
+
+  // Simulate loss based on LR schedule
+  const losses=simulateLoss(lrs);
+  return {lrs,losses};
+}
+
+/* Simple loss simulation on a noisy quadratic landscape */
+function simulateLoss(lrs){
+  const epochs=lrs.length;
+  const losses=[5.0]; // starting loss
+  let w=5.0; // parameter (distance from optimum)
+  // Use a seeded pseudo-random for consistency within one run
+  let seed=42;
+  function srand(){seed=(seed*16807)%2147483647;return(seed-1)/2147483646}
+
+  for(let e=1;e<epochs;e++){
+    const lr=lrs[e];
+    // Gradient of quadratic: dL/dw = 2*w
+    const grad=2*w;
+    const noise=(srand()-0.5)*0.3*Math.abs(w);
+    w=w-lr*(grad+noise)*50; // scale for interesting dynamics
+    // Occasional oscillation for too-high LR
+    if(Math.abs(lr)>0.05) w+=srand()*0.5*Math.sign(srand()-0.5);
+    const loss=w*w+0.01+srand()*0.05*Math.abs(w);
+    losses.push(Math.max(0.005,loss));
+  }
+  return losses;
+}
+
+function drawLRCanvas(upToEpoch){
+  const ctx=getCtx('lr-sched-canvas');
+  const W=ctx.cw,H=ctx.ch;
+  ctx.clearRect(0,0,W,H);
+  const padL=60,padR=20,padT=15,padB=35;
+  const plotW=W-padL-padR,plotH=H-padT-padB;
+  const epochs=100;
+
+  function drawCurve(data,color,alpha){
+    if(!data)return;
+    const lrs=data.lrs;
+    // Find range
+    let maxLR=0;
+    lrs.forEach(v=>{if(v>maxLR)maxLR=v});
+    maxLR=maxLR*1.1||0.1;
+
+    ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=2;ctx.globalAlpha=alpha;
+    for(let e=0;e<Math.min(upToEpoch,epochs);e++){
+      const x=padL+e/(epochs-1)*plotW;
+      const y=padT+plotH*(1-lrs[e]/maxLR);
+      if(e===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    ctx.globalAlpha=1;
+
+    // Y-axis labels for this curve
+    ctx.fillStyle=color;ctx.font='10px JetBrains Mono';ctx.textAlign='right';
+    for(let i=0;i<=4;i++){
+      const v=maxLR*i/4;
+      const y=padT+plotH*(1-i/4);
+      ctx.fillText(v<0.001?v.toExponential(1):v.toFixed(4),padL-6,y+4);
+    }
+  }
+
+  // Grid
+  ctx.strokeStyle='#2d3147';ctx.lineWidth=0.5;
+  for(let i=0;i<=4;i++){
+    const y=padT+plotH*i/4;
+    ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(W-padR,y);ctx.stroke();
+  }
+  for(let e=0;e<=epochs;e+=20){
+    const x=padL+e/(epochs-1)*plotW;
+    ctx.beginPath();ctx.moveTo(x,padT);ctx.lineTo(x,padT+plotH);ctx.stroke();
+    ctx.fillStyle='#64748b';ctx.font='10px Inter';ctx.textAlign='center';
+    ctx.fillText(e,x,H-padB+14);
+  }
+
+  drawCurve(lrCurves.primary,'#7dd3fc',1);
+  drawCurve(lrCurves.compare,'#f472b6',0.8);
+
+  // Axis labels
+  ctx.fillStyle='#94a3b8';ctx.font='11px Inter';ctx.textAlign='center';
+  ctx.fillText('Epoch',padL+plotW/2,H-2);
+  ctx.save();ctx.translate(12,padT+plotH/2);ctx.rotate(-Math.PI/2);
+  ctx.fillText('Learning Rate',0,0);ctx.restore();
+}
+
+function drawLossCanvas(upToEpoch){
+  const ctx=getCtx('lr-loss-canvas');
+  const W=ctx.cw,H=ctx.ch;
+  ctx.clearRect(0,0,W,H);
+  const padL=60,padR=20,padT=15,padB=35;
+  const plotW=W-padL-padR,plotH=H-padT-padB;
+  const epochs=100;
+
+  // Determine y range (log scale)
+  let allLosses=[];
+  if(lrCurves.primary)allLosses=allLosses.concat(lrCurves.primary.losses);
+  if(lrCurves.compare)allLosses=allLosses.concat(lrCurves.compare.losses);
+  if(allLosses.length===0)return;
+
+  let minL=Infinity,maxL=0;
+  allLosses.forEach(v=>{if(v<minL)minL=v;if(v>maxL)maxL=v});
+  const logMin=Math.floor(Math.log10(Math.max(minL,1e-6)))-0.5;
+  const logMax=Math.ceil(Math.log10(maxL))+0.5;
+
+  function yForLog(v){
+    const lv=Math.max(logMin,Math.log10(Math.max(v,1e-12)));
+    return padT+plotH*(1-(lv-logMin)/(logMax-logMin));
+  }
+
+  // Grid
+  ctx.strokeStyle='#2d3147';ctx.lineWidth=0.5;
+  ctx.fillStyle='#64748b';ctx.font='10px JetBrains Mono';ctx.textAlign='right';
+  for(let p=Math.ceil(logMin);p<=Math.floor(logMax);p++){
+    const y=yForLog(Math.pow(10,p));
+    ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(W-padR,y);ctx.stroke();
+    ctx.fillText('1e'+p,padL-6,y+4);
+  }
+  for(let e=0;e<=epochs;e+=20){
+    const x=padL+e/(epochs-1)*plotW;
+    ctx.beginPath();ctx.moveTo(x,padT);ctx.lineTo(x,padT+plotH);ctx.stroke();
+    ctx.fillStyle='#64748b';ctx.font='10px Inter';ctx.textAlign='center';
+    ctx.fillText(e,x,H-padB+14);
+  }
+
+  function drawCurve(data,color,alpha){
+    if(!data)return;
+    const losses=data.losses;
+    ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=2;ctx.globalAlpha=alpha;
+    for(let e=0;e<Math.min(upToEpoch,epochs);e++){
+      const x=padL+e/(epochs-1)*plotW;
+      const y=yForLog(losses[e]);
+      if(e===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    ctx.globalAlpha=1;
+
+    // Final loss label
+    if(upToEpoch>=epochs){
+      const finalLoss=losses[epochs-1];
+      const x=padL+(epochs-1)/(epochs-1)*plotW;
+      const y=yForLog(finalLoss);
+      ctx.fillStyle=color;ctx.font='bold 11px JetBrains Mono';ctx.textAlign='left';
+      ctx.fillText(finalLoss.toFixed(4),x-60,y-8);
+    }
+  }
+
+  drawCurve(lrCurves.primary,'#7dd3fc',1);
+  drawCurve(lrCurves.compare,'#f472b6',0.8);
+
+  // Axis labels
+  ctx.fillStyle='#94a3b8';ctx.font='11px Inter';ctx.textAlign='center';
+  ctx.fillText('Epoch',padL+plotW/2,H-2);
+  ctx.save();ctx.translate(12,padT+plotH/2);ctx.rotate(-Math.PI/2);
+  ctx.fillText('Loss (log scale)',0,0);ctx.restore();
+}
+
+function lrRunTraining(){
+  if(lrAnimId){cancelAnimationFrame(lrAnimId);lrAnimId=null}
+
+  const sched=getSelectedScheduler();
+  const initLR=getInitLR();
+  lrCurves.primary={...computeLRSchedule(sched,initLR),label:sched};
+  if(document.getElementById('lr-compare').checked){
+    const comp=document.getElementById('lr-compare-sched').value;
+    lrCurves.compare={...computeLRSchedule(comp,initLR),label:comp};
+  } else {
+    lrCurves.compare=null;
+  }
+
+  lrAnimEpoch=0;
+  const speed=+document.getElementById('lr-speed').value;
+  const epochsPerFrame=speed;
+  const btn=document.getElementById('lr-run-btn');
+  btn.textContent='Training...';btn.style.pointerEvents='none';
+
+  function frame(){
+    lrAnimEpoch+=epochsPerFrame;
+    if(lrAnimEpoch>100)lrAnimEpoch=100;
+    drawLRCanvas(lrAnimEpoch);
+    drawLossCanvas(lrAnimEpoch);
+    if(lrAnimEpoch<100){
+      lrAnimId=requestAnimationFrame(frame);
+    } else {
+      lrAnimId=null;
+      btn.textContent='Run Training';btn.style.pointerEvents='auto';
+    }
+  }
+  lrAnimId=requestAnimationFrame(frame);
+}
+
+/* =================================================================
+   INIT
+   ================================================================= */
+window.addEventListener('load',()=>{
+  // Tab 1 init
+  vgUpdate();
+  // Tab 2 init
+  renderSchedParams();
+  lrParamUpdate();
+});
+
+/* Handle resize */
+let resizeTimer;
+window.addEventListener('resize',()=>{
+  clearTimeout(resizeTimer);
+  resizeTimer=setTimeout(()=>{
+    // Redraw current tab
+    if(document.getElementById('tab0').classList.contains('active')){
+      drawNetwork(vgAnimProgress);
+      drawGradientBars(vgAnimProgress);
+    } else {
+      drawLRCanvas(lrAnimEpoch||100);
+      drawLossCanvas(lrAnimEpoch||100);
+    }
+  },150);
+});
+</script>
+</body>
+</html>

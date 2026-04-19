@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Advanced Unsupervised Learning: t-SNE and UMAP interactive playground for dimensionality reduction.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced Unsupervised Learning — Interactive Lab</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0f1117;color:#e2e8f0;font-family:'Inter','Segoe UI',system-ui,sans-serif;min-height:100vh;padding:24px}
+  code,pre,.formula,.mono{font-family:'JetBrains Mono','Cascadia Code','Courier New',monospace!important}
+  html{scroll-behavior:smooth}
+  h1{text-align:center;font-size:1.6rem;color:#7dd3fc;margin-bottom:6px}
+  .subtitle{text-align:center;color:#94a3b8;font-size:.9rem;margin-bottom:24px}
+  .tabs{display:flex;gap:4px;margin-bottom:20px;background:#1e2130;padding:6px;border-radius:12px;border:1px solid #2d3147;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex:1;padding:10px 8px;background:transparent;border:none;color:#94a3b8;cursor:pointer;border-radius:8px;font-size:.85rem;font-family:inherit;transition:all .2s}
+  .tab.active{background:#0369a1;color:#e2e8f0;font-weight:600}
+  .tab:hover:not(.active){background:#2d3147;color:#e2e8f0}
+  .panel{display:none;animation:fadeIn .3s ease}
+  .panel.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .grid2{display:grid;grid-template-columns:340px 1fr;gap:16px}
+  .card{background:#1e2130;border:1px solid #2d3147;border-radius:12px;padding:16px}
+  .card-title{font-size:.8rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px}
+  label{font-size:.82rem;color:#94a3b8;display:block;margin-bottom:4px}
+  input[type=range]{width:100%;accent-color:#7dd3fc;cursor:pointer;margin-bottom:8px}
+  select{background:#0f172a;border:1px solid #2d3147;color:#e2e8f0;padding:6px 10px;border-radius:8px;font-size:.82rem;width:100%;cursor:pointer;margin-bottom:8px}
+  button{background:#0369a1;border:none;color:#e2e8f0;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:.8rem;font-family:inherit;transition:all .2s}
+  button:hover{background:#0284c7;transform:translateY(-1px)}
+  button.secondary{background:#2d3147}
+  button.secondary:hover{background:#3d4157}
+  button.success{background:#065f46}
+  button.success:hover{background:#047857}
+  .flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .info-box{background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:10px;font-size:.78rem;color:#94a3b8;margin-top:8px;line-height:1.5}
+  .toggle{display:inline-flex;background:#0f172a;border-radius:8px;padding:3px;gap:2px}
+  .toggle-btn{padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:.75rem;font-family:inherit;color:#64748b;background:transparent;transition:all .2s}
+  .toggle-btn.active{background:#0369a1;color:#e2e8f0}
+  canvas{display:block;border-radius:8px;background:#1a1f2e}
+  .compare-box{background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:12px;font-size:.78rem;color:#94a3b8;margin-top:12px;line-height:1.6}
+  .compare-box strong{color:#7dd3fc}
+  .metric-display{font-family:'JetBrains Mono',monospace;font-size:.85rem;color:#fbbf24;font-weight:600}
+  .legend-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .legend-item{display:flex;align-items:center;gap:5px;font-size:.72rem;color:#94a3b8}
+  .legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+  .tooltip-icon{display:inline-block;width:16px;height:16px;border-radius:50%;background:#2d3147;color:#7dd3fc;font-size:.65rem;text-align:center;line-height:16px;cursor:help;position:relative;margin-left:4px;font-weight:700}
+  .tooltip-icon:hover::after{content:attr(data-tip);position:absolute;left:20px;top:-4px;background:#0f172a;border:1px solid #2d3147;color:#94a3b8;padding:6px 10px;border-radius:6px;font-size:.7rem;white-space:normal;width:220px;z-index:999;font-weight:400;line-height:1.4}
+  .status-bar{display:flex;gap:16px;align-items:center;margin-top:8px;font-size:.78rem;color:#94a3b8}
+  .status-bar span{font-family:'JetBrains Mono',monospace}
+  button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #7dd3fc;outline-offset:2px}
+  ::selection{background:#1d4ed880;color:#e0f2fe}
+  canvas{image-rendering:-webkit-optimize-contrast}
+
+  @media(max-width:768px){
+    .grid2{grid-template-columns:1fr!important}
+    h1{font-size:1.4rem!important}
+    body{padding:12px}
+    canvas{width:100%!important;height:auto!important}
+  }
+  @media(max-width:480px){
+    body{padding:0 0 40px 0!important}
+    .tab{padding:8px 6px!important;font-size:.75rem!important}
+    button{padding:6px 12px!important;font-size:.75rem!important}
+  }
+</style>
+</head>
+<body>
+<h1>Advanced Unsupervised Learning &#8212; Interactive Lab</h1>
+<p class="subtitle">t-SNE &amp; UMAP dimensionality reduction &#8212; watch high-dimensional clusters unfold in 2D</p>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab(0)">t-SNE / UMAP Playground</button>
+</div>
+
+<!-- ==================== TAB 0: t-SNE / UMAP ==================== -->
+<div class="panel active" id="tab0">
+  <div class="grid2">
+    <!-- LEFT CONTROLS -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="card">
+        <div class="card-title">Algorithm</div>
+        <div class="toggle" id="algo-toggle">
+          <button class="toggle-btn active" onclick="setAlgo('tsne')">t-SNE</button>
+          <button class="toggle-btn" onclick="setAlgo('umap')">UMAP</button>
+        </div>
+      </div>
+
+      <!-- t-SNE controls -->
+      <div class="card" id="tsne-controls">
+        <div class="card-title">t-SNE Parameters</div>
+        <label>Perplexity: <strong id="perp-val" style="color:#7dd3fc">30</strong>
+          <span class="tooltip-icon" data-tip="Perplexity balances attention between local and global structure. Low values focus on nearest neighbors; high values consider more points as neighbors.">?</span>
+        </label>
+        <input type="range" id="perp-slider" min="5" max="50" value="30" oninput="document.getElementById('perp-val').textContent=this.value">
+        <label>Learning rate: <strong id="lr-val" style="color:#7dd3fc">200</strong>
+          <span class="tooltip-icon" data-tip="Controls step size in gradient descent. Too low = slow convergence. Too high = unstable. Typical range: 100-500.">?</span>
+        </label>
+        <input type="range" id="lr-slider" min="10" max="1000" value="200" step="10" oninput="document.getElementById('lr-val').textContent=this.value">
+      </div>
+
+      <!-- UMAP controls -->
+      <div class="card" id="umap-controls" style="display:none">
+        <div class="card-title">UMAP Parameters</div>
+        <label>n_neighbors: <strong id="nn-val" style="color:#7dd3fc">15</strong>
+          <span class="tooltip-icon" data-tip="Controls how UMAP balances local vs global structure. Low values capture fine detail; high values capture broader topological structure.">?</span>
+        </label>
+        <input type="range" id="nn-slider" min="2" max="50" value="15" oninput="document.getElementById('nn-val').textContent=this.value">
+        <label>min_dist: <strong id="md-val" style="color:#7dd3fc">0.10</strong>
+          <span class="tooltip-icon" data-tip="Minimum distance between embedded points. Low values pack clusters tighter; high values spread points out more evenly.">?</span>
+        </label>
+        <input type="range" id="md-slider" min="0" max="100" value="10" oninput="document.getElementById('md-val').textContent=(this.value/100).toFixed(2)">
+      </div>
+
+      <div class="card">
+        <div class="card-title">Shared Controls</div>
+        <label>Max iterations: <strong id="iter-max-val" style="color:#7dd3fc">500</strong></label>
+        <input type="range" id="iter-slider" min="100" max="1000" value="500" step="50" oninput="document.getElementById('iter-max-val').textContent=this.value">
+
+        <label style="margin-top:4px">Dataset:</label>
+        <select id="dataset-select" onchange="resetAll()">
+          <option value="blobs3">Blobs (3 clusters)</option>
+          <option value="blobs5">Blobs (5 clusters)</option>
+          <option value="rings">Concentric Rings</option>
+          <option value="swiss">Swiss Roll (2D projection)</option>
+        </select>
+
+        <div class="flex" style="margin-top:8px">
+          <button onclick="runAll()" id="run-btn" class="success">&#9654; Run</button>
+          <button onclick="stepOnce()" id="step-btn">Step</button>
+          <button onclick="resetAll()" class="secondary">Reset</button>
+        </div>
+
+        <div class="status-bar" style="margin-top:10px">
+          <div>Iteration: <span id="iter-count">0</span> / <span id="iter-total">500</span></div>
+        </div>
+        <div class="status-bar">
+          <div id="cost-label">KL Divergence:</div>
+          <span class="metric-display" id="cost-val">--</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Legend</div>
+        <div class="legend-row" id="legend-row"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT CANVAS -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="card" style="display:flex;justify-content:center;align-items:center;padding:20px">
+        <canvas id="canvas" width="500" height="500"></canvas>
+      </div>
+
+      <div class="compare-box">
+        <strong>t-SNE</strong> preserves <em>local</em> structure (neighborhood relationships). Points that are close in high-D stay close in 2D, but global distances are not meaningful.<br>
+        <strong>UMAP</strong> preserves more <em>global</em> structure and tends to produce tighter, more separated clusters. It is also generally faster than t-SNE.<br><br>
+        Both are non-linear dimensionality reduction techniques ideal for visualizing clusters in high-dimensional data. Neither should be used for quantitative distance measurements in the embedding.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================================================================
+//  GLOBALS
+// ===================================================================
+const COLORS = ['#f87171','#34d399','#60a5fa','#fbbf24','#a78bfa'];
+const COLOR_NAMES = ['Red','Green','Blue','Yellow','Purple'];
+let algo = 'tsne';
+let data = [];        // high-D points [{x:[...], label:int}]
+let Y = [];           // 2D embedding [[y1,y2],...]
+let N = 0;
+let running = false;
+let animId = null;
+let iteration = 0;
+let maxIter = 500;
+let costHistory = [];
+// t-SNE internals
+let P = [];            // joint probability matrix (flat NxN)
+let gains = [];
+let yInc = [];         // momentum
+// UMAP internals
+let umapEdges = [];    // [{i,j,w}]
+let umapA = 1.0;
+let umapB = 1.0;
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+// ===================================================================
+//  TAB SWITCHING
+// ===================================================================
+function switchTab(idx) {
+  document.querySelectorAll('.tab').forEach((t,i) => { t.classList.toggle('active', i===idx); });
+  document.querySelectorAll('.panel').forEach((p,i) => { p.classList.toggle('active', i===idx); });
+}
+
+// ===================================================================
+//  ALGORITHM TOGGLE
+// ===================================================================
+function setAlgo(a) {
+  algo = a;
+  document.querySelectorAll('#algo-toggle .toggle-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.trim().toLowerCase().replace('-','') === a);
+  });
+  document.getElementById('tsne-controls').style.display = a==='tsne'?'block':'none';
+  document.getElementById('umap-controls').style.display = a==='umap'?'block':'none';
+  document.getElementById('cost-label').textContent = a==='tsne'?'KL Divergence:':'Cross-entropy:';
+  resetAll();
+}
+
+// ===================================================================
+//  DATASET GENERATION
+// ===================================================================
+function randn() {
+  let u=0,v=0;
+  while(u===0) u=Math.random();
+  while(v===0) v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+function generateDataset(type) {
+  const pts = [];
+  const dim = 5;
+  if (type === 'blobs3' || type === 'blobs5') {
+    const k = type==='blobs3'?3:5;
+    const centersPool = [
+      [4,4,4,4,4],[-4,-4,-4,-4,-4],[4,-4,4,-4,4],
+      [-4,4,-4,4,-4],[0,0,0,0,8]
+    ];
+    const centers = centersPool.slice(0,k);
+    const perCluster = Math.floor(180/k);
+    for (let c=0;c<k;c++) {
+      for (let i=0;i<perCluster;i++) {
+        const x = [];
+        for (let d=0;d<dim;d++) x.push(centers[c][d]+randn()*1.2);
+        pts.push({x,label:c});
+      }
+    }
+  } else if (type === 'rings') {
+    const nPer = 60;
+    for (let ring=0;ring<3;ring++) {
+      const r = 2+ring*3;
+      for (let i=0;i<nPer;i++) {
+        const angle = Math.random()*2*Math.PI;
+        const rr = r + randn()*0.4;
+        const x = [rr*Math.cos(angle), rr*Math.sin(angle), randn()*0.3, ring*2+randn()*0.5, randn()*0.3];
+        pts.push({x,label:ring});
+      }
+    }
+  } else if (type === 'swiss') {
+    const nPts = 180;
+    for (let i=0;i<nPts;i++) {
+      const t = 1.5*Math.PI*(1+2*Math.random());
+      const h = Math.random()*10;
+      const label = t<7?0:t<10?1:2;
+      const x = [t*Math.cos(t)+randn()*0.3, h+randn()*0.3, t*Math.sin(t)+randn()*0.3, randn()*0.5, t+randn()*0.3];
+      pts.push({x,label});
+    }
+  }
+  return pts;
+}
+
+// ===================================================================
+//  UTILITY FUNCTIONS
+// ===================================================================
+function dist2(a,b) {
+  let s=0; for(let i=0;i<a.length;i++){const d=a[i]-b[i];s+=d*d;} return s;
+}
+function dist2_2d(a,b) {
+  const dx=a[0]-b[0],dy=a[1]-b[1]; return dx*dx+dy*dy;
+}
+
+// ===================================================================
+//  t-SNE IMPLEMENTATION
+// ===================================================================
+function computeP(perplexity) {
+  const tol = 1e-5;
+  const logPerp = Math.log(perplexity);
+  P = new Float64Array(N*N);
+  for (let i=0;i<N;i++) {
+    let betaMin=-Infinity, betaMax=Infinity, beta=1.0;
+    const Di = [];
+    for (let j=0;j<N;j++) Di.push(j===i?0:dist2(data[i].x,data[j].x));
+    for (let iter=0;iter<50;iter++) {
+      let sumP=0;
+      for (let j=0;j<N;j++) {
+        if(j===i){P[i*N+j]=0;continue;}
+        P[i*N+j]=Math.exp(-Di[j]*beta);
+        sumP+=P[i*N+j];
+      }
+      if(sumP===0) sumP=1e-10;
+      let H=0;
+      for (let j=0;j<N;j++) {
+        if(j===i) continue;
+        P[i*N+j]/=sumP;
+        if(P[i*N+j]>1e-7) H-=P[i*N+j]*Math.log(P[i*N+j]);
+      }
+      const Hdiff = H-logPerp;
+      if(Math.abs(Hdiff)<tol) break;
+      if(Hdiff>0){betaMin=beta; beta=betaMax===Infinity?beta*2:(beta+betaMax)/2;}
+      else{betaMax=beta; beta=betaMin===-Infinity?beta/2:(beta+betaMin)/2;}
+    }
+  }
+  // symmetrise
+  for (let i=0;i<N;i++) for (let j=i+1;j<N;j++) {
+    const v=(P[i*N+j]+P[j*N+i])/(2*N);
+    P[i*N+j]=v; P[j*N+i]=v;
+  }
+}
+
+function tsneInit() {
+  const perp = parseInt(document.getElementById('perp-slider').value);
+  computeP(perp);
+  // early exaggeration
+  for (let i=0;i<N*N;i++) P[i]*=4;
+  Y = [];
+  gains = [];
+  yInc = [];
+  for (let i=0;i<N;i++) {
+    Y.push([randn()*0.01, randn()*0.01]);
+    gains.push([1,1]);
+    yInc.push([0,0]);
+  }
+}
+
+function tsneStep() {
+  const lr = parseInt(document.getElementById('lr-slider').value);
+  const mom = iteration<250?0.5:0.8;
+  // remove early exaggeration after 100 iters
+  if (iteration===100) {
+    for (let i=0;i<N*N;i++) P[i]/=4;
+  }
+  // compute Q
+  const Q = new Float64Array(N*N);
+  let sumQ=0;
+  for (let i=0;i<N;i++) for (let j=i+1;j<N;j++) {
+    const d = 1/(1+dist2_2d(Y[i],Y[j]));
+    Q[i*N+j]=d; Q[j*N+i]=d;
+    sumQ+=2*d;
+  }
+  if(sumQ===0) sumQ=1e-10;
+  // KL divergence
+  let kl=0;
+  for (let i=0;i<N;i++) for (let j=0;j<N;j++) {
+    if(i===j) continue;
+    const q=Math.max(Q[i*N+j]/sumQ,1e-12);
+    if(P[i*N+j]>1e-12) kl+=P[i*N+j]*Math.log(P[i*N+j]/q);
+  }
+  costHistory.push(kl);
+  // gradients
+  const grad = [];
+  for (let i=0;i<N;i++) grad.push([0,0]);
+  for (let i=0;i<N;i++) for (let j=0;j<N;j++) {
+    if(i===j) continue;
+    const pq = P[i*N+j]-Q[i*N+j]/sumQ;
+    const d = Q[i*N+j]; // already = 1/(1+||yi-yj||^2)
+    const mult = 4*pq*d;
+    grad[i][0]+=mult*(Y[i][0]-Y[j][0]);
+    grad[i][1]+=mult*(Y[i][1]-Y[j][1]);
+  }
+  // update with momentum and adaptive gains
+  for (let i=0;i<N;i++) for (let d=0;d<2;d++) {
+    const sign_grad = grad[i][d]>0?1:-1;
+    const sign_inc = yInc[i][d]>0?1:-1;
+    gains[i][d] = sign_grad===sign_inc ? gains[i][d]*0.8 : gains[i][d]+0.2;
+    if(gains[i][d]<0.01) gains[i][d]=0.01;
+    yInc[i][d] = mom*yInc[i][d] - lr*gains[i][d]*grad[i][d];
+    Y[i][d]+=yInc[i][d];
+  }
+  // centre
+  let cx=0,cy=0;
+  for(let i=0;i<N;i++){cx+=Y[i][0];cy+=Y[i][1];}
+  cx/=N;cy/=N;
+  for(let i=0;i<N;i++){Y[i][0]-=cx;Y[i][1]-=cy;}
+
+  return kl;
+}
+
+// ===================================================================
+//  UMAP IMPLEMENTATION (simplified)
+// ===================================================================
+function umapInit() {
+  const nNeighbors = parseInt(document.getElementById('nn-slider').value);
+  const minDist = parseInt(document.getElementById('md-slider').value)/100;
+
+  // fit a,b parameters for distance function: 1/(1+a*d^(2b))
+  // simplified: use fixed a,b that approximate min_dist behaviour
+  umapA = 1.0/(minDist+0.001);
+  umapB = 1.0;
+
+  // compute kNN
+  const dists = [];
+  for (let i=0;i<N;i++) {
+    const row = [];
+    for (let j=0;j<N;j++) row.push({j, d:i===j?Infinity:dist2(data[i].x,data[j].x)});
+    row.sort((a,b)=>a.d-b.d);
+    dists.push(row.slice(0,nNeighbors));
+  }
+
+  // compute sigma_i (smooth knn distances) and edge weights
+  umapEdges = [];
+  const edgeSet = new Set();
+  for (let i=0;i<N;i++) {
+    const kDist = Math.sqrt(dists[i][nNeighbors-1].d);
+    // binary search for sigma
+    let sigmaLo=0.001,sigmaHi=100,sigma=1;
+    const target = Math.log(nNeighbors);
+    for (let iter=0;iter<64;iter++) {
+      sigma = (sigmaLo+sigmaHi)/2;
+      let s=0;
+      for (let k=0;k<dists[i].length;k++) {
+        s+=Math.exp(-Math.max(0,Math.sqrt(dists[i][k].d)-Math.sqrt(dists[i][0].d))/sigma);
+      }
+      if(Math.abs(Math.log(s)-target)<0.01) break;
+      if(Math.log(s)>target) sigmaHi=sigma; else sigmaLo=sigma;
+    }
+    for (let k=0;k<dists[i].length;k++) {
+      const j = dists[i][k].j;
+      const w = Math.exp(-Math.max(0,Math.sqrt(dists[i][k].d)-Math.sqrt(dists[i][0].d))/sigma);
+      const key = Math.min(i,j)*N+Math.max(i,j);
+      if(!edgeSet.has(key)) {
+        edgeSet.add(key);
+        umapEdges.push({i:Math.min(i,j), j:Math.max(i,j), w:Math.min(1,w)});
+      } else {
+        // combine: w_sym = w1+w2-w1*w2 (fuzzy union)
+        const existing = umapEdges.find(e=>e.i===Math.min(i,j)&&e.j===Math.max(i,j));
+        if(existing) existing.w = existing.w+w-existing.w*w;
+      }
+    }
+  }
+
+  // init embedding randomly
+  Y = [];
+  for (let i=0;i<N;i++) Y.push([randn()*5, randn()*5]);
+}
+
+function umapStep() {
+  const lr = 1.0 * Math.max(0.1, 1 - iteration/(maxIter*0.9));
+  const nNeg = 5;
+  let totalLoss = 0;
+
+  // shuffle edges
+  const indices = [];
+  for (let e=0;e<umapEdges.length;e++) indices.push(e);
+  for (let e=indices.length-1;e>0;e--) {
+    const swap = Math.floor(Math.random()*(e+1));
+    [indices[e],indices[swap]]=[indices[swap],indices[e]];
+  }
+
+  for (const ei of indices) {
+    const edge = umapEdges[ei];
+    const i = edge.i, j = edge.j, w = edge.w;
+    const dd = dist2_2d(Y[i],Y[j]);
+    const dEps = dd+0.001;
+
+    // attractive force
+    const phi = 1/(1+umapA*Math.pow(dEps,umapB));
+    const gradCoeff = (-2*umapA*umapB*Math.pow(dEps,umapB-1))/(1+umapA*Math.pow(dEps,umapB));
+    const attractMult = w * gradCoeff * lr;
+
+    Y[i][0] += attractMult*(Y[i][0]-Y[j][0]);
+    Y[i][1] += attractMult*(Y[i][1]-Y[j][1]);
+    Y[j][0] -= attractMult*(Y[i][0]-Y[j][0]);
+    Y[j][1] -= attractMult*(Y[i][1]-Y[j][1]);
+
+    // cross entropy contribution
+    if(w>1e-10 && phi>1e-10) totalLoss -= w*Math.log(Math.max(phi,1e-10));
+    totalLoss -= (1-w)*Math.log(Math.max(1-phi,1e-10));
+
+    // repulsive forces with negative samples
+    for (let neg=0;neg<nNeg;neg++) {
+      const k = Math.floor(Math.random()*N);
+      if(k===i) continue;
+      const ddk = dist2_2d(Y[i],Y[k])+0.001;
+      const repPhi = 1/(1+umapA*Math.pow(ddk,umapB));
+      const repCoeff = (2*umapB)/(ddk*(1+umapA*Math.pow(ddk,umapB))) * lr * (1-w);
+      const clampedCoeff = Math.min(repCoeff, 4);
+
+      Y[i][0] += clampedCoeff*(Y[i][0]-Y[k][0]);
+      Y[i][1] += clampedCoeff*(Y[i][1]-Y[k][1]);
+    }
+  }
+
+  // clamp positions to prevent explosion
+  for (let i=0;i<N;i++) {
+    Y[i][0] = Math.max(-50, Math.min(50, Y[i][0]));
+    Y[i][1] = Math.max(-50, Math.min(50, Y[i][1]));
+  }
+
+  costHistory.push(totalLoss/umapEdges.length);
+  return totalLoss/umapEdges.length;
+}
+
+// ===================================================================
+//  DRAWING
+// ===================================================================
+let prevY = null;
+function drawEmbedding(interpFactor) {
+  ctx.clearRect(0,0,500,500);
+  // background grid
+  ctx.strokeStyle = '#252a3a';
+  ctx.lineWidth = 0.5;
+  for (let g=0;g<=500;g+=50) {
+    ctx.beginPath();ctx.moveTo(g,0);ctx.lineTo(g,500);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,g);ctx.lineTo(500,g);ctx.stroke();
+  }
+  if(Y.length===0) return;
+  // find bounds
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  for (let i=0;i<N;i++) {
+    if(Y[i][0]<minX)minX=Y[i][0]; if(Y[i][0]>maxX)maxX=Y[i][0];
+    if(Y[i][1]<minY)minY=Y[i][1]; if(Y[i][1]>maxY)maxY=Y[i][1];
+  }
+  const rangeX=Math.max(maxX-minX,1e-6);
+  const rangeY=Math.max(maxY-minY,1e-6);
+  const pad=40;
+  const w=500-2*pad, h=500-2*pad;
+  // draw points
+  for (let i=0;i<N;i++) {
+    let px = pad+(Y[i][0]-minX)/rangeX*w;
+    let py = pad+(Y[i][1]-minY)/rangeY*h;
+    // smooth interpolation
+    if(prevY && interpFactor<1) {
+      const ppx = pad+(prevY[i][0]-minX)/rangeX*w;
+      const ppy = pad+(prevY[i][1]-minY)/rangeY*h;
+      px = ppx+(px-ppx)*interpFactor;
+      py = ppy+(py-ppy)*interpFactor;
+    }
+    const col = COLORS[data[i].label % COLORS.length];
+    // glow
+    ctx.beginPath();
+    ctx.arc(px,py,7,0,Math.PI*2);
+    ctx.fillStyle = col+'30';
+    ctx.fill();
+    // point
+    ctx.beginPath();
+    ctx.arc(px,py,4,0,Math.PI*2);
+    ctx.fillStyle = col;
+    ctx.fill();
+    ctx.strokeStyle = col+'80';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+  // axes labels
+  ctx.fillStyle='#475569';
+  ctx.font='11px Inter, sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('Embedding dimension 1',250,495);
+  ctx.save();
+  ctx.translate(12,250);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('Embedding dimension 2',0,0);
+  ctx.restore();
+}
+
+// ===================================================================
+//  CONTROLS
+// ===================================================================
+function updateLegend() {
+  const labels = new Set(data.map(d=>d.label));
+  const el = document.getElementById('legend-row');
+  el.innerHTML = '';
+  labels.forEach(l => {
+    el.innerHTML += `<div class="legend-item"><span class="legend-dot" style="background:${COLORS[l%5]}"></span>Cluster ${l+1}</div>`;
+  });
+}
+
+function resetAll() {
+  running = false;
+  if(animId) cancelAnimationFrame(animId);
+  animId = null;
+  iteration = 0;
+  costHistory = [];
+  maxIter = parseInt(document.getElementById('iter-slider').value);
+  document.getElementById('iter-count').textContent = '0';
+  document.getElementById('iter-total').textContent = maxIter;
+  document.getElementById('cost-val').textContent = '--';
+  document.getElementById('run-btn').textContent = '\u25B6 Run';
+
+  const dsType = document.getElementById('dataset-select').value;
+  data = generateDataset(dsType);
+  N = data.length;
+  updateLegend();
+
+  if(algo==='tsne') tsneInit();
+  else umapInit();
+
+  prevY = null;
+  drawEmbedding(1);
+}
+
+function stepOnce() {
+  if(iteration>=maxIter) return;
+  prevY = Y.map(p=>[p[0],p[1]]);
+  let cost;
+  if(algo==='tsne') cost=tsneStep();
+  else cost=umapStep();
+  iteration++;
+  document.getElementById('iter-count').textContent=iteration;
+  document.getElementById('cost-val').textContent=cost.toFixed(4);
+  drawEmbedding(1);
+}
+
+function runAll() {
+  if(running) {
+    running=false;
+    document.getElementById('run-btn').textContent='\u25B6 Run';
+    return;
+  }
+  if(iteration>=maxIter) resetAll();
+  running=true;
+  document.getElementById('run-btn').textContent='\u23F8 Pause';
+
+  const stepsPerFrame = algo==='umap'?2:1;
+  function frame() {
+    if(!running||iteration>=maxIter) {
+      running=false;
+      document.getElementById('run-btn').textContent='\u25B6 Run';
+      return;
+    }
+    prevY = Y.map(p=>[p[0],p[1]]);
+    let cost;
+    for (let s=0;s<stepsPerFrame&&iteration<maxIter;s++) {
+      if(algo==='tsne') cost=tsneStep();
+      else cost=umapStep();
+      iteration++;
+    }
+    document.getElementById('iter-count').textContent=iteration;
+    document.getElementById('cost-val').textContent=cost.toFixed(4);
+    drawEmbedding(1);
+    animId=requestAnimationFrame(frame);
+  }
+  animId=requestAnimationFrame(frame);
+}
+
+// ===================================================================
+//  INIT
+// ===================================================================
+resetAll();
+</script>
+</body>
+</html>

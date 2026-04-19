@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Operational Research: Linear Programming, Shortest Path, and Knapsack — interactive optimization lab.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 14 · Operational Research — Interactive Lab</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f1117; color: #e2e8f0; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; min-height: 100vh; padding: 0 0 60px 0; }
+  code, pre, .code-block, .mono { font-family: 'JetBrains Mono', 'Cascadia Code', 'Courier New', monospace !important; }
+  html { scroll-behavior: smooth; }
+
+  .page-header { background: linear-gradient(135deg, #1e2130 0%, #0f1117 100%); border-bottom: 1px solid #2d3147; padding: 32px 40px 24px; }
+  .chapter-label { font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #c8441a; margin-bottom: 6px; }
+  .page-title { font-size: 28px; font-weight: 700; color: #e2e8f0; margin-bottom: 4px; }
+  .page-subtitle { font-size: 14px; color: #94a3b8; }
+
+  .tab-nav { display: flex; gap: 4px; padding: 20px 40px 0; border-bottom: 1px solid #2d3147; background: #0f1117; flex-wrap: wrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .tab-nav::-webkit-scrollbar { display: none; }
+  .tab-btn { padding: 10px 22px; border: 1px solid transparent; border-bottom: none; background: transparent; color: #94a3b8; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; border-radius: 8px 8px 0 0; transition: all 0.2s; position: relative; bottom: -1px; }
+  .tab-btn:hover { color: #e2e8f0; background: #1e2130; }
+  .tab-btn.active { color: #c8441a; background: #1e2130; border-color: #2d3147; border-bottom-color: #1e2130; }
+
+  .tab-panel { display: none; padding: 32px 40px; }
+  .tab-panel.active { display: block; }
+
+  .section-title { font-size: 20px; font-weight: 700; color: #e2e8f0; margin-bottom: 8px; }
+  .section-sub { font-size: 13px; color: #94a3b8; margin-bottom: 24px; }
+  .panel { background: #1e2130; border: 1px solid #2d3147; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .label { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #94a3b8; margin-bottom: 8px; }
+
+  .btn { padding: 8px 16px; border: 1px solid #2d3147; border-radius: 8px; background: #0f172a; color: #e2e8f0; font-family: inherit; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+  .btn:hover { border-color: #c8441a; color: #c8441a; }
+  .btn.active, .btn.primary { background: #c8441a; border-color: #c8441a; color: #fff; }
+  .btn.primary:hover { background: #a3360f; }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+
+  .grid-2 { display: grid; grid-template-columns: 340px 1fr; gap: 16px; }
+  .grid-equal { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .insight-box { background: #0f172a; border-left: 3px solid #c8441a; border-radius: 0 8px 8px 0; padding: 12px 16px; font-size: 13px; color: #94a3b8; margin-top: 12px; line-height: 1.6; }
+  .insight-box strong { color: #c8441a; }
+
+  .slider-group { margin-bottom: 14px; }
+  .slider-group label { display: flex; justify-content: space-between; font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+  .slider-group label span.val { color: #c8441a; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+  input[type="range"] { width: 100%; accent-color: #c8441a; background: transparent; cursor: pointer; }
+
+  canvas { border-radius: 8px; display: block; background: #0f172a; }
+
+  .code-block { background: #0f172a; border: 1px solid #2d3147; border-radius: 8px; padding: 12px 16px; font-size: 13px; color: #86efac; line-height: 1.5; white-space: pre; overflow-x: auto; margin-top: 8px; }
+
+  .node-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #2d3147; background: #1e2130; color: #e2e8f0; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .node-btn:hover { border-color: #c8441a; }
+  .node-btn.start { border-color: #22c55e; background: #14532d; color: #86efac; }
+  .node-btn.end { border-color: #ef4444; background: #450a0a; color: #fca5a5; }
+
+  .dist-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+  .dist-table th { background: #0f172a; color: #c8441a; padding: 6px 10px; text-align: center; border-bottom: 1px solid #2d3147; font-weight: 600; }
+  .dist-table td { padding: 6px 10px; text-align: center; border-bottom: 1px solid #1a1f2e; transition: background 0.3s; }
+  .dist-table tr.updated td { background: #1a2e1a; }
+
+  .item-card { background: #0f172a; border: 1px solid #2d3147; border-radius: 10px; padding: 12px; cursor: pointer; transition: all 0.25s; text-align: center; user-select: none; }
+  .item-card:hover { border-color: #c8441a; transform: translateY(-2px); }
+  .item-card.selected { border-color: #22c55e; background: #0a1f14; }
+  .item-card .item-icon { font-size: 28px; margin-bottom: 6px; }
+  .item-card .item-name { font-size: 12px; font-weight: 600; color: #e2e8f0; }
+  .item-card .item-stats { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+
+  .knapsack-bar { height: 32px; background: #0f172a; border: 1px solid #2d3147; border-radius: 8px; overflow: hidden; margin-top: 8px; position: relative; }
+  .knapsack-fill { height: 100%; background: linear-gradient(90deg, #c8441a, #e85d30); transition: width 0.4s ease; border-radius: 7px 0 0 7px; }
+  .knapsack-fill.over { background: linear-gradient(90deg, #ef4444, #b91c1c); }
+
+  .dp-cell { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 28px; border: 1px solid #2d3147; font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #94a3b8; transition: all 0.2s; }
+  .dp-cell.highlight { background: #c8441a; color: #fff; border-color: #c8441a; }
+  .dp-cell.filled { background: #1a2e1a; color: #86efac; border-color: #2d4a2d; }
+  .dp-cell.chosen { background: #0a2a1a; color: #22c55e; border-color: #22c55e; font-weight: 700; }
+  .dp-cell.header { background: #1e2130; color: #c8441a; font-weight: 600; border-color: #2d3147; }
+
+  .compare-box { display: inline-block; padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; margin: 4px; }
+  .compare-dp { background: #14532d; color: #86efac; border: 1px solid #22c55e; }
+  .compare-greedy { background: #451a03; color: #fbbf24; border: 1px solid #f59e0b; }
+
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid #c8441a; outline-offset: 2px; }
+  ::selection { background: #c8441a40; color: #e0f2fe; }
+  canvas { image-rendering: -webkit-optimize-contrast; }
+
+  @media (max-width: 768px) {
+    .page-header { padding: 24px 20px 18px !important; }
+    .tab-panel { padding: 20px !important; }
+    .tab-nav { padding: 16px 20px 0 !important; }
+    .grid-2, .grid-equal { grid-template-columns: 1fr !important; }
+    .page-title { font-size: 22px !important; }
+    .items-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  }
+  @media (max-width: 480px) {
+    body { padding: 0 0 40px 0 !important; }
+    .tab-btn { padding: 8px 14px !important; font-size: 12px !important; }
+    .btn { padding: 6px 12px !important; font-size: 12px !important; }
+    .items-grid { grid-template-columns: 1fr !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="chapter-label">Chapter 14</div>
+  <div class="page-title">Operational Research</div>
+  <div class="page-subtitle">Linear programming, shortest paths, and knapsack optimization — classic OR techniques</div>
+</div>
+
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('lp')">Linear Programming</button>
+  <button class="tab-btn" onclick="switchTab('sp')">Shortest Path</button>
+  <button class="tab-btn" onclick="switchTab('ks')">Knapsack Solver</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- TAB 1: LINEAR PROGRAMMING -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div id="tab-lp" class="tab-panel active">
+  <div class="section-title">Linear Programming Visualizer</div>
+  <div class="section-sub">Drag the iso-profit slider to sweep across the feasible region and find the optimal vertex.</div>
+  <div class="grid-2">
+    <div>
+      <div class="panel">
+        <div class="label">Objective Function</div>
+        <div class="slider-group">
+          <label>c1 (coefficient of x): <span class="val" id="lp-c1-val">3</span></label>
+          <input type="range" id="lp-c1" min="0" max="10" step="0.5" value="3" oninput="lpUpdate()">
+        </div>
+        <div class="slider-group">
+          <label>c2 (coefficient of y): <span class="val" id="lp-c2-val">5</span></label>
+          <input type="range" id="lp-c2" min="0" max="10" step="0.5" value="5" oninput="lpUpdate()">
+        </div>
+        <div class="code-block" id="lp-obj-display">Maximize Z = 3x + 5y</div>
+      </div>
+      <div class="panel">
+        <div class="label">Constraints (RHS values)</div>
+        <div class="slider-group">
+          <label>x + 2y &le; <span class="val" id="lp-rhs1-val">12</span></label>
+          <input type="range" id="lp-rhs1" min="4" max="20" step="1" value="12" oninput="lpUpdate()">
+        </div>
+        <div class="slider-group">
+          <label>2x + y &le; <span class="val" id="lp-rhs2-val">10</span></label>
+          <input type="range" id="lp-rhs2" min="4" max="20" step="1" value="10" oninput="lpUpdate()">
+        </div>
+        <div class="code-block" style="font-size:12px;">x &ge; 0,  y &ge; 0</div>
+      </div>
+      <div class="panel">
+        <div class="label">Iso-Profit Sweep</div>
+        <div class="slider-group">
+          <label>Z value: <span class="val" id="lp-z-val">0</span></label>
+          <input type="range" id="lp-z-slider" min="0" max="40" step="0.5" value="15" oninput="lpSweep()">
+        </div>
+      </div>
+      <div class="panel" id="lp-result-box">
+        <div class="label">Optimal Solution</div>
+        <div id="lp-result" style="font-size:14px; line-height:1.8;"></div>
+      </div>
+      <div class="insight-box">
+        <strong>Simplex Intuition:</strong> The Simplex algorithm starts at a corner of the feasible region and "walks" along edges to adjacent corners, always improving the objective. It stops when no neighboring corner is better — that corner is optimal. In 2D you can see this as sliding the iso-profit line until it just touches the last vertex of the polygon.
+      </div>
+    </div>
+    <div>
+      <canvas id="lp-canvas" width="580" height="520"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- TAB 2: SHORTEST PATH -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div id="tab-sp" class="tab-panel">
+  <div class="section-title">Shortest Path Playground</div>
+  <div class="section-sub">Click nodes to set start (green) and end (red), then run an algorithm to watch it explore.</div>
+  <div class="grid-2">
+    <div>
+      <div class="panel">
+        <div class="label">Controls</div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="spRunDijkstra()">Run Dijkstra</button>
+          <button class="btn" onclick="spRunBellman()">Run Bellman-Ford</button>
+          <button class="btn" onclick="spReset()">Reset</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn" onclick="spNewGraph()">Generate New Graph</button>
+          <button class="btn" id="sp-compare-btn" onclick="spCompare()">Compare Mode</button>
+        </div>
+        <div class="slider-group">
+          <label>Animation Speed: <span class="val" id="sp-speed-val">Medium</span></label>
+          <input type="range" id="sp-speed" min="1" max="5" step="1" value="3" oninput="document.getElementById('sp-speed-val').textContent=['Very Slow','Slow','Medium','Fast','Very Fast'][this.value-1]">
+        </div>
+      </div>
+      <div class="panel">
+        <div class="label">Click nodes to select start &amp; end</div>
+        <div id="sp-node-select" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
+        <div style="margin-top:10px;font-size:12px;color:#94a3b8;">
+          <span style="color:#22c55e;">&#9632;</span> Start &nbsp;
+          <span style="color:#ef4444;">&#9632;</span> End &nbsp;
+          <span style="color:#fbbf24;">&#9632;</span> Current &nbsp;
+          <span style="color:#86efac;">&#9632;</span> Visited &nbsp;
+          <span style="color:#7dd3fc;">&#9632;</span> Shortest Path
+        </div>
+      </div>
+      <div class="panel">
+        <div class="label">Distance Table</div>
+        <div style="overflow-x:auto;">
+          <table class="dist-table" id="sp-dist-table"></table>
+        </div>
+      </div>
+      <div id="sp-result-box" class="panel" style="display:none;">
+        <div class="label">Result</div>
+        <div id="sp-result" style="font-size:14px; line-height:1.6;"></div>
+      </div>
+      <div id="sp-compare-box" class="panel" style="display:none;">
+        <div class="label">Algorithm Comparison</div>
+        <div id="sp-compare-result" style="font-size:13px; line-height:1.8;"></div>
+      </div>
+    </div>
+    <div>
+      <canvas id="sp-canvas" width="580" height="520"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- TAB 3: KNAPSACK SOLVER -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div id="tab-ks" class="tab-panel">
+  <div class="section-title">Knapsack Solver</div>
+  <div class="section-sub">Select survival items to pack, then compare the DP-optimal vs Greedy solutions.</div>
+  <div class="grid-2" style="grid-template-columns: 380px 1fr;">
+    <div>
+      <div class="panel">
+        <div class="label">Knapsack Capacity</div>
+        <div class="slider-group">
+          <label>Max weight: <span class="val" id="ks-cap-val">15</span> kg</label>
+          <input type="range" id="ks-cap" min="5" max="30" step="1" value="15" oninput="ksUpdateCap()">
+        </div>
+        <div class="knapsack-bar"><div class="knapsack-fill" id="ks-fill" style="width:0%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;margin-top:4px;">
+          <span id="ks-weight-label">0 / 15 kg</span>
+          <span id="ks-value-label">Value: 0</span>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="label">Survival Items (click to toggle)</div>
+        <div class="items-grid" id="ks-items" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px;"></div>
+      </div>
+      <div class="panel">
+        <div class="btn-row">
+          <button class="btn primary" onclick="ksSolveDP()">Solve with DP</button>
+          <button class="btn" onclick="ksSolveGreedy()">Greedy Solution</button>
+          <button class="btn" onclick="ksReset()">Reset</button>
+        </div>
+      </div>
+      <div id="ks-compare-box" class="panel" style="display:none;">
+        <div class="label">DP vs Greedy Comparison</div>
+        <div id="ks-compare-result" style="font-size:13px;line-height:1.8;"></div>
+      </div>
+      <div class="insight-box">
+        <strong>Recurrence:</strong><br>
+        <code class="mono" style="font-size:12px;color:#86efac;">dp[i][w] = max(dp[i-1][w], dp[i-1][w-w<sub>i</sub>] + v<sub>i</sub>)</code><br><br>
+        The DP approach guarantees the optimal solution in O(nW) time. Greedy (by value/weight ratio) is faster but can miss the true optimum.
+      </div>
+    </div>
+    <div>
+      <div class="panel" id="ks-dp-panel" style="display:none;">
+        <div class="label">DP Table (items vs capacity)</div>
+        <div id="ks-dp-table" style="overflow-x:auto;font-size:0;line-height:0;"></div>
+      </div>
+      <div class="panel" id="ks-visual-panel">
+        <div class="label">Selected Items</div>
+        <canvas id="ks-canvas" width="540" height="420"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================================================================= */
+/*  TAB SWITCHING                                                     */
+/* ================================================================= */
+function switchTab(id) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    const tabs = ['lp','sp','ks'];
+    b.classList.toggle('active', tabs[i] === id);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  if (id === 'lp') lpUpdate();
+  if (id === 'sp') spDraw();
+  if (id === 'ks') ksDrawVisual();
+}
+
+/* ================================================================= */
+/*  TAB 1: LINEAR PROGRAMMING                                        */
+/* ================================================================= */
+const lpCanvas = document.getElementById('lp-canvas');
+const lpCtx = lpCanvas.getContext('2d');
+let lpAnimFrame = null;
+
+function lpScale() {
+  const rhs1 = +document.getElementById('lp-rhs1').value;
+  const rhs2 = +document.getElementById('lp-rhs2').value;
+  const maxVal = Math.max(rhs1, rhs2, 12) + 2;
+  return { ox: 50, oy: lpCanvas.height - 50, sx: (lpCanvas.width - 80) / maxVal, sy: (lpCanvas.height - 80) / maxVal, maxVal };
+}
+
+function lpToCanvas(x, y) {
+  const s = lpScale();
+  return [s.ox + x * s.sx, s.oy - y * s.sy];
+}
+
+function lpComputeFeasible() {
+  const rhs1 = +document.getElementById('lp-rhs1').value;
+  const rhs2 = +document.getElementById('lp-rhs2').value;
+  // Constraints: x + 2y <= rhs1, 2x + y <= rhs2, x>=0, y>=0
+  // Corner candidates: intersections of each pair
+  const pts = [];
+  // Origin
+  pts.push([0, 0]);
+  // x-axis intercepts
+  const xInt1 = rhs1; // x + 0 <= rhs1 => x = rhs1
+  const xInt2 = rhs2 / 2; // 2x + 0 <= rhs2 => x = rhs2/2
+  // y-axis intercepts
+  const yInt1 = rhs1 / 2; // 0 + 2y <= rhs1 => y = rhs1/2
+  const yInt2 = rhs2; // 0 + y <= rhs2 => y = rhs2
+  // Intersection of x+2y=rhs1 and 2x+y=rhs2
+  // x + 2y = rhs1, 2x + y = rhs2
+  // From first: x = rhs1 - 2y. Sub: 2(rhs1-2y) + y = rhs2 => 2*rhs1 - 4y + y = rhs2 => y = (2*rhs1-rhs2)/3
+  const yInter = (2 * rhs1 - rhs2) / 3;
+  const xInter = rhs1 - 2 * yInter;
+
+  // Build feasible vertices in order
+  const vertices = [];
+  vertices.push([0, 0]);
+
+  // Along x-axis: min of the two x-intercepts
+  const xMax = Math.min(xInt1, xInt2);
+  if (xMax > 0) vertices.push([xMax, 0]);
+
+  // If constraints intersect in first quadrant
+  if (xInter > 1e-9 && yInter > 1e-9) {
+    // Check which x-intercept is smaller to determine order
+    if (xInt2 < xInt1) {
+      vertices.push([xInt2, 0]);
+      // Remove previous xMax push if same
+    }
+    vertices.length = 0; // Rebuild properly
+    vertices.push([0, 0]);
+    vertices.push([Math.min(xInt1, xInt2), 0]);
+    if (xInter > 0 && yInter > 0) vertices.push([xInter, yInter]);
+    vertices.push([0, Math.min(yInt1, yInt2)]);
+  } else {
+    vertices.length = 0;
+    vertices.push([0, 0]);
+    vertices.push([Math.min(xInt1, xInt2), 0]);
+    vertices.push([0, Math.min(yInt1, yInt2)]);
+  }
+
+  return vertices;
+}
+
+function lpEvalObj(x, y) {
+  const c1 = +document.getElementById('lp-c1').value;
+  const c2 = +document.getElementById('lp-c2').value;
+  return c1 * x + c2 * y;
+}
+
+function lpFindOptimal(vertices) {
+  let best = -Infinity, bestPt = [0, 0];
+  for (const v of vertices) {
+    const val = lpEvalObj(v[0], v[1]);
+    if (val > best) { best = val; bestPt = v; }
+  }
+  return { pt: bestPt, val: best };
+}
+
+let lpPulsePhase = 0;
+
+function lpDraw() {
+  const ctx = lpCtx;
+  const W = lpCanvas.width, H = lpCanvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const s = lpScale();
+  const c1 = +document.getElementById('lp-c1').value;
+  const c2 = +document.getElementById('lp-c2').value;
+  const rhs1 = +document.getElementById('lp-rhs1').value;
+  const rhs2 = +document.getElementById('lp-rhs2').value;
+
+  // Grid
+  ctx.strokeStyle = '#1a1f2e';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= s.maxVal; i += 2) {
+    const [gx, gy] = lpToCanvas(i, 0);
+    ctx.beginPath(); ctx.moveTo(gx, s.oy); ctx.lineTo(gx, s.oy - s.maxVal * s.sy); ctx.stroke();
+    const [, gy2] = lpToCanvas(0, i);
+    ctx.beginPath(); ctx.moveTo(s.ox, gy2); ctx.lineTo(s.ox + s.maxVal * s.sx, gy2); ctx.stroke();
+  }
+
+  // Axes
+  ctx.strokeStyle = '#4a5170';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(s.ox, 10); ctx.lineTo(s.ox, s.oy); ctx.lineTo(W - 10, s.oy); ctx.stroke();
+
+  // Axis labels
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '12px Inter';
+  ctx.textAlign = 'center';
+  for (let i = 0; i <= s.maxVal; i += 2) {
+    const [tx] = lpToCanvas(i, 0);
+    ctx.fillText(i, tx, s.oy + 18);
+    const [, ty] = lpToCanvas(0, i);
+    ctx.fillText(i, s.ox - 18, ty + 4);
+  }
+  ctx.fillText('x', W - 20, s.oy + 18);
+  ctx.fillText('y', s.ox - 18, 20);
+
+  // Feasible region
+  const vertices = lpComputeFeasible();
+  if (vertices.length >= 3) {
+    ctx.beginPath();
+    const [fx, fy] = lpToCanvas(vertices[0][0], vertices[0][1]);
+    ctx.moveTo(fx, fy);
+    for (let i = 1; i < vertices.length; i++) {
+      const [vx, vy] = lpToCanvas(vertices[i][0], vertices[i][1]);
+      ctx.lineTo(vx, vy);
+    }
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(200, 68, 26, 0.12)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(200, 68, 26, 0.5)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // Constraint lines (extended)
+  ctx.lineWidth = 1.5;
+  // Constraint 1: x + 2y = rhs1 => y = (rhs1 - x)/2
+  ctx.strokeStyle = '#7dd3fc';
+  ctx.beginPath();
+  const [c1x0, c1y0] = lpToCanvas(0, rhs1 / 2);
+  const [c1x1, c1y1] = lpToCanvas(rhs1, 0);
+  ctx.moveTo(c1x0, c1y0); ctx.lineTo(c1x1, c1y1); ctx.stroke();
+  ctx.fillStyle = '#7dd3fc';
+  ctx.font = '11px JetBrains Mono';
+  ctx.fillText('x+2y=' + rhs1, c1x0 + 4, c1y0 - 6);
+
+  // Constraint 2: 2x + y = rhs2 => y = rhs2 - 2x
+  ctx.strokeStyle = '#fbbf24';
+  ctx.beginPath();
+  const [c2x0, c2y0] = lpToCanvas(0, rhs2);
+  const [c2x1, c2y1] = lpToCanvas(rhs2 / 2, 0);
+  ctx.moveTo(c2x0, c2y0); ctx.lineTo(c2x1, c2y1); ctx.stroke();
+  ctx.fillStyle = '#fbbf24';
+  ctx.fillText('2x+y=' + rhs2, c2x1 + 4, c2y1 - 6);
+
+  // Iso-profit line
+  const zVal = +document.getElementById('lp-z-slider').value;
+  document.getElementById('lp-z-val').textContent = zVal;
+  if (c1 > 0 || c2 > 0) {
+    ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = 'rgba(200, 68, 26, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    // Z = c1*x + c2*y => y = (Z - c1*x)/c2 if c2 != 0
+    if (c2 > 0) {
+      const [ix0, iy0] = lpToCanvas(0, zVal / c2);
+      const [ix1, iy1] = lpToCanvas(zVal / c1 || s.maxVal, 0);
+      if (c1 > 0) {
+        ctx.moveTo(ix0, iy0); ctx.lineTo(ix1, iy1);
+      } else {
+        ctx.moveTo(ix0, iy0); ctx.lineTo(ix0 + 400, iy0);
+      }
+    } else if (c1 > 0) {
+      const xp = zVal / c1;
+      const [ix, iy] = lpToCanvas(xp, 0);
+      ctx.moveTo(ix, 10); ctx.lineTo(ix, s.oy);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#c8441a';
+    ctx.font = '11px JetBrains Mono';
+    if (c2 > 0) {
+      const [lx, ly] = lpToCanvas(0, zVal / c2);
+      ctx.fillText('Z=' + zVal, lx + 4, ly - 6);
+    }
+  }
+
+  // Corner points
+  ctx.font = '11px JetBrains Mono';
+  for (const v of vertices) {
+    const [cx, cy] = lpToCanvas(v[0], v[1]);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#2d3147';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = '#94a3b8';
+    const label = '(' + v[0].toFixed(1) + ', ' + v[1].toFixed(1) + ')';
+    ctx.fillText(label, cx + 8, cy - 8);
+  }
+
+  // Optimal vertex (pulsing)
+  const opt = lpFindOptimal(vertices);
+  lpPulsePhase += 0.06;
+  const pulseR = 8 + 4 * Math.sin(lpPulsePhase);
+  const [ox, oy] = lpToCanvas(opt.pt[0], opt.pt[1]);
+  ctx.beginPath(); ctx.arc(ox, oy, pulseR, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(200, 68, 26, ' + (0.4 + 0.3 * Math.sin(lpPulsePhase)) + ')';
+  ctx.fill();
+  ctx.beginPath(); ctx.arc(ox, oy, 6, 0, Math.PI * 2);
+  ctx.fillStyle = '#c8441a'; ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+  // Optimal label
+  ctx.fillStyle = '#c8441a';
+  ctx.font = 'bold 12px JetBrains Mono';
+  ctx.fillText('Optimal: Z=' + opt.val.toFixed(1), ox + 12, oy - 12);
+
+  // Update display
+  document.getElementById('lp-obj-display').textContent = 'Maximize Z = ' + c1 + 'x + ' + c2 + 'y';
+  document.getElementById('lp-result').innerHTML =
+    'x* = <span style="color:#c8441a;font-weight:700;">' + opt.pt[0].toFixed(2) + '</span>, ' +
+    'y* = <span style="color:#c8441a;font-weight:700;">' + opt.pt[1].toFixed(2) + '</span><br>' +
+    'Z* = <span style="color:#c8441a;font-weight:700;font-size:18px;">' + opt.val.toFixed(2) + '</span>';
+
+  lpAnimFrame = requestAnimationFrame(lpDraw);
+}
+
+function lpUpdate() {
+  document.getElementById('lp-c1-val').textContent = document.getElementById('lp-c1').value;
+  document.getElementById('lp-c2-val').textContent = document.getElementById('lp-c2').value;
+  document.getElementById('lp-rhs1-val').textContent = document.getElementById('lp-rhs1').value;
+  document.getElementById('lp-rhs2-val').textContent = document.getElementById('lp-rhs2').value;
+  // Update z-slider max
+  const opt = lpFindOptimal(lpComputeFeasible());
+  document.getElementById('lp-z-slider').max = Math.ceil(opt.val + 10);
+}
+
+function lpSweep() {
+  // Just triggers redraw via animation loop
+}
+
+// Start LP animation
+lpUpdate();
+lpDraw();
+
+
+/* ================================================================= */
+/*  TAB 2: SHORTEST PATH                                             */
+/* ================================================================= */
+const spCanvas = document.getElementById('sp-canvas');
+const spCtx = spCanvas.getContext('2d');
+
+let spGraph = { nodes: [], edges: [] };
+let spStart = 0, spEnd = -1;
+let spState = { distances: [], visited: [], current: -1, prev: [], path: [], running: false };
+let spAnimQueue = [];
+let spTimers = [];
+
+function spInitGraph() {
+  const positions = [
+    [90, 80], [280, 50], [480, 90],
+    [60, 280], [260, 260], [460, 280],
+    [160, 440], [400, 430]
+  ];
+  const names = ['A','B','C','D','E','F','G','H'];
+  const nodes = positions.map((p, i) => ({ x: p[0], y: p[1], name: names[i], id: i }));
+
+  const edges = [
+    [0,1,4],[0,3,2],[1,2,5],[1,4,6],[2,5,3],
+    [3,4,3],[3,6,7],[4,5,2],[4,7,5],[5,7,4],
+    [6,7,6],[1,3,8]
+  ];
+
+  spGraph = {
+    nodes,
+    edges: edges.map(e => ({ from: e[0], to: e[1], weight: e[2] }))
+  };
+  spStart = 0;
+  spEnd = nodes.length - 1;
+  spResetState();
+  spBuildNodeButtons();
+  spBuildDistTable();
+  spDraw();
+}
+
+function spNewGraph() {
+  spClearTimers();
+  const n = 6 + Math.floor(Math.random() * 3); // 6-8 nodes
+  const names = 'ABCDEFGHIJ'.split('');
+  const nodes = [];
+  const pad = 60;
+  const W = spCanvas.width - 2 * pad, H = spCanvas.height - 2 * pad;
+  for (let i = 0; i < n; i++) {
+    let x, y, ok;
+    for (let tries = 0; tries < 100; tries++) {
+      x = pad + Math.random() * W;
+      y = pad + Math.random() * H;
+      ok = true;
+      for (const nd of nodes) {
+        if (Math.hypot(nd.x - x, nd.y - y) < 90) { ok = false; break; }
+      }
+      if (ok) break;
+    }
+    nodes.push({ x, y, name: names[i], id: i });
+  }
+
+  const edges = [];
+  const added = new Set();
+  // Ensure connected: build spanning tree
+  const inTree = [0];
+  const outTree = [];
+  for (let i = 1; i < n; i++) outTree.push(i);
+  while (outTree.length > 0) {
+    const u = inTree[Math.floor(Math.random() * inTree.length)];
+    const vi = Math.floor(Math.random() * outTree.length);
+    const v = outTree[vi];
+    outTree.splice(vi, 1);
+    inTree.push(v);
+    const w = 1 + Math.floor(Math.random() * 9);
+    edges.push({ from: u, to: v, weight: w });
+    added.add(u + ',' + v);
+  }
+  // Add extra edges
+  const extra = Math.floor(n * 0.8);
+  for (let e = 0; e < extra; e++) {
+    const u = Math.floor(Math.random() * n);
+    let v = Math.floor(Math.random() * n);
+    if (u === v) continue;
+    const key = u + ',' + v;
+    if (added.has(key)) continue;
+    added.add(key);
+    edges.push({ from: u, to: v, weight: 1 + Math.floor(Math.random() * 9) });
+  }
+
+  spGraph = { nodes, edges };
+  spStart = 0;
+  spEnd = n - 1;
+  spResetState();
+  spBuildNodeButtons();
+  spBuildDistTable();
+  spDraw();
+  document.getElementById('sp-result-box').style.display = 'none';
+  document.getElementById('sp-compare-box').style.display = 'none';
+}
+
+function spResetState() {
+  const n = spGraph.nodes.length;
+  spState = {
+    distances: new Array(n).fill(Infinity),
+    visited: new Array(n).fill(false),
+    current: -1,
+    prev: new Array(n).fill(-1),
+    path: [],
+    running: false
+  };
+  spState.distances[spStart] = 0;
+}
+
+function spReset() {
+  spClearTimers();
+  spResetState();
+  spBuildDistTable();
+  spDraw();
+  document.getElementById('sp-result-box').style.display = 'none';
+  document.getElementById('sp-compare-box').style.display = 'none';
+}
+
+function spClearTimers() {
+  for (const t of spTimers) clearTimeout(t);
+  spTimers = [];
+  spState.running = false;
+}
+
+function spBuildNodeButtons() {
+  const container = document.getElementById('sp-node-select');
+  container.innerHTML = '';
+  spGraph.nodes.forEach((nd, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'node-btn' + (i === spStart ? ' start' : '') + (i === spEnd ? ' end' : '');
+    btn.textContent = nd.name;
+    btn.onclick = () => {
+      if (spState.running) return;
+      if (spStart === i) return;
+      if (spEnd === i) { spEnd = -1; }
+      else if (spEnd === -1 || spStart !== -1) {
+        if (spEnd !== -1) spStart = spEnd;
+        spEnd = i;
+      }
+      // Simple: first click = start, second = end
+      if (spEnd === -1) { spStart = i; }
+      spResetState();
+      spBuildNodeButtons();
+      spBuildDistTable();
+      spDraw();
+    };
+    container.appendChild(btn);
+  });
+}
+
+function spBuildDistTable() {
+  const table = document.getElementById('sp-dist-table');
+  let html = '<tr><th>Node</th>';
+  spGraph.nodes.forEach(n => { html += '<th>' + n.name + '</th>'; });
+  html += '</tr><tr id="sp-dist-row"><td style="color:#c8441a;font-weight:600;">Dist</td>';
+  spGraph.nodes.forEach((n, i) => {
+    const d = spState.distances[i];
+    html += '<td>' + (d === Infinity ? '&infin;' : d) + '</td>';
+  });
+  html += '</tr>';
+  table.innerHTML = html;
+}
+
+function spGetSpeed() {
+  const v = +document.getElementById('sp-speed').value;
+  return [1200, 800, 500, 250, 100][v - 1];
+}
+
+function spRunDijkstra() {
+  if (spState.running) return;
+  if (spEnd === -1) { spEnd = spGraph.nodes.length - 1; spBuildNodeButtons(); }
+  spResetState();
+  spState.running = true;
+  const n = spGraph.nodes.length;
+  const dist = spState.distances;
+  const visited = spState.visited;
+  const prev = spState.prev;
+  const steps = [];
+
+  // Build adjacency
+  const adj = Array.from({ length: n }, () => []);
+  for (const e of spGraph.edges) {
+    adj[e.from].push({ to: e.to, w: e.weight });
+    adj[e.to].push({ to: e.from, w: e.weight }); // undirected for visualization
+  }
+
+  // Dijkstra steps
+  const d = new Array(n).fill(Infinity);
+  const v = new Array(n).fill(false);
+  const p = new Array(n).fill(-1);
+  d[spStart] = 0;
+
+  for (let step = 0; step < n; step++) {
+    let u = -1, best = Infinity;
+    for (let i = 0; i < n; i++) {
+      if (!v[i] && d[i] < best) { best = d[i]; u = i; }
+    }
+    if (u === -1) break;
+    v[u] = true;
+    steps.push({ type: 'visit', node: u, distances: [...d], visited: [...v] });
+
+    for (const edge of adj[u]) {
+      if (!v[edge.to] && d[u] + edge.w < d[edge.to]) {
+        d[edge.to] = d[u] + edge.w;
+        p[edge.to] = u;
+        steps.push({ type: 'relax', from: u, to: edge.to, distances: [...d], visited: [...v] });
+      }
+    }
+  }
+
+  // Build path
+  const path = [];
+  let cur = spEnd;
+  while (cur !== -1) { path.unshift(cur); cur = p[cur]; }
+  steps.push({ type: 'done', path, distances: [...d], prev: [...p] });
+
+  spAnimateSteps(steps, 'Dijkstra');
+}
+
+function spRunBellman() {
+  if (spState.running) return;
+  if (spEnd === -1) { spEnd = spGraph.nodes.length - 1; spBuildNodeButtons(); }
+  spResetState();
+  spState.running = true;
+  const n = spGraph.nodes.length;
+  const steps = [];
+  const d = new Array(n).fill(Infinity);
+  const p = new Array(n).fill(-1);
+  const v = new Array(n).fill(false);
+  d[spStart] = 0;
+
+  // All edges (bidirectional)
+  const allEdges = [];
+  for (const e of spGraph.edges) {
+    allEdges.push({ from: e.from, to: e.to, w: e.weight });
+    allEdges.push({ from: e.to, to: e.from, w: e.weight });
+  }
+
+  for (let i = 0; i < n - 1; i++) {
+    let changed = false;
+    for (const e of allEdges) {
+      if (d[e.from] !== Infinity && d[e.from] + e.w < d[e.to]) {
+        d[e.to] = d[e.from] + e.w;
+        p[e.to] = e.from;
+        v[e.from] = true;
+        changed = true;
+        steps.push({ type: 'relax', from: e.from, to: e.to, distances: [...d], visited: [...v] });
+      }
+    }
+    v.fill(false);
+    d.forEach((dd, idx) => { if (dd < Infinity) v[idx] = true; });
+    steps.push({ type: 'visit', node: -1, distances: [...d], visited: [...v] });
+    if (!changed) break;
+  }
+
+  const path = [];
+  let cur = spEnd;
+  while (cur !== -1) { path.unshift(cur); cur = p[cur]; }
+  steps.push({ type: 'done', path, distances: [...d], prev: [...p] });
+
+  spAnimateSteps(steps, 'Bellman-Ford');
+}
+
+function spAnimateSteps(steps, algoName) {
+  const delay = spGetSpeed();
+  let visitOrder = [];
+  steps.forEach((step, i) => {
+    const t = setTimeout(() => {
+      if (step.type === 'visit') {
+        if (step.node >= 0) {
+          spState.current = step.node;
+          spState.visited = [...step.visited];
+          visitOrder.push(step.node);
+        }
+        spState.distances = [...step.distances];
+      } else if (step.type === 'relax') {
+        spState.distances = [...step.distances];
+        spState.visited = [...step.visited];
+      } else if (step.type === 'done') {
+        spState.path = step.path;
+        spState.current = -1;
+        spState.prev = [...step.prev];
+        spState.distances = [...step.distances];
+        spState.running = false;
+        // Show result
+        const d = step.distances[spEnd];
+        const box = document.getElementById('sp-result-box');
+        box.style.display = 'block';
+        const pathStr = step.path.map(i => spGraph.nodes[i].name).join(' -> ');
+        document.getElementById('sp-result').innerHTML =
+          '<strong style="color:#c8441a;">' + algoName + '</strong><br>' +
+          'Shortest distance: <span style="color:#86efac;font-weight:700;font-size:18px;">' + (d === Infinity ? 'Unreachable' : d) + '</span><br>' +
+          'Path: <span style="color:#7dd3fc;">' + pathStr + '</span><br>' +
+          'Visit order: <span style="color:#94a3b8;">' + visitOrder.map(i => spGraph.nodes[i].name).join(', ') + '</span>';
+        // Store for compare
+        spLastResult = { algo: algoName, dist: d, path: step.path, visitOrder: [...visitOrder] };
+      }
+      spBuildDistTable();
+      spDraw();
+    }, i * delay);
+    spTimers.push(t);
+  });
+}
+
+let spLastResult = null;
+let spCompareResults = [];
+
+function spCompare() {
+  if (spState.running) return;
+  spCompareResults = [];
+  // Run Dijkstra first, then Bellman-Ford
+  spResetState();
+  const n = spGraph.nodes.length;
+  const adj = Array.from({ length: n }, () => []);
+  for (const e of spGraph.edges) {
+    adj[e.from].push({ to: e.to, w: e.weight });
+    adj[e.to].push({ to: e.from, w: e.weight });
+  }
+
+  // Quick Dijkstra
+  {
+    const d = new Array(n).fill(Infinity), v = new Array(n).fill(false), p = new Array(n).fill(-1);
+    d[spStart] = 0;
+    const order = [];
+    for (let step = 0; step < n; step++) {
+      let u = -1, best = Infinity;
+      for (let i = 0; i < n; i++) { if (!v[i] && d[i] < best) { best = d[i]; u = i; } }
+      if (u === -1) break;
+      v[u] = true; order.push(u);
+      for (const edge of adj[u]) {
+        if (!v[edge.to] && d[u] + edge.w < d[edge.to]) { d[edge.to] = d[u] + edge.w; p[edge.to] = u; }
+      }
+    }
+    const path = []; let cur = spEnd; while (cur !== -1) { path.unshift(cur); cur = p[cur]; }
+    spCompareResults.push({ algo: 'Dijkstra', dist: d[spEnd], path, visitOrder: order, relaxations: 0 });
+  }
+
+  // Quick Bellman-Ford
+  {
+    const d = new Array(n).fill(Infinity), p = new Array(n).fill(-1);
+    d[spStart] = 0;
+    const allEdges = [];
+    for (const e of spGraph.edges) {
+      allEdges.push({ from: e.from, to: e.to, w: e.weight });
+      allEdges.push({ from: e.to, to: e.from, w: e.weight });
+    }
+    const order = [];
+    let relaxations = 0;
+    for (let i = 0; i < n - 1; i++) {
+      for (const e of allEdges) {
+        if (d[e.from] !== Infinity && d[e.from] + e.w < d[e.to]) {
+          d[e.to] = d[e.from] + e.w;
+          p[e.to] = e.from;
+          if (!order.includes(e.to)) order.push(e.to);
+          relaxations++;
+        }
+      }
+    }
+    const path = []; let cur = spEnd; while (cur !== -1) { path.unshift(cur); cur = p[cur]; }
+    spCompareResults.push({ algo: 'Bellman-Ford', dist: d[spEnd], path, visitOrder: order, relaxations });
+  }
+
+  const box = document.getElementById('sp-compare-box');
+  box.style.display = 'block';
+  let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
+  for (const r of spCompareResults) {
+    html += '<div style="background:#0f172a;border:1px solid #2d3147;border-radius:8px;padding:12px;">';
+    html += '<div style="color:#c8441a;font-weight:700;margin-bottom:8px;">' + r.algo + '</div>';
+    html += '<div style="font-size:12px;color:#94a3b8;">Distance: <span style="color:#86efac;font-weight:600;">' + r.dist + '</span></div>';
+    html += '<div style="font-size:12px;color:#94a3b8;">Path: <span style="color:#7dd3fc;">' + r.path.map(i => spGraph.nodes[i].name).join(' -> ') + '</span></div>';
+    html += '<div style="font-size:12px;color:#94a3b8;">Visit order: ' + r.visitOrder.map(i => spGraph.nodes[i].name).join(', ') + '</div>';
+    html += '</div>';
+  }
+  html += '</div>';
+  html += '<div style="margin-top:10px;font-size:12px;color:#94a3b8;">Both algorithms find the same shortest distance. Dijkstra uses a greedy approach (picks closest unvisited node), while Bellman-Ford relaxes all edges in each pass — simpler but slower.</div>';
+  document.getElementById('sp-compare-result').innerHTML = html;
+}
+
+function spDraw() {
+  const ctx = spCtx;
+  const W = spCanvas.width, H = spCanvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Draw edges
+  for (const e of spGraph.edges) {
+    const from = spGraph.nodes[e.from], to = spGraph.nodes[e.to];
+    const inPath = spState.path.length > 1 && spIsEdgeInPath(e.from, e.to);
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.strokeStyle = inPath ? '#7dd3fc' : '#2d3147';
+    ctx.lineWidth = inPath ? 4 : 2;
+    ctx.stroke();
+
+    // Arrow
+    const dx = to.x - from.x, dy = to.y - from.y;
+    const len = Math.hypot(dx, dy);
+    const nx = dx / len, ny = dy / len;
+    const mx = (from.x + to.x) / 2, my = (from.y + to.y) / 2;
+    const arrowSize = 8;
+    ctx.beginPath();
+    ctx.moveTo(mx + ny * arrowSize, my - nx * arrowSize);
+    ctx.lineTo(mx + nx * arrowSize, my + ny * arrowSize);
+    ctx.lineTo(mx - ny * arrowSize, my + nx * arrowSize);
+    ctx.fillStyle = inPath ? '#7dd3fc' : '#3d4260';
+    ctx.fill();
+
+    // Weight label
+    const ox = -ny * 14, oy = nx * 14;
+    ctx.fillStyle = inPath ? '#7dd3fc' : '#94a3b8';
+    ctx.font = 'bold 12px JetBrains Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText(e.weight, mx + ox, my + oy + 4);
+  }
+
+  // Draw nodes
+  for (let i = 0; i < spGraph.nodes.length; i++) {
+    const nd = spGraph.nodes[i];
+    let color = '#4a5170'; // unvisited
+    let fill = '#1e2130';
+    let textColor = '#e2e8f0';
+
+    if (spState.path.includes(i) && !spState.running) {
+      color = '#7dd3fc'; fill = '#0c4a6e'; textColor = '#7dd3fc';
+    } else if (spState.current === i) {
+      color = '#fbbf24'; fill = '#451a03'; textColor = '#fbbf24';
+    } else if (spState.visited[i]) {
+      color = '#22c55e'; fill = '#14532d'; textColor = '#86efac';
+    }
+    if (i === spStart) { color = '#22c55e'; if (!spState.visited[i] && spState.current !== i) fill = '#14532d'; textColor = '#86efac'; }
+    if (i === spEnd) { color = '#ef4444'; if (!spState.path.includes(i) || spState.running) { fill = '#450a0a'; textColor = '#fca5a5'; } }
+
+    ctx.beginPath();
+    ctx.arc(nd.x, nd.y, 22, 0, Math.PI * 2);
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.fillStyle = textColor;
+    ctx.font = 'bold 14px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText(nd.name, nd.x, nd.y + 5);
+
+    // Distance badge
+    const d = spState.distances[i];
+    if (d < Infinity && d > 0) {
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(nd.x + 18, nd.y - 18, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#c8441a';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = '#c8441a';
+      ctx.font = 'bold 10px JetBrains Mono';
+      ctx.fillText(d, nd.x + 18, nd.y - 14);
+    }
+  }
+}
+
+function spIsEdgeInPath(from, to) {
+  const p = spState.path;
+  for (let i = 0; i < p.length - 1; i++) {
+    if ((p[i] === from && p[i + 1] === to) || (p[i] === to && p[i + 1] === from)) return true;
+  }
+  return false;
+}
+
+// Click on canvas to select nodes
+spCanvas.addEventListener('click', function(evt) {
+  if (spState.running) return;
+  const rect = spCanvas.getBoundingClientRect();
+  const mx = (evt.clientX - rect.left) * (spCanvas.width / rect.width);
+  const my = (evt.clientY - rect.top) * (spCanvas.height / rect.height);
+  for (let i = 0; i < spGraph.nodes.length; i++) {
+    const nd = spGraph.nodes[i];
+    if (Math.hypot(nd.x - mx, nd.y - my) < 26) {
+      if (i === spStart) return;
+      spEnd = i;
+      spResetState();
+      spBuildNodeButtons();
+      spBuildDistTable();
+      spDraw();
+      return;
+    }
+  }
+});
+
+spInitGraph();
+
+
+/* ================================================================= */
+/*  TAB 3: KNAPSACK SOLVER                                           */
+/* ================================================================= */
+const ksCanvas = document.getElementById('ks-canvas');
+const ksCtx = ksCanvas.getContext('2d');
+
+const ksItems = [
+  { name: 'Water',       weight: 3, value: 10, icon: '\u{1F4A7}' },
+  { name: 'Food',        weight: 4, value: 8,  icon: '\u{1F35E}' },
+  { name: 'Rope',        weight: 2, value: 5,  icon: '\u{1FA22}' },
+  { name: 'Flashlight',  weight: 1, value: 4,  icon: '\u{1F526}' },
+  { name: 'Map',         weight: 1, value: 3,  icon: '\u{1F5FA}' },
+  { name: 'First Aid',   weight: 3, value: 9,  icon: '\u{1FA79}' },
+  { name: 'Tent',        weight: 6, value: 12, icon: '\u{26FA}' },
+  { name: 'Sleeping Bag',weight: 5, value: 7,  icon: '\u{1F6CF}' },
+  { name: 'Compass',     weight: 1, value: 4,  icon: '\u{1F9ED}' },
+  { name: 'Radio',       weight: 2, value: 6,  icon: '\u{1F4FB}' }
+];
+
+let ksSelected = new Array(ksItems.length).fill(false);
+let ksDpResult = null;
+let ksGreedyResult = null;
+
+function ksBuildItems() {
+  const container = document.getElementById('ks-items');
+  container.innerHTML = '';
+  ksItems.forEach((item, i) => {
+    const card = document.createElement('div');
+    card.className = 'item-card' + (ksSelected[i] ? ' selected' : '');
+    card.innerHTML =
+      '<div class="item-icon">' + item.icon + '</div>' +
+      '<div class="item-name">' + item.name + '</div>' +
+      '<div class="item-stats">' + item.weight + ' kg | $' + item.value + '</div>' +
+      '<div class="item-stats" style="color:#c8441a;">' + (item.value / item.weight).toFixed(1) + ' $/kg</div>';
+    card.onclick = () => {
+      ksSelected[i] = !ksSelected[i];
+      ksBuildItems();
+      ksUpdateBar();
+      ksDrawVisual();
+    };
+    container.appendChild(card);
+  });
+}
+
+function ksUpdateCap() {
+  document.getElementById('ks-cap-val').textContent = document.getElementById('ks-cap').value;
+  ksUpdateBar();
+  ksDrawVisual();
+}
+
+function ksUpdateBar() {
+  const cap = +document.getElementById('ks-cap').value;
+  let totalW = 0, totalV = 0;
+  ksItems.forEach((item, i) => {
+    if (ksSelected[i]) { totalW += item.weight; totalV += item.value; }
+  });
+  const pct = Math.min(100, (totalW / cap) * 100);
+  const fill = document.getElementById('ks-fill');
+  fill.style.width = pct + '%';
+  fill.className = 'knapsack-fill' + (totalW > cap ? ' over' : '');
+  document.getElementById('ks-weight-label').textContent = totalW + ' / ' + cap + ' kg';
+  document.getElementById('ks-value-label').textContent = 'Value: $' + totalV;
+}
+
+function ksReset() {
+  ksSelected.fill(false);
+  ksDpResult = null;
+  ksGreedyResult = null;
+  ksBuildItems();
+  ksUpdateBar();
+  ksDrawVisual();
+  document.getElementById('ks-dp-panel').style.display = 'none';
+  document.getElementById('ks-compare-box').style.display = 'none';
+}
+
+function ksSolveDP() {
+  const cap = +document.getElementById('ks-cap').value;
+  const n = ksItems.length;
+  const dp = Array.from({ length: n + 1 }, () => new Array(cap + 1).fill(0));
+
+  for (let i = 1; i <= n; i++) {
+    for (let w = 0; w <= cap; w++) {
+      dp[i][w] = dp[i - 1][w];
+      if (ksItems[i - 1].weight <= w) {
+        dp[i][w] = Math.max(dp[i][w], dp[i - 1][w - ksItems[i - 1].weight] + ksItems[i - 1].value);
+      }
+    }
+  }
+
+  // Traceback
+  const chosen = [];
+  let w = cap;
+  for (let i = n; i >= 1; i--) {
+    if (dp[i][w] !== dp[i - 1][w]) {
+      chosen.push(i - 1);
+      w -= ksItems[i - 1].weight;
+    }
+  }
+  chosen.reverse();
+
+  ksDpResult = { dp, chosen, value: dp[n][cap] };
+  ksSelected.fill(false);
+  chosen.forEach(i => { ksSelected[i] = true; });
+  ksBuildItems();
+  ksUpdateBar();
+  ksAnimateDP(dp, chosen);
+  ksShowCompare();
+}
+
+function ksAnimateDP(dp, chosen) {
+  const cap = +document.getElementById('ks-cap').value;
+  const n = ksItems.length;
+  const panel = document.getElementById('ks-dp-panel');
+  panel.style.display = 'block';
+  const container = document.getElementById('ks-dp-table');
+
+  // Build static table
+  let html = '<div style="display:inline-block;">';
+  // Header row
+  html += '<div style="display:flex;">';
+  html += '<div class="dp-cell header" style="width:72px;font-size:10px;">Item\\W</div>';
+  for (let w = 0; w <= cap; w++) {
+    html += '<div class="dp-cell header">' + w + '</div>';
+  }
+  html += '</div>';
+  // Data rows
+  for (let i = 0; i <= n; i++) {
+    html += '<div style="display:flex;">';
+    html += '<div class="dp-cell header" style="width:72px;font-size:9px;text-align:left;padding-left:4px;">' + (i === 0 ? 'None' : ksItems[i - 1].name.substring(0, 6)) + '</div>';
+    for (let w = 0; w <= cap; w++) {
+      html += '<div class="dp-cell" id="dp-' + i + '-' + w + '">0</div>';
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+  container.innerHTML = html;
+
+  // Animate fill
+  const delay = Math.max(15, 800 / (n * (cap + 1)));
+  let step = 0;
+  const steps = [];
+  for (let i = 1; i <= n; i++) {
+    for (let w = 0; w <= cap; w++) {
+      steps.push({ i, w });
+    }
+  }
+
+  function animStep() {
+    if (step >= steps.length) {
+      // Highlight chosen cells
+      let ww = cap;
+      for (let i = n; i >= 1; i--) {
+        if (dp[i][ww] !== dp[i - 1][ww]) {
+          const cell = document.getElementById('dp-' + i + '-' + ww);
+          if (cell) cell.className = 'dp-cell chosen';
+          ww -= ksItems[i - 1].weight;
+        }
+      }
+      ksDrawVisual();
+      return;
+    }
+    const { i, w } = steps[step];
+    const cell = document.getElementById('dp-' + i + '-' + w);
+    if (cell) {
+      cell.textContent = dp[i][w];
+      cell.className = 'dp-cell highlight';
+      // Unhighlight after
+      setTimeout(() => {
+        cell.className = 'dp-cell filled';
+      }, delay * 2);
+    }
+    step++;
+    setTimeout(animStep, delay);
+  }
+  animStep();
+}
+
+function ksSolveGreedy() {
+  const cap = +document.getElementById('ks-cap').value;
+  // Sort by value/weight ratio
+  const indices = ksItems.map((_, i) => i);
+  indices.sort((a, b) => (ksItems[b].value / ksItems[b].weight) - (ksItems[a].value / ksItems[a].weight));
+
+  const chosen = [];
+  let remaining = cap;
+  for (const i of indices) {
+    if (ksItems[i].weight <= remaining) {
+      chosen.push(i);
+      remaining -= ksItems[i].weight;
+    }
+  }
+
+  let totalV = 0;
+  chosen.forEach(i => { totalV += ksItems[i].value; });
+
+  ksGreedyResult = { chosen, value: totalV };
+  ksSelected.fill(false);
+  chosen.forEach(i => { ksSelected[i] = true; });
+  ksBuildItems();
+  ksUpdateBar();
+  ksDrawVisual();
+  ksShowCompare();
+}
+
+function ksShowCompare() {
+  if (!ksDpResult && !ksGreedyResult) return;
+  // Compute both if not already
+  const cap = +document.getElementById('ks-cap').value;
+  if (!ksDpResult) {
+    // Quick DP
+    const n = ksItems.length;
+    const dp = Array.from({ length: n + 1 }, () => new Array(cap + 1).fill(0));
+    for (let i = 1; i <= n; i++) {
+      for (let w = 0; w <= cap; w++) {
+        dp[i][w] = dp[i - 1][w];
+        if (ksItems[i - 1].weight <= w) dp[i][w] = Math.max(dp[i][w], dp[i - 1][w - ksItems[i - 1].weight] + ksItems[i - 1].value);
+      }
+    }
+    const chosen = []; let w = cap;
+    for (let i = n; i >= 1; i--) { if (dp[i][w] !== dp[i - 1][w]) { chosen.push(i - 1); w -= ksItems[i - 1].weight; } }
+    ksDpResult = { chosen: chosen.reverse(), value: dp[n][cap] };
+  }
+  if (!ksGreedyResult) {
+    const indices = ksItems.map((_, i) => i);
+    indices.sort((a, b) => (ksItems[b].value / ksItems[b].weight) - (ksItems[a].value / ksItems[a].weight));
+    const chosen = []; let rem = cap;
+    for (const i of indices) { if (ksItems[i].weight <= rem) { chosen.push(i); rem -= ksItems[i].weight; } }
+    let totalV = 0; chosen.forEach(i => { totalV += ksItems[i].value; });
+    ksGreedyResult = { chosen, value: totalV };
+  }
+
+  const box = document.getElementById('ks-compare-box');
+  box.style.display = 'block';
+  const dpW = ksDpResult.chosen.reduce((s, i) => s + ksItems[i].weight, 0);
+  const grW = ksGreedyResult.chosen.reduce((s, i) => s + ksItems[i].weight, 0);
+  const same = ksDpResult.value === ksGreedyResult.value;
+
+  let html = '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;">';
+  html += '<span class="compare-box compare-dp">DP Optimal: $' + ksDpResult.value + ' (' + dpW + ' kg)</span>';
+  html += '<span class="compare-box compare-greedy">Greedy: $' + ksGreedyResult.value + ' (' + grW + ' kg)</span>';
+  html += '</div>';
+  html += '<div style="font-size:12px;color:#94a3b8;">';
+  html += 'DP items: ' + ksDpResult.chosen.map(i => ksItems[i].name).join(', ') + '<br>';
+  html += 'Greedy items: ' + ksGreedyResult.chosen.map(i => ksItems[i].name).join(', ') + '<br>';
+  if (same) {
+    html += '<span style="color:#86efac;">Both methods found the same optimal solution!</span>';
+  } else {
+    html += '<span style="color:#fbbf24;">Greedy missed the optimal by $' + (ksDpResult.value - ksGreedyResult.value) + '. This shows why DP is needed for guaranteed optimality.</span>';
+  }
+  html += '</div>';
+  document.getElementById('ks-compare-result').innerHTML = html;
+}
+
+function ksDrawVisual() {
+  const ctx = ksCtx;
+  const W = ksCanvas.width, H = ksCanvas.height;
+  ctx.clearRect(0, 0, W, H);
+  const cap = +document.getElementById('ks-cap').value;
+
+  // Draw knapsack outline
+  const bx = 20, by = 30, bw = W - 40, bh = H - 60;
+  ctx.strokeStyle = '#2d3147';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);
+  ctx.strokeRect(bx, by, bw, bh);
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '12px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('Knapsack (capacity: ' + cap + ' kg)', W / 2, by - 10);
+
+  // Draw selected items as stacked boxes
+  const selectedItems = [];
+  ksItems.forEach((item, i) => {
+    if (ksSelected[i]) selectedItems.push({ ...item, idx: i });
+  });
+
+  if (selectedItems.length === 0) {
+    ctx.fillStyle = '#4a5170';
+    ctx.font = '14px Inter';
+    ctx.fillText('Click items or run a solver to pack the knapsack', W / 2, H / 2);
+    return;
+  }
+
+  let totalW = selectedItems.reduce((s, it) => s + it.weight, 0);
+  let totalV = selectedItems.reduce((s, it) => s + it.value, 0);
+
+  // Stack items bottom up
+  const gap = 6;
+  const maxItemH = Math.max(30, (bh - (selectedItems.length + 1) * gap) / selectedItems.length);
+  let yy = by + bh - gap;
+
+  for (const item of selectedItems) {
+    const iw = bw - 20;
+    const ih = Math.min(maxItemH, Math.max(30, (item.weight / cap) * (bh - 40)));
+    yy -= ih;
+
+    // Item box
+    const grad = ctx.createLinearGradient(bx + 10, yy, bx + 10 + iw, yy);
+    grad.addColorStop(0, 'rgba(200, 68, 26, 0.25)');
+    grad.addColorStop(1, 'rgba(200, 68, 26, 0.08)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(bx + 10, yy, iw, ih);
+    ctx.strokeStyle = '#c8441a';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(bx + 10, yy, iw, ih);
+
+    // Item info
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '13px Inter';
+    ctx.textAlign = 'left';
+    const label = item.icon + ' ' + item.name + '  (' + item.weight + ' kg, $' + item.value + ')';
+    ctx.fillText(label, bx + 20, yy + ih / 2 + 5);
+
+    yy -= gap;
+  }
+
+  // Summary
+  ctx.fillStyle = totalW > cap ? '#ef4444' : '#86efac';
+  ctx.font = 'bold 14px JetBrains Mono';
+  ctx.textAlign = 'center';
+  ctx.fillText('Total: ' + totalW + '/' + cap + ' kg   Value: $' + totalV, W / 2, H - 10);
+}
+
+ksBuildItems();
+ksUpdateBar();
+ksDrawVisual();
+</script>
+</body>
+</html>

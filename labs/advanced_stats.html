@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Interactive power analysis calculator: visualize sample size, effect size, significance level, and statistical power.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced Statistics — Interactive Lab</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0f1117;
+    color: #e2e8f0;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 0 0 60px 0;
+  }
+
+  .page-header {
+    background: linear-gradient(135deg, #1e2130 0%, #0f1117 100%);
+    border-bottom: 1px solid #2d3147;
+    padding: 32px 40px 24px;
+  }
+  .chapter-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 2px;
+    text-transform: uppercase; color: #7dd3fc; margin-bottom: 6px;
+  }
+  .page-title { font-size: 28px; font-weight: 700; color: #e2e8f0; margin-bottom: 4px; }
+  .page-subtitle { font-size: 14px; color: #94a3b8; }
+
+  .tab-nav {
+    display: flex; gap: 4px; padding: 20px 40px 0;
+    border-bottom: 1px solid #2d3147; background: #0f1117; flex-wrap: wrap;
+  }
+  .tab-btn {
+    padding: 10px 20px; border: 1px solid transparent; border-bottom: none;
+    background: transparent; color: #94a3b8; font-family: inherit;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    border-radius: 8px 8px 0 0; transition: all 0.2s;
+    position: relative; bottom: -1px;
+  }
+  .tab-btn:hover { color: #e2e8f0; background: #1e2130; }
+  .tab-btn.active { color: #7dd3fc; background: #1e2130; border-color: #2d3147; border-bottom-color: #1e2130; }
+
+  .tab-panel { display: none; padding: 32px 40px; }
+  .tab-panel.active { display: block; }
+
+  .section-title { font-size: 20px; font-weight: 700; color: #e2e8f0; margin-bottom: 4px; }
+  .section-subtitle { font-size: 13px; color: #94a3b8; margin-bottom: 24px; }
+
+  .two-col {
+    display: grid; grid-template-columns: 320px 1fr; gap: 24px; align-items: start;
+  }
+  @media (max-width: 768px) {
+    .two-col { grid-template-columns: 1fr; }
+    .tab-nav { padding: 16px 16px 0; }
+    .tab-panel { padding: 20px 16px; }
+    .page-header { padding: 20px 16px 16px; }
+  }
+
+  .card {
+    background: #1e2130; border: 1px solid #2d3147;
+    border-radius: 12px; padding: 20px;
+  }
+  .card-title {
+    font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+    text-transform: uppercase; color: #64748b; margin-bottom: 14px;
+  }
+
+  .control-group { margin-bottom: 16px; }
+  .control-label {
+    display: flex; justify-content: space-between;
+    font-size: 12px; color: #94a3b8; margin-bottom: 6px;
+  }
+  .control-label span { color: #7dd3fc; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+  .control-hint {
+    font-size: 10px; color: #64748b; margin-top: 3px;
+  }
+  input[type=range] {
+    -webkit-appearance: none; width: 100%; height: 4px;
+    background: #2d3147; border-radius: 2px; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px;
+    background: #7dd3fc; border-radius: 50%; cursor: pointer;
+    box-shadow: 0 0 6px rgba(125,211,252,0.4);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 14px; height: 14px; border: none;
+    background: #7dd3fc; border-radius: 50%; cursor: pointer;
+  }
+
+  .radio-group { display: flex; flex-direction: column; gap: 8px; }
+  .radio-option {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: #94a3b8; cursor: pointer;
+  }
+  .radio-option input[type=radio] {
+    accent-color: #7dd3fc; width: 14px; height: 14px; cursor: pointer;
+  }
+  .radio-option.active-radio { color: #e2e8f0; }
+
+  .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    padding: 8px 16px; border-radius: 8px; border: 1px solid #2d3147;
+    background: #0f172a; color: #e2e8f0; font-family: inherit;
+    font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+  }
+  .btn:hover { border-color: #7dd3fc; color: #7dd3fc; }
+  .btn.active { background: #0c4a6e; border-color: #7dd3fc; color: #7dd3fc; }
+
+  .canvas-card {
+    background: #1a1f2e; border: 1px solid #2d3147;
+    border-radius: 12px; overflow: hidden; margin-bottom: 16px;
+  }
+  .canvas-card-title {
+    font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+    text-transform: uppercase; color: #64748b; padding: 12px 16px 0;
+  }
+  .canvas-card canvas {
+    display: block; width: 100%;
+  }
+
+  .metric-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .metric-pill {
+    background: #0f172a; border: 1px solid #2d3147; border-radius: 8px;
+    padding: 8px 14px; flex: 1; min-width: 70px;
+  }
+  .metric-pill .mp-label { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+  .metric-pill .mp-val { font-size: 15px; font-weight: 700; color: #7dd3fc; font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+
+  .info-box {
+    background: #0f172a; border-left: 3px solid #7dd3fc;
+    border-radius: 0 8px 8px 0; padding: 12px 16px; margin-top: 16px;
+    font-size: 12px; color: #94a3b8; line-height: 1.7;
+  }
+  .info-box strong { color: #e2e8f0; }
+
+  .formula-box {
+    background: #0f172a; border: 1px solid #2d3147; border-radius: 8px;
+    padding: 10px 14px; margin: 10px 0;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: #a78bfa; text-align: center; letter-spacing: 0.3px;
+  }
+
+  /* Sample size table */
+  .ss-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ss-table th {
+    background: #0f172a; color: #64748b; font-weight: 600;
+    padding: 8px 10px; text-align: center; border: 1px solid #2d3147;
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .ss-table td {
+    padding: 8px 10px; text-align: center; border: 1px solid #2d3147;
+    color: #94a3b8; font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    transition: background 0.3s, color 0.3s;
+  }
+  .ss-table td.highlight {
+    background: #0c4a6e; color: #7dd3fc; font-weight: 700;
+  }
+
+  .divider {
+    border: none; border-top: 1px solid #2d3147; margin: 16px 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="chapter-label">Advanced Statistics</div>
+  <div class="page-title">Advanced Statistics — Interactive Lab</div>
+  <div class="page-subtitle">Explore power analysis: the relationship between sample size, effect size, significance, and power</div>
+</div>
+
+<div class="tab-nav">
+  <button class="tab-btn active" data-tab="power">Power Analysis Calculator</button>
+</div>
+
+<!-- Tab 1: Power Analysis -->
+<div class="tab-panel active" id="panel-power">
+  <div class="section-title">Power Analysis Calculator</div>
+  <div class="section-subtitle">Understand the trade-offs between sample size, effect size, significance level, and statistical power</div>
+
+  <div class="two-col">
+    <!-- Left: Controls -->
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Parameters</div>
+
+        <div class="control-group">
+          <div class="control-label">Effect Size (Cohen's d) <span id="val-effect">0.50</span></div>
+          <input type="range" id="sl-effect" min="0.10" max="1.50" step="0.01" value="0.50">
+          <div class="control-hint">Small (0.2) &middot; Medium (0.5) &middot; Large (0.8)</div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">Significance Level (&alpha;) <span id="val-alpha">0.050</span></div>
+          <input type="range" id="sl-alpha" min="0.01" max="0.10" step="0.005" value="0.05">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">Power (1 &minus; &beta;) <span id="val-power">0.80</span></div>
+          <input type="range" id="sl-power" min="0.50" max="0.99" step="0.01" value="0.80">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">Sample Size (per group) <span id="val-n">64</span></div>
+          <input type="range" id="sl-n" min="10" max="500" step="1" value="64">
+        </div>
+
+        <hr class="divider">
+
+        <div class="control-group">
+          <div class="card-title" style="margin-bottom:8px">Solve For</div>
+          <div class="radio-group">
+            <label class="radio-option active-radio">
+              <input type="radio" name="solve-for" value="n" checked> Sample Size (n)
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="solve-for" value="power"> Power (1 &minus; &beta;)
+            </label>
+          </div>
+        </div>
+
+        <hr class="divider">
+
+        <div class="control-group">
+          <div class="card-title" style="margin-bottom:8px">Test Type</div>
+          <div class="btn-group">
+            <button class="btn active" data-test="two">Two-tailed</button>
+            <button class="btn" data-test="one">One-tailed</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Computed metrics -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Computed Values</div>
+        <div class="metric-row">
+          <div class="metric-pill"><div class="mp-label">Required n</div><div class="mp-val" id="met-n">64</div></div>
+          <div class="metric-pill"><div class="mp-label">Power</div><div class="mp-val" id="met-power">0.80</div></div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-pill"><div class="mp-label">Type I (&alpha;)</div><div class="mp-val" id="met-alpha">0.050</div></div>
+          <div class="metric-pill"><div class="mp-label">Type II (&beta;)</div><div class="mp-val" id="met-beta">0.200</div></div>
+        </div>
+      </div>
+
+      <!-- Info box -->
+      <div class="info-box">
+        <strong>Four components of power analysis:</strong><br>
+        <strong>Effect Size (d):</strong> Standardized difference between groups. Larger effects are easier to detect.<br>
+        <strong>Significance Level (&alpha;):</strong> Probability of a Type I error (false positive). Typically 0.05.<br>
+        <strong>Power (1&minus;&beta;):</strong> Probability of detecting a true effect. Aim for 0.80 or higher.<br>
+        <strong>Sample Size (n):</strong> Number of observations per group. More data yields more power.<br>
+        <div class="formula-box">n = ((z_&alpha; + z_&beta;) / d)&sup2;</div>
+        In practice: halving the effect size quadruples the required sample size.
+      </div>
+    </div>
+
+    <!-- Right: Canvases -->
+    <div>
+      <div class="canvas-card">
+        <div class="canvas-card-title">Distribution Curves &mdash; H0 vs H1</div>
+        <canvas id="cv-dist" height="260"></canvas>
+      </div>
+
+      <div class="canvas-card">
+        <div class="canvas-card-title">Power Curve &mdash; Power vs Sample Size</div>
+        <canvas id="cv-power" height="260"></canvas>
+      </div>
+
+      <div class="canvas-card">
+        <div class="canvas-card-title">Required Sample Size Table</div>
+        <div style="padding:12px 16px 16px">
+          <table class="ss-table" id="tbl-ss">
+            <thead>
+              <tr>
+                <th>Effect \ Power</th>
+                <th>0.80</th>
+                <th>0.90</th>
+                <th>0.95</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ---- Utility: Normal distribution functions ----
+  // Standard normal PDF
+  function normPdf(x) {
+    return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+  }
+
+  // Standard normal CDF (Abramowitz & Stegun approximation)
+  function normCdf(x) {
+    var a1 =  0.254829592, a2 = -0.284496736, a3 =  1.421413741;
+    var a4 = -1.453152027, a5 =  1.061405429, p  =  0.3275911;
+    var sign = x < 0 ? -1 : 1;
+    x = Math.abs(x) / Math.SQRT2;
+    var t = 1.0 / (1.0 + p * x);
+    var y = 1.0 - (((((a5*t + a4)*t) + a3)*t + a2)*t + a1)*t * Math.exp(-x*x);
+    return 0.5 * (1.0 + sign * y);
+  }
+
+  // Inverse standard normal (rational approx, Beasley-Springer-Moro)
+  function normInv(p) {
+    if (p <= 0) return -Infinity;
+    if (p >= 1) return Infinity;
+    if (p === 0.5) return 0;
+    var a = [-3.969683028665376e+01, 2.209460984245205e+02,
+             -2.759285104469687e+02, 1.383577518672690e+02,
+             -3.066479806614716e+01, 2.506628277459239e+00];
+    var b = [-5.447609879822406e+01, 1.615858368580409e+02,
+             -1.556989798598866e+02, 6.680131188771972e+01,
+             -1.328068155288572e+01];
+    var c = [-7.784894002430293e-03, -3.223964580411365e-01,
+             -2.400758277161838e+00, -2.549732539343734e+00,
+              4.374664141464968e+00, 2.938163982698783e+00];
+    var d = [7.784695709041462e-03, 3.224671290700398e-01,
+             2.445134137142996e+00, 3.754408661907416e+00];
+    var pLow = 0.02425, pHigh = 1 - pLow;
+    var q, r;
+    if (p < pLow) {
+      q = Math.sqrt(-2 * Math.log(p));
+      return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) /
+             ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+    } else if (p <= pHigh) {
+      q = p - 0.5; r = q * q;
+      return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q /
+             (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+    } else {
+      q = Math.sqrt(-2 * Math.log(1 - p));
+      return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) /
+              ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+    }
+  }
+
+  // ---- Power calculation helpers ----
+  function getZAlpha(alpha, twoTailed) {
+    return twoTailed ? normInv(1 - alpha / 2) : normInv(1 - alpha);
+  }
+
+  function calcRequiredN(d, alpha, power, twoTailed) {
+    var za = getZAlpha(alpha, twoTailed);
+    var zb = normInv(power);
+    var n = Math.pow((za + zb) / d, 2);
+    return Math.max(Math.ceil(n), 2);
+  }
+
+  function calcPower(d, alpha, n, twoTailed) {
+    var za = getZAlpha(alpha, twoTailed);
+    var se = 1 / Math.sqrt(n);
+    var ncp = d / se;
+    if (twoTailed) {
+      var pRight = 1 - normCdf(za - ncp);
+      var pLeft  = normCdf(-za - ncp);
+      return pRight + pLeft;
+    } else {
+      return 1 - normCdf(za - ncp);
+    }
+  }
+
+  // ---- State ----
+  var state = {
+    d: 0.50,
+    alpha: 0.05,
+    power: 0.80,
+    n: 64,
+    solveFor: 'n',
+    twoTailed: true
+  };
+
+  // ---- DOM refs ----
+  var slEffect = document.getElementById('sl-effect');
+  var slAlpha  = document.getElementById('sl-alpha');
+  var slPower  = document.getElementById('sl-power');
+  var slN      = document.getElementById('sl-n');
+  var valEffect = document.getElementById('val-effect');
+  var valAlpha  = document.getElementById('val-alpha');
+  var valPower  = document.getElementById('val-power');
+  var valN      = document.getElementById('val-n');
+  var metN     = document.getElementById('met-n');
+  var metPower = document.getElementById('met-power');
+  var metAlpha = document.getElementById('met-alpha');
+  var metBeta  = document.getElementById('met-beta');
+  var cvDist   = document.getElementById('cv-dist');
+  var cvPower  = document.getElementById('cv-power');
+  var ctxDist  = cvDist.getContext('2d');
+  var ctxPower = cvPower.getContext('2d');
+
+  // ---- Tab switching ----
+  document.querySelectorAll('.tab-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+      document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ---- Test type buttons ----
+  document.querySelectorAll('[data-test]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('[data-test]').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      state.twoTailed = (btn.dataset.test === 'two');
+      solve();
+    });
+  });
+
+  // ---- Radio buttons ----
+  document.querySelectorAll('input[name="solve-for"]').forEach(function(r) {
+    r.addEventListener('change', function() {
+      state.solveFor = this.value;
+      document.querySelectorAll('.radio-option').forEach(function(o) { o.classList.remove('active-radio'); });
+      this.parentElement.classList.add('active-radio');
+      solve();
+    });
+  });
+
+  // ---- Slider events ----
+  slEffect.addEventListener('input', function() {
+    state.d = parseFloat(this.value);
+    valEffect.textContent = state.d.toFixed(2);
+    solve();
+  });
+  slAlpha.addEventListener('input', function() {
+    state.alpha = parseFloat(this.value);
+    valAlpha.textContent = state.alpha.toFixed(3);
+    solve();
+  });
+  slPower.addEventListener('input', function() {
+    if (state.solveFor === 'power') return;
+    state.power = parseFloat(this.value);
+    valPower.textContent = state.power.toFixed(2);
+    solve();
+  });
+  slN.addEventListener('input', function() {
+    if (state.solveFor === 'n') return;
+    state.n = parseInt(this.value);
+    valN.textContent = state.n;
+    solve();
+  });
+
+  // ---- Solve & update ----
+  function solve() {
+    if (state.solveFor === 'n') {
+      state.n = calcRequiredN(state.d, state.alpha, state.power, state.twoTailed);
+      var clampN = Math.min(Math.max(state.n, 10), 500);
+      slN.value = clampN;
+      valN.textContent = state.n;
+    } else {
+      state.power = calcPower(state.d, state.alpha, state.n, state.twoTailed);
+      state.power = Math.min(Math.max(state.power, 0), 1);
+      slPower.value = state.power;
+      valPower.textContent = state.power.toFixed(2);
+    }
+    updateMetrics();
+    drawDistributions();
+    drawPowerCurve();
+    buildTable();
+  }
+
+  function updateMetrics() {
+    metN.textContent = state.n;
+    metPower.textContent = state.power.toFixed(2);
+    metAlpha.textContent = state.alpha.toFixed(3);
+    metBeta.textContent = (1 - state.power).toFixed(3);
+  }
+
+  // ---- Canvas helpers ----
+  function setupCanvas(canvas) {
+    var dpr = window.devicePixelRatio || 1;
+    var rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    var ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    return { ctx: ctx, w: rect.width, h: rect.height };
+  }
+
+  // ---- Draw Distribution Curves ----
+  function drawDistributions() {
+    var s = setupCanvas(cvDist);
+    var ctx = s.ctx, W = s.w, H = s.h;
+    ctx.clearRect(0, 0, W, H);
+
+    var pad = { top: 20, bottom: 40, left: 50, right: 20 };
+    var plotW = W - pad.left - pad.right;
+    var plotH = H - pad.top - pad.bottom;
+
+    // Distribution parameters
+    var se = 1 / Math.sqrt(state.n);
+    var mu0 = 0;
+    var mu1 = state.d;
+    var sigma = se;
+
+    // X range: cover both distributions well
+    var xMin = mu0 - 4 * sigma;
+    var xMax = mu1 + 4 * sigma;
+
+    function xToCanvas(x) { return pad.left + (x - xMin) / (xMax - xMin) * plotW; }
+    function yToCanvas(y, maxY) { return pad.top + plotH - (y / maxY) * plotH; }
+
+    // Find max PDF
+    var maxPdf = normPdf(0) / sigma;
+
+    // Critical value(s)
+    var za = getZAlpha(state.alpha, state.twoTailed);
+    var critRight = mu0 + za * sigma;
+    var critLeft  = mu0 - za * sigma;
+
+    var steps = 300;
+    var dx = (xMax - xMin) / steps;
+
+    // Helper: draw filled region
+    function fillRegion(muDist, xStart, xEnd, color) {
+      ctx.beginPath();
+      ctx.moveTo(xToCanvas(xStart), yToCanvas(0, maxPdf));
+      for (var x = xStart; x <= xEnd; x += dx) {
+        var z = (x - muDist) / sigma;
+        var y = normPdf(z) / sigma;
+        ctx.lineTo(xToCanvas(x), yToCanvas(y, maxPdf));
+      }
+      var z2 = (xEnd - muDist) / sigma;
+      ctx.lineTo(xToCanvas(xEnd), yToCanvas(normPdf(z2) / sigma, maxPdf));
+      ctx.lineTo(xToCanvas(xEnd), yToCanvas(0, maxPdf));
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+    }
+
+    // Helper: draw curve
+    function drawCurve(mu, color) {
+      ctx.beginPath();
+      for (var i = 0; i <= steps; i++) {
+        var x = xMin + i * dx;
+        var z = (x - mu) / sigma;
+        var y = normPdf(z) / sigma;
+        var cx = xToCanvas(x);
+        var cy = yToCanvas(y, maxPdf);
+        if (i === 0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+      }
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    // Draw axis
+    ctx.strokeStyle = '#2d3147';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, pad.top + plotH);
+    ctx.lineTo(pad.left + plotW, pad.top + plotH);
+    ctx.stroke();
+
+    // X-axis labels
+    ctx.fillStyle = '#64748b';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    var nTicks = 6;
+    for (var i = 0; i <= nTicks; i++) {
+      var xv = xMin + i * (xMax - xMin) / nTicks;
+      ctx.fillText(xv.toFixed(2), xToCanvas(xv), pad.top + plotH + 16);
+      ctx.beginPath();
+      ctx.moveTo(xToCanvas(xv), pad.top + plotH);
+      ctx.lineTo(xToCanvas(xv), pad.top + plotH + 4);
+      ctx.strokeStyle = '#2d3147';
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Test Statistic (standardized)', W / 2, H - 4);
+
+    // 1. Power region (green fill under H1, beyond critical)
+    fillRegion(mu1, critRight, xMax, 'rgba(74,222,128,0.25)');
+
+    // 2. Type II error (beta) region (orange under H1, left of critical)
+    fillRegion(mu1, xMin, critRight, 'rgba(251,191,36,0.15)');
+
+    // 3. Type I error (alpha) region (red under H0, right tail)
+    fillRegion(mu0, critRight, xMax, 'rgba(248,113,113,0.30)');
+
+    // Two-tailed: also left tail
+    if (state.twoTailed) {
+      fillRegion(mu0, xMin, critLeft, 'rgba(248,113,113,0.30)');
+    }
+
+    // Draw critical value line
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = '#f87171';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(xToCanvas(critRight), pad.top);
+    ctx.lineTo(xToCanvas(critRight), pad.top + plotH);
+    ctx.stroke();
+    if (state.twoTailed) {
+      ctx.beginPath();
+      ctx.moveTo(xToCanvas(critLeft), pad.top);
+      ctx.lineTo(xToCanvas(critLeft), pad.top + plotH);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    // Draw curves
+    drawCurve(mu0, '#60a5fa');
+    drawCurve(mu1, '#4ade80');
+
+    // Legend
+    var legX = pad.left + 8, legY = pad.top + 12;
+    var legendItems = [
+      { color: '#60a5fa', label: 'H0 (Null)' },
+      { color: '#4ade80', label: 'H1 (Alternative)' },
+      { color: 'rgba(248,113,113,0.6)', label: 'Type I (\u03b1)' },
+      { color: 'rgba(251,191,36,0.5)', label: 'Type II (\u03b2)' },
+      { color: 'rgba(74,222,128,0.5)', label: 'Power (1-\u03b2)' }
+    ];
+    ctx.font = '10px Inter, sans-serif';
+    legendItems.forEach(function(item, idx) {
+      var ly = legY + idx * 15;
+      ctx.fillStyle = item.color;
+      ctx.fillRect(legX, ly - 4, 12, 8);
+      ctx.fillStyle = '#94a3b8';
+      ctx.textAlign = 'left';
+      ctx.fillText(item.label, legX + 16, ly + 3);
+    });
+  }
+
+  // ---- Draw Power Curve ----
+  function drawPowerCurve() {
+    var s = setupCanvas(cvPower);
+    var ctx = s.ctx, W = s.w, H = s.h;
+    ctx.clearRect(0, 0, W, H);
+
+    var pad = { top: 20, bottom: 40, left: 50, right: 20 };
+    var plotW = W - pad.left - pad.right;
+    var plotH = H - pad.top - pad.bottom;
+
+    function nToX(n) { return pad.left + (n - 10) / (500 - 10) * plotW; }
+    function powToY(p) { return pad.top + plotH - p * plotH; }
+
+    // Grid
+    ctx.strokeStyle = '#1e2130';
+    ctx.lineWidth = 1;
+    for (var g = 0; g <= 1; g += 0.2) {
+      ctx.beginPath();
+      ctx.moveTo(pad.left, powToY(g));
+      ctx.lineTo(pad.left + plotW, powToY(g));
+      ctx.stroke();
+    }
+
+    // Axes
+    ctx.strokeStyle = '#2d3147';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, pad.top + plotH);
+    ctx.lineTo(pad.left + plotW, pad.top + plotH);
+    ctx.moveTo(pad.left, pad.top);
+    ctx.lineTo(pad.left, pad.top + plotH);
+    ctx.stroke();
+
+    // X-axis labels
+    ctx.fillStyle = '#64748b';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    [10, 50, 100, 200, 300, 400, 500].forEach(function(n) {
+      ctx.fillText(n, nToX(n), pad.top + plotH + 16);
+    });
+    ctx.fillText('Sample Size (n)', W / 2, H - 4);
+
+    // Y-axis labels
+    ctx.textAlign = 'right';
+    for (var yv = 0; yv <= 1; yv += 0.2) {
+      ctx.fillText(yv.toFixed(1), pad.left - 6, powToY(yv) + 4);
+    }
+
+    // Y-axis title
+    ctx.save();
+    ctx.translate(12, pad.top + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#64748b';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.fillText('Power', 0, 0);
+    ctx.restore();
+
+    // Power threshold line
+    ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = '#7dd3fc';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, powToY(state.power));
+    ctx.lineTo(pad.left + plotW, powToY(state.power));
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Draw curves for 3 effect sizes
+    var effectSizes = [
+      { d: 0.2, color: '#94a3b8', label: 'd = 0.2 (small)' },
+      { d: 0.5, color: '#fbbf24', label: 'd = 0.5 (medium)' },
+      { d: 0.8, color: '#4ade80', label: 'd = 0.8 (large)' }
+    ];
+
+    effectSizes.forEach(function(es) {
+      ctx.beginPath();
+      for (var n = 10; n <= 500; n += 2) {
+        var pw = calcPower(es.d, state.alpha, n, state.twoTailed);
+        var px = nToX(n), py = powToY(pw);
+        if (n === 10) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = es.color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
+
+    // Highlight current point
+    var curPow = calcPower(state.d, state.alpha, state.n, state.twoTailed);
+    var dotX = nToX(Math.min(state.n, 500));
+    var dotY = powToY(Math.min(curPow, 1));
+
+    // Crosshair
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = 'rgba(125,211,252,0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(dotX, pad.top + plotH);
+    ctx.lineTo(dotX, dotY);
+    ctx.lineTo(pad.left, dotY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Dot
+    ctx.beginPath();
+    ctx.arc(dotX, dotY, 6, 0, Math.PI * 2);
+    ctx.fillStyle = '#7dd3fc';
+    ctx.fill();
+    ctx.strokeStyle = '#0f1117';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Dot label
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '600 11px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    var lblX = dotX + 10, lblY = dotY - 8;
+    if (lblX + 80 > W - pad.right) { lblX = dotX - 90; }
+    if (lblY < pad.top + 10) { lblY = dotY + 16; }
+    ctx.fillText('n=' + state.n + ', pw=' + curPow.toFixed(2), lblX, lblY);
+
+    // Legend
+    var legX = pad.left + plotW - 120, legY = pad.top + 12;
+    effectSizes.forEach(function(es, i) {
+      ctx.fillStyle = es.color;
+      ctx.fillRect(legX, legY + i * 15 - 4, 12, 3);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '10px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(es.label, legX + 16, legY + i * 15 + 3);
+    });
+  }
+
+  // ---- Build Sample Size Table ----
+  function buildTable() {
+    var effects = [0.2, 0.5, 0.8];
+    var powers  = [0.80, 0.90, 0.95];
+    var tbody = document.querySelector('#tbl-ss tbody');
+    tbody.innerHTML = '';
+
+    // Find closest match to current settings
+    var closestD = effects.reduce(function(prev, curr) {
+      return Math.abs(curr - state.d) < Math.abs(prev - state.d) ? curr : prev;
+    });
+    var closestP = powers.reduce(function(prev, curr) {
+      return Math.abs(curr - state.power) < Math.abs(prev - state.power) ? curr : prev;
+    });
+
+    effects.forEach(function(d) {
+      var tr = document.createElement('tr');
+      var th = document.createElement('td');
+      th.style.fontWeight = '600';
+      th.style.color = '#e2e8f0';
+      th.textContent = 'd = ' + d.toFixed(1);
+      tr.appendChild(th);
+
+      powers.forEach(function(pw) {
+        var td = document.createElement('td');
+        var reqN = calcRequiredN(d, state.alpha, pw, state.twoTailed);
+        td.textContent = reqN;
+        if (d === closestD && pw === closestP) {
+          td.classList.add('highlight');
+        }
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ---- Handle resize ----
+  var resizeTimer;
+  window.addEventListener('resize', function() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function() {
+      drawDistributions();
+      drawPowerCurve();
+    }, 100);
+  });
+
+  // ---- Initial render ----
+  solve();
+})();
+</script>
+</body>
+</html>

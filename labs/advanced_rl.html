@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Advanced Reinforcement Learning: Policy Gradient vs Q-Learning side-by-side interactive lab.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced Reinforcement Learning — Interactive Lab</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0f1117;color:#e2e8f0;font-family:'Inter','Segoe UI',system-ui,sans-serif;min-height:100vh}
+code,pre,.mono{font-family:'JetBrains Mono','Cascadia Code','Courier New',monospace!important}
+html{scroll-behavior:smooth}
+
+.header{padding:24px 32px;border-bottom:1px solid #2d3147;background:#1e2130}
+.header h1{font-size:1.5rem;font-weight:700;color:#7dd3fc;letter-spacing:-0.02em}
+.header p{color:#94a3b8;font-size:0.875rem;margin-top:4px}
+
+.tabs{display:flex;gap:4px;padding:16px 32px;background:#1e2130;border-bottom:1px solid #2d3147;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tab{padding:8px 20px;border-radius:8px;border:1px solid #2d3147;background:transparent;color:#94a3b8;cursor:pointer;font-size:0.85rem;font-weight:500;white-space:nowrap;transition:all .2s;font-family:inherit}
+.tab.active{background:#0c4a6e;color:#7dd3fc;border-color:#7dd3fc}
+.tab:hover:not(.active){background:#1e2130;color:#e2e8f0;border-color:#7dd3fc}
+
+.panel{display:none;padding:28px 32px;max-width:1400px;margin:0 auto}
+.panel.active{display:block}
+
+.card{background:#1e2130;border:1px solid #2d3147;border-radius:12px;padding:20px;margin-bottom:16px}
+.card h3{font-size:1rem;font-weight:600;color:#7dd3fc;margin-bottom:14px}
+.card h4{font-size:0.875rem;font-weight:600;color:#e2e8f0;margin-bottom:10px}
+
+.row{display:flex;gap:16px;flex-wrap:wrap}
+.col{flex:1;min-width:280px}
+
+label{font-size:0.8rem;color:#94a3b8;display:block;margin-bottom:5px}
+input[type=range]{width:100%;accent-color:#7dd3fc}
+.param-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.param-row label{min-width:120px;margin:0}
+.param-val{color:#7dd3fc;font-weight:600;font-size:0.85rem;min-width:45px;font-family:'JetBrains Mono',monospace}
+
+.btn{padding:8px 16px;border-radius:8px;border:1px solid #2d3147;background:#1e2130;color:#e2e8f0;cursor:pointer;font-size:0.8rem;font-weight:500;transition:all .2s;font-family:inherit}
+.btn:hover{background:#0c4a6e;border-color:#7dd3fc;color:#7dd3fc}
+.btn.primary{background:#0369a1;border-color:#7dd3fc;color:#fff}
+.btn.primary:hover{background:#0c4a6e}
+.btn.danger{border-color:#f87171;color:#f87171}
+.btn.danger:hover{background:#7f1d1d}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+
+canvas{border-radius:8px;display:block}
+
+.stat-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.stat-card{background:#0f1117;border:1px solid #2d3147;border-radius:8px;padding:10px 14px;text-align:center;flex:1;min-width:100px}
+.stat-card .val{font-size:1.2rem;font-weight:700;color:#7dd3fc;font-family:'JetBrains Mono',monospace}
+.stat-card .lbl{font-size:0.7rem;color:#64748b;margin-top:2px}
+
+.comparison-table{width:100%;border-collapse:collapse;font-size:0.8rem}
+.comparison-table th{background:#0f1117;color:#7dd3fc;padding:8px 12px;text-align:left;border:1px solid #2d3147}
+.comparison-table td{padding:8px 12px;border:1px solid #2d3147;color:#e2e8f0}
+.comparison-table tr:nth-child(even) td{background:#0f1117}
+.comparison-table .col-q{color:#60a5fa}
+.comparison-table .col-pg{color:#4ade80}
+
+.info-box{background:#0f1117;border-left:3px solid #7dd3fc;border-radius:0 8px 8px 0;padding:12px 16px;font-size:0.8rem;color:#94a3b8;line-height:1.6}
+.info-box strong{color:#e2e8f0}
+
+.legend-row{display:flex;gap:16px;flex-wrap:wrap;font-size:0.75rem;color:#94a3b8;margin-top:8px;align-items:center}
+.legend-item{display:flex;align-items:center;gap:5px}
+.legend-swatch{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+.grid-pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-cell{text-align:center}
+.grid-cell h4{margin-bottom:8px}
+
+.toggle-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.toggle{position:relative;width:36px;height:20px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle .slider{position:absolute;inset:0;background:#2d3147;border-radius:10px;transition:.2s}
+.toggle .slider:before{content:'';position:absolute;height:14px;width:14px;left:3px;bottom:3px;background:#94a3b8;border-radius:50%;transition:.2s}
+.toggle input:checked+.slider{background:#0369a1}
+.toggle input:checked+.slider:before{transform:translateX(16px);background:#7dd3fc}
+
+.section-label{font-size:0.75rem;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin:14px 0 8px;font-weight:600}
+
+button:focus-visible,input:focus-visible{outline:2px solid #7dd3fc;outline-offset:2px}
+
+@media(max-width:768px){
+  .grid-pair{grid-template-columns:1fr}
+  .panel{padding:16px}
+  .header{padding:16px}
+  .tabs{padding:12px 16px}
+  .row{flex-direction:column}
+  .col{min-width:unset}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Advanced Reinforcement Learning &mdash; Interactive Lab</h1>
+  <p>Compare Q-Learning (value-based) and REINFORCE (policy gradient) on a shared grid world</p>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab(0)">Policy Gradient vs Q-Learning</button>
+</div>
+
+<!-- Tab 1: Policy Gradient vs Q-Learning -->
+<div class="panel active" id="panel0">
+
+  <!-- Controls -->
+  <div class="row">
+    <div class="col" style="max-width:340px;flex:0 0 340px">
+      <div class="card">
+        <h3>Training Controls</h3>
+        <div class="btn-row">
+          <button class="btn primary" onclick="trainEpisodes(1)">Train 1 Episode</button>
+          <button class="btn primary" onclick="trainEpisodes(100)">Train 100</button>
+          <button class="btn danger" onclick="resetAll()">Reset</button>
+        </div>
+        <div class="param-row">
+          <label>Speed</label>
+          <input type="range" id="speedSlider" min="1" max="100" value="50">
+          <span class="param-val" id="speedVal">50</span>
+        </div>
+
+        <div class="section-label">Shared Hyperparameters</div>
+        <div class="param-row">
+          <label>Learning Rate</label>
+          <input type="range" id="lrSlider" min="1" max="50" value="10" step="1">
+          <span class="param-val" id="lrVal">0.10</span>
+        </div>
+        <div class="param-row">
+          <label>Discount (&gamma;)</label>
+          <input type="range" id="gammaSlider" min="90" max="99" value="95">
+          <span class="param-val" id="gammaVal">0.95</span>
+        </div>
+
+        <div class="section-label">Q-Learning</div>
+        <div class="param-row">
+          <label>Epsilon (&epsilon;)</label>
+          <input type="range" id="epsSlider" min="1" max="100" value="30">
+          <span class="param-val" id="epsVal">0.30</span>
+        </div>
+        <div class="toggle-row">
+          <label class="toggle"><input type="checkbox" id="epsDecay" checked><span class="slider"></span></label>
+          <label style="margin:0">Epsilon Decay</label>
+        </div>
+
+        <div class="section-label">REINFORCE</div>
+        <div class="toggle-row">
+          <label class="toggle"><input type="checkbox" id="baselineToggle" checked><span class="slider"></span></label>
+          <label style="margin:0">Baseline (variance reduction)</label>
+        </div>
+      </div>
+
+      <!-- Statistics -->
+      <div class="card">
+        <h3>Statistics</h3>
+        <div class="stat-row">
+          <div class="stat-card"><div class="val" id="statEpisodes">0</div><div class="lbl">Episodes</div></div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-card"><div class="val" id="statQAvg" style="color:#60a5fa">0.00</div><div class="lbl">Q-Learn Avg (50)</div></div>
+          <div class="stat-card"><div class="val" id="statPGAvg" style="color:#4ade80">0.00</div><div class="lbl">REINFORCE Avg (50)</div></div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-card"><div class="val" id="statQConv" style="color:#60a5fa">No</div><div class="lbl">Q-Learn Converged</div></div>
+          <div class="stat-card"><div class="val" id="statPGConv" style="color:#4ade80">No</div><div class="lbl">REINFORCE Converged</div></div>
+        </div>
+      </div>
+
+      <!-- Key Differences -->
+      <div class="card">
+        <h3>Key Differences</h3>
+        <table class="comparison-table">
+          <tr><th>Aspect</th><th class="col-q">Q-Learning</th><th class="col-pg">REINFORCE</th></tr>
+          <tr><td>Approach</td><td class="col-q">Value-based</td><td class="col-pg">Policy-based</td></tr>
+          <tr><td>Policy</td><td class="col-q">Deterministic (&epsilon;-greedy)</td><td class="col-pg">Stochastic</td></tr>
+          <tr><td>Data Use</td><td class="col-q">Off-policy</td><td class="col-pg">On-policy</td></tr>
+          <tr><td>Sample Efficiency</td><td class="col-q">More efficient</td><td class="col-pg">Less efficient</td></tr>
+          <tr><td>Action Spaces</td><td class="col-q">Discrete only</td><td class="col-pg">Discrete &amp; continuous</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Visualizations -->
+    <div class="col">
+      <div class="card">
+        <h3>Grid World Environments</h3>
+        <div class="info-box" style="margin-bottom:14px">
+          <strong>5&times;5 Grid:</strong> Start (top-left) &rarr; Goal (bottom-right, +10). Walls block movement (-1 penalty on bump). Pickup gives +2. Step penalty: -0.1.
+        </div>
+        <div class="grid-pair">
+          <div class="grid-cell">
+            <h4 style="color:#60a5fa">Q-Learning Agent</h4>
+            <canvas id="qCanvas" width="340" height="340"></canvas>
+            <div class="legend-row" style="justify-content:center">
+              <div class="legend-item"><span class="legend-swatch" style="background:#60a5fa"></span> Agent</div>
+              <div class="legend-item"><span class="legend-swatch" style="background:#fbbf24"></span> Goal</div>
+              <div class="legend-item"><span class="legend-swatch" style="background:#ef4444"></span> Wall</div>
+              <div class="legend-item"><span class="legend-swatch" style="background:#a78bfa"></span> Pickup</div>
+            </div>
+          </div>
+          <div class="grid-cell">
+            <h4 style="color:#4ade80">REINFORCE Agent</h4>
+            <canvas id="pgCanvas" width="340" height="340"></canvas>
+            <div class="legend-row" style="justify-content:center">
+              <div class="legend-item"><span class="legend-swatch" style="background:#4ade80"></span> Agent</div>
+              <div class="legend-item"><span class="legend-swatch" style="background:#fbbf24"></span> Goal</div>
+              <div class="legend-item"><span class="legend-swatch" style="background:#ef4444"></span> Wall</div>
+              <div class="legend-item"><span class="legend-swatch" style="background:#a78bfa"></span> Pickup</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Learning Curves -->
+      <div class="card">
+        <h3>Learning Curves</h3>
+        <canvas id="chartCanvas" width="720" height="220"></canvas>
+        <div class="legend-row" style="justify-content:center;margin-top:6px">
+          <div class="legend-item"><span class="legend-swatch" style="background:#60a5fa"></span> Q-Learning</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:#4ade80"></span> REINFORCE</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:rgba(96,165,250,0.35)"></span> Q-Learn Avg(20)</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:rgba(74,222,128,0.35)"></span> REINFORCE Avg(20)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ─── Tab switching ─── */
+function switchTab(idx) {
+  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.toggle('active',i===idx)});
+  document.querySelectorAll('.panel').forEach((p,i)=>{p.classList.toggle('active',i===idx)});
+}
+
+/* ─── Grid World Environment ─── */
+const GRID=5, ACTIONS=4; // 0=up,1=right,2=down,3=left
+const DIRS=[[-1,0],[0,1],[1,0],[0,-1]];
+const ARROW_LABELS=['\u2191','\u2192','\u2193','\u2190'];
+const START=[0,0], GOAL=[4,4];
+const WALLS=[[1,1],[2,3],[3,1]];
+const PICKUP=[1,3];
+const STEP_PENALTY=-0.1, WALL_PENALTY=-1, GOAL_REWARD=10, PICKUP_REWARD=2;
+const MAX_STEPS=80;
+
+function isWall(r,c){return WALLS.some(w=>w[0]===r&&w[1]===c)}
+function isGoal(r,c){return r===GOAL[0]&&c===GOAL[1]}
+function isPickup(r,c){return r===PICKUP[0]&&c===PICKUP[1]}
+
+function step(r,c,a,pickedUp){
+  let nr=r+DIRS[a][0], nc=c+DIRS[a][1];
+  let reward=STEP_PENALTY, done=false, newPickedUp=pickedUp;
+  if(nr<0||nr>=GRID||nc<0||nc>=GRID||isWall(nr,nc)){
+    nr=r; nc=c; reward+=WALL_PENALTY;
+  }
+  if(isGoal(nr,nc)){reward+=GOAL_REWARD;done=true;}
+  if(isPickup(nr,nc)&&!newPickedUp){reward+=PICKUP_REWARD;newPickedUp=true;}
+  return {r:nr,c:nc,reward,done,pickedUp:newPickedUp};
+}
+
+/* ─── Q-Learning Agent ─── */
+function createQAgent(){
+  // Q[r][c][a] — includes extra state bit for pickup but we simplify to position only
+  let Q=[];
+  for(let r=0;r<GRID;r++){Q[r]=[];for(let c=0;c<GRID;c++){Q[r][c]=new Float64Array(ACTIONS);}}
+  return Q;
+}
+
+function qSelectAction(Q,r,c,eps){
+  if(Math.random()<eps){return Math.floor(Math.random()*ACTIONS);}
+  let best=0,bv=Q[r][c][0];
+  for(let a=1;a<ACTIONS;a++){if(Q[r][c][a]>bv){bv=Q[r][c][a];best=a;}}
+  return best;
+}
+
+function qTrainEpisode(Q,lr,gamma,eps){
+  let r=START[0],c=START[1],totalReward=0,pickedUp=false;
+  for(let t=0;t<MAX_STEPS;t++){
+    let a=qSelectAction(Q,r,c,eps);
+    let res=step(r,c,a,pickedUp);
+    let maxQ=Q[res.r][res.c][0];
+    for(let aa=1;aa<ACTIONS;aa++){if(Q[res.r][res.c][aa]>maxQ)maxQ=Q[res.r][res.c][aa];}
+    Q[r][c][a]+=lr*(res.reward+gamma*maxQ*(res.done?0:1)-Q[r][c][a]);
+    totalReward+=res.reward;
+    r=res.r;c=res.c;pickedUp=res.pickedUp;
+    if(res.done)break;
+  }
+  return totalReward;
+}
+
+/* ─── REINFORCE (Policy Gradient) Agent ─── */
+function createPGAgent(){
+  // logits[r][c][a]
+  let logits=[];
+  for(let r=0;r<GRID;r++){logits[r]=[];for(let c=0;c<GRID;c++){logits[r][c]=new Float64Array(ACTIONS);}}
+  return logits;
+}
+
+function softmax(arr){
+  let max=-Infinity;for(let i=0;i<arr.length;i++){if(arr[i]>max)max=arr[i];}
+  let sum=0,out=new Float64Array(arr.length);
+  for(let i=0;i<arr.length;i++){out[i]=Math.exp(arr[i]-max);sum+=out[i];}
+  for(let i=0;i<arr.length;i++){out[i]/=sum;}
+  return out;
+}
+
+function pgSelectAction(logits,r,c){
+  let probs=softmax(logits[r][c]);
+  let rand=Math.random(),cum=0;
+  for(let a=0;a<ACTIONS;a++){cum+=probs[a];if(rand<cum)return a;}
+  return ACTIONS-1;
+}
+
+function pgGetProbs(logits,r,c){return softmax(logits[r][c]);}
+
+function pgTrainEpisode(logits,lr,gamma,useBaseline,baselineAvg){
+  // collect trajectory
+  let traj=[];
+  let r=START[0],c=START[1],pickedUp=false;
+  for(let t=0;t<MAX_STEPS;t++){
+    let a=pgSelectAction(logits,r,c);
+    let res=step(r,c,a,pickedUp);
+    traj.push({r,c,a,reward:res.reward});
+    r=res.r;c=res.c;pickedUp=res.pickedUp;
+    if(res.done)break;
+  }
+
+  // compute returns
+  let G=0, returns=new Float64Array(traj.length);
+  for(let t=traj.length-1;t>=0;t--){
+    G=traj[t].reward+gamma*G;
+    returns[t]=G;
+  }
+
+  let totalReward=0;
+  for(let t=0;t<traj.length;t++)totalReward+=traj[t].reward;
+
+  // update logits (policy gradient)
+  for(let t=0;t<traj.length;t++){
+    let {r:sr,c:sc,a:sa}=traj[t];
+    let probs=softmax(logits[sr][sc]);
+    let advantage=returns[t]-(useBaseline?baselineAvg:0);
+    // gradient: d log pi(a|s) / d theta_a = (1 - pi(a|s)) for chosen action
+    // for other actions: -pi(a'|s)
+    for(let a=0;a<ACTIONS;a++){
+      if(a===sa){
+        logits[sr][sc][a]+=lr*advantage*(1-probs[a]);
+      } else {
+        logits[sr][sc][a]-=lr*advantage*probs[a];
+      }
+    }
+  }
+
+  return totalReward;
+}
+
+/* ─── State ─── */
+let qTable=createQAgent();
+let pgLogits=createPGAgent();
+let qRewards=[], pgRewards=[];
+let episodeCount=0;
+let baselineAvg=0;
+let animating=false;
+let animQueue=[];
+let currentEpsilon;
+
+/* ─── Read sliders ─── */
+function getLR(){return parseInt(document.getElementById('lrSlider').value)/100;}
+function getGamma(){return parseInt(document.getElementById('gammaSlider').value)/100;}
+function getEpsilon(){
+  let base=parseInt(document.getElementById('epsSlider').value)/100;
+  let decay=document.getElementById('epsDecay').checked;
+  if(decay){return Math.max(0.01,base*Math.pow(0.995,episodeCount));}
+  return base;
+}
+function getSpeed(){return parseInt(document.getElementById('speedSlider').value);}
+function getBaseline(){return document.getElementById('baselineToggle').checked;}
+
+/* ─── Slider display updates ─── */
+document.getElementById('lrSlider').oninput=function(){document.getElementById('lrVal').textContent=getLR().toFixed(2);};
+document.getElementById('gammaSlider').oninput=function(){document.getElementById('gammaVal').textContent=getGamma().toFixed(2);};
+document.getElementById('epsSlider').oninput=function(){document.getElementById('epsVal').textContent=(parseInt(this.value)/100).toFixed(2);};
+document.getElementById('speedSlider').oninput=function(){document.getElementById('speedVal').textContent=this.value;};
+
+/* ─── Training ─── */
+function trainEpisodes(n){
+  if(animating)return;
+  let lr=getLR(), gamma=getGamma(), useBaseline=getBaseline();
+
+  if(n===1){
+    // Animate single episode step-by-step
+    animateSingleEpisode(lr,gamma,useBaseline);
+  } else {
+    // Batch train
+    for(let i=0;i<n;i++){
+      let eps=getEpsilon();
+      currentEpsilon=eps;
+      episodeCount++;
+      let qr=qTrainEpisode(qTable,lr,gamma,eps);
+      qRewards.push(qr);
+
+      let pgr=pgTrainEpisode(pgLogits,lr,gamma,useBaseline,baselineAvg);
+      pgRewards.push(pgr);
+
+      // Update running baseline
+      baselineAvg=baselineAvg*0.95+pgr*0.05;
+    }
+    drawQGrid();
+    drawPGGrid();
+    drawChart();
+    updateStats();
+  }
+}
+
+function animateSingleEpisode(lr,gamma,useBaseline){
+  animating=true;
+  let eps=getEpsilon();
+  currentEpsilon=eps;
+  episodeCount++;
+
+  // Generate Q-learning trajectory
+  let qTraj=[];
+  {
+    let r=START[0],c=START[1],pickedUp=false;
+    for(let t=0;t<MAX_STEPS;t++){
+      let a=qSelectAction(qTable,r,c,eps);
+      let res=step(r,c,a,pickedUp);
+      qTraj.push({r,c,a,nr:res.r,nc:res.c,reward:res.reward,done:res.done});
+      // Q-update inline
+      let maxQ=qTable[res.r][res.c][0];
+      for(let aa=1;aa<ACTIONS;aa++){if(qTable[res.r][res.c][aa]>maxQ)maxQ=qTable[res.r][res.c][aa];}
+      qTable[r][c][a]+=lr*(res.reward+gamma*maxQ*(res.done?0:1)-qTable[r][c][a]);
+      r=res.r;c=res.c;pickedUp=res.pickedUp;
+      if(res.done)break;
+    }
+  }
+
+  // Generate PG trajectory + train
+  let pgTraj=[];
+  {
+    let traj=[];
+    let r=START[0],c=START[1],pickedUp=false;
+    for(let t=0;t<MAX_STEPS;t++){
+      let a=pgSelectAction(pgLogits,r,c);
+      let res=step(r,c,a,pickedUp);
+      traj.push({r,c,a,reward:res.reward});
+      pgTraj.push({r,c,a,nr:res.r,nc:res.c,reward:res.reward,done:res.done});
+      r=res.r;c=res.c;pickedUp=res.pickedUp;
+      if(res.done)break;
+    }
+    // Compute returns and update
+    let G=0,returns=new Float64Array(traj.length);
+    for(let t=traj.length-1;t>=0;t--){G=traj[t].reward+gamma*G;returns[t]=G;}
+    for(let t=0;t<traj.length;t++){
+      let {r:sr,c:sc,a:sa}=traj[t];
+      let probs=softmax(pgLogits[sr][sc]);
+      let advantage=returns[t]-(useBaseline?baselineAvg:0);
+      for(let a=0;a<ACTIONS;a++){
+        if(a===sa){pgLogits[sr][sc][a]+=lr*advantage*(1-probs[a]);}
+        else{pgLogits[sr][sc][a]-=lr*advantage*probs[a];}
+      }
+    }
+  }
+
+  let qTotal=qTraj.reduce((s,t)=>s+t.reward,0);
+  let pgTotal=pgTraj.reduce((s,t)=>s+t.reward,0);
+  qRewards.push(qTotal);
+  pgRewards.push(pgTotal);
+  baselineAvg=baselineAvg*0.95+pgTotal*0.05;
+
+  // Animate both trajectories step-by-step
+  let maxLen=Math.max(qTraj.length,pgTraj.length);
+  let stepIdx=0;
+  let speed=getSpeed();
+  let delay=Math.max(10,200-speed*1.8);
+
+  function animStep(){
+    let qPos=stepIdx<qTraj.length?qTraj[stepIdx]:qTraj[qTraj.length-1];
+    let pgPos=stepIdx<pgTraj.length?pgTraj[stepIdx]:pgTraj[pgTraj.length-1];
+    drawQGrid(qPos.r,qPos.c);
+    drawPGGrid(pgPos.r,pgPos.c);
+    stepIdx++;
+    if(stepIdx<maxLen){
+      setTimeout(animStep,delay);
+    } else {
+      animating=false;
+      drawQGrid();
+      drawPGGrid();
+      drawChart();
+      updateStats();
+    }
+  }
+  animStep();
+}
+
+function resetAll(){
+  if(animating)return;
+  qTable=createQAgent();
+  pgLogits=createPGAgent();
+  qRewards=[];pgRewards=[];
+  episodeCount=0;baselineAvg=0;
+  drawQGrid();drawPGGrid();drawChart();updateStats();
+}
+
+/* ─── Drawing: Q-Learning Grid ─── */
+function drawQGrid(agentR,agentC){
+  let canvas=document.getElementById('qCanvas');
+  let ctx=canvas.getContext('2d');
+  let W=canvas.width, H=canvas.height;
+  let cell=W/GRID;
+
+  ctx.clearRect(0,0,W,H);
+
+  // Grid background
+  ctx.fillStyle='#0f1117';
+  ctx.fillRect(0,0,W,H);
+
+  for(let r=0;r<GRID;r++){
+    for(let c=0;c<GRID;c++){
+      let x=c*cell, y=r*cell;
+
+      // Cell background
+      if(isWall(r,c)){
+        ctx.fillStyle='#7f1d1d';
+        ctx.fillRect(x+1,y+1,cell-2,cell-2);
+        ctx.fillStyle='#ef4444';
+        ctx.font='bold 18px Inter';
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText('\u2588',x+cell/2,y+cell/2);
+      } else if(isGoal(r,c)){
+        ctx.fillStyle='#422006';
+        ctx.fillRect(x+1,y+1,cell-2,cell-2);
+        ctx.fillStyle='#fbbf24';
+        ctx.font='bold 20px Inter';
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText('\u2605',x+cell/2,y+cell/2);
+      } else if(isPickup(r,c)){
+        ctx.fillStyle='#1e1b4b';
+        ctx.fillRect(x+1,y+1,cell-2,cell-2);
+        ctx.fillStyle='#a78bfa';
+        ctx.font='bold 14px Inter';
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText('+2',x+cell/2,y+cell/2);
+      } else {
+        ctx.fillStyle='#161927';
+        ctx.fillRect(x+1,y+1,cell-2,cell-2);
+
+        // Draw Q-value arrows
+        let qvals=qTable[r][c];
+        let maxAbs=0;
+        for(let a=0;a<ACTIONS;a++){let av=Math.abs(qvals[a]);if(av>maxAbs)maxAbs=av;}
+        if(maxAbs<0.001)maxAbs=1;
+
+        let cx_=x+cell/2, cy_=y+cell/2;
+        let arrowLen=cell*0.32;
+
+        for(let a=0;a<ACTIONS;a++){
+          let norm=qvals[a]/maxAbs; // -1..1
+          let intensity=Math.min(1,Math.abs(norm));
+          let positive=norm>=0;
+
+          let dx=DIRS[a][1]*arrowLen*intensity;
+          let dy=DIRS[a][0]*arrowLen*intensity;
+
+          if(intensity<0.02)continue;
+
+          let alpha=0.3+intensity*0.7;
+          if(positive){
+            ctx.strokeStyle=`rgba(96,165,250,${alpha})`;
+          } else {
+            ctx.strokeStyle=`rgba(239,68,68,${alpha})`;
+          }
+          ctx.lineWidth=1+intensity*2;
+          ctx.beginPath();
+          ctx.moveTo(cx_,cy_);
+          ctx.lineTo(cx_+dx,cy_+dy);
+          ctx.stroke();
+
+          // Arrowhead
+          let angle=Math.atan2(dy,dx);
+          let headLen=4+intensity*4;
+          ctx.beginPath();
+          ctx.moveTo(cx_+dx,cy_+dy);
+          ctx.lineTo(cx_+dx-headLen*Math.cos(angle-0.5),cy_+dy-headLen*Math.sin(angle-0.5));
+          ctx.moveTo(cx_+dx,cy_+dy);
+          ctx.lineTo(cx_+dx-headLen*Math.cos(angle+0.5),cy_+dy-headLen*Math.sin(angle+0.5));
+          ctx.stroke();
+        }
+      }
+
+      // Grid lines
+      ctx.strokeStyle='#2d3147';
+      ctx.lineWidth=1;
+      ctx.strokeRect(x,y,cell,cell);
+    }
+  }
+
+  // Start marker
+  ctx.fillStyle='rgba(96,165,250,0.2)';
+  ctx.fillRect(1,1,cell-2,cell-2);
+  ctx.fillStyle='#60a5fa';
+  ctx.font='bold 10px Inter';
+  ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText('START',cell/2,4);
+
+  // Agent position
+  if(agentR!==undefined){
+    let ax=agentC*cell+cell/2, ay=agentR*cell+cell/2;
+    ctx.beginPath();
+    ctx.arc(ax,ay,cell*0.18,0,Math.PI*2);
+    ctx.fillStyle='#60a5fa';
+    ctx.fill();
+    ctx.strokeStyle='#bfdbfe';
+    ctx.lineWidth=2;
+    ctx.stroke();
+  }
+}
+
+/* ─── Drawing: Policy Gradient Grid ─── */
+function drawPGGrid(agentR,agentC){
+  let canvas=document.getElementById('pgCanvas');
+  let ctx=canvas.getContext('2d');
+  let W=canvas.width, H=canvas.height;
+  let cell=W/GRID;
+
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0f1117';
+  ctx.fillRect(0,0,W,H);
+
+  for(let r=0;r<GRID;r++){
+    for(let c=0;c<GRID;c++){
+      let x=c*cell, y=r*cell;
+
+      if(isWall(r,c)){
+        ctx.fillStyle='#7f1d1d';
+        ctx.fillRect(x+1,y+1,cell-2,cell-2);
+        ctx.fillStyle='#ef4444';
+        ctx.font='bold 18px Inter';
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText('\u2588',x+cell/2,y+cell/2);
+      } else if(isGoal(r,c)){
+        ctx.fillStyle='#422006';
+        ctx.fillRect(x+1,y+1,cell-2,cell-2);
+        ctx.fillStyle='#fbbf24';
+        ctx.font='bold 20px Inter';
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText('\u2605',x+cell/2,y+cell/2);
+      } else if(isPickup(r,c)){
+        ctx.fillStyle='#1e1b4b';
+        ctx.fillRect(x+1,y+1,cell-2,cell-2);
+        ctx.fillStyle='#a78bfa';
+        ctx.font='bold 14px Inter';
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText('+2',x+cell/2,y+cell/2);
+      } else {
+        ctx.fillStyle='#161927';
+        ctx.fillRect(x+1,y+1,cell-2,cell-2);
+
+        // Draw policy probability arrows
+        let probs=pgGetProbs(pgLogits,r,c);
+        let cx_=x+cell/2, cy_=y+cell/2;
+        let maxArrow=cell*0.35;
+
+        for(let a=0;a<ACTIONS;a++){
+          let p=probs[a];
+          if(p<0.02)continue;
+
+          let len=maxArrow*p*2; // scale so 0.5 prob = full length
+          len=Math.min(len,maxArrow);
+          let dx=DIRS[a][1]*len;
+          let dy=DIRS[a][0]*len;
+
+          let alpha=0.3+p*0.7;
+          ctx.strokeStyle=`rgba(74,222,128,${alpha})`;
+          ctx.lineWidth=1+p*3;
+          ctx.beginPath();
+          ctx.moveTo(cx_,cy_);
+          ctx.lineTo(cx_+dx,cy_+dy);
+          ctx.stroke();
+
+          // Arrowhead
+          let angle=Math.atan2(dy,dx);
+          let headLen=3+p*6;
+          ctx.beginPath();
+          ctx.moveTo(cx_+dx,cy_+dy);
+          ctx.lineTo(cx_+dx-headLen*Math.cos(angle-0.5),cy_+dy-headLen*Math.sin(angle-0.5));
+          ctx.moveTo(cx_+dx,cy_+dy);
+          ctx.lineTo(cx_+dx-headLen*Math.cos(angle+0.5),cy_+dy-headLen*Math.sin(angle+0.5));
+          ctx.stroke();
+
+          // Probability label
+          if(p>0.1){
+            ctx.fillStyle=`rgba(74,222,128,${alpha})`;
+            ctx.font='9px JetBrains Mono';
+            ctx.textAlign='center';ctx.textBaseline='middle';
+            let lx=cx_+DIRS[a][1]*(len+10);
+            let ly=cy_+DIRS[a][0]*(len+10);
+            // Clamp inside cell
+            lx=Math.max(x+8,Math.min(x+cell-8,lx));
+            ly=Math.max(y+8,Math.min(y+cell-8,ly));
+            ctx.fillText(p.toFixed(2),lx,ly);
+          }
+        }
+      }
+
+      ctx.strokeStyle='#2d3147';
+      ctx.lineWidth=1;
+      ctx.strokeRect(x,y,cell,cell);
+    }
+  }
+
+  // Start marker
+  ctx.fillStyle='rgba(74,222,128,0.2)';
+  ctx.fillRect(1,1,cell-2,cell-2);
+  ctx.fillStyle='#4ade80';
+  ctx.font='bold 10px Inter';
+  ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText('START',cell/2,4);
+
+  // Agent position
+  if(agentR!==undefined){
+    let ax=agentC*cell+cell/2, ay=agentR*cell+cell/2;
+    ctx.beginPath();
+    ctx.arc(ax,ay,cell*0.18,0,Math.PI*2);
+    ctx.fillStyle='#4ade80';
+    ctx.fill();
+    ctx.strokeStyle='#bbf7d0';
+    ctx.lineWidth=2;
+    ctx.stroke();
+  }
+}
+
+/* ─── Drawing: Learning Curve Chart ─── */
+function drawChart(){
+  let canvas=document.getElementById('chartCanvas');
+  let ctx=canvas.getContext('2d');
+  let W=canvas.width, H=canvas.height;
+  let pad={l:55,r:15,t:15,b:35};
+  let plotW=W-pad.l-pad.r, plotH=H-pad.t-pad.b;
+
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0f1117';
+  ctx.fillRect(0,0,W,H);
+
+  if(qRewards.length===0){
+    ctx.fillStyle='#64748b';
+    ctx.font='14px Inter';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('Train episodes to see learning curves',W/2,H/2);
+    return;
+  }
+
+  // Compute running averages
+  let window_=20;
+  function runAvg(arr){
+    let out=[];
+    for(let i=0;i<arr.length;i++){
+      let start=Math.max(0,i-window_+1);
+      let sum=0;for(let j=start;j<=i;j++)sum+=arr[j];
+      out.push(sum/(i-start+1));
+    }
+    return out;
+  }
+  let qAvg=runAvg(qRewards), pgAvg=runAvg(pgRewards);
+
+  // Find Y range
+  let allVals=[...qRewards,...pgRewards,...qAvg,...pgAvg];
+  let yMin=Math.min(...allVals), yMax=Math.max(...allVals);
+  let yRange=yMax-yMin||1;
+  yMin-=yRange*0.1; yMax+=yRange*0.1;
+  yRange=yMax-yMin;
+
+  let n=qRewards.length;
+
+  // Axes
+  ctx.strokeStyle='#2d3147';ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.moveTo(pad.l,pad.t);ctx.lineTo(pad.l,pad.t+plotH);ctx.lineTo(pad.l+plotW,pad.t+plotH);
+  ctx.stroke();
+
+  // Y ticks
+  ctx.fillStyle='#64748b';ctx.font='10px JetBrains Mono';ctx.textAlign='right';ctx.textBaseline='middle';
+  let yTicks=5;
+  for(let i=0;i<=yTicks;i++){
+    let val=yMin+(yRange*i/yTicks);
+    let py=pad.t+plotH-plotH*(i/yTicks);
+    ctx.fillText(val.toFixed(1),pad.l-6,py);
+    if(i>0&&i<yTicks){
+      ctx.strokeStyle='#1e2130';ctx.beginPath();ctx.moveTo(pad.l,py);ctx.lineTo(pad.l+plotW,py);ctx.stroke();
+    }
+  }
+
+  // X label
+  ctx.fillStyle='#64748b';ctx.font='10px Inter';ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText('Episode',pad.l+plotW/2,pad.t+plotH+20);
+  // X ticks
+  let xTicks=Math.min(n,6);
+  for(let i=0;i<=xTicks;i++){
+    let ep=Math.round(n*i/xTicks);
+    let px=pad.l+plotW*(i/xTicks);
+    ctx.fillText(ep,px,pad.t+plotH+6);
+  }
+
+  function toX(i){return pad.l+plotW*(i/(n-1||1));}
+  function toY(v){return pad.t+plotH-plotH*((v-yMin)/yRange);}
+
+  // Plot raw data (thin lines)
+  function plotLine(arr,color,width){
+    if(arr.length<2)return;
+    ctx.strokeStyle=color;ctx.lineWidth=width;
+    ctx.beginPath();
+    ctx.moveTo(toX(0),toY(arr[0]));
+    for(let i=1;i<arr.length;i++){ctx.lineTo(toX(i),toY(arr[i]));}
+    ctx.stroke();
+  }
+
+  // Raw data (dots)
+  function plotDots(arr,color){
+    ctx.fillStyle=color;
+    for(let i=0;i<arr.length;i++){
+      if(n>200&&i%Math.ceil(n/200)!==0)continue; // thin dots for large n
+      ctx.beginPath();ctx.arc(toX(i),toY(arr[i]),1.5,0,Math.PI*2);ctx.fill();
+    }
+  }
+
+  plotDots(qRewards,'rgba(96,165,250,0.3)');
+  plotDots(pgRewards,'rgba(74,222,128,0.3)');
+
+  // Running averages (thick lines)
+  plotLine(qAvg,'#60a5fa',2.5);
+  plotLine(pgAvg,'#4ade80',2.5);
+
+  // Zero line
+  if(yMin<0&&yMax>0){
+    let zy=toY(0);
+    ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(pad.l,zy);ctx.lineTo(pad.l+plotW,zy);ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+/* ─── Update Stats ─── */
+function updateStats(){
+  document.getElementById('statEpisodes').textContent=episodeCount;
+
+  function avg(arr,n_){
+    if(arr.length===0)return 0;
+    let s=arr.slice(-n_);
+    return s.reduce((a,b)=>a+b,0)/s.length;
+  }
+
+  let qA=avg(qRewards,50), pgA=avg(pgRewards,50);
+  document.getElementById('statQAvg').textContent=qA.toFixed(2);
+  document.getElementById('statPGAvg').textContent=pgA.toFixed(2);
+
+  // Convergence: avg reward > 7 for last 50 episodes
+  let qConv=qRewards.length>=50&&qA>7;
+  let pgConv=pgRewards.length>=50&&pgA>7;
+  document.getElementById('statQConv').textContent=qConv?'Yes':'No';
+  document.getElementById('statPGConv').textContent=pgConv?'Yes':'No';
+  document.getElementById('statQConv').style.color=qConv?'#4ade80':'#60a5fa';
+  document.getElementById('statPGConv').style.color=pgConv?'#4ade80':'#4ade80';
+}
+
+/* ─── Responsive canvas sizing ─── */
+function resizeCanvases(){
+  let qC=document.getElementById('qCanvas');
+  let pgC=document.getElementById('pgCanvas');
+  let chartC=document.getElementById('chartCanvas');
+
+  let parent=qC.parentElement;
+  let w=parent.clientWidth;
+  let gridSize=Math.min(340,w-10);
+  qC.width=gridSize;qC.height=gridSize;
+  pgC.width=gridSize;pgC.height=gridSize;
+
+  let chartParent=chartC.parentElement;
+  let cw=chartParent.clientWidth-40;
+  chartC.width=Math.max(300,cw);
+  chartC.height=220;
+
+  drawQGrid();drawPGGrid();drawChart();
+}
+
+window.addEventListener('resize',resizeCanvases);
+
+/* ─── Initial draw ─── */
+resizeCanvases();
+updateStats();
+</script>
+</body>
+</html>
