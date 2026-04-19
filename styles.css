@@ -587,12 +587,12 @@ th{
 
 /* ── Inline Highlights ── */
 .hl {
-  background: linear-gradient(180deg, transparent 60%, #bfdbfe 60%);
-  padding: 0 2px;
+  color: #1d4ed8;
+  font-weight: 600;
 }
 .hl-warm {
-  background: linear-gradient(180deg, transparent 60%, #fed7aa 60%);
-  padding: 0 2px;
+  color: #b45309;
+  font-weight: 600;
 }
 
 /* ── Pull Quotes ── */
