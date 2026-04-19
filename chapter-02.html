@@ -116,6 +116,80 @@ The four math areas used throughout ML: linear algebra, statistics, information 
 
 <h2 id="linear-algebra-essentials">2.1 Linear Algebra Essentials</h2>
 
+<p>Almost every ML algorithm — from linear regression to transformers — boils down to <strong>matrix multiplication</strong>. Before we dive into eigenvalues and PCA, let’s make sure the foundation is solid.</p>
+
+<h3 id="matrix-multiplication">2.1.0 Matrix Multiplication — The Engine of ML</h3>
+
+<p>A matrix is just a grid of numbers. Matrix multiplication combines two grids to produce a third — and this single operation powers nearly everything in machine learning: predictions, gradient updates, attention scores, and more.</p>
+
+<div class="intuition-note">
+<div class="in-label">Why This Matters</div>
+<p>When you call <code>model.predict(X)</code>, what actually happens is a matrix multiply: <strong>X &middot; W</strong>. Every input gets multiplied by learned weights, summed, and passed forward. Understanding this operation — its shape rules, its cost, and its geometric meaning — unlocks the rest of linear algebra for ML.</p>
+</div>
+
+<p><strong>The rule:</strong> To multiply matrix <strong>A</strong> (shape <em>m &times; n</em>) by matrix <strong>B</strong> (shape <em>n &times; p</em>), the inner dimensions must match. The result <strong>C</strong> has shape <em>m &times; p</em>.</p>
+
+<!-- Matrix Multiplication Visual -->
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="280" viewBox="0 0 720 280" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .mm-lbl { font: bold 14px ‘Segoe UI’, sans-serif; }
+    .mm-cell { font: 13px ‘Courier New’, monospace; }
+    .mm-dim { font: italic 12px ‘Segoe UI’, sans-serif; fill: #64748b; }
+    .mm-note { font: 13px ‘Segoe UI’, sans-serif; fill: #475569; }
+  </style>
+
+  <!-- Matrix A -->
+  <rect x="20" y="60" width="120" height="80" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="80" y="50" text-anchor="middle" class="mm-lbl" fill="#1e40af">A</text>
+  <text x="80" y="155" text-anchor="middle" class="mm-dim">(m &times; n)</text>
+  <text x="50" y="92" class="mm-cell" fill="#1e293b">a&#8321;&#8321;  a&#8321;&#8322;</text>
+  <text x="50" y="112" class="mm-cell" fill="#1e293b">a&#8322;&#8321;  a&#8322;&#8322;</text>
+  <text x="50" y="132" class="mm-cell" fill="#1e293b">a&#8323;&#8321;  a&#8323;&#8322;</text>
+
+  <!-- Multiply sign -->
+  <text x="165" y="107" text-anchor="middle" font-size="22" fill="#64748b">&times;</text>
+
+  <!-- Matrix B -->
+  <rect x="190" y="60" width="130" height="80" rx="6" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="255" y="50" text-anchor="middle" class="mm-lbl" fill="#166534">B</text>
+  <text x="255" y="155" text-anchor="middle" class="mm-dim">(n &times; p)</text>
+  <text x="210" y="92" class="mm-cell" fill="#1e293b">b&#8321;&#8321;  b&#8321;&#8322;  b&#8321;&#8323;</text>
+  <text x="210" y="112" class="mm-cell" fill="#1e293b">b&#8322;&#8321;  b&#8322;&#8322;  b&#8322;&#8323;</text>
+
+  <!-- Equals sign -->
+  <text x="345" y="107" text-anchor="middle" font-size="22" fill="#64748b">=</text>
+
+  <!-- Matrix C -->
+  <rect x="370" y="60" width="150" height="80" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="445" y="50" text-anchor="middle" class="mm-lbl" fill="#92400e">C</text>
+  <text x="445" y="155" text-anchor="middle" class="mm-dim">(m &times; p)</text>
+  <text x="390" y="92" class="mm-cell" fill="#1e293b">c&#8321;&#8321;  c&#8321;&#8322;  c&#8321;&#8323;</text>
+  <text x="390" y="112" class="mm-cell" fill="#1e293b">c&#8322;&#8321;  c&#8322;&#8322;  c&#8322;&#8323;</text>
+  <text x="390" y="132" class="mm-cell" fill="#1e293b">c&#8323;&#8321;  c&#8323;&#8322;  c&#8323;&#8323;</text>
+
+  <!-- Annotation: how one cell is computed -->
+  <rect x="370" y="80" width="48" height="16" rx="3" fill="none" stroke="#dc2626" stroke-width="2"/>
+  <line x1="418" y1="88" x2="540" y2="88" stroke="#dc2626" stroke-width="1" stroke-dasharray="4,3"/>
+  <rect x="540" y="60" width="170" height="55" rx="8" fill="#fef2f2" stroke="#dc2626" stroke-width="1"/>
+  <text x="625" y="80" text-anchor="middle" class="mm-note" fill="#991b1b">c&#8321;&#8321; = a&#8321;&#8321;&middot;b&#8321;&#8321; + a&#8321;&#8322;&middot;b&#8322;&#8321;</text>
+  <text x="625" y="100" text-anchor="middle" class="mm-note" fill="#991b1b">Row of A &middot; Column of B</text>
+
+  <!-- Shape rule at bottom -->
+  <rect x="130" y="185" width="460" height="75" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="360" y="210" text-anchor="middle" class="mm-lbl" fill="#0f172a">Shape rule</text>
+  <text x="360" y="232" text-anchor="middle" class="mm-note">(m &times; <tspan fill="#dc2626" font-weight="bold">n</tspan>) &times; (<tspan fill="#dc2626" font-weight="bold">n</tspan> &times; p) = (m &times; p)</text>
+  <text x="360" y="250" text-anchor="middle" class="mm-dim">Inner dimensions must match. Result keeps the outer dimensions.</text>
+</svg>
+
+<div class="practical-example">
+<div class="pe-label">Practical Example &mdash; Linear Regression as Matrix Multiply</div>
+<p>Given 100 samples with 5 features, your data matrix <strong>X</strong> is (100 &times; 5) and your weight vector <strong>w</strong> is (5 &times; 1). The prediction <strong>y&#770; = Xw</strong> is a single matrix multiply that produces (100 &times; 1) — one prediction per sample, computed all at once.</p>
+</div>
+
+<p><strong>Where you’ll see this again:</strong> neural network layers (<em>z = Wx + b</em>), attention scores in transformers (<em>QK<sup>T</sup></em>), covariance matrices (<em>X<sup>T</sup>X</em>), and PCA projections — all matrix multiplies at their core.</p>
+
+<p>With multiplication in hand, we can now talk about what a matrix <em>does</em> to the space it operates on — which brings us to determinants and eigenvalues.</p>
+
 <p>Before you can understand PCA, gradient descent, or most of ML’s
 
 geometry, you need two ideas from linear algebra: <em>determinants</em>
