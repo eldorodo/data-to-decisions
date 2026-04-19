@@ -585,6 +585,88 @@ th{
 }
 .site-footer a{ color:#1d4ed8; text-decoration:none; }
 
+/* ── Inline Highlights ── */
+.hl {
+  background: linear-gradient(180deg, transparent 60%, #bfdbfe 60%);
+  padding: 0 2px;
+}
+.hl-warm {
+  background: linear-gradient(180deg, transparent 60%, #fed7aa 60%);
+  padding: 0 2px;
+}
+
+/* ── Pull Quotes ── */
+.pull-quote {
+  font-family: Georgia, serif;
+  font-size: 20px;
+  font-style: italic;
+  color: #1e40af;
+  border-left: 4px solid #3b82f6;
+  background: linear-gradient(135deg, #eff6ff, #f0f9ff);
+  padding: 20px 28px;
+  margin: 28px 0;
+  border-radius: 0 12px 12px 0;
+  line-height: 1.6;
+}
+
+/* ── Foreword Section ── */
+.foreword-section h2 {
+  font-family: Georgia, serif;
+  font-size: 26px;
+  color: #0f172a;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+}
+.foreword-section p {
+  font-size: 15px;
+  line-height: 1.85;
+  color: #1e293b;
+}
+.foreword-sign {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* ── Preface Cards ── */
+.preface-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+  margin: 28px 0 8px;
+}
+.preface-card {
+  background: #f0f9ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  padding: 20px 22px;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.preface-card.accent-green {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+.preface-card.accent-slate {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+.preface-card h4 {
+  font-size: 15px;
+  color: #0f172a;
+  margin: 0 0 10px;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+.preface-card ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.preface-card li {
+  margin-bottom: 6px;
+  color: #334155;
+}
+
 /* ── AI Disclaimer ── */
 .disclaimer {
   background: #fffbeb;
