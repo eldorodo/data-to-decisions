@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="320" viewBox="0 0 900 320">
+  <defs>
+    <style>
+      text { font-family: 'Segoe UI', Arial, sans-serif; }
+      .title { font-size: 16px; font-weight: bold; fill: #0f172a; }
+      .step-num { font-size: 14px; font-weight: bold; }
+      .step-name { font-size: 15px; font-weight: bold; fill: #0f172a; }
+      .step-q { font-size: 11.5px; fill: #475569; }
+      .arrow { fill: #94a3b8; }
+    </style>
+  </defs>
+
+  <!-- Title -->
+  <text x="450" y="30" text-anchor="middle" class="title">Use the same five-part structure for any ML system design interview.</text>
+
+  <!-- Step 1: Problem -->
+  <rect x="20" y="60" width="155" height="220" rx="14" fill="#dbeafe" stroke="#60a5fa" stroke-width="2"/>
+  <text x="97" y="90" text-anchor="middle" class="step-num" fill="#2563eb">1</text>
+  <text x="97" y="112" text-anchor="middle" class="step-name">Problem</text>
+  <line x1="45" y1="122" x2="150" y2="122" stroke="#bfdbfe" stroke-width="1.5"/>
+  <text x="97" y="145" text-anchor="middle" class="step-q">What kind of ML</text>
+  <text x="97" y="162" text-anchor="middle" class="step-q">task is this?</text>
+  <text x="97" y="185" text-anchor="middle" class="step-q">Classification,</text>
+  <text x="97" y="202" text-anchor="middle" class="step-q">regression, ranking,</text>
+  <text x="97" y="219" text-anchor="middle" class="step-q">or recommendation?</text>
+  <text x="97" y="248" text-anchor="middle" class="step-q" font-style="italic" fill="#3b82f6">Define success</text>
+  <text x="97" y="263" text-anchor="middle" class="step-q" font-style="italic" fill="#3b82f6">metrics upfront</text>
+
+  <!-- Arrow 1-2 -->
+  <polygon points="183,170 197,162 197,178" class="arrow"/>
+  <line x1="175" y1="170" x2="195" y2="170" stroke="#94a3b8" stroke-width="2"/>
+
+  <!-- Step 2: Data -->
+  <rect x="200" y="60" width="155" height="220" rx="14" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="2"/>
+  <text x="277" y="90" text-anchor="middle" class="step-num" fill="#059669">2</text>
+  <text x="277" y="112" text-anchor="middle" class="step-name">Data</text>
+  <line x1="225" y1="122" x2="330" y2="122" stroke="#a7f3d0" stroke-width="1.5"/>
+  <text x="277" y="145" text-anchor="middle" class="step-q">What data do we</text>
+  <text x="277" y="162" text-anchor="middle" class="step-q">have or need?</text>
+  <text x="277" y="185" text-anchor="middle" class="step-q">Labels, volume,</text>
+  <text x="277" y="202" text-anchor="middle" class="step-q">freshness, biases,</text>
+  <text x="277" y="219" text-anchor="middle" class="step-q">collection strategy</text>
+  <text x="277" y="248" text-anchor="middle" class="step-q" font-style="italic" fill="#059669">Data defines the</text>
+  <text x="277" y="263" text-anchor="middle" class="step-q" font-style="italic" fill="#059669">ceiling of quality</text>
+
+  <!-- Arrow 2-3 -->
+  <polygon points="363,170 377,162 377,178" class="arrow"/>
+  <line x1="355" y1="170" x2="375" y2="170" stroke="#94a3b8" stroke-width="2"/>
+
+  <!-- Step 3: Features + Model -->
+  <rect x="380" y="60" width="155" height="220" rx="14" fill="#f3e8ff" stroke="#c084fc" stroke-width="2"/>
+  <text x="457" y="90" text-anchor="middle" class="step-num" fill="#7c3aed">3</text>
+  <text x="457" y="112" text-anchor="middle" class="step-name">Features + Model</text>
+  <line x1="405" y1="122" x2="510" y2="122" stroke="#e9d5ff" stroke-width="1.5"/>
+  <text x="457" y="145" text-anchor="middle" class="step-q">What signals and</text>
+  <text x="457" y="162" text-anchor="middle" class="step-q">model family fit?</text>
+  <text x="457" y="185" text-anchor="middle" class="step-q">Feature engineering,</text>
+  <text x="457" y="202" text-anchor="middle" class="step-q">model selection,</text>
+  <text x="457" y="219" text-anchor="middle" class="step-q">architecture choices</text>
+  <text x="457" y="248" text-anchor="middle" class="step-q" font-style="italic" fill="#7c3aed">Start simple,</text>
+  <text x="457" y="263" text-anchor="middle" class="step-q" font-style="italic" fill="#7c3aed">iterate later</text>
+
+  <!-- Arrow 3-4 -->
+  <polygon points="543,170 557,162 557,178" class="arrow"/>
+  <line x1="535" y1="170" x2="555" y2="170" stroke="#94a3b8" stroke-width="2"/>
+
+  <!-- Step 4: Evaluation -->
+  <rect x="560" y="60" width="155" height="220" rx="14" fill="#fef9c3" stroke="#facc15" stroke-width="2"/>
+  <text x="637" y="90" text-anchor="middle" class="step-num" fill="#b45309">4</text>
+  <text x="637" y="112" text-anchor="middle" class="step-name">Evaluation</text>
+  <line x1="585" y1="122" x2="690" y2="122" stroke="#fde68a" stroke-width="1.5"/>
+  <text x="637" y="145" text-anchor="middle" class="step-q">What offline and</text>
+  <text x="637" y="162" text-anchor="middle" class="step-q">online metrics</text>
+  <text x="637" y="179" text-anchor="middle" class="step-q">define success?</text>
+  <text x="637" y="202" text-anchor="middle" class="step-q">A/B tests, guardrail</text>
+  <text x="637" y="219" text-anchor="middle" class="step-q">metrics, fairness</text>
+  <text x="637" y="248" text-anchor="middle" class="step-q" font-style="italic" fill="#b45309">Offline metrics</text>
+  <text x="637" y="263" text-anchor="middle" class="step-q" font-style="italic" fill="#b45309">&#x2260; business impact</text>
+
+  <!-- Arrow 4-5 -->
+  <polygon points="723,170 737,162 737,178" class="arrow"/>
+  <line x1="715" y1="170" x2="735" y2="170" stroke="#94a3b8" stroke-width="2"/>
+
+  <!-- Step 5: Serving + Monitoring -->
+  <rect x="740" y="60" width="145" height="220" rx="14" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="812" y="90" text-anchor="middle" class="step-num" fill="#0891b2">5</text>
+  <text x="812" y="112" text-anchor="middle" class="step-name" font-size="14">Serving + Monitor</text>
+  <line x1="760" y1="122" x2="865" y2="122" stroke="#a5f3fc" stroke-width="1.5"/>
+  <text x="812" y="145" text-anchor="middle" class="step-q">What latency, drift</text>
+  <text x="812" y="162" text-anchor="middle" class="step-q">plan, and rollback</text>
+  <text x="812" y="179" text-anchor="middle" class="step-q">are required?</text>
+  <text x="812" y="202" text-anchor="middle" class="step-q">Batch vs real-time,</text>
+  <text x="812" y="219" text-anchor="middle" class="step-q">canary, monitoring</text>
+  <text x="812" y="248" text-anchor="middle" class="step-q" font-style="italic" fill="#0891b2">Plan for failure</text>
+  <text x="812" y="263" text-anchor="middle" class="step-q" font-style="italic" fill="#0891b2">from day one</text>
+
+  <!-- Bottom tip -->
+  <text x="450" y="305" text-anchor="middle" font-family="'Segoe UI',Arial,sans-serif" font-size="12" fill="#64748b" font-style="italic">Walk through all five steps in order. Interviewers want breadth first, then depth where they probe.</text>
+</svg>

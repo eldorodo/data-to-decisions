@@ -1,0 +1,290 @@
+[
+  {
+    "chapter": "01_math_foundations.md",
+    "text_block_index": 1,
+    "path": "figures/generated/01_math_foundations/math_foundations_map.svg",
+    "caption": "The four math areas used throughout ML: linear algebra, statistics, information theory, and optimization"
+  },
+  {
+    "chapter": "01_math_foundations.md",
+    "text_block_index": 30,
+    "path": "figures/generated/01_math_foundations/learning_rate_visualization.svg",
+    "caption": "Learning rate too high (oscillates), just right (converges), too low (stalls) \u2014 with loss surface"
+  },
+  {
+    "chapter": "02_statistics_and_probability.md",
+    "text_block_index": 2,
+    "path": "figures/generated/02_statistics_and_probability/distribution_gallery.svg",
+    "caption": "Common discrete distributions (Bernoulli, Binomial, Poisson) and continuous distributions (Gaussian, Exponential, Beta)"
+  },
+  {
+    "chapter": "02_statistics_and_probability.md",
+    "text_block_index": 7,
+    "path": "figures/generated/02_statistics_and_probability/continuous_probability_area.svg",
+    "caption": "For continuous variables, probability equals the area under the curve between two points \u2014 not a point value"
+  },
+  {
+    "chapter": "02_statistics_and_probability.md",
+    "text_block_index": 9,
+    "path": "figures/generated/02_statistics_and_probability/gaussian_empirical_rule.svg",
+    "caption": "The Gaussian 68-95-99.7 rule: almost all data falls within 3 standard deviations of the mean"
+  },
+  {
+    "chapter": "02_statistics_and_probability.md",
+    "text_block_index": 12,
+    "path": "figures/generated/02_statistics_and_probability/exponential_memoryless.svg",
+    "caption": "Exponential distribution: models waiting time. Memoryless property means past wait doesn't affect future expectation"
+  },
+  {
+    "chapter": "02_statistics_and_probability.md",
+    "text_block_index": 15,
+    "path": "figures/generated/02_statistics_and_probability/distribution_decision_tree.svg",
+    "caption": "How to choose a distribution: discrete vs continuous, then match to your data pattern"
+  },
+  {
+    "chapter": "02_statistics_and_probability.md",
+    "text_block_index": 20,
+    "path": "figures/generated/02_statistics_and_probability/skewness_kurtosis.svg",
+    "caption": "Skewness (left/symmetric/right) and kurtosis (light/normal/heavy tails) with Python-style plots"
+  },
+  {
+    "chapter": "03_python_for_data_science.md",
+    "text_block_index": 5,
+    "path": "figures/generated/03_python_for_data_science/numpy_vs_pandas.svg",
+    "caption": "NumPy vs Pandas: ndarray for math operations, DataFrame for labeled tabular wrangling \u2014 two complementary tools"
+  },
+  {
+    "chapter": "04_feature_engineering_and_eda.md",
+    "text_block_index": 2,
+    "path": "figures/generated/04_feature_engineering_and_eda/eda_workflow.svg",
+    "caption": "EDA workflow: inspect structure \u2192 check quality \u2192 explore distributions \u2192 plan transformations \u2192 implement leakage-safe"
+  },
+  {
+    "chapter": "05_supervised_learning.md",
+    "text_block_index": 5,
+    "path": "figures/generated/05_supervised_learning/algorithm_selection.svg",
+    "caption": "Algorithm selection guide: pick by output type (regression/classification/dim-reduction), then by data shape and interpretability needs"
+  },
+  {
+    "chapter": "05_supervised_learning.md",
+    "text_block_index": 13,
+    "path": "figures/generated/05_supervised_learning/logistic_sigmoid.svg",
+    "caption": "Sigmoid function maps any real-valued score to a probability between 0 and 1 for binary classification"
+  },
+  {
+    "chapter": "05_supervised_learning.md",
+    "insert_after_heading": "## 5.4 K-Nearest Neighbors",
+    "path": "figures/generated/05_supervised_learning/knn_neighbors.svg",
+    "caption": "K-Nearest Neighbors: k=1 uses nearest point only (sensitive), k=5 votes across 5 neighbors (more stable)"
+  },
+  {
+    "chapter": "05_supervised_learning.md",
+    "text_block_index": 23,
+    "path": "figures/generated/05_supervised_learning/xgboost_early_stopping.svg",
+    "caption": "Early stopping: training loss keeps falling but validation loss bottoms out \u2014 stop at the minimum to prevent overfitting"
+  },
+  {
+    "chapter": "05_supervised_learning.md",
+    "text_block_index": 99,
+    "path": "figures/generated/05_supervised_learning/residual_plots.svg",
+    "caption": "Residual diagnostic plots: good residuals (random, centred), heteroskedasticity (fan pattern), and nonlinear pattern \u2014 each signals a different model problem"
+  },
+  {
+    "chapter": "05_supervised_learning.md",
+    "text_block_index": 100,
+    "path": "figures/generated/05_supervised_learning/svm_kernel_trick.svg",
+    "caption": "SVM kernel trick: circular XOR data is not linearly separable in 2D, but the RBF kernel maps it to 3D where a flat hyperplane separates classes"
+  },
+  {
+    "chapter": "05_supervised_learning.md",
+    "text_block_index": 101,
+    "path": "figures/generated/05_supervised_learning/gradient_boosting_concept.svg",
+    "caption": "Gradient boosting: each successive tree fits the residuals of the previous ensemble, progressively improving the fit"
+  },
+  {
+    "chapter": "05_supervised_learning.md",
+    "text_block_index": 102,
+    "path": "figures/generated/05_supervised_learning/decision_tree_structure.svg",
+    "caption": "Decision tree: recursive splits on Gini impurity with fraud detection example \u2014 internal nodes test features, leaves predict class"
+  },
+  {
+    "chapter": "05_supervised_learning.md",
+    "text_block_index": 103,
+    "path": "figures/generated/05_supervised_learning/random_forest_concept.svg",
+    "caption": "Random Forest: independent trees trained on bootstrap samples vote to produce a final majority-vote prediction"
+  },
+  {
+    "chapter": "05_supervised_learning.md",
+    "text_block_index": 27,
+    "path": "figures/generated/05_supervised_learning/pdp_transaction_amount.svg",
+    "caption": "Partial Dependence Plot (PDP): average effect of transaction amount on predicted fraud risk, marginalizing all other features"
+  },
+  {
+    "chapter": "05_supervised_learning.md",
+    "text_block_index": 28,
+    "path": "figures/generated/05_supervised_learning/ice_vs_pdp_age.svg",
+    "caption": "Individual Conditional Expectation (ICE) lines per observation vs the average Partial Dependence Plot (PDP) overlay"
+  },
+  {
+    "chapter": "05_supervised_learning.md",
+    "text_block_index": 29,
+    "path": "figures/generated/05_supervised_learning/shap_waterfall.svg",
+    "caption": "SHAP waterfall: each feature's additive contribution to a single prediction, from base value to final output"
+  },
+  {
+    "chapter": "05_supervised_learning.md",
+    "text_block_index": 30,
+    "path": "figures/generated/05_supervised_learning/shap_beeswarm.svg",
+    "caption": "SHAP beeswarm summary: distribution of feature contributions across all predictions \u2014 feature importance + direction"
+  },
+  {
+    "chapter": "06_model_evaluation_and_validation.md",
+    "text_block_index": 1,
+    "path": "figures/generated/06_model_evaluation_and_validation/train_val_test_split.svg",
+    "caption": "Three-way split: train to learn weights, validation to tune decisions, test for one honest final evaluation"
+  },
+  {
+    "chapter": "06_model_evaluation_and_validation.md",
+    "text_block_index": 2,
+    "path": "figures/generated/06_model_evaluation_and_validation/leakage_comparison.svg",
+    "caption": "Data leakage: fitting the scaler on all data before splitting lets the model see future information \u2014 always fit on train only"
+  },
+  {
+    "chapter": "06_model_evaluation_and_validation.md",
+    "text_block_index": 3,
+    "path": "figures/generated/06_model_evaluation_and_validation/confusion_matrix.svg",
+    "caption": "Confusion matrix with derived metrics: Precision (TP/(TP+FP)), Recall (TP/(TP+FN)), and Specificity (TN/(TN+FP))"
+  },
+  {
+    "chapter": "06_model_evaluation_and_validation.md",
+    "text_block_index": 10,
+    "path": "figures/generated/06_model_evaluation_and_validation/threshold_tradeoff.svg",
+    "caption": "Precision-Recall-F1 tradeoff: raising the classification threshold increases precision but reduces recall"
+  },
+  {
+    "chapter": "07_unsupervised_learning.md",
+    "text_block_index": 1,
+    "path": "figures/generated/07_unsupervised_learning/unsupervised_learning_map.svg",
+    "caption": "Unsupervised learning: three families \u2014 clustering (group), dimensionality reduction (compress), anomaly detection (flag unusual)"
+  },
+  {
+    "chapter": "07_unsupervised_learning.md",
+    "text_block_index": 2,
+    "path": "figures/generated/07_unsupervised_learning/kmeans_before_after.svg",
+    "caption": "K-means clustering: unlabeled points are assigned to the nearest centroid (marked with X) and color-coded by cluster"
+  },
+  {
+    "chapter": "07_unsupervised_learning.md",
+    "text_block_index": 3,
+    "path": "figures/generated/07_unsupervised_learning/kmeans_elbow.svg",
+    "caption": "Choosing k: inertia elbow method (drop flattens) and silhouette score peak both point to k=3"
+  },
+  {
+    "chapter": "07_unsupervised_learning.md",
+    "text_block_index": 10,
+    "path": "figures/generated/07_unsupervised_learning/pca_explained_variance.svg",
+    "caption": "PCA scree plot (per-component variance) and cumulative explained variance curve \u2014 use the knee to pick how many components to keep"
+  },
+  {
+    "chapter": "07_unsupervised_learning.md",
+    "text_block_index": 11,
+    "path": "figures/generated/07_unsupervised_learning/isolation_forest_intuition.svg",
+    "caption": "Isolation Forest: normal points require many random splits to isolate (long path); anomalies are isolated with just a few splits (short path)"
+  },
+  {
+    "chapter": "07_unsupervised_learning.md",
+    "text_block_index": 12,
+    "path": "figures/generated/07_unsupervised_learning/unsupervised_selection_guide.svg",
+    "caption": "Full unsupervised learning selection guide: clustering, dimensionality reduction, anomaly detection, and representation learning pathways"
+  },
+  {
+    "chapter": "08_recommendation_systems.md",
+    "text_block_index": 2,
+    "path": "figures/generated/08_recommendation_systems/recommendation_paradigms.svg",
+    "caption": "Recommendation paradigms: collaborative filtering (user behavior), content-based (item attributes), hybrid, and popularity baseline"
+  },
+  {
+    "chapter": "09_deep_learning.md",
+    "text_block_index": 6,
+    "path": "figures/generated/09_deep_learning/training_loop.svg",
+    "caption": "Neural network training loop: forward pass \u2192 compute loss \u2192 backpropagation \u2192 optimizer updates weights \u2192 repeat"
+  },
+  {
+    "chapter": "10_nlp_and_llms.md",
+    "text_block_index": 3,
+    "path": "figures/generated/10_nlp_and_llms/text_representation_timeline.svg",
+    "caption": "Text representation evolution: Bag-of-Words/TF-IDF \u2192 Word2Vec/GloVe static embeddings \u2192 BERT/LLM contextual representations"
+  },
+  {
+    "chapter": "11_reinforcement_learning.md",
+    "text_block_index": 1,
+    "path": "figures/generated/11_reinforcement_learning/agent_environment_loop.svg",
+    "caption": "Reinforcement learning loop: agent takes an action, environment returns next state and reward, policy improves over time"
+  },
+  {
+    "chapter": "12_time_series_and_forecasting.md",
+    "text_block_index": 1,
+    "path": "figures/generated/12_time_series_and_forecasting/forecasting_pipeline.svg",
+    "caption": "Time series forecasting pipeline: past values + exogenous variables \u2192 model \u2192 future predictions"
+  },
+  {
+    "chapter": "12_time_series_and_forecasting.md",
+    "text_block_index": 2,
+    "path": "figures/generated/12_time_series_and_forecasting/time_series_decomposition.svg",
+    "caption": "Decomposing a time series into trend (long-run direction), seasonality (periodic pattern), and residual (unexplained noise)"
+  },
+  {
+    "chapter": "12_time_series_and_forecasting.md",
+    "text_block_index": 8,
+    "path": "figures/generated/12_time_series_and_forecasting/walk_forward_validation.svg",
+    "caption": "Walk-forward (expanding window) validation: train grows each fold, test is always the next unseen period"
+  },
+  {
+    "chapter": "13_data_and_sql.md",
+    "text_block_index": 1,
+    "path": "figures/generated/13_data_and_sql/oltp_to_olap.svg",
+    "caption": "Data flow from OLTP (transactional, row-optimized) to OLAP (analytical, column-optimized) systems"
+  },
+  {
+    "chapter": "14_big_data_and_data_engineering.md",
+    "text_block_index": 4,
+    "path": "figures/generated/14_big_data_and_data_engineering/etl_vs_elt.svg",
+    "caption": "ETL (transform before loading) vs ELT (load raw, transform inside warehouse) \u2014 when to use each"
+  },
+  {
+    "chapter": "15_ml_systems_and_mlops.md",
+    "text_block_index": 1,
+    "path": "figures/generated/15_ml_systems_and_mlops/end_to_end_ml_pipeline.svg",
+    "caption": "End-to-end ML pipeline: data ingestion \u2192 feature engineering \u2192 training \u2192 evaluation \u2192 serving \u2192 monitoring"
+  },
+  {
+    "chapter": "16_aws_cloud_and_sagemaker.md",
+    "text_block_index": 5,
+    "path": "figures/generated/16_aws_cloud_and_sagemaker/sagemaker_pipeline_dag.svg",
+    "caption": "SageMaker pipeline as a directed acyclic graph: each step (processing, training, evaluation, registration) is a node"
+  },
+  {
+    "chapter": "17_responsible_ai_and_ethics.md",
+    "text_block_index": 1,
+    "path": "figures/generated/17_responsible_ai_and_ethics/responsible_ai_lifecycle.svg",
+    "caption": "Responsible AI is a cross-cutting constraint at every lifecycle stage: data, modeling, evaluation, deployment, and monitoring"
+  },
+  {
+    "chapter": "17_responsible_ai_and_ethics.md",
+    "text_block_index": 8,
+    "path": "figures/generated/17_responsible_ai_and_ethics/global_vs_local_explainability.svg",
+    "caption": "Global explainability (what features matter overall) vs local explainability (why this specific prediction)"
+  },
+  {
+    "chapter": "17_responsible_ai_and_ethics.md",
+    "text_block_index": 9,
+    "path": "figures/generated/17_responsible_ai_and_ethics/lime_local_surrogate.svg",
+    "caption": "LIME (Local Interpretable Model-agnostic Explanations): fit a simple linear surrogate around one prediction to explain it"
+  },
+  {
+    "chapter": "18_interview_prep_and_case_studies.md",
+    "text_block_index": 3,
+    "path": "figures/generated/18_interview_prep_and_case_studies/system_design_framework.svg",
+    "caption": "Five-step ML system design framework: problem \u2192 data \u2192 features+model \u2192 evaluation \u2192 serving+monitoring"
+  }
+]

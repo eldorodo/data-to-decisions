@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 410" font-family="Georgia, 'Times New Roman', serif">
+  <defs>
+    <style>
+      .title { font-size: 20px; font-weight: 700; fill: #0f172a; }
+      .panel-title { font-size: 17px; font-weight: 700; }
+      .item { font-size: 14px; fill: #1e293b; }
+      .method { font-weight: 700; }
+      .sub { font-size: 12px; font-style: italic; fill: #475569; }
+    </style>
+  </defs>
+
+  <rect width="900" height="410" fill="#ffffff"/>
+
+  <text x="450" y="36" text-anchor="middle" class="title">Unsupervised learning finds structure without labels</text>
+  <text x="450" y="58" text-anchor="middle" class="sub">Three families — each answers a different question about the data</text>
+
+  <!-- Clustering -->
+  <rect x="30" y="80" width="270" height="300" rx="12" ry="12" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+  <text x="165" y="115" text-anchor="middle" class="panel-title" fill="#1e3a8a">Clustering</text>
+  <text x="165" y="134" text-anchor="middle" class="sub">Group similar points</text>
+  <line x1="55" y1="148" x2="275" y2="148" stroke="#2563eb" stroke-width="1" stroke-opacity="0.4"/>
+  <text x="50" y="183" class="item"><tspan class="method">K-Means</tspan> — spherical partitions</text>
+  <text x="50" y="220" class="item"><tspan class="method">DBSCAN</tspan> — density and noise</text>
+  <text x="50" y="257" class="item"><tspan class="method">Hierarchical</tspan> — tree then cut</text>
+  <text x="50" y="294" class="item"><tspan class="method">GMM</tspan> — soft assignments</text>
+  <text x="50" y="346" class="sub">Use when: segments, cohorts,</text>
+  <text x="50" y="362" class="sub">topic groups</text>
+
+  <!-- Dimensionality Reduction -->
+  <rect x="315" y="80" width="270" height="300" rx="12" ry="12" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+  <text x="450" y="115" text-anchor="middle" class="panel-title" fill="#14532d">Dimensionality Reduction</text>
+  <text x="450" y="134" text-anchor="middle" class="sub">Compress representations</text>
+  <line x1="340" y1="148" x2="560" y2="148" stroke="#22c55e" stroke-width="1" stroke-opacity="0.4"/>
+  <text x="335" y="183" class="item"><tspan class="method">PCA</tspan> — linear variance projection</text>
+  <text x="335" y="220" class="item"><tspan class="method">t-SNE</tspan> — nonlinear 2D/3D view</text>
+  <text x="335" y="257" class="item"><tspan class="method">UMAP</tspan> — preserves global structure</text>
+  <text x="335" y="294" class="item"><tspan class="method">Autoencoder</tspan> — neural compression</text>
+  <text x="335" y="346" class="sub">Use when: visualisation, features,</text>
+  <text x="335" y="362" class="sub">preprocessing</text>
+
+  <!-- Anomaly Detection -->
+  <rect x="600" y="80" width="270" height="300" rx="12" ry="12" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="735" y="115" text-anchor="middle" class="panel-title" fill="#78350f">Anomaly Detection</text>
+  <text x="735" y="134" text-anchor="middle" class="sub">Flag the unusual</text>
+  <line x1="625" y1="148" x2="845" y2="148" stroke="#f59e0b" stroke-width="1" stroke-opacity="0.4"/>
+  <text x="620" y="183" class="item"><tspan class="method">Isolation Forest</tspan> — short path</text>
+  <text x="620" y="220" class="item"><tspan class="method">One-Class SVM</tspan> — normal boundary</text>
+  <text x="620" y="257" class="item"><tspan class="method">Autoencoder</tspan> — high recon. error</text>
+  <text x="620" y="294" class="item"><tspan class="method">Statistical</tspan> — z-score, IQR</text>
+  <text x="620" y="346" class="sub">Use when: fraud, monitoring,</text>
+  <text x="620" y="362" class="sub">quality control</text>
+</svg>

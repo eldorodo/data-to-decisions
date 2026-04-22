@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 400" font-family="'Segoe UI', system-ui, -apple-system, sans-serif">
+  <defs>
+    <filter id="shadow" x="-4%" y="-4%" width="108%" height="112%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.08"/>
+    </filter>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#60a5fa"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="820" height="400" rx="12" fill="#ffffff" filter="url(#shadow)"/>
+
+  <!-- Title -->
+  <text x="410" y="38" text-anchor="middle" font-size="20" font-weight="700" fill="#0f172a">ETL vs ELT</text>
+
+  <!-- ── ETL Card ── -->
+  <rect x="30" y="60" width="370" height="280" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <!-- ETL header -->
+  <text x="215" y="88" text-anchor="middle" font-size="14" font-weight="700" fill="#1d4ed8">Transform before load</text>
+  <text x="55" y="120" font-size="16" font-weight="700" fill="#0f172a">ETL</text>
+
+  <!-- Steps -->
+  <!-- Step 1 -->
+  <rect x="50" y="135" width="330" height="32" rx="6" fill="#eff6ff"/>
+  <text x="66" y="156" font-size="13" fill="#334155">1. Extract from source</text>
+  <!-- Arrow -->
+  <line x1="215" y1="167" x2="215" y2="175" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+  <!-- Step 2 (highlighted) -->
+  <rect x="50" y="175" width="330" height="32" rx="6" fill="#2563eb"/>
+  <text x="66" y="196" font-size="13" font-weight="600" fill="#ffffff">2. Transform ⟵ happens here</text>
+  <!-- Arrow -->
+  <line x1="215" y1="207" x2="215" y2="215" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+  <!-- Step 3 -->
+  <rect x="50" y="215" width="330" height="32" rx="6" fill="#eff6ff"/>
+  <text x="66" y="236" font-size="13" fill="#334155">3. Load curated data into warehouse</text>
+
+  <!-- Best for -->
+  <line x1="50" y1="268" x2="380" y2="268" stroke="#bfdbfe" stroke-width="1"/>
+  <text x="55" y="290" font-size="12" fill="#475569">Best when:</text>
+  <text x="55" y="308" font-size="12" fill="#475569">• Schema control &amp; quality checks upfront</text>
+  <text x="55" y="326" font-size="12" fill="#475569">• Smaller, well-understood data sources</text>
+
+  <!-- ── ELT Card ── -->
+  <rect x="420" y="60" width="370" height="280" rx="10" fill="#ecfdf5" stroke="#22c55e" stroke-width="1.5"/>
+  <!-- ELT header -->
+  <text x="605" y="88" text-anchor="middle" font-size="14" font-weight="700" fill="#16a34a">Load raw before transform</text>
+  <text x="445" y="120" font-size="16" font-weight="700" fill="#0f172a">ELT</text>
+
+  <!-- Steps -->
+  <!-- Step 1 -->
+  <rect x="440" y="135" width="330" height="32" rx="6" fill="#f0fdf4"/>
+  <text x="456" y="156" font-size="13" fill="#334155">1. Extract from source</text>
+  <!-- Arrow -->
+  <line x1="605" y1="167" x2="605" y2="175" stroke="#4ade80" stroke-width="1.5"/>
+  <!-- Step 2 -->
+  <rect x="440" y="175" width="330" height="32" rx="6" fill="#f0fdf4"/>
+  <text x="456" y="196" font-size="13" fill="#334155">2. Load raw data into warehouse</text>
+  <!-- Arrow -->
+  <line x1="605" y1="207" x2="605" y2="215" stroke="#4ade80" stroke-width="1.5"/>
+  <!-- Step 3 (highlighted) -->
+  <rect x="440" y="215" width="330" height="32" rx="6" fill="#22c55e"/>
+  <text x="456" y="236" font-size="13" font-weight="600" fill="#ffffff">3. Transform ⟵ happens here</text>
+
+  <!-- Best for -->
+  <line x1="440" y1="268" x2="770" y2="268" stroke="#bbf7d0" stroke-width="1"/>
+  <text x="445" y="290" font-size="12" fill="#475569">Best when:</text>
+  <text x="445" y="308" font-size="12" fill="#475569">• Cloud warehouse with cheap compute (BigQuery, Snowflake)</text>
+  <text x="445" y="326" font-size="12" fill="#475569">• Replayability &amp; schema-on-read flexibility</text>
+
+  <!-- VS divider -->
+  <circle cx="410" cy="200" r="18" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="410" y="205" text-anchor="middle" font-size="12" font-weight="700" fill="#64748b">vs</text>
+
+  <!-- Caption -->
+  <text x="410" y="375" text-anchor="middle" font-size="12" fill="#64748b">ETL transforms data before loading · ELT loads raw data first, transforms inside the warehouse</text>
+</svg>

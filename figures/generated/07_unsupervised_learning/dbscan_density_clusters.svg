@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="420" viewBox="0 0 820 420">
+<defs>
+  <style>
+    .db-title{font-family:'Segoe UI',Arial,sans-serif;font-size:15px;font-weight:bold;fill:#0f172a}
+    .db-h{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;font-weight:bold}
+    .db-s{font-family:'Segoe UI',Arial,sans-serif;font-size:10.5px;fill:#475569}
+    .db-note{font-family:'Segoe UI',Arial,sans-serif;font-size:9.5px;fill:#64748b;font-style:italic}
+    .db-ax{font-family:'Segoe UI',Arial,sans-serif;font-size:10px;fill:#64748b}
+    .db-leg{font-family:'Segoe UI',Arial,sans-serif;font-size:10px;fill:#334155}
+  </style>
+</defs>
+
+<!-- Title -->
+<text x="410" y="22" text-anchor="middle" class="db-title">DBSCAN — Density-Based Clustering</text>
+
+<!-- ═══ LEFT: Scatter Plot ═══ -->
+<rect x="30" y="40" width="390" height="340" rx="6" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+<text x="225" y="62" text-anchor="middle" class="db-h" fill="#1e40af">Cluster assignment (point types)</text>
+<line x1="70" y1="80" x2="70" y2="350" stroke="#cbd5e1" stroke-width="1"/>
+<line x1="70" y1="350" x2="400" y2="350" stroke="#cbd5e1" stroke-width="1"/>
+<text x="235" y="375" text-anchor="middle" class="db-ax">Feature 1</text>
+<text x="45" y="220" text-anchor="middle" class="db-ax" transform="rotate(-90 45 220)">Feature 2</text>
+
+<!-- Cluster 0 (blue) — core points -->
+<circle cx="140" cy="160" r="5" fill="#3b82f6" opacity="0.85"/>
+<circle cx="160" cy="140" r="5" fill="#3b82f6" opacity="0.85"/>
+<circle cx="155" cy="175" r="5" fill="#3b82f6" opacity="0.85"/>
+<circle cx="175" cy="155" r="5" fill="#3b82f6" opacity="0.85"/>
+<circle cx="125" cy="145" r="5" fill="#3b82f6" opacity="0.85"/>
+<circle cx="145" cy="130" r="5" fill="#3b82f6" opacity="0.85"/>
+<circle cx="170" cy="170" r="5" fill="#3b82f6" opacity="0.85"/>
+<circle cx="135" cy="185" r="5" fill="#3b82f6" opacity="0.85"/>
+<!-- Cluster 0 — border points -->
+<circle cx="110" cy="175" r="5" fill="#93c5fd" opacity="0.7" stroke="#3b82f6" stroke-width="1" stroke-dasharray="2 2"/>
+<circle cx="190" cy="140" r="5" fill="#93c5fd" opacity="0.7" stroke="#3b82f6" stroke-width="1" stroke-dasharray="2 2"/>
+
+<!-- Cluster 1 (green) — core points -->
+<circle cx="290" cy="260" r="5" fill="#22c55e" opacity="0.85"/>
+<circle cx="310" cy="240" r="5" fill="#22c55e" opacity="0.85"/>
+<circle cx="305" cy="275" r="5" fill="#22c55e" opacity="0.85"/>
+<circle cx="325" cy="255" r="5" fill="#22c55e" opacity="0.85"/>
+<circle cx="275" cy="245" r="5" fill="#22c55e" opacity="0.85"/>
+<circle cx="295" cy="230" r="5" fill="#22c55e" opacity="0.85"/>
+<circle cx="315" cy="270" r="5" fill="#22c55e" opacity="0.85"/>
+<circle cx="280" cy="280" r="5" fill="#22c55e" opacity="0.85"/>
+<circle cx="330" cy="240" r="5" fill="#22c55e" opacity="0.85"/>
+<!-- Cluster 1 — border points -->
+<circle cx="260" cy="265" r="5" fill="#86efac" opacity="0.7" stroke="#22c55e" stroke-width="1" stroke-dasharray="2 2"/>
+<circle cx="345" cy="260" r="5" fill="#86efac" opacity="0.7" stroke="#22c55e" stroke-width="1" stroke-dasharray="2 2"/>
+
+<!-- Cluster 2 (amber) — core points -->
+<circle cx="170" cy="300" r="5" fill="#f59e0b" opacity="0.85"/>
+<circle cx="190" cy="285" r="5" fill="#f59e0b" opacity="0.85"/>
+<circle cx="185" cy="315" r="5" fill="#f59e0b" opacity="0.85"/>
+<circle cx="205" cy="295" r="5" fill="#f59e0b" opacity="0.85"/>
+<circle cx="155" cy="290" r="5" fill="#f59e0b" opacity="0.85"/>
+<circle cx="200" cy="320" r="5" fill="#f59e0b" opacity="0.85"/>
+<!-- Cluster 2 — border points -->
+<circle cx="140" cy="310" r="5" fill="#fde68a" opacity="0.7" stroke="#f59e0b" stroke-width="1" stroke-dasharray="2 2"/>
+
+<!-- Noise points (grey x-marks) -->
+<text x="370" y="110" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#94a3b8">×</text>
+<text x="95" y="100" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#94a3b8">×</text>
+<text x="350" y="180" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#94a3b8">×</text>
+<text x="240" y="330" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#94a3b8">×</text>
+
+<!-- eps-neighbourhood circle example -->
+<circle cx="155" cy="175" r="38" fill="none" stroke="#6366f1" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.6"/>
+<text x="155" y="210" text-anchor="middle" class="db-note" fill="#6366f1">eps radius</text>
+
+<!-- Legend -->
+<rect x="85" y="380" width="8" height="8" rx="4" fill="#3b82f6"/>
+<text x="98" y="388" class="db-leg">Core</text>
+<circle cx="145" cy="384" r="4" fill="#93c5fd" stroke="#3b82f6" stroke-width="1" stroke-dasharray="2 2"/>
+<text x="154" y="388" class="db-leg">Border</text>
+<text x="210" y="388" font-family="sans-serif" font-size="12" fill="#94a3b8">×</text>
+<text x="222" y="388" class="db-leg">Noise</text>
+
+<!-- ═══ RIGHT: Point-type definitions ═══ -->
+<rect x="440" y="40" width="360" height="340" rx="6" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+<text x="620" y="68" text-anchor="middle" class="db-h" fill="#1e40af">Point Types in DBSCAN</text>
+
+<!-- CORE -->
+<rect x="465" y="85" width="310" height="70" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.2"/>
+<circle cx="490" cy="120" r="10" fill="#3b82f6"/>
+<text x="515" y="107" class="db-h" fill="#1e40af">CORE</text>
+<text x="515" y="122" class="db-s">≥ min_samples neighbours within eps radius.</text>
+<text x="515" y="137" class="db-s">Forms the backbone of each cluster.</text>
+
+<!-- BORDER -->
+<rect x="465" y="170" width="310" height="70" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="1.2"/>
+<circle cx="490" cy="205" r="10" fill="#86efac" stroke="#22c55e" stroke-width="1.5"/>
+<text x="515" y="192" class="db-h" fill="#166534">BORDER</text>
+<text x="515" y="207" class="db-s">Within eps of a core point, but &lt; min_samples</text>
+<text x="515" y="222" class="db-s">neighbours itself. Sits on the cluster edge.</text>
+
+<!-- NOISE -->
+<rect x="465" y="255" width="310" height="70" rx="8" fill="#fefce8" stroke="#eab308" stroke-width="1.2"/>
+<text x="490" y="292" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#94a3b8">×</text>
+<text x="515" y="277" class="db-h" fill="#92400e">NOISE</text>
+<text x="515" y="292" class="db-s">Not within eps of any core point.</text>
+<text x="515" y="307" class="db-s">Gets label −1 — these are the outliers.</text>
+
+<!-- Rules box -->
+<rect x="465" y="340" width="310" height="32" rx="4" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.8"/>
+<text x="620" y="360" text-anchor="middle" class="db-note">Only two hyper-parameters: eps (radius) and min_samples (density threshold)</text>
+</svg>

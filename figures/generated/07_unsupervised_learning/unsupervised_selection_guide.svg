@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="680" viewBox="0 0 1100 680">
+<defs>
+  <style>
+    .sg-title{font-family:'Segoe UI',Arial,sans-serif;font-size:16px;font-weight:bold;fill:#0f172a}
+    .sg-q{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;font-weight:bold;fill:#4338ca}
+    .sg-h{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;font-weight:bold}
+    .sg-s{font-family:'Segoe UI',Arial,sans-serif;font-size:10px;fill:#475569}
+    .sg-note{font-family:'Segoe UI',Arial,sans-serif;font-size:9px;fill:#64748b;font-style:italic}
+    .sg-eval{font-family:'Segoe UI',Arial,sans-serif;font-size:10px;fill:#475569}
+    .sg-evh{font-family:'Segoe UI',Arial,sans-serif;font-size:10px;font-weight:bold;fill:#334155}
+  </style>
+  <marker id="sga" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0,7 2.5,0 5" fill="#94a3b8"/>
+  </marker>
+</defs>
+
+<text x="550" y="28" text-anchor="middle" class="sg-title">Unsupervised Learning: Method Selection Guide</text>
+
+<!-- Top question -->
+<rect x="390" y="44" width="320" height="36" rx="10" fill="#eff6ff" stroke="#6366f1" stroke-width="1.6"/>
+<text x="550" y="67" text-anchor="middle" class="sg-q">What is your goal?</text>
+
+<!-- Branch line -->
+<line x1="550" y1="80" x2="550" y2="95" stroke="#94a3b8" stroke-width="1.3"/>
+<line x1="140" y1="95" x2="960" y2="95" stroke="#94a3b8" stroke-width="1.3"/>
+
+<!-- 4 branch arrows -->
+<line x1="140" y1="95" x2="140" y2="115" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#sga)"/>
+<line x1="410" y1="95" x2="410" y2="115" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#sga)"/>
+<line x1="690" y1="95" x2="690" y2="115" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#sga)"/>
+<line x1="960" y1="95" x2="960" y2="115" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#sga)"/>
+
+<!-- ═══ Column 1: Clustering ═══ -->
+<rect x="35" y="120" width="210" height="38" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.4"/>
+<text x="140" y="140" text-anchor="middle" class="sg-h" fill="#1e40af">Group similar items together</text>
+
+<text x="140" y="172" text-anchor="middle" class="sg-q" style="font-size:11px">Shape / properties?</text>
+<line x1="70" y1="180" x2="70" y2="200" stroke="#94a3b8" stroke-width="1" marker-end="url(#sga)"/>
+<line x1="140" y1="180" x2="140" y2="200" stroke="#94a3b8" stroke-width="1" marker-end="url(#sga)"/>
+<line x1="210" y1="180" x2="210" y2="200" stroke="#94a3b8" stroke-width="1" marker-end="url(#sga)"/>
+<line x1="70" y1="180" x2="210" y2="180" stroke="#94a3b8" stroke-width="1"/>
+
+<!-- K-Means -->
+<rect x="25" y="205" width="90" height="50" rx="6" fill="#2563eb"/>
+<text x="70" y="225" text-anchor="middle" class="sg-h" fill="#fff">K-Means</text>
+<text x="70" y="240" text-anchor="middle" style="font-family:'Segoe UI',sans-serif;font-size:8.5px;fill:#bfdbfe">(spherical, know k)</text>
+
+<!-- DBSCAN -->
+<rect x="120" y="205" width="90" height="50" rx="6" fill="#f59e0b"/>
+<text x="165" y="225" text-anchor="middle" class="sg-h" fill="#fff">DBSCAN</text>
+<text x="165" y="240" text-anchor="middle" style="font-family:'Segoe UI',sans-serif;font-size:8.5px;fill:#fef3c7">(arbitrary, noise)</text>
+
+<!-- Row 2 -->
+<line x1="70" y1="180" x2="70" y2="268" stroke="none"/>
+<line x1="70" y1="260" x2="70" y2="275" stroke="#94a3b8" stroke-width="1" marker-end="url(#sga)"/>
+<line x1="175" y1="260" x2="175" y2="275" stroke="#94a3b8" stroke-width="1" marker-end="url(#sga)"/>
+<line x1="70" y1="260" x2="175" y2="260" stroke="#94a3b8" stroke-width="1"/>
+<!-- Hierarchical -->
+<rect x="25" y="280" width="90" height="50" rx="6" fill="#16a34a"/>
+<text x="70" y="297" text-anchor="middle" class="sg-h" fill="#fff">Hierarchical</text>
+<text x="70" y="312" text-anchor="middle" style="font-family:'Segoe UI',sans-serif;font-size:8.5px;fill:#dcfce7">(dendrogram)</text>
+<!-- GMM -->
+<rect x="130" y="280" width="90" height="50" rx="6" fill="#ec4899"/>
+<text x="175" y="297" text-anchor="middle" class="sg-h" fill="#fff">GMM</text>
+<text x="175" y="312" text-anchor="middle" style="font-family:'Segoe UI',sans-serif;font-size:8.5px;fill:#fce7f3">(soft, elliptical)</text>
+
+<!-- ═══ Column 2: Dimensionality Reduction ═══ -->
+<rect x="295" y="120" width="230" height="38" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.4"/>
+<text x="410" y="144" text-anchor="middle" class="sg-h" fill="#166534">Reduce dimensionality</text>
+
+<text x="410" y="172" text-anchor="middle" class="sg-q" style="font-size:11px">Purpose?</text>
+<line x1="340" y1="180" x2="480" y2="180" stroke="#94a3b8" stroke-width="1"/>
+<line x1="340" y1="180" x2="340" y2="200" stroke="#94a3b8" stroke-width="1" marker-end="url(#sga)"/>
+<line x1="410" y1="180" x2="410" y2="200" stroke="#94a3b8" stroke-width="1" marker-end="url(#sga)"/>
+<line x1="480" y1="180" x2="480" y2="200" stroke="#94a3b8" stroke-width="1" marker-end="url(#sga)"/>
+
+<!-- PCA -->
+<rect x="295" y="205" width="90" height="50" rx="6" fill="#166534"/>
+<text x="340" y="223" text-anchor="middle" class="sg-h" fill="#fff">PCA</text>
+<text x="340" y="238" text-anchor="middle" style="font-family:'Segoe UI',sans-serif;font-size:8.5px;fill:#dcfce7">(preprocessing,</text>
+<text x="340" y="249" text-anchor="middle" style="font-family:'Segoe UI',sans-serif;font-size:8.5px;fill:#dcfce7">compression)</text>
+
+<!-- UMAP -->
+<rect x="395" y="205" width="90" height="50" rx="6" fill="#15803d"/>
+<text x="440" y="223" text-anchor="middle" class="sg-h" fill="#fff">UMAP</text>
+<text x="440" y="238" text-anchor="middle" style="font-family:'Segoe UI',sans-serif;font-size:8.5px;fill:#dcfce7">(visualise +</text>
+<text x="440" y="249" text-anchor="middle" style="font-family:'Segoe UI',sans-serif;font-size:8.5px;fill:#dcfce7">transform new)</text>
+
+<!-- t-SNE -->
+<rect x="440" y="205" width="90" height="50" rx="6" fill="#22c55e"/>
+<text x="485" y="223" text-anchor="middle" class="sg-h" fill="#fff">t-SNE</text>
+<text x="485" y="238" text-anchor="middle" style="font-family:'Segoe UI',sans-serif;font-size:8.5px;fill:#f0fdf4">(exploration,</text>
+<text x="485" y="249" text-anchor="middle" style="font-family:'Segoe UI',sans-serif;font-size:8.5px;fill:#f0fdf4">2D/3D only)</text>
+
+<!-- ═══ Column 3: Anomaly Detection ═══ -->
+<rect x="575" y="120" width="230" height="38" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.4"/>
+<text x="690" y="144" text-anchor="middle" class="sg-h" fill="#92400e">Detect anomalies</text>
+
+<text x="690" y="172" text-anchor="middle" class="sg-q" style="font-size:11px">Data type / size?</text>
+<line x1="620" y1="180" x2="760" y2="180" stroke="#94a3b8" stroke-width="1"/>
+<line x1="620" y1="180" x2="620" y2="200" stroke="#94a3b8" stroke-width="1" marker-end="url(#sga)"/>
+<line x1="690" y1="180" x2="690" y2="200" stroke="#94a3b8" stroke-width="1" marker-end="url(#sga)"/>
+<line x1="760" y1="180" x2="760" y2="200" stroke="#94a3b8" stroke-width="1" marker-end="url(#sga)"/>
+
+<!-- Isolation Forest -->
+<rect x="575" y="205" width="90" height="56" rx="6" fill="#b45309"/>
+<text x="620" y="223" text-anchor="middle" class="sg-h" fill="#fff">Isolation</text>
+<text x="620" y="237" text-anchor="middle" class="sg-h" fill="#fff">Forest</text>
+<text x="620" y="252" text-anchor="middle" style="font-family:'Segoe UI',sans-serif;font-size:8.5px;fill:#fef3c7">(tabular, large)</text>
+
+<!-- LOF -->
+<rect x="670" y="205" width="80" height="56" rx="6" fill="#d97706"/>
+<text x="710" y="225" text-anchor="middle" class="sg-h" fill="#fff">LOF</text>
+<text x="710" y="249" text-anchor="middle" style="font-family:'Segoe UI',sans-serif;font-size:8.5px;fill:#fef3c7">(varying density)</text>
+
+<!-- One-Class SVM -->
+<rect x="720" y="205" width="80" height="56" rx="6" fill="#ea580c"/>
+<text x="760" y="222" text-anchor="middle" class="sg-h" fill="#fff">One-Class</text>
+<text x="760" y="236" text-anchor="middle" class="sg-h" fill="#fff">SVM</text>
+<text x="760" y="252" text-anchor="middle" style="font-family:'Segoe UI',sans-serif;font-size:8.5px;fill:#fff3e0">(clean normal set)</text>
+
+<!-- ═══ Column 4: Representation Learning ═══ -->
+<rect x="850" y="120" width="220" height="38" rx="8" fill="#fce7f3" stroke="#ec4899" stroke-width="1.4"/>
+<text x="960" y="144" text-anchor="middle" class="sg-h" fill="#9d174d">Learn compact representation</text>
+
+<text x="960" y="172" text-anchor="middle" class="sg-q" style="font-size:11px">Need generation?</text>
+<line x1="910" y1="180" x2="1010" y2="180" stroke="#94a3b8" stroke-width="1"/>
+
+<!-- No arrow -->
+<text x="900" y="196" text-anchor="middle" class="sg-s" font-weight="bold">No</text>
+<line x1="910" y1="180" x2="910" y2="200" stroke="#94a3b8" stroke-width="1" marker-end="url(#sga)"/>
+<rect x="870" y="205" width="80" height="50" rx="6" fill="#db2777"/>
+<text x="910" y="225" text-anchor="middle" class="sg-h" fill="#fff">Autoencoder</text>
+<text x="910" y="240" text-anchor="middle" style="font-family:'Segoe UI',sans-serif;font-size:8.5px;fill:#fce7f3">(encode+decode)</text>
+
+<!-- Yes arrow -->
+<text x="1020" y="196" text-anchor="middle" class="sg-s" font-weight="bold">Yes</text>
+<line x1="1010" y1="180" x2="1010" y2="200" stroke="#94a3b8" stroke-width="1" marker-end="url(#sga)"/>
+<rect x="970" y="205" width="80" height="50" rx="6" fill="#be185d"/>
+<text x="1010" y="225" text-anchor="middle" class="sg-h" fill="#fff">VAE</text>
+<text x="1010" y="240" text-anchor="middle" style="font-family:'Segoe UI',sans-serif;font-size:8.5px;fill:#fce7f3">(generative,</text>
+<text x="1010" y="250" text-anchor="middle" style="font-family:'Segoe UI',sans-serif;font-size:8.5px;fill:#fce7f3">smooth latent)</text>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- Evaluation section -->
+<!-- ═══════════════════════════════════════════════════ -->
+<rect x="35" y="370" width="1030" height="290" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+<text x="550" y="398" text-anchor="middle" class="sg-title" style="font-size:14px">Evaluating Unsupervised Models</text>
+
+<!-- 4 columns -->
+<!-- Col 1: With ground truth -->
+<rect x="55" y="415" width="230" height="110" rx="6" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+<text x="170" y="435" text-anchor="middle" class="sg-evh">With ground truth</text>
+<text x="170" y="455" text-anchor="middle" class="sg-eval">ARI (Adjusted Rand Index)</text>
+<text x="170" y="475" text-anchor="middle" class="sg-eval">NMI (Normalised Mutual Info)</text>
+<text x="170" y="495" text-anchor="middle" class="sg-eval">Fowlkes-Mallows Index</text>
+<text x="170" y="512" text-anchor="middle" class="sg-note">Range: −1 to 1 (1 = perfect match)</text>
+
+<!-- Col 2: Without ground truth -->
+<rect x="305" y="415" width="230" height="110" rx="6" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1"/>
+<text x="420" y="435" text-anchor="middle" class="sg-evh">Without ground truth</text>
+<text x="420" y="455" text-anchor="middle" class="sg-eval">Silhouette Score</text>
+<text x="420" y="475" text-anchor="middle" class="sg-eval">Davies-Bouldin Index</text>
+<text x="420" y="495" text-anchor="middle" class="sg-eval">Calinski-Harabasz Index</text>
+<text x="420" y="512" text-anchor="middle" class="sg-note">Internal metrics — no labels needed</text>
+
+<!-- Col 3: Dim reduction -->
+<rect x="555" y="415" width="230" height="110" rx="6" fill="#fefce8" stroke="#fde68a" stroke-width="1"/>
+<text x="670" y="435" text-anchor="middle" class="sg-evh">Dimensionality reduction</text>
+<text x="670" y="455" text-anchor="middle" class="sg-eval">Explained variance ratio</text>
+<text x="670" y="475" text-anchor="middle" class="sg-eval">Trustworthiness</text>
+<text x="670" y="495" text-anchor="middle" class="sg-eval">Reconstruction error</text>
+<text x="670" y="512" text-anchor="middle" class="sg-note">Higher variance = more info retained</text>
+
+<!-- Col 4: Anomaly detection -->
+<rect x="805" y="415" width="240" height="110" rx="6" fill="#fef2f2" stroke="#fecaca" stroke-width="1"/>
+<text x="925" y="435" text-anchor="middle" class="sg-evh">Anomaly detection</text>
+<text x="925" y="455" text-anchor="middle" class="sg-eval">Precision@k</text>
+<text x="925" y="475" text-anchor="middle" class="sg-eval">Reconstruction error distribution</text>
+<text x="925" y="495" text-anchor="middle" class="sg-eval">F1 (if partial labels exist)</text>
+<text x="925" y="512" text-anchor="middle" class="sg-note">Often need domain expert review</text>
+
+<!-- Bottom note -->
+<text x="550" y="550" text-anchor="middle" class="sg-note" style="font-size:10px">Tip: Always combine quantitative metrics with domain-expert interpretation — numbers alone can be misleading in unsupervised settings.</text>
+</svg>

@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="560" viewBox="0 0 780 560">
+<defs>
+  <style>
+    .dr-title{font-family:'Segoe UI',Arial,sans-serif;font-size:15px;font-weight:bold;fill:#0f172a}
+    .dr-q{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;font-weight:bold;fill:#4338ca}
+    .dr-h{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;font-weight:bold}
+    .dr-s{font-family:'Segoe UI',Arial,sans-serif;font-size:10px;fill:#475569}
+    .dr-note{font-family:'Segoe UI',Arial,sans-serif;font-size:9.5px;fill:#64748b;font-style:italic}
+    .dr-th{font-family:'Segoe UI',Arial,sans-serif;font-size:10px;font-weight:bold;fill:#334155}
+    .dr-td{font-family:'Segoe UI',Arial,sans-serif;font-size:9.5px;fill:#475569}
+  </style>
+  <marker id="dra" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0,7 2.5,0 5" fill="#94a3b8"/>
+  </marker>
+</defs>
+
+<text x="390" y="24" text-anchor="middle" class="dr-title">Dimensionality Reduction — Choosing the Right Method</text>
+
+<!-- Top question -->
+<rect x="225" y="40" width="330" height="40" rx="10" fill="#eff6ff" stroke="#6366f1" stroke-width="1.6"/>
+<text x="390" y="65" text-anchor="middle" class="dr-q">Why do you need lower dimensions?</text>
+
+<!-- Branch line -->
+<line x1="140" y1="95" x2="640" y2="95" stroke="#94a3b8" stroke-width="1.3"/>
+<line x1="390" y1="80" x2="390" y2="95" stroke="#94a3b8" stroke-width="1.3"/>
+<line x1="140" y1="95" x2="140" y2="115" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#dra)"/>
+<line x1="390" y1="95" x2="390" y2="115" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#dra)"/>
+<line x1="640" y1="95" x2="640" y2="115" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#dra)"/>
+
+<!-- ─── Column 1: Visualisation ─── -->
+<rect x="30" y="120" width="220" height="40" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.4"/>
+<text x="140" y="138" text-anchor="middle" class="dr-h" fill="#1e40af">Visualisation</text>
+<text x="140" y="153" text-anchor="middle" class="dr-s">(2D / 3D plot)</text>
+
+<line x1="80" y1="160" x2="80" y2="180" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#dra)"/>
+<rect x="30" y="185" width="190" height="50" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1"/>
+<text x="125" y="205" text-anchor="middle" class="dr-h" fill="#1e40af">t-SNE</text>
+<text x="125" y="220" text-anchor="middle" class="dr-s">Preserves local neighbourhoods</text>
+<text x="125" y="232" text-anchor="middle" class="dr-note">best for cluster separation</text>
+
+<line x1="200" y1="160" x2="200" y2="250" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#dra)"/>
+<rect x="30" y="255" width="190" height="50" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1"/>
+<text x="125" y="275" text-anchor="middle" class="dr-h" fill="#1e40af">UMAP</text>
+<text x="125" y="290" text-anchor="middle" class="dr-s">Faster, preserves global structure</text>
+<text x="125" y="302" text-anchor="middle" class="dr-note">scales to &gt;10k points</text>
+
+<!-- ─── Column 2: Preprocessing ─── -->
+<rect x="280" y="120" width="220" height="40" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.4"/>
+<text x="390" y="138" text-anchor="middle" class="dr-h" fill="#166534">Preprocessing</text>
+<text x="390" y="153" text-anchor="middle" class="dr-s">(before model training)</text>
+
+<line x1="330" y1="160" x2="330" y2="180" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#dra)"/>
+<rect x="280" y="185" width="200" height="50" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1"/>
+<text x="380" y="205" text-anchor="middle" class="dr-h" fill="#166534">PCA</text>
+<text x="380" y="220" text-anchor="middle" class="dr-s">Linear, fast, interpretable</text>
+<text x="380" y="232" text-anchor="middle" class="dr-note">keep 95% explained variance</text>
+
+<line x1="390" y1="160" x2="390" y2="250" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#dra)"/>
+<rect x="280" y="255" width="200" height="40" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1"/>
+<text x="380" y="275" text-anchor="middle" class="dr-h" fill="#166534">Kernel PCA</text>
+<text x="380" y="290" text-anchor="middle" class="dr-s">Non-linear patterns</text>
+
+<line x1="450" y1="160" x2="450" y2="310" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#dra)"/>
+<rect x="280" y="305" width="200" height="40" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1"/>
+<text x="380" y="325" text-anchor="middle" class="dr-h" fill="#166534">Autoencoder</text>
+<text x="380" y="340" text-anchor="middle" class="dr-s">Deep non-linear compression</text>
+
+<!-- ─── Column 3: Compression / Embeddings ─── -->
+<rect x="530" y="120" width="220" height="40" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.4"/>
+<text x="640" y="138" text-anchor="middle" class="dr-h" fill="#92400e">Compression / Embeddings</text>
+<text x="640" y="153" text-anchor="middle" class="dr-s">(compact representations)</text>
+
+<line x1="580" y1="160" x2="580" y2="180" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#dra)"/>
+<rect x="530" y="185" width="200" height="50" rx="6" fill="#fefce8" stroke="#fde68a" stroke-width="1"/>
+<text x="630" y="205" text-anchor="middle" class="dr-h" fill="#92400e">Autoencoder</text>
+<text x="630" y="220" text-anchor="middle" class="dr-s">Learn compact representation</text>
+<text x="630" y="232" text-anchor="middle" class="dr-note">also useful for anomaly detection</text>
+
+<line x1="640" y1="160" x2="640" y2="250" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#dra)"/>
+<rect x="530" y="255" width="200" height="40" rx="6" fill="#fefce8" stroke="#fde68a" stroke-width="1"/>
+<text x="630" y="275" text-anchor="middle" class="dr-h" fill="#92400e">PCA</text>
+<text x="630" y="290" text-anchor="middle" class="dr-s">Fast reconstruction baseline</text>
+
+<line x1="700" y1="160" x2="700" y2="310" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#dra)"/>
+<rect x="530" y="305" width="200" height="40" rx="6" fill="#fefce8" stroke="#fde68a" stroke-width="1"/>
+<text x="630" y="325" text-anchor="middle" class="dr-h" fill="#92400e">Word2Vec / BERT</text>
+<text x="630" y="340" text-anchor="middle" class="dr-s">Text embeddings</text>
+
+<!-- ═══ Comparison Table ═══ -->
+<text x="390" y="382" text-anchor="middle" class="dr-h" fill="#334155">Method Comparison</text>
+
+<!-- Table header -->
+<rect x="40" y="390" width="700" height="24" rx="0" fill="#f1f5f9"/>
+<text x="110" y="406" text-anchor="middle" class="dr-th">Method</text>
+<text x="230" y="406" text-anchor="middle" class="dr-th">Linear?</text>
+<text x="340" y="406" text-anchor="middle" class="dr-th">Scalable?</text>
+<text x="460" y="406" text-anchor="middle" class="dr-th">Global structure</text>
+<text x="620" y="406" text-anchor="middle" class="dr-th">Best for</text>
+<line x1="40" y1="414" x2="740" y2="414" stroke="#cbd5e1" stroke-width="1"/>
+
+<!-- PCA row -->
+<text x="110" y="432" text-anchor="middle" class="dr-td" font-weight="bold">PCA</text>
+<text x="230" y="432" text-anchor="middle" class="dr-td">Yes</text>
+<text x="340" y="432" text-anchor="middle" class="dr-td">Yes ✓</text>
+<text x="460" y="432" text-anchor="middle" class="dr-td">Preserved</text>
+<text x="620" y="432" text-anchor="middle" class="dr-td">Preprocessing, explained variance</text>
+<line x1="40" y1="438" x2="740" y2="438" stroke="#e2e8f0" stroke-width="0.5"/>
+
+<!-- t-SNE row -->
+<text x="110" y="456" text-anchor="middle" class="dr-td" font-weight="bold">t-SNE</text>
+<text x="230" y="456" text-anchor="middle" class="dr-td">No</text>
+<text x="340" y="456" text-anchor="middle" class="dr-td">No (slow)</text>
+<text x="460" y="456" text-anchor="middle" class="dr-td">Lost</text>
+<text x="620" y="456" text-anchor="middle" class="dr-td">2D / 3D visualisation</text>
+<line x1="40" y1="462" x2="740" y2="462" stroke="#e2e8f0" stroke-width="0.5"/>
+
+<!-- UMAP row -->
+<text x="110" y="480" text-anchor="middle" class="dr-td" font-weight="bold">UMAP</text>
+<text x="230" y="480" text-anchor="middle" class="dr-td">No</text>
+<text x="340" y="480" text-anchor="middle" class="dr-td">Yes ✓</text>
+<text x="460" y="480" text-anchor="middle" class="dr-td">Partially</text>
+<text x="620" y="480" text-anchor="middle" class="dr-td">Large-scale viz + embedding</text>
+<line x1="40" y1="486" x2="740" y2="486" stroke="#e2e8f0" stroke-width="0.5"/>
+
+<!-- Kernel PCA row -->
+<text x="110" y="504" text-anchor="middle" class="dr-td" font-weight="bold">Kernel PCA</text>
+<text x="230" y="504" text-anchor="middle" class="dr-td">No</text>
+<text x="340" y="504" text-anchor="middle" class="dr-td">Medium</text>
+<text x="460" y="504" text-anchor="middle" class="dr-td">Depends on kernel</text>
+<text x="620" y="504" text-anchor="middle" class="dr-td">Non-linear preprocessing</text>
+<line x1="40" y1="510" x2="740" y2="510" stroke="#e2e8f0" stroke-width="0.5"/>
+
+<!-- Autoencoder row -->
+<text x="110" y="528" text-anchor="middle" class="dr-td" font-weight="bold">Autoencoder</text>
+<text x="230" y="528" text-anchor="middle" class="dr-td">No</text>
+<text x="340" y="528" text-anchor="middle" class="dr-td">Yes ✓</text>
+<text x="460" y="528" text-anchor="middle" class="dr-td">Learned</text>
+<text x="620" y="528" text-anchor="middle" class="dr-td">Deep compression, anomaly det.</text>
+<line x1="40" y1="534" x2="740" y2="534" stroke="#e2e8f0" stroke-width="0.5"/>
+</svg>
