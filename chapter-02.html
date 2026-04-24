@@ -1146,8 +1146,9 @@ using these concepts.</p>
 <p>Here’s the intuition before the formulas:</p>
 
 <ul>
-<li><strong>Entropy</strong>  measures how uncertain (or <em>spread out</em>) a distribution is -  <strong>Cross-entropy</strong> measures how good your model’s  distribution is for describing the true distribution</li>
-<li><strong>KL  divergence</strong> measures <em>how much extra</em> cost you pay for  using the wrong model</li>
+<li><strong>Entropy</strong> measures how uncertain (or <em>spread out</em>) a distribution is</li>
+<li><strong>Cross-entropy</strong> measures how well your model&rsquo;s distribution describes the true distribution</li>
+<li><strong>KL divergence</strong> measures <em>how much extra</em> cost you pay for using the wrong model</li>
 </ul>
 
 <p><strong>Convention:</strong> <span
@@ -1160,24 +1161,23 @@ class="math inline">\(p(y)\)</span> = model/predicted distribution ·
 
 <table style="border-collapse:collapse; margin:16px 0; width:auto;">
 <tr>
-  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">H(q)</td>
-  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Entropy</td>
-  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">uncertainty in true distribution q</td>
+  <td style="padding:6px 14px; border-bottom:1px solid #e2e8f0; font-weight:600;">H(q)</td>
+  <td style="padding:6px 14px; border-bottom:1px solid #e2e8f0;">Entropy</td>
+  <td style="padding:6px 14px; border-bottom:1px solid #e2e8f0;">uncertainty in true distribution q</td>
 </tr>
 <tr>
-  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">H(q,p)</td>
-  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">Cross-Entropy  H(q) + extra bits from using model p</td>
-  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+  <td style="padding:6px 14px; border-bottom:1px solid #e2e8f0; font-weight:600;">H(q, p)</td>
+  <td style="padding:6px 14px; border-bottom:1px solid #e2e8f0;">Cross-Entropy</td>
+  <td style="padding:6px 14px; border-bottom:1px solid #e2e8f0;">H(q) + extra bits from using model p</td>
 </tr>
 <tr>
-  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">D_KL(q||p)  KL Divergence  H(q,p) − H(q)  ← mismatch penalty only</td>
-  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
-  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+  <td style="padding:6px 14px; border-bottom:1px solid #e2e8f0; font-weight:600;">D<sub>KL</sub>(q &Vert; p)</td>
+  <td style="padding:6px 14px; border-bottom:1px solid #e2e8f0;">KL Divergence</td>
+  <td style="padding:6px 14px; border-bottom:1px solid #e2e8f0;">H(q, p) &minus; H(q) &larr; mismatch penalty only</td>
 </tr>
 <tr>
-  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08); font-weight:600;">Minimize H(q,p)  ≡  Minimize D_KL(q||p)</td>
-  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);">(since H(q) is fixed)</td>
-  <td style="padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.08);"></td>
+  <td style="padding:6px 14px; font-weight:600;" colspan="2">Minimize H(q, p) &equiv; Minimize D<sub>KL</sub>(q &Vert; p)</td>
+  <td style="padding:6px 14px; color:#64748b;">(since H(q) is fixed for given data)</td>
 </tr>
 </table>
 
@@ -1246,11 +1246,11 @@ D_KL(q||p).</p>
 
 <tr>
 
-<td>KL divergence D_KL(q</td>
+<td>KL divergence <span class="math inline">\(D_{KL}(q\|p)\)</span></td>
 
-<td></td>
+<td>2 distributions</td>
 
-<td>p)</td>
+<td>extra cost from using <span class="math inline">\(p\)</span> instead of <span class="math inline">\(q\)</span></td>
 
 </tr>
 
@@ -1382,6 +1382,49 @@ class="math inline">\(p=0.5\)</span>.</p>
 
 <h4 id="cross-entropy">Cross-Entropy</h4>
 
+<p>If entropy measures how uncertain <em>reality</em> is, cross-entropy measures <strong>how expensive it is to use your model&rsquo;s beliefs instead of reality</strong>. Imagine you&rsquo;re a weather forecaster. Entropy is the inherent unpredictability of weather. Cross-entropy is how many &ldquo;surprise bits&rdquo; <em>your forecasts</em> produce when judged against what actually happened. A perfect model&rsquo;s cross-entropy equals the entropy; a bad model&rsquo;s is always higher.</p>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="260" viewBox="0 0 680 260" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .ce-lbl { font: bold 13px system-ui, sans-serif; fill: #1e293b; }
+    .ce-val { font: 12px 'Consolas', monospace; fill: #334155; }
+    .ce-note { font: 11px system-ui, sans-serif; fill: #64748b; }
+    .ce-head { font: bold 11px system-ui, sans-serif; fill: #fff; }
+  </style>
+  <!-- Title -->
+  <text x="340" y="22" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="bold" font-size="14" fill="#1e293b">Cross-Entropy: how well does your model describe reality?</text>
+
+  <!-- Good model -->
+  <rect x="20" y="40" width="300" height="90" rx="10" fill="#f0fdf4" stroke="#22c55e" stroke-width="1.5"/>
+  <rect x="20" y="40" width="300" height="26" rx="10" fill="#22c55e"/>
+  <rect x="20" y="56" width="300" height="1" fill="#22c55e"/>
+  <text x="170" y="57" text-anchor="middle" class="ce-head">Good model</text>
+  <text x="36" y="84" class="ce-val">Truth q  = [0.8, 0.2]</text>
+  <text x="36" y="102" class="ce-val">Model p  = [0.75, 0.25]</text>
+  <text x="36" y="122" class="ce-lbl">H(q, p) = 0.53  <tspan class="ce-note">(close to H(q) = 0.50)</tspan></text>
+
+  <!-- Bad model -->
+  <rect x="360" y="40" width="300" height="90" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+  <rect x="360" y="40" width="300" height="26" rx="10" fill="#ef4444"/>
+  <rect x="360" y="56" width="300" height="1" fill="#ef4444"/>
+  <text x="510" y="57" text-anchor="middle" class="ce-head">Bad model</text>
+  <text x="376" y="84" class="ce-val">Truth q  = [0.8, 0.2]</text>
+  <text x="376" y="102" class="ce-val">Model p  = [0.2, 0.8]</text>
+  <text x="376" y="122" class="ce-lbl">H(q, p) = 1.50  <tspan class="ce-note">(3&times; the entropy!)</tspan></text>
+
+  <!-- Arrow + insight -->
+  <line x1="170" y1="140" x2="170" y2="170" stroke="#22c55e" stroke-width="2" stroke-dasharray="4,3"/>
+  <text x="170" y="188" text-anchor="middle" class="ce-note">Low extra cost &mdash; predictions</text>
+  <text x="170" y="202" text-anchor="middle" class="ce-note">match reality well</text>
+
+  <line x1="510" y1="140" x2="510" y2="170" stroke="#ef4444" stroke-width="2" stroke-dasharray="4,3"/>
+  <text x="510" y="188" text-anchor="middle" class="ce-note">High extra cost &mdash; model</text>
+  <text x="510" y="202" text-anchor="middle" class="ce-note">beliefs clash with reality</text>
+
+  <!-- Bottom rule -->
+  <text x="340" y="240" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" fill="#6366f1" font-weight="600">Cross-entropy &ge; Entropy, with equality only when p = q (perfect model)</text>
+</svg>
+
 <p><span class="math display">\[
 
 H(q,p) = -\sum_i q_i \log p_i
@@ -1394,13 +1437,15 @@ H(q,p) = -\sum_i q_i \log p_i
 
 \]</span></p>
 
-<p>For one-hot labels:</p>
+<p>For one-hot labels (the standard classification case), this simplifies beautifully:</p>
 
 <p><span class="math display">\[
 
 H(q,p) = -\log p(y_{\text{true}})
 
 \]</span></p>
+
+<p>Only the probability assigned to the <em>correct class</em> matters. This is why cross-entropy loss is also called <strong>log loss</strong> &mdash; and notice how the penalty is asymmetric:</p>
 
 <table style="border-collapse:collapse; margin:16px 0; width:auto;">
 <thead><tr>
@@ -1412,7 +1457,7 @@ H(q,p) = -\log p(y_{\text{true}})
   <th style="padding:8px 14px; border-bottom:2px solid #6366f1; text-align:center;">0.01</th>
 </tr></thead>
 <tbody><tr>
-  <td style="padding:8px 14px; font-weight:600;">loss = −log(p)</td>
+  <td style="padding:8px 14px; font-weight:600;">loss = &minus;log(p)</td>
   <td style="padding:8px 14px; text-align:center; color:#22c55e;">0.01</td>
   <td style="padding:8px 14px; text-align:center; color:#22c55e;">0.11</td>
   <td style="padding:8px 14px; text-align:center; color:#f59e0b;">0.69</td>
@@ -1420,14 +1465,7 @@ H(q,p) = -\log p(y_{\text{true}})
   <td style="padding:8px 14px; text-align:center; color:#ef4444; font-weight:700;">4.61</td>
 </tr></tbody>
 </table>
-<p style="font-style:italic; color:#64748b; margin-top:4px;">The model is heavily penalized for being confidently wrong.</p>
-
-<p>Examples:</p>
-
-<ul>
-<li><span class="math inline">\(p(y_{\text{true}})=0.9  \Rightarrow -\log(0.9)\approx 0.105\)</span></li>
-<li><span  class="math inline">\(p(y_{\text{true}})=0.01 \Rightarrow  -\log(0.01)\approx 4.605\)</span></li>
-</ul>
+<p style="font-style:italic; color:#64748b; margin-top:4px;">Going from 0.1 to 0.01 adds more loss than going from 0.99 to 0.5. The model is heavily penalized for being confidently wrong.</p>
 
 <ul>
 
@@ -1437,25 +1475,61 @@ small loss</li>
 
 <li>confident wrong <span class="math inline">\(\Rightarrow\)</span>
 
-very large loss</li>
+very large loss (the &minus;log curve explodes near zero)</li>
 
 </ul>
 
 <blockquote>
 
-<p><strong>Key:</strong> Cross-entropy rewards calibrated confidence and
-
-punishes tiny probability on the true class.</p>
+<p><strong>Key:</strong> Cross-entropy rewards calibrated confidence and punishes tiny probability on the true class. When you call <code>loss='categorical_crossentropy'</code> in Keras, this is exactly what runs.</p>
 
 </blockquote>
 
 <h4 id="kl-divergence">KL Divergence</h4>
+
+<p>Cross-entropy measures the <em>total</em> cost of using model <span class="math inline">\(p\)</span> when reality is <span class="math inline">\(q\)</span>. But some of that cost is unavoidable &mdash; it&rsquo;s just the inherent uncertainty in <span class="math inline">\(q\)</span> itself. KL divergence strips away that unavoidable part and isolates the <strong>extra cost you pay purely because your model is wrong</strong>.</p>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="180" viewBox="0 0 700 180" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .kl-lbl { font: bold 13px system-ui, sans-serif; }
+    .kl-val { font: 12px 'Consolas', monospace; fill: #334155; }
+    .kl-note { font: 11px system-ui, sans-serif; fill: #64748b; }
+  </style>
+  <defs><marker id="kl-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#6366f1"/></marker></defs>
+
+  <!-- Cross-entropy bar (full width) -->
+  <rect x="40" y="30" width="540" height="40" rx="6" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="310" y="56" text-anchor="middle" class="kl-lbl" fill="#7c3aed">H(q, p) = Cross-Entropy = 0.5919</text>
+
+  <!-- Entropy portion -->
+  <rect x="40" y="90" width="390" height="40" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="235" y="116" text-anchor="middle" class="kl-lbl" fill="#3b82f6">H(q) = Entropy = 0.5004</text>
+  <text x="235" y="148" text-anchor="middle" class="kl-note">Unavoidable uncertainty in the data</text>
+
+  <!-- KL portion -->
+  <rect x="440" y="90" width="140" height="40" rx="6" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="510" y="116" text-anchor="middle" class="kl-lbl" fill="#d97706">D_KL = 0.0915</text>
+  <text x="510" y="148" text-anchor="middle" class="kl-note">Avoidable waste from</text>
+  <text x="510" y="162" text-anchor="middle" class="kl-note">wrong predictions</text>
+
+  <!-- Plus sign -->
+  <text x="432" y="116" text-anchor="middle" font-family="system-ui,sans-serif" font-size="18" font-weight="bold" fill="#334155">+</text>
+
+  <!-- Equals sign -->
+  <text x="590" y="56" font-family="system-ui,sans-serif" font-size="18" font-weight="bold" fill="#334155">=</text>
+
+  <!-- Bracket lines connecting -->
+  <line x1="235" y1="70" x2="235" y2="90" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <line x1="510" y1="70" x2="510" y2="90" stroke="#d97706" stroke-width="1.5" stroke-dasharray="3,3"/>
+</svg>
 
 <p><span class="math display">\[
 
 D_{KL}(q\|p)=\sum_i q_i \log \frac{q_i}{p_i}
 
 \]</span></p>
+
+<p>Equivalently, KL is just the gap between cross-entropy and entropy:</p>
 
 <p><span class="math display">\[
 
@@ -1465,26 +1539,31 @@ D_{KL}(q\|p)=H(q,p)-H(q)
 
 <div style="border-left:4px solid #6366f1; padding:8px 16px; background:#f8fafc; border-radius:6px; margin:16px 0; font-size:0.95rem;">
 <strong>H(q, p) = H(q) + D<sub>KL</sub>(q ∥ p)</strong>
+<br/><span style="color:#64748b; font-size:0.85rem;">This is why minimizing cross-entropy = minimizing KL divergence (entropy H(q) is a constant for fixed data).</span>
 </div>
 
 
 <p>Properties:</p>
 
 <ul>
-<li><span class="math inline">\(D_{KL}(q\|p) \ge 0\)</span></li>
-<li><span class="math inline">\(D_{KL}(q\|p)=0\)</span> iff <span  class="math inline">\(p=q\)</span></li>
-<li>not symmetric: <span  class="math inline">\(D_{KL}(q\|p)\ne D_{KL}(p\|q)\)</span></li>
+<li><span class="math inline">\(D_{KL}(q\|p) \ge 0\)</span> &mdash; always non-negative (Gibbs&rsquo; inequality)</li>
+<li><span class="math inline">\(D_{KL}(q\|p)=0\)</span> iff <span  class="math inline">\(p=q\)</span> &mdash; zero only when the model perfectly matches reality</li>
+<li><strong>Not symmetric:</strong> <span  class="math inline">\(D_{KL}(q\|p)\ne D_{KL}(p\|q)\)</span> in general</li>
 </ul>
-
-<p>Mental model: - <strong>Entropy</strong> = unavoidable uncertainty -
-
-<strong>KL</strong> = avoidable waste from bad predictions</p>
 
 <blockquote>
 
-<p><strong>Key:</strong> KL is not a true distance.</p>
+<p><strong>Key:</strong> KL divergence is <em>not</em> a true distance metric &mdash; it violates symmetry (<span class="math inline">\(D_{KL}(q\|p) \ne D_{KL}(p\|q)\)</span>) and the triangle inequality. Think of it as a <strong>directed penalty</strong>: &ldquo;how much information do I lose by using <span class="math inline">\(p\)</span> instead of <span class="math inline">\(q\)</span>?&rdquo; The answer depends on which direction you ask. This asymmetry matters in practice &mdash; it&rsquo;s why VAEs and knowledge distillation carefully choose which KL direction to minimize.</p>
 
 </blockquote>
+
+<p><strong>Where you&rsquo;ll see KL divergence in ML:</strong></p>
+<ul>
+<li><strong>VAEs:</strong> the KL term regularizes the latent space toward a prior &mdash; <span class="math inline">\(D_{KL}(q(z|x)\|p(z))\)</span></li>
+<li><strong>Knowledge distillation:</strong> student trained to match teacher&rsquo;s softmax output via KL</li>
+<li><strong>Reinforcement learning:</strong> PPO clips the policy update to keep new policy close to old (bounded KL)</li>
+<li><strong>Information theory:</strong> measures information lost when compressing with the wrong code</li>
+</ul>
 
 <hr />
 
