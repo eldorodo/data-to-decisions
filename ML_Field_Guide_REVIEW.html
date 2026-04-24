@@ -8972,6 +8972,70 @@ H(q) = \log(2)
 
 \]</span></p>
 
+<!-- Entropy Intuition Diagram: Low vs High Entropy -->
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="320" viewBox="0 0 720 320" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .ent-title { font: bold 14px system-ui, sans-serif; fill: #1e293b; }
+    .ent-label { font: 600 12px system-ui, sans-serif; fill: #334155; }
+    .ent-sub   { font: 11px system-ui, sans-serif; fill: #64748b; }
+    .ent-val   { font: bold 11px 'Consolas', monospace; fill: #334155; }
+    .ent-h     { font: bold 13px system-ui, sans-serif; }
+  </style>
+  <!-- Title -->
+  <text x="360" y="24" text-anchor="middle" class="ent-title">What Does Entropy Look Like?</text>
+
+  <!-- === Panel 1: Low Entropy === -->
+  <rect x="20" y="40" width="210" height="260" rx="10" fill="#f0fdf4" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="125" y="64" text-anchor="middle" class="ent-label">Almost Certain</text>
+  <text x="125" y="80" text-anchor="middle" class="ent-sub">(Sahara weather forecast)</text>
+  <!-- Bars: Sunny 95%, Rainy 5% -->
+  <rect x="55"  y="100" width="40" height="150" rx="4" fill="#22c55e" opacity="0.8"/>
+  <rect x="125" y="240" width="40" height="10"  rx="4" fill="#22c55e" opacity="0.4"/>
+  <text x="75"  y="265" text-anchor="middle" class="ent-val">Sunny</text>
+  <text x="75"  y="278" text-anchor="middle" class="ent-val">95%</text>
+  <text x="145" y="265" text-anchor="middle" class="ent-val">Rainy</text>
+  <text x="145" y="278" text-anchor="middle" class="ent-val">5%</text>
+  <text x="125" y="295" text-anchor="middle" class="ent-h" fill="#16a34a">H ≈ 0.29 (Low)</text>
+
+  <!-- === Panel 2: Medium Entropy === -->
+  <rect x="255" y="40" width="210" height="260" rx="10" fill="#fefce8" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="360" y="64" text-anchor="middle" class="ent-label">Somewhat Uncertain</text>
+  <text x="360" y="80" text-anchor="middle" class="ent-sub">(Loaded die: one face favored)</text>
+  <!-- Bars: 50%, 20%, 10%, 10%, 5%, 5% -->
+  <rect x="275" y="130" width="24" height="120" rx="3" fill="#f59e0b" opacity="0.8"/>
+  <rect x="305" y="202" width="24" height="48"  rx="3" fill="#f59e0b" opacity="0.6"/>
+  <rect x="335" y="226" width="24" height="24"  rx="3" fill="#f59e0b" opacity="0.5"/>
+  <rect x="365" y="226" width="24" height="24"  rx="3" fill="#f59e0b" opacity="0.5"/>
+  <rect x="395" y="238" width="24" height="12"  rx="3" fill="#f59e0b" opacity="0.4"/>
+  <rect x="425" y="238" width="24" height="12"  rx="3" fill="#f59e0b" opacity="0.4"/>
+  <text x="287" y="265" text-anchor="middle" class="ent-val">50%</text>
+  <text x="317" y="265" text-anchor="middle" class="ent-val">20%</text>
+  <text x="347" y="265" text-anchor="middle" class="ent-val">10%</text>
+  <text x="377" y="265" text-anchor="middle" class="ent-val">10%</text>
+  <text x="407" y="265" text-anchor="middle" class="ent-val">5%</text>
+  <text x="437" y="265" text-anchor="middle" class="ent-val">5%</text>
+  <text x="360" y="295" text-anchor="middle" class="ent-h" fill="#d97706">H ≈ 2.0 (Medium)</text>
+
+  <!-- === Panel 3: Maximum Entropy === -->
+  <rect x="490" y="40" width="210" height="260" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="595" y="64" text-anchor="middle" class="ent-label">Maximum Uncertainty</text>
+  <text x="595" y="80" text-anchor="middle" class="ent-sub">(Fair die: all faces equal)</text>
+  <!-- Bars: 6 equal bars at ~16.7% each -->
+  <rect x="510" y="190" width="24" height="60" rx="3" fill="#ef4444" opacity="0.7"/>
+  <rect x="540" y="190" width="24" height="60" rx="3" fill="#ef4444" opacity="0.7"/>
+  <rect x="570" y="190" width="24" height="60" rx="3" fill="#ef4444" opacity="0.7"/>
+  <rect x="600" y="190" width="24" height="60" rx="3" fill="#ef4444" opacity="0.7"/>
+  <rect x="630" y="190" width="24" height="60" rx="3" fill="#ef4444" opacity="0.7"/>
+  <rect x="660" y="190" width="24" height="60" rx="3" fill="#ef4444" opacity="0.7"/>
+  <text x="522" y="265" text-anchor="middle" class="ent-val">⅙</text>
+  <text x="552" y="265" text-anchor="middle" class="ent-val">⅙</text>
+  <text x="582" y="265" text-anchor="middle" class="ent-val">⅙</text>
+  <text x="612" y="265" text-anchor="middle" class="ent-val">⅙</text>
+  <text x="642" y="265" text-anchor="middle" class="ent-val">⅙</text>
+  <text x="672" y="265" text-anchor="middle" class="ent-val">⅙</text>
+  <text x="595" y="295" text-anchor="middle" class="ent-h" fill="#dc2626">H ≈ 2.58 (Max)</text>
+</svg>
+
 <table>
 
 <thead>
@@ -9051,6 +9115,72 @@ H([0.5,0.5]) = \log(2) \approx 0.6931
 class="math inline">\(p=0.5\)</span>.</p>
 
 </blockquote>
+
+<!-- Binary Entropy Curve -->
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="310" viewBox="0 0 520 310" style="display:block; margin:20px auto; max-width:100%;">
+  <style>
+    .bec-title { font: bold 13px system-ui, sans-serif; fill: #1e293b; }
+    .bec-axis  { font: 11px system-ui, sans-serif; fill: #64748b; }
+    .bec-note  { font: 11px system-ui, sans-serif; fill: #475569; font-style: italic; }
+    .bec-val   { font: bold 11px 'Consolas', monospace; fill: #334155; }
+  </style>
+  <defs>
+    <marker id="bec-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0,8 3,0 6" fill="#64748b"/>
+    </marker>
+  </defs>
+  <text x="260" y="22" text-anchor="middle" class="bec-title">Binary Entropy Curve: H(p) = −[p log p + (1−p) log(1−p)]</text>
+
+  <!-- Axes -->
+  <line x1="60" y1="260" x2="480" y2="260" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#bec-a)"/>
+  <line x1="60" y1="260" x2="60"  y2="35"  stroke="#94a3b8" stroke-width="1.5" marker-end="url(#bec-a)"/>
+  <text x="270" y="290" text-anchor="middle" class="bec-axis">p (probability of class 1)</text>
+  <text x="22" y="148" text-anchor="middle" class="bec-axis" transform="rotate(-90,22,148)">H(p)</text>
+
+  <!-- Y-axis labels -->
+  <text x="52" y="264" text-anchor="end" class="bec-val">0</text>
+  <text x="52" y="148" text-anchor="end" class="bec-val">0.5</text>
+  <text x="52" y="38"  text-anchor="end" class="bec-val">1.0</text>
+  <line x1="58" y1="145" x2="62" y2="145" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="58" y1="35"  x2="62" y2="35"  stroke="#94a3b8" stroke-width="1"/>
+
+  <!-- X-axis labels -->
+  <text x="60"  y="278" text-anchor="middle" class="bec-val">0</text>
+  <text x="165" y="278" text-anchor="middle" class="bec-val">0.25</text>
+  <text x="270" y="278" text-anchor="middle" class="bec-val">0.50</text>
+  <text x="375" y="278" text-anchor="middle" class="bec-val">0.75</text>
+  <text x="470" y="278" text-anchor="middle" class="bec-val">1.0</text>
+
+  <!-- Grid lines (subtle) -->
+  <line x1="165" y1="260" x2="165" y2="40" stroke="#e2e8f0" stroke-width="0.5" stroke-dasharray="4,3"/>
+  <line x1="270" y1="260" x2="270" y2="40" stroke="#e2e8f0" stroke-width="0.5" stroke-dasharray="4,3"/>
+  <line x1="375" y1="260" x2="375" y2="40" stroke="#e2e8f0" stroke-width="0.5" stroke-dasharray="4,3"/>
+  <line x1="60"  y1="145" x2="470" y2="145" stroke="#e2e8f0" stroke-width="0.5" stroke-dasharray="4,3"/>
+
+  <!-- Entropy curve (sampled points for smooth arc) -->
+  <!-- H(p) scaled: x = 60 + p*410, y = 260 - H*225 -->
+  <!-- p: 0.01→0.08, 0.05→0.29, 0.1→0.47, 0.15→0.61, 0.2→0.72, 0.25→0.81, 0.3→0.88, 0.35→0.93, 0.4→0.97, 0.45→0.99, 0.5→1.0, ... symmetric -->
+  <path d="M 64,242 C 80,200 100,160 125,120 C 150,82 190,55 220,43 C 250,35 270,34 270,34 C 270,34 290,35 320,43 C 350,55 390,82 415,120 C 440,160 460,200 476,242"
+        fill="none" stroke="#6366f1" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Peak marker at p=0.5 -->
+  <circle cx="270" cy="34" r="5" fill="#6366f1"/>
+  <text x="270" y="52" text-anchor="middle" class="bec-val" fill="#6366f1">Max: H = 1.0 bit</text>
+
+  <!-- Low entropy zones -->
+  <rect x="62" y="230" width="50" height="28" rx="4" fill="#dcfce7" opacity="0.6"/>
+  <text x="87" y="248" text-anchor="middle" font-size="9" font-family="system-ui" fill="#16a34a" font-weight="600">Certain</text>
+
+  <rect x="428" y="230" width="50" height="28" rx="4" fill="#dcfce7" opacity="0.6"/>
+  <text x="453" y="248" text-anchor="middle" font-size="9" font-family="system-ui" fill="#16a34a" font-weight="600">Certain</text>
+
+  <!-- High entropy zone -->
+  <rect x="235" y="56" width="70" height="20" rx="4" fill="#fef2f2" opacity="0.6"/>
+  <text x="270" y="70" text-anchor="middle" font-size="9" font-family="system-ui" fill="#dc2626" font-weight="600">Uncertain</text>
+
+  <!-- Annotation -->
+  <text x="270" y="305" text-anchor="middle" class="bec-note">Entropy peaks when both outcomes are equally likely (p = 0.5) — maximum surprise.</text>
+</svg>
 
 <h4 id="cross-entropy">Cross-Entropy</h4>
 
