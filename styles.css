@@ -614,6 +614,15 @@ th{
 }
 .toc-card .ch-sections a:last-child{ border-bottom:none; }
 .toc-card .ch-sections a:hover{ background:#eff6ff; color:#2563eb; }
+.toc-card .ch-sections a.ch-goto{
+  font-weight:600;
+  color:#2563eb;
+  background:#eff6ff;
+  padding:9px 24px 9px 32px;
+  font-size:13px;
+  letter-spacing:0.01em;
+}
+.toc-card .ch-sections a.ch-goto:hover{ background:#dbeafe; color:#1d4ed8; }
 .toc-card .ch-sections a .sec-num{
   font-family:monospace;
   font-size:12px;
